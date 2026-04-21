@@ -1,6 +1,7 @@
 {
-  "name": "lyriclab",
-  "version": "0.1.0",
+  "name": "vvviruz-command-center",
+  "version": "1.0.0",
+  "description": "Local-first creative command center for releases, lyric videos, and copy workflows.",
   "private": true,
   "scripts": {
     "dev": "next dev",
