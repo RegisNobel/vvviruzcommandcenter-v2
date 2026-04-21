@@ -6,6 +6,13 @@ This README now tracks the project as it exists today and should be updated when
 
 ## Recent Change Log
 
+### 2026-04-21 15:17 -04:00
+
+- Created the standalone private GitHub repository:
+  - `RegisNobel/vvviruz-command-center`
+- Pushed the current `v1` source snapshot to `main`.
+- Published the app as its own repo instead of leaving it nested as an untracked folder inside the parent `Codex` workspace.
+
 ### 2026-04-21 15:13 -04:00
 
 - Initialized `lyriclab` as its own standalone git repository instead of leaving it as an untracked folder inside the parent `Codex` repo.
