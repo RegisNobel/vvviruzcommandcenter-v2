@@ -84,7 +84,7 @@ const stepCopy: Record<
     eyebrow: "Step 2",
     title: "Choose the source clip",
     description:
-      "Upload the audio for this lyric video. The project is created and saved as soon as the file lands."
+      "Upload the audio for this video clip. The project is created and saved as soon as the file lands."
   },
   trim: {
     eyebrow: "Step 3",
@@ -96,7 +96,7 @@ const stepCopy: Record<
     eyebrow: "Step 4",
     title: "Auto-transcribe the clip",
     description:
-      "LyricLab runs local Whisper with auto, English, French, or Spanish support and saves the synced lyric lines automatically."
+      "Video Lab runs local Whisper with auto, English, French, or Spanish support and saves the synced lyric lines automatically."
   },
   edit: {
     eyebrow: "Step 5",
@@ -899,7 +899,7 @@ export function LyricLabStudio({
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = `${project.title || "lyriclab"}.srt`;
+    link.download = `${project.title || "videolab"}.srt`;
     link.click();
     URL.revokeObjectURL(url);
     setMessage("SRT exported.");
@@ -1240,14 +1240,14 @@ export function LyricLabStudio({
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="panel overflow-hidden px-6 py-7 sm:px-8">
+        <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
-              <div className="pill">Local-first lyric video studio</div>
+              <div className="pill">Local-first video creation studio</div>
               <p className="mt-5 text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
                 {currentCopy.eyebrow}
               </p>
-              <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+              <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-ink sm:text-5xl">
                 {currentCopy.title}
               </h1>
               <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
@@ -1267,16 +1267,16 @@ export function LyricLabStudio({
               </div>
             </div>
 
-            <div className="rounded-[28px] bg-hero-mesh p-6 shadow-soft">
-              <div className="rounded-[24px] border border-white/60 bg-white/75 p-5 backdrop-blur">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <div className="rounded-[28px] bg-hero-mesh p-4 sm:p-6 shadow-soft">
+              <div className="rounded-[24px] border border-white/60 bg-white/75 p-4 sm:p-5 backdrop-blur">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
                   <Wand2 size={16} />
                   Session status
                 </div>
                 <p className="mt-3 text-2xl font-semibold text-ink">{project.title}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {message ??
-                    "Upload a clip to begin. LyricLab now walks through one step at a time and saves progress automatically."}
+                    "Upload a clip to begin. Video Lab now walks through one step at a time and saves progress automatically."}
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-[20px] bg-white/80 p-4">

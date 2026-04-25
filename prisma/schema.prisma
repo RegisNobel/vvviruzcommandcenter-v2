@@ -39,6 +39,7 @@ model AuthSession {
 model Release {
   id               String                 @id
   title            String
+  slug             String                 @unique
   pinned           Boolean                @default(false)
   collaborator     Boolean                @default(false)
   collaboratorName String                 @default("")
@@ -47,11 +48,21 @@ model Release {
   coverArtId       String?
   coverArtFileName String?
   coverArtUrl      String?
+  coverArtPath     String                 @default("")
   coverArtMimeType String?
   lyrics           String                 @default("")
   type             String                 @default("nerdcore")
-  releaseDate      String                 @default("")
+  releaseDate      DateTime?
   conceptDetails   String                 @default("")
+  publicDescription String                @default("")
+  publicLongDescription String            @default("")
+  spotifyUrl       String                 @default("")
+  appleMusicUrl    String                 @default("")
+  youtubeUrl       String                 @default("")
+  isPublished      Boolean                @default(false)
+  isFeatured       Boolean                @default(false)
+  featuredVideoUrl String                 @default("")
+  publicLyricsEnabled Boolean             @default(false)
   conceptComplete  Boolean                @default(false)
   beatMade         Boolean                @default(false)
   lyricsFinished   Boolean                @default(false)
@@ -66,6 +77,8 @@ model Release {
   copies           CopyEntry[]
 
   @@index([pinned, updatedOn])
+  @@index([isPublished, releaseDate])
+  @@index([isFeatured, releaseDate])
 }
 
 model ReleaseTask {
@@ -141,4 +154,75 @@ model CopyEntry {
 
   @@index([releaseId])
   @@index([updatedOn])
+}
+
+model SiteSettings {
+  id             String   @id
+  artistName     String   @default("vvviruz")
+  tagline        String   @default("")
+  shortBio       String   @default("")
+  longBio        String   @default("")
+  contactEmail   String   @default("")
+  bookingEmail   String   @default("")
+  socialLinks    String   @default("[]")
+  heroText       String   @default("")
+  aboutContent   String   @default("")
+  linksPageItems String   @default("[]")
+  siteContent    String   @default("{}")
+  createdOn      DateTime
+  updatedOn      DateTime
+}
+
+model Subscriber {
+  id               String         @id
+  name             String         @default("")
+  email            String         @unique
+  source           String         @default("exclusive")
+  status           String         @default("active")
+  consentGiven     Boolean        @default(false)
+  downloadToken    String         @unique
+  unsubscribeToken String         @unique
+  createdAt        DateTime
+  updatedAt        DateTime
+  unsubscribedAt   DateTime?
+  sendLogs         EmailSendLog[]
+
+  @@index([status, createdAt])
+  @@index([source, status])
+}
+
+model EmailCampaign {
+  id             String         @id
+  subject        String
+  previewText    String         @default("")
+  body           String         @default("")
+  ctaLabel       String         @default("")
+  ctaUrl         String         @default("")
+  audienceFilter String         @default("all_active")
+  status         String         @default("draft")
+  recipientCount Int            @default(0)
+  sentAt         DateTime?
+  createdAt      DateTime
+  updatedAt      DateTime
+  sendLogs       EmailSendLog[]
+
+  @@index([status, createdAt])
+}
+
+model EmailSendLog {
+  id                String        @id
+  campaignId        String
+  subscriberId      String?
+  email             String
+  status            String
+  providerMessageId String?
+  errorMessage      String?
+  sentAt            DateTime?
+  createdAt         DateTime
+  campaign          EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriber        Subscriber?   @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, createdAt])
+  @@index([subscriberId])
+  @@index([status, createdAt])
 }

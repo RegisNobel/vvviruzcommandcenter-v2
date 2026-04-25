@@ -76,7 +76,7 @@ export function StylePanel({
         <div>
           <p className="field-label">Style & Motion</p>
           <h2 className="mt-2 text-xl font-semibold text-ink">
-            Shape the lyric video look
+            Shape the video look
           </h2>
         </div>
         <span className="pill">Live preview</span>

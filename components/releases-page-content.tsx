@@ -2,7 +2,7 @@
 
 import {useDeferredValue, useMemo, useState} from "react";
 import Link from "next/link";
-import {Pin, PinOff, PlusCircle, Search} from "lucide-react";
+import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
 
 import {getReleaseProgressTone} from "@/lib/releases";
@@ -112,11 +112,11 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="sticky top-[89px] z-30 panel overflow-hidden border-[#32363d] bg-[#15181c]/95 px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8">
+        <section className="md:sticky md:top-[89px] z-30 panel overflow-hidden border-[#32363d] bg-[#15181c]/95 px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Release planning</div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 Releases
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -125,10 +125,16 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
               </p>
             </div>
 
-            <Link className="action-button-primary" href="/admin/releases/new">
-              <PlusCircle size={16} />
-              New Release
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link className="action-button-secondary" href="/admin/releases/roadmap">
+                <CalendarClock size={16} />
+                Roadmap
+              </Link>
+              <Link className="action-button-primary" href="/admin/releases/new">
+                <PlusCircle size={16} />
+                New Release
+              </Link>
+            </div>
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px]">
@@ -163,7 +169,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
         <section className="space-y-4">
           {filteredReleases.map((release, index) => (
             <article
-              className="panel cursor-pointer px-6 py-6 transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle"
+              className="panel cursor-pointer px-4 py-5 transition sm:px-6 sm:py-6 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle"
               key={release.id}
               onClick={() => router.push(`/admin/releases/${release.id}`)}
             >
@@ -171,7 +177,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                 <div className="pill w-fit">{index + 1}</div>
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <p className="truncate text-lg font-semibold text-ink">
                       {release.title}
                     </p>
@@ -196,7 +202,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                   </p>
                 </div>
 
-                <div className="min-w-[220px]">
+                <div className="min-w-0">
                   <p className="field-label">Progress</p>
                   <div className="mt-2 flex items-center gap-3">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#23262c]">
@@ -233,7 +239,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           ))}
 
           {releaseItems.length === 0 ? (
-            <div className="panel px-6 py-8">
+            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No releases yet</p>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Create your first release to start tracking the song, visuals, promo,
@@ -243,7 +249,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           ) : null}
 
           {releaseItems.length > 0 && filteredReleases.length === 0 ? (
-            <div className="panel px-6 py-8">
+            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No matching releases</p>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Try a different title or clear the search to see the full catalog.

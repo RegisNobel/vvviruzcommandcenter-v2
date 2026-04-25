@@ -70,7 +70,7 @@ export function ReleaseCreateForm() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Releases</div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 New Release
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">

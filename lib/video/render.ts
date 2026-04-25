@@ -8,7 +8,7 @@ import type {ExportStreamEvent, LyricProject, ResolutionPreset} from "@/lib/type
 import {getProjectDurationFrames} from "@/lib/video/project";
 import {absoluteUrl, createId} from "@/lib/utils";
 
-const compositionId = "LyricLabComposition";
+const compositionId = "VideoLabComposition";
 const entryPoint = path.join(process.cwd(), "remotion", "index.ts");
 let bundlePromise: Promise<string> | null = null;
 
@@ -51,7 +51,7 @@ export async function renderProjectVideo({
 }) {
   const {renderMedia, selectComposition} = await import("@remotion/renderer");
   const serveUrl = await getServeUrl();
-  const outputFileName = `lyriclab-${project.id}-${resolution}-${createId()}.mp4`;
+  const outputFileName = `videolab-${project.id}-${resolution}-${createId()}.mp4`;
   const outputLocation = path.join(exportsDir, outputFileName);
   const renderProject =
     project.background.mediaAsset

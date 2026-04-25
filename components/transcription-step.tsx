@@ -35,7 +35,7 @@ export function TranscriptionStep({
       ? "The lyrics are synced and ready for cleanup."
       : status === "failed"
         ? "Whisper hit an issue. Retry the pass and continue once the lines are ready."
-        : "LyricLab is running local Whisper and grouping words into editable lyric lines.";
+        : "Video Lab is running local Whisper and grouping words into editable lyric lines.";
 
   return (
     <section className="panel p-6">

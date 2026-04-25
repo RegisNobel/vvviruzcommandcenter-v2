@@ -13,7 +13,12 @@ import {
   readProjectsByReleaseId,
   saveProject
 } from "@/lib/server/storage";
-import {hydrateRelease, summarizeRelease, touchRelease} from "@/lib/releases";
+import {
+  getReleasePublishBlockers,
+  hydrateRelease,
+  summarizeRelease,
+  touchRelease
+} from "@/lib/releases";
 import type {ReleaseRecord} from "@/lib/types";
 import {touchProject} from "@/lib/video/project";
 
@@ -60,6 +65,18 @@ export async function PUT(
 
     if (release.id !== id) {
       return NextResponse.json({message: "Release id mismatch."}, {status: 400});
+    }
+
+    const publishBlockers = getReleasePublishBlockers(release);
+
+    if (release.is_published && publishBlockers.length > 0) {
+      return NextResponse.json(
+        {
+          message: `Release is not ready to publish publicly. ${publishBlockers.join(", ")}.`,
+          publishBlockers
+        },
+        {status: 400}
+      );
     }
 
     const normalized = touchRelease(release);

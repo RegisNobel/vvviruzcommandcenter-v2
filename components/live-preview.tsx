@@ -151,7 +151,7 @@ export function LivePreview({project, onPlacementChange}: LivePreviewProps) {
   );
 
   return (
-    <section className="panel p-6">
+    <section className="panel p-4 sm:p-6">
       <div className="panel-header">
         <div>
           <p className="field-label">Live Preview</p>
@@ -175,9 +175,9 @@ export function LivePreview({project, onPlacementChange}: LivePreviewProps) {
         </div>
       </div>
 
-      <div className="mt-5 flex justify-center rounded-[30px] border border-[#2f343b] bg-[#12151a] p-5">
+      <div className="mt-5 flex justify-center rounded-[24px] border border-[#2f343b] bg-[#12151a] p-3 sm:rounded-[30px] sm:p-5">
         <div
-          className="relative w-full max-w-[720px] overflow-hidden rounded-[32px]"
+          className="relative w-full max-w-[720px] overflow-hidden rounded-[20px] sm:rounded-[32px]"
           ref={previewFrameRef}
           style={{
             aspectRatio: `${dimensions.width} / ${dimensions.height}`
@@ -186,7 +186,7 @@ export function LivePreview({project, onPlacementChange}: LivePreviewProps) {
           <Player
             acknowledgeRemotionLicense
             autoPlay={false}
-            className="h-full w-full overflow-hidden rounded-[32px]"
+            className="h-full w-full overflow-hidden rounded-[20px] sm:rounded-[32px]"
             component={LyricVideoTemplate}
             compositionHeight={dimensions.height}
             compositionWidth={dimensions.width}
@@ -217,7 +217,7 @@ export function LivePreview({project, onPlacementChange}: LivePreviewProps) {
               />
 
               <button
-                className="pointer-events-auto absolute inline-flex items-center gap-2 rounded-full border border-[#5b4920] bg-[#17130d]/92 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#e5c571] backdrop-blur transition hover:bg-[#1e1810]"
+                className="pointer-events-auto absolute inline-flex items-center gap-2 rounded-full border border-[#5b4920] bg-[#17130d]/92 px-3 py-2 text-[10px] sm:px-4 sm:text-xs font-semibold uppercase tracking-[0.18em] text-[#e5c571] backdrop-blur transition hover:bg-[#1e1810]"
                 onPointerCancel={handlePointerEnd}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}

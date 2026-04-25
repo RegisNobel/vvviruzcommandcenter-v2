@@ -1,15 +1,17 @@
 import type {Prisma} from "@prisma/client";
 
 import {prisma} from "@/lib/db/prisma";
-import {toDate} from "@/lib/db/serialization";
-import {hydrateRelease, summarizeRelease} from "@/lib/releases";
+import {toDate, toDateInputValue, toOptionalDate} from "@/lib/db/serialization";
+import {hasReleaseCoverArt, hydrateRelease, summarizeRelease} from "@/lib/releases";
+import {getReleasePlanningSnapshot} from "@/lib/release-planning";
 import type {
   ReleaseRecord,
   ReleaseStreamingLinks,
+  ReleasePlanItem,
   ReleaseSummary,
   ReleaseTask
 } from "@/lib/types";
-import {createId} from "@/lib/utils";
+import {createId, slugify} from "@/lib/utils";
 
 const releaseInclude = {
   tasks: {
@@ -22,6 +24,25 @@ const releaseInclude = {
 
 type ReleaseWithRelations = Prisma.ReleaseGetPayload<{
   include: typeof releaseInclude;
+}>;
+
+const releasePlanningInclude = {
+  tasks: {
+    orderBy: {
+      sortOrder: "asc"
+    }
+  },
+  streamingLinks: true,
+  _count: {
+    select: {
+      projects: true,
+      copies: true
+    }
+  }
+} satisfies Prisma.ReleaseInclude;
+
+type ReleasePlanningWithRelations = Prisma.ReleaseGetPayload<{
+  include: typeof releasePlanningInclude;
 }>;
 
 function mapStreamingLinks(
@@ -55,6 +76,41 @@ function mapStreamingLinks(
   return streamingLinks;
 }
 
+function createPublicCoverPath(
+  release: Pick<ReleaseWithRelations, "coverArtUrl"> & {
+    coverArtUrl?: string | null;
+  }
+) {
+  return release.coverArtUrl?.trim() || "";
+}
+
+async function createUniqueReleaseSlug(baseValue: string, releaseId: string) {
+  const normalizedBase = slugify(baseValue) || `release-${releaseId.slice(0, 8)}`;
+  let candidate = normalizedBase;
+  let suffix = 2;
+
+  while (true) {
+    const existing = await prisma.release.findFirst({
+      where: {
+        slug: candidate,
+        NOT: {
+          id: releaseId
+        }
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!existing) {
+      return candidate;
+    }
+
+    candidate = `${normalizedBase}-${suffix}`;
+    suffix += 1;
+  }
+}
+
 function mapReleaseTasks(tasks: Array<{id: string; text: string; completed: boolean}>): ReleaseTask[] {
   return tasks.map((task) => ({
     id: task.id,
@@ -81,11 +137,18 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
             mimeType: release.coverArtMimeType || "image/*"
           }
         : null,
+    cover_art_path: release.coverArtPath || createPublicCoverPath(release),
     streaming_links: mapStreamingLinks(release.streamingLinks),
     lyrics: release.lyrics,
     type: release.type as ReleaseRecord["type"],
-    release_date: release.releaseDate,
+    release_date: toDateInputValue(release.releaseDate),
     concept_details: release.conceptDetails,
+    public_description: release.publicDescription || release.conceptDetails,
+    public_long_description: release.publicLongDescription,
+    featured_video_url: release.featuredVideoUrl,
+    public_lyrics_enabled: release.publicLyricsEnabled,
+    is_published: release.isPublished,
+    is_featured: release.isFeatured,
     concept_complete: release.conceptComplete,
     beat_made: release.beatMade,
     lyrics_finished: release.lyricsFinished,
@@ -180,6 +243,86 @@ export async function readReleaseSummaries(): Promise<ReleaseSummary[]> {
   );
 }
 
+function getRoadmapDateSortValue(releaseDate: string) {
+  return toOptionalDate(releaseDate)?.getTime() ?? Number.POSITIVE_INFINITY;
+}
+
+function toRoadmapPlanItem(release: ReleasePlanningWithRelations): ReleasePlanItem {
+  const record = toReleaseRecord(release);
+  const summary = summarizeRelease(record);
+  const snapshot = getReleasePlanningSnapshot(record);
+  const hasStreamingLinks =
+    Boolean(record.streaming_links.spotify.trim()) ||
+    Boolean(record.streaming_links.apple_music.trim()) ||
+    Boolean(record.streaming_links.youtube.trim());
+
+  return {
+    ...summary,
+    status: snapshot.current_stage,
+    progress_percentage: snapshot.progress_percentage,
+    next_action: snapshot.next_action,
+    blockers: snapshot.blockers,
+    validation_warnings: snapshot.validation_warnings,
+    stage_steps: snapshot.stage_steps,
+    task_count: record.tasks.length,
+    completed_task_count: record.tasks.filter((task) => task.completed).length,
+    clip_count: release._count.projects,
+    copy_count: release._count.copies,
+    has_cover_art: hasReleaseCoverArt(record),
+    has_streaming_links: hasStreamingLinks,
+    is_scheduled: Boolean(record.release_date.trim())
+  } satisfies ReleasePlanItem;
+}
+
+export async function readReleaseYearRoadmap(year = new Date().getFullYear()): Promise<ReleasePlanItem[]> {
+  const releases = await prisma.release.findMany({
+    where: {
+      releaseDate: {
+        not: null
+      }
+    },
+    include: releasePlanningInclude,
+    orderBy: [
+      {
+        releaseDate: "asc"
+      },
+      {
+        updatedOn: "desc"
+      }
+    ]
+  });
+
+  return releases
+    .filter((release) => release.releaseDate?.getUTCFullYear() === year)
+    .map(toRoadmapPlanItem);
+}
+export async function readNextReleasePlans(limit = 12): Promise<ReleasePlanItem[]> {
+  const releases = await prisma.release.findMany({
+    where: {
+      published: false
+    },
+    include: releasePlanningInclude
+  });
+
+  return releases
+    .map(toRoadmapPlanItem)
+
+    .sort((left, right) => {
+      const leftDate = getRoadmapDateSortValue(left.release_date);
+      const rightDate = getRoadmapDateSortValue(right.release_date);
+
+      if (leftDate !== rightDate) {
+        return leftDate - rightDate;
+      }
+
+      if (left.pinned !== right.pinned) {
+        return left.pinned ? -1 : 1;
+      }
+
+      return right.updated_on.localeCompare(left.updated_on);
+    })
+    .slice(0, limit);
+}
 export async function readRelease(releaseId: string): Promise<ReleaseRecord> {
   const release = await prisma.release.findUnique({
     where: {
@@ -197,6 +340,14 @@ export async function readRelease(releaseId: string): Promise<ReleaseRecord> {
 
 export async function saveRelease(release: ReleaseRecord) {
   const normalizedRelease = hydrateRelease(release);
+  const slug = await createUniqueReleaseSlug(
+    normalizedRelease.slug || normalizedRelease.title,
+    normalizedRelease.id
+  );
+  const coverArtPath =
+    normalizedRelease.cover_art_path.trim() ||
+    normalizedRelease.cover_art?.url?.trim() ||
+    "";
 
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.release.upsert({
@@ -206,6 +357,7 @@ export async function saveRelease(release: ReleaseRecord) {
       create: {
         id: normalizedRelease.id,
         title: normalizedRelease.title,
+        slug,
         pinned: normalizedRelease.pinned,
         collaborator: normalizedRelease.collaborator,
         collaboratorName: normalizedRelease.collaborator_name,
@@ -214,11 +366,21 @@ export async function saveRelease(release: ReleaseRecord) {
         coverArtId: normalizedRelease.cover_art?.id ?? null,
         coverArtFileName: normalizedRelease.cover_art?.fileName ?? null,
         coverArtUrl: normalizedRelease.cover_art?.url ?? null,
+        coverArtPath,
         coverArtMimeType: normalizedRelease.cover_art?.mimeType ?? null,
         lyrics: normalizedRelease.lyrics,
         type: normalizedRelease.type,
-        releaseDate: normalizedRelease.release_date,
+        releaseDate: toOptionalDate(normalizedRelease.release_date),
         conceptDetails: normalizedRelease.concept_details,
+        publicDescription: normalizedRelease.public_description,
+        publicLongDescription: normalizedRelease.public_long_description,
+        spotifyUrl: normalizedRelease.streaming_links.spotify,
+        appleMusicUrl: normalizedRelease.streaming_links.apple_music,
+        youtubeUrl: normalizedRelease.streaming_links.youtube,
+        isPublished: normalizedRelease.is_published,
+        isFeatured: normalizedRelease.is_featured,
+        featuredVideoUrl: normalizedRelease.featured_video_url,
+        publicLyricsEnabled: normalizedRelease.public_lyrics_enabled,
         conceptComplete: normalizedRelease.concept_complete,
         beatMade: normalizedRelease.beat_made,
         lyricsFinished: normalizedRelease.lyrics_finished,
@@ -230,6 +392,7 @@ export async function saveRelease(release: ReleaseRecord) {
       },
       update: {
         title: normalizedRelease.title,
+        slug,
         pinned: normalizedRelease.pinned,
         collaborator: normalizedRelease.collaborator,
         collaboratorName: normalizedRelease.collaborator_name,
@@ -238,11 +401,21 @@ export async function saveRelease(release: ReleaseRecord) {
         coverArtId: normalizedRelease.cover_art?.id ?? null,
         coverArtFileName: normalizedRelease.cover_art?.fileName ?? null,
         coverArtUrl: normalizedRelease.cover_art?.url ?? null,
+        coverArtPath,
         coverArtMimeType: normalizedRelease.cover_art?.mimeType ?? null,
         lyrics: normalizedRelease.lyrics,
         type: normalizedRelease.type,
-        releaseDate: normalizedRelease.release_date,
+        releaseDate: toOptionalDate(normalizedRelease.release_date),
         conceptDetails: normalizedRelease.concept_details,
+        publicDescription: normalizedRelease.public_description,
+        publicLongDescription: normalizedRelease.public_long_description,
+        spotifyUrl: normalizedRelease.streaming_links.spotify,
+        appleMusicUrl: normalizedRelease.streaming_links.apple_music,
+        youtubeUrl: normalizedRelease.streaming_links.youtube,
+        isPublished: normalizedRelease.is_published,
+        isFeatured: normalizedRelease.is_featured,
+        featuredVideoUrl: normalizedRelease.featured_video_url,
+        publicLyricsEnabled: normalizedRelease.public_lyrics_enabled,
         conceptComplete: normalizedRelease.concept_complete,
         beatMade: normalizedRelease.beat_made,
         lyricsFinished: normalizedRelease.lyrics_finished,

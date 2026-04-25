@@ -206,7 +206,7 @@ export function CopyDetailEditor({
                   {selectedRelease ? selectedRelease.title : "Standalone"}
                 </div>
               </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 {copy.hook.trim() || "Untitled Copy"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -215,23 +215,23 @@ export function CopyDetailEditor({
               </p>
             </div>
 
-            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-5">
+            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
               <div className="space-y-3 rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4 text-sm text-muted">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Type</span>
                   <span className="font-semibold text-ink">{formatCopyType(copy.type)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Release</span>
                   <span className="font-semibold text-ink">
                     {selectedRelease ? selectedRelease.title : "Standalone"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Autosave</span>
                   <span className="font-semibold text-ink">Every minute</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Save Status</span>
                   <span className="font-semibold text-ink">
                     {saveStatusLabel}
@@ -292,7 +292,7 @@ export function CopyDetailEditor({
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
-            <section className="panel space-y-5 px-6 py-6">
+            <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Section 1</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Basic Info</h2>
@@ -342,7 +342,7 @@ export function CopyDetailEditor({
               </div>
             </section>
 
-            <section className="panel space-y-4 px-6 py-6">
+            <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Section 2</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Hook</h2>
@@ -361,7 +361,7 @@ export function CopyDetailEditor({
               />
             </section>
 
-            <section className="panel space-y-4 px-6 py-6">
+            <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Section 3</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Caption</h2>
@@ -382,7 +382,7 @@ export function CopyDetailEditor({
           </div>
 
           <aside className="space-y-6">
-            <section className="panel space-y-5 px-6 py-6">
+            <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Link Status</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Release Context</h2>
@@ -404,24 +404,24 @@ export function CopyDetailEditor({
               </div>
             </section>
 
-            <section className="panel space-y-5 px-6 py-6">
+            <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Record Info</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Metadata</h2>
               </div>
 
               <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-muted">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">ID</span>
                   <span className="font-mono text-xs text-ink">{copy.id}</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Created On</span>
                   <span className="text-right text-ink">
                     {formatTimestamp(copy.created_on)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Updated On</span>
                   <span className="text-right text-ink">
                     {formatTimestamp(copy.updated_on)}

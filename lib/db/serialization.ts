@@ -29,3 +29,31 @@ export function toDate(value: Date | string | null | undefined, fallback = new D
 
   return fallback;
 }
+
+export function toOptionalDate(value: Date | string | null | undefined) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)
+    ? new Date(`${trimmedValue}T00:00:00.000Z`)
+    : new Date(trimmedValue);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function toDateInputValue(value: Date | string | null | undefined) {
+  const parsed = toOptionalDate(value);
+
+  return parsed ? parsed.toISOString().slice(0, 10) : "";
+}

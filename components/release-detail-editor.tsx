@@ -14,22 +14,29 @@ import {useRouter} from "next/navigation";
 import {
   ArrowLeft,
   Captions,
+  Check,
   Film,
   FolderOpen,
   ImagePlus,
+  Lock,
   Link2Off,
   Plus,
+  RefreshCw,
   Save,
   Sparkles,
-  Trash2
+  Trash2,
+  Unlock
 } from "lucide-react";
 
 import {AUTOSAVE_INTERVAL_MS} from "@/lib/constants";
 import {
   calculateReleaseProgress,
   createReleaseTask,
+  getReleasePublishBlockers,
   getReleaseProgressTone,
-  getReleaseStageLabel
+  getReleaseStageLabel,
+  hasReleaseCoverArt,
+  getSuggestedReleaseSlug
 } from "@/lib/releases";
 import {formatCopyType, getCopyHeading} from "@/lib/copy";
 import type {ReleaseChecklistKey} from "@/lib/releases";
@@ -74,9 +81,9 @@ const releaseFlowStages: ReleaseFlowStageDefinition[] = [
   {
     id: "cover_art",
     label: "Cover Art",
-    isComplete: (release) => Boolean(release.cover_art),
+    isComplete: hasReleaseCoverArt,
     getRequirements: (release) =>
-      release.cover_art
+      hasReleaseCoverArt(release)
         ? []
         : [
             {
@@ -359,6 +366,9 @@ export function ReleaseDetailEditor({
   const [taskText, setTaskText] = useState("");
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSlugLocked, setIsSlugLocked] = useState(
+    () => initialRelease.slug.trim() === getSuggestedReleaseSlug(initialRelease.title)
+  );
   const lastSavedSnapshotRef = useRef<string>(serializeRelease(initialRelease));
   const autosaveTimerRef = useRef<number | null>(null);
   const latestDraftSnapshotRef = useRef<string>(serializeRelease(initialRelease));
@@ -368,6 +378,15 @@ export function ReleaseDetailEditor({
   const currentStage = snapshotStage;
   const snapshotNextAction = useMemo(() => getSnapshotNextAction(release), [release]);
   const snapshotBlockers = useMemo(() => getSnapshotBlockers(release), [release]);
+  const suggestedSlug = useMemo(
+    () => getSuggestedReleaseSlug(release.title),
+    [release.title]
+  );
+  const publishBlockers = useMemo(
+    () => getReleasePublishBlockers(release),
+    [release]
+  );
+  const isPublishReady = publishBlockers.length === 0;
   const saveStatusLabel =
     saveState === "saving"
       ? "Saving..."
@@ -506,6 +525,36 @@ export function ReleaseDetailEditor({
     setMessage(null);
   }
 
+  function handleTitleChange(value: string) {
+    updateRelease((current) => ({
+      ...current,
+      title: value,
+      ...(isSlugLocked ? {slug: getSuggestedReleaseSlug(value)} : {})
+    }));
+  }
+
+  function applySuggestedSlug() {
+    updateRelease((current) => ({
+      ...current,
+      slug: getSuggestedReleaseSlug(current.title)
+    }));
+  }
+
+  function toggleSlugLock() {
+    setIsSlugLocked((current) => {
+      const nextValue = !current;
+
+      if (nextValue) {
+        updateRelease((releaseDraft) => ({
+          ...releaseDraft,
+          slug: getSuggestedReleaseSlug(releaseDraft.title)
+        }));
+      }
+
+      return nextValue;
+    });
+  }
+
   function handleStageToggle(key: ReleaseChecklistKey, checked: boolean) {
     updateRelease((current) => {
       const nextRelease = {
@@ -619,7 +668,8 @@ export function ReleaseDetailEditor({
 
       updateRelease((current) => ({
         ...current,
-        cover_art: uploadedAsset
+        cover_art: uploadedAsset,
+        cover_art_path: uploadedAsset.url
       }));
       setMessage("Cover art uploaded.");
     } catch (error) {
@@ -661,7 +711,7 @@ export function ReleaseDetailEditor({
 
   async function handleDeleteRelease() {
     const shouldDelete = window.confirm(
-      "Delete this release? Linked Lyric Lab projects and Copy Lab entries will be unlinked, not deleted."
+      "Delete this release? Linked Video Lab projects and Copy Lab entries will be unlinked, not deleted."
     );
 
     if (!shouldDelete) {
@@ -702,7 +752,7 @@ export function ReleaseDetailEditor({
                 <div className={pagePillClass}>#{release.id.slice(0, 8)}</div>
                 <div className={pagePillClass}>{formatReleaseType(release.type)}</div>
               </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-[#f1ebdf]">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#f1ebdf] sm:text-4xl">
                 {release.title}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-[#8e939b]">
@@ -712,9 +762,9 @@ export function ReleaseDetailEditor({
               </p>
             </div>
 
-            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-5">
+            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
               <div className="rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
                 </div>
@@ -725,11 +775,11 @@ export function ReleaseDetailEditor({
                   />
                 </div>
                 <div className="mt-4 space-y-2 text-sm text-[#8d9299]">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Stage</span>
                     <span className="font-semibold text-[#efe8db]">{currentStage}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Collaborator</span>
                     <span className="font-semibold text-[#efe8db]">
                       {release.collaborator
@@ -737,11 +787,11 @@ export function ReleaseDetailEditor({
                         : "No"}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Autosave</span>
                     <span className="font-semibold text-[#efe8db]">Every minute</span>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Save status</span>
                     <span className="font-semibold text-[#efe8db]">
                       {saveStatusLabel}
@@ -753,7 +803,7 @@ export function ReleaseDetailEditor({
           </div>
         </section>
 
-        <section className={`${pagePanelClass} px-6 py-5`}>
+        <section className={`${pagePanelClass} px-4 py-5 sm:px-6`}>
           <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
             <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
               <p className={pageLabelClass}>Release Snapshot</p>
@@ -837,8 +887,8 @@ export function ReleaseDetailEditor({
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
-            <section className={`${pagePanelClass} space-y-5 px-6 py-6`}>
-              <div className="flex items-center justify-between gap-3">
+            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className={pageLabelClass}>Section 1</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Basic Info</h2>
@@ -850,12 +900,7 @@ export function ReleaseDetailEditor({
                   <span className={pageLabelClass}>Title</span>
                   <input
                     className={pageInputClass}
-                    onChange={(event) =>
-                      updateRelease((current) => ({
-                        ...current,
-                        title: event.target.value
-                      }))
-                    }
+                    onChange={(event) => handleTitleChange(event.target.value)}
                     value={release.title}
                   />
                 </label>
@@ -962,9 +1007,243 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Section 2</p>
+                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                  Public Site
+                </h2>
+                <p className="mt-2 text-sm text-[#8a9098]">
+                  These fields drive the public website. Internal stage completion
+                  and public visibility stay separate on purpose.
+                </p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="space-y-3 md:col-span-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className={pageLabelClass}>Slug</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        className={pageSecondaryButtonClass}
+                        onClick={toggleSlugLock}
+                        type="button"
+                      >
+                        {isSlugLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                        {isSlugLocked ? "Locked to Title" : "Custom Slug"}
+                      </button>
+                      <button
+                        className={pageSecondaryButtonClass}
+                        onClick={applySuggestedSlug}
+                        type="button"
+                      >
+                        <RefreshCw size={16} />
+                        Use Suggested
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    className={`${pageInputClass} ${
+                      isSlugLocked ? "cursor-not-allowed opacity-80" : ""
+                    }`}
+                    disabled={isSlugLocked}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        slug: event.target.value
+                      }))
+                    }
+                    placeholder="url-safe-release-slug"
+                    value={release.slug}
+                  />
+
+                  <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm text-[#9aa0a8]">
+                    <p>
+                      Suggested slug:{" "}
+                      <span className="font-mono text-[#efe7d7]">{suggestedSlug}</span>
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-[#7f858d]">
+                      {isSlugLocked
+                        ? "Slug updates automatically when the title changes."
+                        : "Unlock the slug when you need a custom URL, then use Suggested to snap it back."}
+                    </p>
+                  </div>
+                </div>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={pageLabelClass}>Public Description</span>
+                  <textarea
+                    className={`${pageInputClass} min-h-[120px]`}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        public_description: event.target.value
+                      }))
+                    }
+                    placeholder="Short public description for cards, hero sections, and metadata."
+                    value={release.public_description}
+                  />
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={pageLabelClass}>Public Long Description</span>
+                  <textarea
+                    className={`${pageInputClass} min-h-[160px]`}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        public_long_description: event.target.value
+                      }))
+                    }
+                    placeholder="Optional longer release-page description."
+                    value={release.public_long_description}
+                  />
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={pageLabelClass}>Featured Video URL</span>
+                  <input
+                    className={pageInputClass}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        featured_video_url: event.target.value
+                      }))
+                    }
+                    placeholder="Optional YouTube or video URL"
+                    type="url"
+                    value={release.featured_video_url}
+                  />
+                </label>
+
+                <label className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                  <span className="flex items-center gap-3 text-sm font-semibold text-[#ede7dc]">
+                    <input
+                      checked={release.public_lyrics_enabled}
+                      className={pageCheckboxClass}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          public_lyrics_enabled: event.target.checked
+                        }))
+                      }
+                      type="checkbox"
+                    />
+                    Show lyrics publicly
+                  </span>
+                  <span className="mt-2 block text-xs leading-5 text-[#8a9098]">
+                    Turn this on only when you want the full lyrics visible on the
+                    public release page.
+                  </span>
+                </label>
+
+                <label className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                  <span className="flex items-center gap-3 text-sm font-semibold text-[#ede7dc]">
+                    <input
+                      checked={release.is_featured}
+                      className={pageCheckboxClass}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          is_featured: event.target.checked
+                        }))
+                      }
+                      type="checkbox"
+                    />
+                    Feature this release
+                  </span>
+                  <span className="mt-2 block text-xs leading-5 text-[#8a9098]">
+                    Featured releases get priority placement on the public site.
+                  </span>
+                </label>
+
+                <div className="space-y-3 md:col-span-2">
+                  <button
+                    aria-pressed={release.is_published}
+                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                      release.is_published
+                        ? "border-[#7a6130] bg-[#1a1710]"
+                        : isPublishReady
+                          ? "border-[#5f4b1f] bg-[#1a1710]"
+                          : "border-[#4e3a1c] bg-[#17130d] opacity-95"
+                    }`}
+                    disabled={!release.is_published && !isPublishReady}
+                    onClick={() =>
+                      updateRelease((current) => ({
+                        ...current,
+                        is_published: !current.is_published
+                      }))
+                    }
+                    type="button"
+                  >
+                    <span className="flex items-start gap-3">
+                      <span
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                          release.is_published
+                            ? "border-[#d6b45d] bg-[#c9a347] text-[#121418]"
+                            : isPublishReady
+                              ? "border-[#8a6d34] bg-transparent text-[#d6b45d]"
+                              : "border-[#6f5328] bg-transparent text-[#8a6d34]"
+                        }`}
+                      >
+                        {release.is_published ? (
+                          <Check size={13} />
+                        ) : !isPublishReady ? (
+                          <Lock size={11} />
+                        ) : null}
+                      </span>
+
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-[#efe7d7]">
+                          Visible on the public site
+                        </span>
+                        <span className="mt-2 block text-xs leading-5 text-[#bda980]">
+                          This controls public visibility under `/`, `/music`,
+                          `/about`, and `/links`. It does not change the internal
+                          release stage checklist.
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+
+                  <div
+                    className={`rounded-[20px] border px-4 py-4 text-sm ${
+                      isPublishReady
+                        ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
+                        : "border-amber-500/30 bg-amber-500/10 text-[#f2dfb5]"
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {isPublishReady
+                        ? "Publish-ready"
+                        : "Public publish blockers"}
+                    </p>
+                    {isPublishReady ? (
+                      <p className="mt-2 leading-6 text-emerald-100/85">
+                        Core public fields are in place. You can safely mark this
+                        release visible on the public site.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="mt-2 leading-6 text-[#efdfba]">
+                          Resolve these before turning on public visibility:
+                        </p>
+                        <ul className="mt-3 space-y-2 text-xs uppercase tracking-[0.16em] text-[#f3e1b7]">
+                          {publishBlockers.map((blocker) => (
+                            <li key={blocker}>{blocker}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+              <div>
+                <p className={pageLabelClass}>Section 3</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Concept Details
                 </h2>
@@ -983,9 +1262,9 @@ export function ReleaseDetailEditor({
               />
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 3</p>
+                <p className={pageLabelClass}>Section 4</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Cover Art</h2>
               </div>
 
@@ -1048,7 +1327,8 @@ export function ReleaseDetailEditor({
                     onClick={() =>
                       updateRelease((current) => ({
                         ...current,
-                        cover_art: null
+                        cover_art: null,
+                        cover_art_path: ""
                       }))
                     }
                     type="button"
@@ -1060,9 +1340,9 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 4</p>
+                <p className={pageLabelClass}>Section 5</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Lyrics</h2>
               </div>
 
@@ -1079,9 +1359,9 @@ export function ReleaseDetailEditor({
               />
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 5</p>
+                <p className={pageLabelClass}>Section 6</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Stage Completion
                 </h2>
@@ -1106,7 +1386,7 @@ export function ReleaseDetailEditor({
                         }`}
                         key={stage.id}
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                           <span className="font-semibold">{stage.label}</span>
                           <span
                             className={
@@ -1147,7 +1427,7 @@ export function ReleaseDetailEditor({
                       }`}
                       key={stage.id}
                     >
-                      <span className="flex items-center gap-3 font-semibold">
+                      <span className="flex flex-wrap items-center gap-3 font-semibold">
                         <input
                           checked={release[stage.checkboxKey]}
                           className={pageCheckboxClass}
@@ -1168,9 +1448,9 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 6</p>
+                <p className={pageLabelClass}>Section 7</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Streaming Links
                 </h2>
@@ -1240,20 +1520,20 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 7</p>
+                <p className={pageLabelClass}>Section 8</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Generated Clips
                 </h2>
                 <p className="mt-2 text-sm text-[#8a9098]">
-                  Any Lyric Lab project started with this release attached appears
+                  Any Video Lab project started with this release attached appears
                   here automatically.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link className={pagePrimaryButtonClass} href={`/admin/lyric-lab?releaseId=${release.id}`}>
+                <Link className={pagePrimaryButtonClass} href={`/admin/video-lab?releaseId=${release.id}`}>
                   <Film size={16} />
                   Create Clip
                 </Link>
@@ -1288,7 +1568,7 @@ export function ReleaseDetailEditor({
                       <div className="flex flex-wrap gap-2">
                         <Link
                           className={pageSecondaryButtonClass}
-                          href={`/admin/lyric-lab?projectId=${linkedProject.id}`}
+                          href={`/admin/video-lab?projectId=${linkedProject.id}`}
                         >
                           <FolderOpen size={16} />
                           Open
@@ -1308,15 +1588,15 @@ export function ReleaseDetailEditor({
 
                 {linkedProjects.length === 0 ? (
                   <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
-                    No Lyric Lab projects are linked to this release yet.
+                    No Video Lab projects are linked to this release yet.
                   </div>
                 ) : null}
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 8</p>
+                <p className={pageLabelClass}>Section 9</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Copy Pairs
                 </h2>
@@ -1391,30 +1671,30 @@ export function ReleaseDetailEditor({
           </div>
 
           <aside className="space-y-6">
-            <section className={`${pagePanelClass} space-y-5 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Record Info</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Metadata</h2>
               </div>
 
               <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-[#aeb3bb]">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className={pageLabelClass}>ID</span>
                   <span className="font-mono text-xs text-[#f0eadf]">{release.id}</span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className={pageLabelClass}>Created On</span>
                   <span className="text-right text-[#ebe4d8]">
                     {formatTimestamp(release.created_on)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className={pageLabelClass}>UPC</span>
                   <span className="text-right text-[#ebe4d8]">
                     {release.upc || "Not set"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className={pageLabelClass}>ISRC</span>
                   <span className="text-right text-[#ebe4d8]">
                     {release.isrc || "Not set"}
@@ -1437,7 +1717,7 @@ export function ReleaseDetailEditor({
                             className={`${buttonClassName} items-center justify-between gap-3`}
                             key={platform.label}
                           >
-                            <span className="flex items-center gap-3">
+                            <span className="flex flex-wrap items-center gap-3">
                               <Icon className="h-5 w-5 shrink-0" />
                               {platform.label}
                             </span>
@@ -1463,7 +1743,7 @@ export function ReleaseDetailEditor({
                     })}
                   </div>
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className={pageLabelClass}>Updated On</span>
                   <span className="text-right text-[#ebe4d8]">
                     {formatTimestamp(release.updated_on)}
@@ -1472,9 +1752,9 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-5 px-6 py-6`}>
+            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 9</p>
+                <p className={pageLabelClass}>Section 10</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Tasks</h2>
               </div>
 

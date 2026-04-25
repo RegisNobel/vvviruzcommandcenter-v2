@@ -27,7 +27,7 @@ export function WorkflowStepper({
   const currentIndex = steps.findIndex((item) => item.step === currentStep);
 
   return (
-    <section className="panel p-5">
+    <section className="panel p-4 sm:p-5">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         {steps.map((item, index) => {
           const isCurrent = item.step === currentStep;
@@ -36,7 +36,7 @@ export function WorkflowStepper({
 
           return (
             <button
-              className={`flex flex-1 items-center gap-3 rounded-[22px] border px-4 py-3 text-left transition ${
+              className={`flex min-w-0 flex-1 items-center gap-3 rounded-[22px] border px-4 py-3 text-left transition ${
                 isCurrent
                   ? "border-coral bg-coral/10 text-ink"
                   : isUnlocked

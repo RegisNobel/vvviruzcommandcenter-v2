@@ -38,11 +38,11 @@ export default async function AdminCopyLabPage() {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="panel overflow-hidden px-6 py-7 sm:px-8">
+        <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Copy planning</div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 Copy Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -66,7 +66,7 @@ export default async function AdminCopyLabPage() {
 
             return (
               <Link
-                className="panel block cursor-pointer px-6 py-6 transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle"
+                className="panel block cursor-pointer px-4 py-5 sm:px-6 sm:py-6 transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle"
                 href={`/admin/copy-lab/${copy.id}`}
                 key={copy.id}
               >
@@ -107,7 +107,7 @@ export default async function AdminCopyLabPage() {
           })}
 
           {copies.length === 0 ? (
-            <div className="panel px-6 py-8">
+            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No copy pairs yet</p>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Create your first hook and caption pair to start building a release

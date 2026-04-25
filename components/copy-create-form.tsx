@@ -75,7 +75,7 @@ export function CopyCreateForm({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Copy Lab</div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 New Copy Pair
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">

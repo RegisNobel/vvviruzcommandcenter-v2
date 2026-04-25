@@ -7,7 +7,7 @@ import type {
   ReleaseSummary,
   ReleaseTask
 } from "@/lib/types";
-import {createId} from "@/lib/utils";
+import {createId, slugify} from "@/lib/utils";
 
 export const releaseStatusOptions = [
   "Concept Complete",
@@ -33,6 +33,19 @@ type LegacyStreamingLinksShape = Partial<ReleaseStreamingLinks> & {
   appleMusic?: string;
 };
 
+const releasePublishRequirementLabels = {
+  title: "Missing public title",
+  slug: "Missing public slug",
+  release_date: "Missing public release date",
+  cover_art: "Missing public cover art",
+  public_description: "Missing public description",
+  streaming_link: "Add at least one streaming link"
+} as const;
+
+function derivePublicCoverPath(url: string | null | undefined) {
+  return url?.trim() || "";
+}
+
 const releaseStageEntries: Array<{
   key: ReleaseChecklistKey;
   label: ReleaseStatus;
@@ -45,6 +58,10 @@ const releaseStageEntries: Array<{
   {key: "published", label: "Published"}
 ];
 
+export function hasReleaseCoverArt(release: Pick<ReleaseRecord, "cover_art" | "cover_art_path">) {
+  return Boolean(release.cover_art || release.cover_art_path.trim());
+}
+
 function getReleaseFieldCompletionChecks(release: ReleaseRecord) {
   return [
     Boolean(release.title.trim()),
@@ -53,7 +70,7 @@ function getReleaseFieldCompletionChecks(release: ReleaseRecord) {
     Boolean(release.lyrics.trim()),
     Boolean(release.upc.trim()),
     Boolean(release.isrc.trim()),
-    Boolean(release.cover_art),
+    hasReleaseCoverArt(release),
     Boolean(release.streaming_links.spotify.trim()),
     Boolean(release.streaming_links.apple_music.trim()),
     Boolean(release.streaming_links.youtube.trim()),
@@ -88,6 +105,14 @@ type LegacyReleaseShape = Partial<ReleaseRecord> & {
   apple_music?: string;
   appleMusic?: string;
   youtube?: string;
+  slug?: string;
+  cover_art_path?: string;
+  public_description?: string;
+  public_long_description?: string;
+  featured_video_url?: string;
+  public_lyrics_enabled?: boolean;
+  is_published?: boolean;
+  is_featured?: boolean;
 };
 
 function normalizeReleaseType(value: string | undefined): ReleaseRecord["type"] {
@@ -116,6 +141,49 @@ function normalizeReleaseStatus(value: string | undefined): ReleaseStatus {
     : "Concept Complete";
 }
 
+export function getSuggestedReleaseSlug(title: string) {
+  return slugify(title.trim()) || "untitled-release";
+}
+
+export function getReleasePublishBlockers(release: ReleaseRecord) {
+  const blockers: string[] = [];
+
+  if (!release.title.trim()) {
+    blockers.push(releasePublishRequirementLabels.title);
+  }
+
+  if (!release.slug.trim()) {
+    blockers.push(releasePublishRequirementLabels.slug);
+  }
+
+  if (!release.release_date.trim()) {
+    blockers.push(releasePublishRequirementLabels.release_date);
+  }
+
+  if (!release.cover_art && !release.cover_art_path.trim()) {
+    blockers.push(releasePublishRequirementLabels.cover_art);
+  }
+
+  if (!release.public_description.trim()) {
+    blockers.push(releasePublishRequirementLabels.public_description);
+  }
+
+  const hasStreamingLink =
+    Boolean(release.streaming_links.spotify.trim()) ||
+    Boolean(release.streaming_links.apple_music.trim()) ||
+    Boolean(release.streaming_links.youtube.trim());
+
+  if (!hasStreamingLink) {
+    blockers.push(releasePublishRequirementLabels.streaming_link);
+  }
+
+  return blockers;
+}
+
+export function isReleasePublishReady(release: ReleaseRecord) {
+  return getReleasePublishBlockers(release).length === 0;
+}
+
 export function createReleaseTask(text = "New task"): ReleaseTask {
   return {
     id: createId(),
@@ -129,6 +197,7 @@ export function createEmptyRelease(
     Pick<
       ReleaseRecord,
       | "title"
+      | "slug"
       | "type"
       | "release_date"
       | "collaborator"
@@ -136,21 +205,30 @@ export function createEmptyRelease(
       | "upc"
       | "isrc"
       | "streaming_links"
+      | "public_description"
+      | "public_long_description"
+      | "featured_video_url"
+      | "public_lyrics_enabled"
+      | "is_published"
+      | "is_featured"
     >
   >
 ): ReleaseRecord {
   const now = new Date().toISOString();
   const collaborator = Boolean(values?.collaborator);
+  const title = values?.title?.trim() || "Untitled Release";
 
   return {
     id: createId(),
-    title: values?.title?.trim() || "Untitled Release",
+    title,
+    slug: values?.slug?.trim() || getSuggestedReleaseSlug(title),
     pinned: false,
     collaborator,
     collaborator_name: collaborator ? values?.collaborator_name?.trim() || "" : "",
     upc: values?.upc?.trim() || "",
     isrc: values?.isrc?.trim() || "",
     cover_art: null,
+    cover_art_path: "",
     streaming_links: {
       spotify: values?.streaming_links?.spotify?.trim() || "",
       apple_music: values?.streaming_links?.apple_music?.trim() || "",
@@ -160,6 +238,12 @@ export function createEmptyRelease(
     type: normalizeReleaseType(values?.type),
     release_date: values?.release_date ?? "",
     concept_details: "",
+    public_description: values?.public_description?.trim() || "",
+    public_long_description: values?.public_long_description?.trim() || "",
+    featured_video_url: values?.featured_video_url?.trim() || "",
+    public_lyrics_enabled: Boolean(values?.public_lyrics_enabled),
+    is_published: Boolean(values?.is_published),
+    is_featured: Boolean(values?.is_featured),
     concept_complete: false,
     beat_made: false,
     lyrics_finished: false,
@@ -216,12 +300,17 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
     ...fallback,
     ...input,
     title: input.title?.trim() || fallback.title,
+    slug:
+      input.slug?.trim() ||
+      getSuggestedReleaseSlug(input.title?.trim() || fallback.title),
     pinned: Boolean(input.pinned),
     collaborator,
     collaborator_name: collaborator ? input.collaborator_name?.trim() || "" : "",
     upc: input.upc?.trim() || input.UPC?.trim() || "",
     isrc: input.isrc?.trim() || input.ISRC?.trim() || "",
     cover_art: coverArt,
+    cover_art_path:
+      input.cover_art_path?.trim() || derivePublicCoverPath(coverArt?.url) || "",
     streaming_links: {
       spotify:
         rawStreamingLinks?.spotify?.trim() || input.spotify?.trim() || "",
@@ -238,6 +327,16 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
     type: normalizeReleaseType(input.type),
     release_date: input.release_date ?? "",
     concept_details: input.concept_details ?? input.concept ?? "",
+    public_description:
+      input.public_description?.trim() ||
+      input.concept_details?.trim() ||
+      input.concept?.trim() ||
+      "",
+    public_long_description: input.public_long_description?.trim() || "",
+    featured_video_url: input.featured_video_url?.trim() || "",
+    public_lyrics_enabled: Boolean(input.public_lyrics_enabled),
+    is_published: Boolean(input.is_published),
+    is_featured: Boolean(input.is_featured),
     concept_complete: Boolean(input.concept_complete ?? derivedLegacyStages.concept_complete),
     beat_made: Boolean(input.beat_made ?? input.beat_ready ?? derivedLegacyStages.beat_made),
     lyrics_finished: Boolean(
@@ -301,7 +400,7 @@ export function getReleaseStageLabel(release: ReleaseRecord): ReleaseStageLabel 
     return "Concept";
   }
 
-  if (!release.cover_art) {
+  if (!hasReleaseCoverArt(release)) {
     return "Cover Art";
   }
 

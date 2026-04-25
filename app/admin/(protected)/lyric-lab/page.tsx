@@ -1,5 +1,4 @@
-import {readRelease} from "@/lib/server/releases";
-import {LyricLabStudio} from "@/components/lyric-lab-studio";
+import {redirect} from "next/navigation";
 
 export default async function AdminLyricLabPage({
   searchParams
@@ -7,22 +6,19 @@ export default async function AdminLyricLabPage({
   searchParams: Promise<{projectId?: string; releaseId?: string}>;
 }) {
   const {projectId, releaseId} = await searchParams;
-  let initialReleaseId: string | null = null;
+  const nextSearchParams = new URLSearchParams();
 
-  if (!projectId && releaseId) {
-    try {
-      await readRelease(releaseId);
-      initialReleaseId = releaseId;
-    } catch {
-      initialReleaseId = null;
-    }
+  if (projectId) {
+    nextSearchParams.set("projectId", projectId);
   }
 
-  return (
-    <LyricLabStudio
-      initialProjectId={projectId ?? null}
-      initialReleaseId={initialReleaseId}
-    />
+  if (releaseId) {
+    nextSearchParams.set("releaseId", releaseId);
+  }
+
+  redirect(
+    `/admin/video-lab${
+      nextSearchParams.toString() ? `?${nextSearchParams.toString()}` : ""
+    }`
   );
 }
-
