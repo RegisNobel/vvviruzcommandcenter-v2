@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import {NextResponse} from "next/server";
@@ -10,7 +11,8 @@ import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {MAX_AUDIO_MS} from "@/lib/constants";
 import {getAudioDurationMs} from "@/lib/ffmpeg/probe";
 import {trimAudioClip} from "@/lib/ffmpeg/trim";
-import {ensureStorageDirs, resolveAssetPath, uploadsDir} from "@/lib/server/storage";
+import {resolveAssetToLocalPath, storeAsset} from "@/lib/server/asset-storage";
+import {ensureStorageDirs, uploadsDir} from "@/lib/server/storage";
 
 const trimSchema = z
   .object({
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   const {audioId, startMs, endMs} = parsed.data;
-  const inputPath = await resolveAssetPath("audio", audioId);
+  const inputPath = await resolveAssetToLocalPath("audio", audioId);
   const outputFileName = `${path.parse(audioId).name}-trim-${crypto.randomUUID()}.m4a`;
   const outputPath = path.join(uploadsDir, outputFileName);
 
@@ -57,12 +59,18 @@ export async function POST(request: Request) {
   });
 
   const durationMs = await getAudioDurationMs(outputPath);
+  const storedAsset = await storeAsset({
+    kind: "audio",
+    fileName: outputFileName,
+    data: await fs.readFile(outputPath),
+    contentType: "audio/mp4"
+  });
 
   return NextResponse.json({
     audio: {
-      id: outputFileName,
+      id: storedAsset.id,
       fileName: outputFileName,
-      url: `/api/assets/audio/${outputFileName}`,
+      url: storedAsset.url,
       durationMs,
       originalDurationMs: durationMs,
       trimmed: true

@@ -5,7 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
-import {resolveAssetPath} from "@/lib/server/storage";
+import {resolveAssetToLocalPath} from "@/lib/server/asset-storage";
 import {transcribeAudioToLyrics} from "@/lib/transcription";
 
 const transcriptionSchema = z.object({
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const audioPath = await resolveAssetPath("audio", parsed.data.audioId);
+    const audioPath = await resolveAssetToLocalPath("audio", parsed.data.audioId);
     const result = await transcribeAudioToLyrics(audioPath, parsed.data.language);
 
     return NextResponse.json(result);

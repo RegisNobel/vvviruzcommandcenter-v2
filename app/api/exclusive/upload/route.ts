@@ -1,18 +1,14 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {AUDIO_EXTENSIONS, IMAGE_EXTENSIONS} from "@/lib/constants";
-import {
-  ensureStorageDirs,
-  exclusiveArtDir,
-  exclusiveTracksDir
-} from "@/lib/server/storage";
+import {storeAsset} from "@/lib/server/asset-storage";
+import {ensureStorageDirs} from "@/lib/server/storage";
 import type {ExclusiveAssetUploadResponse} from "@/lib/types";
 
 const mimeToExtension: Record<string, string> = {
@@ -67,25 +63,21 @@ export async function POST(request: Request) {
   }
 
   const storedFileName = `${crypto.randomUUID()}${detectedExtension}`;
-  const filePath =
-    assetType === "track"
-      ? path.join(exclusiveTracksDir, storedFileName)
-      : path.join(exclusiveArtDir, storedFileName);
-
-  await fs.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+  const storedAsset = await storeAsset({
+    kind: assetType === "track" ? "exclusive-track" : "exclusive-art",
+    fileName: storedFileName,
+    data: Buffer.from(await file.arrayBuffer()),
+    contentType: file.type || "application/octet-stream",
+    access: assetType === "track" ? "private" : "public"
+  });
 
   const payload: ExclusiveAssetUploadResponse = {
     assetType,
     fileName: file.name,
-    storedPath:
-      assetType === "track"
-        ? storedFileName
-        : `/api/assets/exclusive-art/${storedFileName}`,
-    publicUrl:
-      assetType === "track" ? null : `/api/assets/exclusive-art/${storedFileName}`,
+    storedPath: assetType === "track" ? storedAsset.storedPath : storedAsset.url,
+    publicUrl: storedAsset.publicUrl,
     mimeType: file.type || "application/octet-stream"
   };
 
   return NextResponse.json(payload);
 }
-

@@ -8,6 +8,8 @@ import {getLinksPageRelease, getSiteSettings} from "@/lib/repositories/public-si
 import {normalizeExternalUrl} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 
+import {LinkPageAnalytics} from "@/components/link-page-analytics";
+
 const platformAccentStyles = {
   spotify:
     "border-emerald-500/35 bg-emerald-500/10 text-emerald-100 hover:border-emerald-400/55 hover:bg-emerald-500/16 hover:shadow-[0_0_30px_rgba(16,185,129,0.18)]",
@@ -140,6 +142,7 @@ export default async function PublicLinksPage() {
       )}
 
       <div className="relative mx-auto flex max-w-[560px] justify-center">
+        <LinkPageAnalytics releaseId={selectedRelease.id} />
         <section className="w-full rounded-[38px] border border-white/10 bg-[#0b0f14]/70 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:p-6">
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(8,11,15,0.4))] px-5 py-7 text-center sm:px-6 sm:py-8">
             <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
@@ -183,6 +186,10 @@ export default async function PublicLinksPage() {
                   return (
                     <Link
                       className={`flex w-full items-center justify-between gap-4 rounded-[22px] border px-5 py-4 text-left transition duration-200 hover:scale-[1.01] ${platform.style}`}
+                      data-analytics-event="links_link_click"
+                      data-analytics-link-label={platform.label}
+                      data-analytics-link-type={platform.id}
+                      data-analytics-target-url={platform.href}
                       href={platform.href}
                       key={platform.id}
                       rel="noreferrer"
@@ -202,6 +209,10 @@ export default async function PublicLinksPage() {
                   {exclusiveOfferState.isAvailable ? (
                     <Link
                       className="flex w-full items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-sm font-semibold text-[#f2ead8] transition duration-200 hover:scale-[1.01] hover:border-[#c9a347]/35 hover:bg-[#c9a347]/10 hover:text-[#f7f1e6]"
+                      data-analytics-event="links_link_click"
+                      data-analytics-link-label={content.exclusive_cta_label}
+                      data-analytics-link-type="exclusive"
+                      data-analytics-target-url="/exclusive"
                       href="/exclusive"
                     >
                       {content.exclusive_cta_label}
@@ -220,4 +231,3 @@ export default async function PublicLinksPage() {
     </main>
   );
 }
-

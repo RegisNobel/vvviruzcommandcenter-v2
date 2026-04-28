@@ -162,7 +162,7 @@ Placeholder route for future reporting and performance views.
 
 ## Persistence Model
 
-Structured app data now lives in a local SQLite database managed through Prisma.
+Structured app data lives behind Prisma. Local development and Docker can use SQLite, while Vercel deployment uses the Postgres schema at `prisma/schema.postgres.prisma`.
 
 Database-backed data:
 
@@ -180,14 +180,14 @@ Database-backed data:
 - admin user metadata
 - admin sessions
 
-Filesystem-backed data:
+Asset-backed data:
 
 - uploaded audio
 - uploaded background photos and videos
 - cover art files
 - exported media
 - Whisper model files
-- other local binary assets under `storage/`
+- other local binary assets under `storage/` in local mode`r`n- Vercel Blob objects when `ASSET_STORAGE_DRIVER=vercel-blob`
 
 Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`, and `storage/auth` are now treated as import/back-up source material rather than the primary source of truth.
 
@@ -301,13 +301,24 @@ docker compose exec app npm run setup:whisper
 
 ## Vercel Deployment Prep
 
-The source is prepared for Vercel's Next.js build flow with a minimal `vercel.json` and `.vercelignore` so local runtime artifacts, secrets, media uploads, exports, Whisper files, and the SQLite database are not uploaded accidentally.
+The source is prepared for Vercel's Next.js build flow with `vercel.json`, `.vercelignore`, a Postgres Prisma schema, and a durable object-storage adapter.
+
+Vercel deployment path:
+
+1. Provision Postgres through Vercel Marketplace/Neon or another Postgres host.
+2. Set `DATABASE_URL` to the Postgres connection string.
+3. Provision Vercel Blob and set `ASSET_STORAGE_DRIVER=vercel-blob` plus `BLOB_READ_WRITE_TOKEN`.
+4. Run `npm run db:push:postgres` once from a trusted machine or CI step to create/update the Postgres schema.
+5. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel` and generates Prisma from `prisma/schema.postgres.prisma`.
 
 Required Vercel environment variables match `.env.example`:
 
 - `DATABASE_URL`
 - `NEXT_PUBLIC_SITE_URL`
 - `PUBLIC_SITE_URL`
+- `ASSET_STORAGE_DRIVER`
+- `BLOB_READ_WRITE_TOKEN`
+- `BLOB_PREFIX`
 - `AUTH_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD_HASH`
@@ -320,7 +331,7 @@ Required Vercel environment variables match `.env.example`:
 - `ADMIN_TEST_EMAIL`
 - `EMAIL_POSTAL_ADDRESS`
 
-Important deployment note: the current v1 architecture is local-first. SQLite under `storage/` and uploaded media on disk are durable locally and in Docker with bind mounts, but they are not durable on Vercel serverless deployments. For a real public Vercel production deployment, move structured data to a hosted Postgres-compatible Prisma datasource and move user-uploaded media/cover art/exclusive tracks to durable object storage before relying on it as the live source of truth.
+Local/Docker still default to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
 
 ## Useful Commands
 
@@ -329,6 +340,8 @@ npm install
 npm run db:generate
 npm run db:migrate:dev -- --name your_change_name
 npm run db:migrate:deploy
+npm run db:generate:postgres
+npm run db:push:postgres
 npm run db:import
 npm run dev
 npm run build
@@ -349,6 +362,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-28 16:07 -04:00
+
+- Added Postgres deployment support with `prisma/schema.postgres.prisma`, Postgres generate/push scripts, and a Vercel build command that generates Prisma from the Postgres schema.
+- Added durable object-storage support through `ASSET_STORAGE_DRIVER=vercel-blob` and `@vercel/blob`, while preserving local disk storage for local/Docker runs.
+- Added first-party `/links` analytics tracking for page views, outbound link conversions, CTR, unique visitors, platform breakdowns, referrers, and UTM/source data.
+- Built the protected `/admin/analytics` dashboard and added an admin Site Settings control-map panel confirming public copy, images, links, and tracking are editable without code.
 ### 2026-04-24 22:25 -04:00
 
 - Added collaborator display to public release surfaces so collabs can appear on homepage featured cards, music cards, release detail pages, links landing pages, and public music search.

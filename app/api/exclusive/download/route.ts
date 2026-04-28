@@ -1,16 +1,13 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import fs from "node:fs";
-import fsPromises from "node:fs/promises";
 import path from "node:path";
-import {Readable} from "node:stream";
 
 import {NextResponse} from "next/server";
 
 import {readSubscriberByDownloadToken} from "@/lib/repositories/audience";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
-import {resolveAssetPath} from "@/lib/server/storage";
+import {readAssetBuffer} from "@/lib/server/asset-storage";
 import {slugify} from "@/lib/utils";
 
 function getContentType(fileName: string) {
@@ -46,19 +43,22 @@ export async function GET(request: Request) {
   }
 
   try {
-    const storedFileName = path.basename(offer.exclusive_track_file_path.trim());
-    const filePath = await resolveAssetPath("exclusive-track", storedFileName);
-    const stats = await fsPromises.stat(filePath);
+    const storedFileReference = offer.exclusive_track_file_path.trim();
+    const storedFileName = path.basename(storedFileReference);
+    const buffer = await readAssetBuffer(
+      "exclusive-track",
+      storedFileReference,
+      "private"
+    );
     const safeTitle =
       slugify(offer.exclusive_track_title) || "vvviruz-exclusive-track";
     const downloadFileName = `${safeTitle}${path.extname(storedFileName)}`;
-    const stream = fs.createReadStream(filePath);
 
-    return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type": getContentType(storedFileName),
         "Content-Disposition": `attachment; filename="${downloadFileName}"`,
-        "Content-Length": stats.size.toString(),
+        "Content-Length": buffer.byteLength.toString(),
         "Cache-Control": "private, no-store"
       }
     });
@@ -66,4 +66,3 @@ export async function GET(request: Request) {
     return NextResponse.json({message: "Download unavailable."}, {status: 404});
   }
 }
-

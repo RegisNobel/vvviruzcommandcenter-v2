@@ -9,6 +9,7 @@ import {NextResponse} from "next/server";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {AUDIO_EXTENSIONS, MAX_AUDIO_MS} from "@/lib/constants";
 import {getAudioDurationMs} from "@/lib/ffmpeg/probe";
+import {storeAsset} from "@/lib/server/asset-storage";
 import {ensureStorageDirs, uploadsDir} from "@/lib/server/storage";
 import type {UploadResponse} from "@/lib/types";
 
@@ -51,15 +52,22 @@ export async function POST(request: Request) {
 
   const storedFileName = `${crypto.randomUUID()}${detectedExtension}`;
   const filePath = path.join(uploadsDir, storedFileName);
+  const data = Buffer.from(await file.arrayBuffer());
 
-  await fs.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+  await fs.writeFile(filePath, data);
 
   const durationMs = await getAudioDurationMs(filePath);
+  const storedAsset = await storeAsset({
+    kind: "audio",
+    fileName: storedFileName,
+    data,
+    contentType: file.type || "audio/*"
+  });
   const payload: UploadResponse = {
     audio: {
-      id: storedFileName,
+      id: storedAsset.id,
       fileName: file.name,
-      url: `/api/assets/audio/${storedFileName}`,
+      url: storedAsset.url,
       durationMs,
       originalDurationMs: durationMs,
       trimmed: false

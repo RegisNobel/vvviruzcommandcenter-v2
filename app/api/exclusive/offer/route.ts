@@ -11,7 +11,7 @@ import {
   readExclusiveOfferSettings,
   writeExclusiveOfferSettings
 } from "@/lib/repositories/exclusive-offer";
-import {resolveAssetPath} from "@/lib/server/storage";
+import {readAssetBuffer} from "@/lib/server/asset-storage";
 
 const exclusiveOfferSchema = z.object({
   badge_text: z.string().default(""),
@@ -50,11 +50,11 @@ async function validateExclusiveAssets(values: z.infer<typeof exclusiveOfferSche
   }
 
   if (trackPath) {
-    await resolveAssetPath("exclusive-track", path.basename(trackPath));
+    await readAssetBuffer("exclusive-track", trackPath, "private");
   }
 
   if (artPath) {
-    await resolveAssetPath("exclusive-art", path.basename(artPath));
+    await readAssetBuffer("exclusive-art", artPath, "public");
   }
 }
 
@@ -102,4 +102,3 @@ export async function PUT(request: Request) {
     );
   }
 }
-

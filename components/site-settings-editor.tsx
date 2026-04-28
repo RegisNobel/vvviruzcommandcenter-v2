@@ -1459,6 +1459,28 @@ export function SiteSettingsEditor({
         </section>
       </div>
 
+      <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="field-label">Public site control map</p>
+            <h3 className="mt-3 text-2xl font-semibold text-ink">
+              Copy, images, links, and tracking are admin-editable
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              Use this page to update the public header, nav labels, homepage hero,
+              featured releases, carousel images, About copy/image, social links,
+              link-page campaign release, CTA labels, SEO text, and Meta Pixel setup
+              without changing code.
+            </p>
+          </div>
+          <div className="grid gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b45e] sm:grid-cols-2">
+            <span className="pill">Copy</span>
+            <span className="pill">Images</span>
+            <span className="pill">Links</span>
+            <span className="pill">Tracking</span>
+          </div>
+        </div>
+      </section>
       {message ? (
         <div
           className={`rounded-[22px] px-4 py-3 text-sm ${
@@ -1473,4 +1495,3 @@ export function SiteSettingsEditor({
     </section>
   );
 }
-

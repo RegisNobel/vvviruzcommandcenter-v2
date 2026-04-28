@@ -1,8 +1,10 @@
 import "server-only";
 
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import {FRAME_RATE} from "@/lib/constants";
+import {storeAsset} from "@/lib/server/asset-storage";
 import {exportsDir} from "@/lib/server/storage";
 import type {ExportStreamEvent, LyricProject, ResolutionPreset} from "@/lib/types";
 import {getProjectDurationFrames} from "@/lib/video/project";
@@ -101,8 +103,15 @@ export async function renderProjectVideo({
     }
   });
 
+  const storedAsset = await storeAsset({
+    kind: "export",
+    fileName: outputFileName,
+    data: await fs.readFile(outputLocation),
+    contentType: "video/mp4"
+  });
+
   return {
     fileName: outputFileName,
-    downloadUrl: `/api/assets/export/${outputFileName}`
+    downloadUrl: storedAsset.url
   };
 }

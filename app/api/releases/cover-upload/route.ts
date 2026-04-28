@@ -1,14 +1,14 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {IMAGE_EXTENSIONS} from "@/lib/constants";
-import {ensureStorageDirs, releaseCoversDir} from "@/lib/server/storage";
+import {storeAsset} from "@/lib/server/asset-storage";
+import {ensureStorageDirs} from "@/lib/server/storage";
 import type {ReleaseCoverUploadResponse} from "@/lib/types";
 
 const mimeToExtension: Record<string, string> = {
@@ -45,15 +45,18 @@ export async function POST(request: Request) {
   }
 
   const storedFileName = `${crypto.randomUUID()}${detectedExtension}`;
-  const filePath = path.join(releaseCoversDir, storedFileName);
-
-  await fs.writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+  const storedAsset = await storeAsset({
+    kind: "cover",
+    fileName: storedFileName,
+    data: Buffer.from(await file.arrayBuffer()),
+    contentType: file.type || "image/*"
+  });
 
   const payload: ReleaseCoverUploadResponse = {
     asset: {
-      id: storedFileName,
+      id: storedAsset.id,
       fileName: file.name,
-      url: `/api/assets/cover/${storedFileName}`,
+      url: storedAsset.url,
       mimeType: file.type || "image/*"
     }
   };
