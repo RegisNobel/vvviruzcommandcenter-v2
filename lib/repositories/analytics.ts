@@ -23,6 +23,15 @@ export type PublicAnalyticsEventInput = {
   country?: string;
 };
 
+export type AnalyticsBreakdownKind = "country" | "source" | "link" | "utm";
+
+export type AnalyticsBreakdownItem = {
+  label: string;
+  views: number;
+  conversions: number;
+  ctr: number;
+};
+
 export type LinkPageAnalyticsSummary = Awaited<ReturnType<typeof readLinkPageAnalytics>>;
 
 function startOfUtcDay(date: Date) {
@@ -81,11 +90,113 @@ function pushCounter(map: Map<string, number>, key: string) {
   map.set(normalizedKey, (map.get(normalizedKey) ?? 0) + 1);
 }
 
+function pushBreakdownMetric(
+  map: Map<string, {views: number; conversions: number}>,
+  key: string,
+  eventType: string
+) {
+  const normalizedKey = key.trim() || "Direct / Unknown";
+  const current = map.get(normalizedKey) ?? {views: 0, conversions: 0};
+
+  if (eventType === "links_page_view") {
+    current.views += 1;
+  }
+
+  if (eventType === "links_link_click") {
+    current.conversions += 1;
+  }
+
+  map.set(normalizedKey, current);
+}
+
 function toTopList(map: Map<string, number>, limit = 8) {
   return Array.from(map.entries())
     .map(([label, count]) => ({label, count}))
     .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
     .slice(0, limit);
+}
+
+function toBreakdownList(
+  map: Map<string, {views: number; conversions: number}>,
+  limit = 8
+): AnalyticsBreakdownItem[] {
+  return Array.from(map.entries())
+    .map(([label, counts]) => ({
+      label,
+      views: counts.views,
+      conversions: counts.conversions,
+      ctr: getCtr(counts.views, counts.conversions)
+    }))
+    .sort(
+      (left, right) =>
+        right.conversions - left.conversions ||
+        right.views - left.views ||
+        left.label.localeCompare(right.label)
+    )
+    .slice(0, limit);
+}
+
+function toHost(value: string) {
+  try {
+    const url = new URL(value);
+
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function getSourceLabel(event: {
+  referrer: string;
+  utmSource: string;
+  utmMedium: string;
+}) {
+  if (event.utmSource.trim()) {
+    return event.utmMedium.trim()
+      ? `${event.utmSource.trim()} / ${event.utmMedium.trim()}`
+      : event.utmSource.trim();
+  }
+
+  return toHost(event.referrer) || "Direct / Unknown";
+}
+
+function getUtmLabel(event: {
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  utmContent: string;
+  utmTerm: string;
+}) {
+  const parts = [
+    event.utmSource && `source=${event.utmSource}`,
+    event.utmMedium && `medium=${event.utmMedium}`,
+    event.utmCampaign && `campaign=${event.utmCampaign}`,
+    event.utmContent && `content=${event.utmContent}`,
+    event.utmTerm && `term=${event.utmTerm}`
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" | ") : "No UTM";
+}
+
+function getCountryLabel(country: string) {
+  return country.trim().toUpperCase() || "Unknown country";
+}
+
+function getLinkLabel(event: {
+  linkLabel: string;
+  linkType: string;
+  targetUrl: string;
+}) {
+  return event.linkLabel.trim() || event.linkType.trim() || toHost(event.targetUrl) || "Unknown link";
+}
+
+function createBreakdownMaps() {
+  return {
+    country: new Map<string, {views: number; conversions: number}>(),
+    source: new Map<string, {views: number; conversions: number}>(),
+    link: new Map<string, {views: number; conversions: number}>(),
+    utm: new Map<string, {views: number; conversions: number}>()
+  };
 }
 
 export async function readLinkPageAnalytics(days = 30) {
@@ -107,11 +218,23 @@ export async function readLinkPageAnalytics(days = 30) {
   });
   const views = events.filter((event) => event.eventType === "links_page_view");
   const conversions = events.filter((event) => event.eventType === "links_link_click");
-  const dayBuckets = new Map<string, {date: string; views: number; conversions: number}>();
+  const dayBuckets = new Map<
+    string,
+    {
+      date: string;
+      views: number;
+      conversions: number;
+      breakdownMaps: ReturnType<typeof createBreakdownMaps>;
+    }
+  >();
   const platformCounts = new Map<string, number>();
   const referrerCounts = new Map<string, number>();
   const sourceCounts = new Map<string, number>();
   const targetCounts = new Map<string, number>();
+  const countryBreakdowns = new Map<string, {views: number; conversions: number}>();
+  const sourceBreakdowns = new Map<string, {views: number; conversions: number}>();
+  const linkBreakdowns = new Map<string, {views: number; conversions: number}>();
+  const utmBreakdowns = new Map<string, {views: number; conversions: number}>();
 
   for (let offset = 0; offset < safeDays; offset += 1) {
     const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset));
@@ -120,13 +243,18 @@ export async function readLinkPageAnalytics(days = 30) {
     dayBuckets.set(key, {
       date: key,
       views: 0,
-      conversions: 0
+      conversions: 0,
+      breakdownMaps: createBreakdownMaps()
     });
   }
 
   for (const event of events) {
     const key = toDateKey(event.createdAt);
     const bucket = dayBuckets.get(key);
+    const sourceLabel = getSourceLabel(event);
+    const countryLabel = getCountryLabel(event.country);
+    const utmLabel = getUtmLabel(event);
+    const linkLabel = getLinkLabel(event);
 
     if (bucket) {
       if (event.eventType === "links_page_view") {
@@ -136,23 +264,47 @@ export async function readLinkPageAnalytics(days = 30) {
       if (event.eventType === "links_link_click") {
         bucket.conversions += 1;
       }
+
+      pushBreakdownMetric(bucket.breakdownMaps.country, countryLabel, event.eventType);
+      pushBreakdownMetric(bucket.breakdownMaps.source, sourceLabel, event.eventType);
+      pushBreakdownMetric(bucket.breakdownMaps.utm, utmLabel, event.eventType);
+
+      if (event.eventType === "links_link_click") {
+        pushBreakdownMetric(bucket.breakdownMaps.link, linkLabel, event.eventType);
+      }
     }
 
     if (event.eventType === "links_link_click") {
       pushCounter(platformCounts, event.linkLabel || event.linkType);
       pushCounter(targetCounts, event.targetUrl || event.linkLabel || event.linkType);
+      pushBreakdownMetric(linkBreakdowns, linkLabel, event.eventType);
     }
 
     if (event.referrer) {
       pushCounter(referrerCounts, event.referrer);
     }
 
-    pushCounter(sourceCounts, event.utmSource || event.utmMedium || "Direct / Unknown");
+    pushCounter(sourceCounts, sourceLabel);
+    pushBreakdownMetric(countryBreakdowns, countryLabel, event.eventType);
+    pushBreakdownMetric(sourceBreakdowns, sourceLabel, event.eventType);
+    pushBreakdownMetric(utmBreakdowns, utmLabel, event.eventType);
   }
 
   const daily = Array.from(dayBuckets.values()).map((bucket) => ({
-    ...bucket,
-    ctr: getCtr(bucket.views, bucket.conversions)
+    date: bucket.date,
+    views: bucket.views,
+    conversions: bucket.conversions,
+    ctr: getCtr(bucket.views, bucket.conversions),
+    breakdowns: {
+      country: toBreakdownList(bucket.breakdownMaps.country),
+      source: toBreakdownList(bucket.breakdownMaps.source),
+      link: toBreakdownList(bucket.breakdownMaps.link).map((item) => ({
+        ...item,
+        views: bucket.views,
+        ctr: getCtr(bucket.views, item.conversions)
+      })),
+      utm: toBreakdownList(bucket.breakdownMaps.utm)
+    }
   }));
   const uniqueVisitors = countUnique(views.map((event) => event.visitorId));
   const uniqueConverters = countUnique(conversions.map((event) => event.visitorId));
@@ -171,7 +323,17 @@ export async function readLinkPageAnalytics(days = 30) {
     platforms: toTopList(platformCounts),
     topTargets: toTopList(targetCounts),
     referrers: toTopList(referrerCounts),
-    sources: toTopList(sourceCounts)
+    sources: toTopList(sourceCounts),
+    breakdowns: {
+      country: toBreakdownList(countryBreakdowns),
+      source: toBreakdownList(sourceBreakdowns),
+      link: toBreakdownList(linkBreakdowns).map((item) => ({
+        ...item,
+        views: views.length,
+        ctr: getCtr(views.length, item.conversions)
+      })),
+      utm: toBreakdownList(utmBreakdowns)
+    }
   };
 }
 

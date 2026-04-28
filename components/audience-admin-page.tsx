@@ -1,7 +1,6 @@
 "use client";
 
 import {useCallback, useEffect, useMemo, useState} from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -12,9 +11,7 @@ import {
   RefreshCw,
   Save,
   Send,
-  Sparkles,
   Trash2,
-  UploadCloud,
   UserMinus,
   UserPlus,
   Users
@@ -28,20 +25,14 @@ import type {
   EmailSendLogRecord,
   SubscriberRecord,
   SubscriberSource,
-  SubscriberStatus,
-  SiteSettingsRecord
+  SubscriberStatus
 } from "@/lib/types";
-
-type ExclusiveOfferSettings = SiteSettingsRecord["site_content"]["exclusive"];
 
 type AudienceAdminPageProps = {
   initialOverview: AudienceOverview;
   initialSubscribers: SubscriberRecord[];
-  initialExclusiveOffer: ExclusiveOfferSettings;
   initialCampaigns: EmailCampaignRecord[];
   initialSendLogs: EmailSendLogRecord[];
-  initialTrackFileOptions: string[];
-  initialTrackArtOptions: string[];
 };
 
 type SubscriberDraft = {
@@ -191,22 +182,6 @@ function getStatusPillClass(status: EmailCampaignStatus | SubscriberStatus) {
   return "border border-[#31353b] bg-[#15181c] text-[#d5d9df]";
 }
 
-function toExclusiveArtUrl(fileName: string) {
-  return `/api/assets/exclusive-art/${fileName}`;
-}
-
-function getStoredFileName(value: string) {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return "";
-  }
-
-  const parts = trimmed.split("/");
-
-  return parts[parts.length - 1] ?? trimmed;
-}
-
 async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   const response = await fetch(input, init);
   const payload = (await response.json().catch(() => null)) as
@@ -224,19 +199,13 @@ async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
 export function AudienceAdminPage({
   initialOverview,
   initialSubscribers,
-  initialExclusiveOffer,
   initialCampaigns,
-  initialSendLogs,
-  initialTrackFileOptions,
-  initialTrackArtOptions
+  initialSendLogs
 }: AudienceAdminPageProps) {
   const [overview, setOverview] = useState(initialOverview);
   const [subscribers, setSubscribers] = useState(initialSubscribers);
-  const [exclusiveOffer, setExclusiveOffer] = useState(initialExclusiveOffer);
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [sendLogs, setSendLogs] = useState(initialSendLogs);
-  const [trackFileOptions, setTrackFileOptions] = useState(initialTrackFileOptions);
-  const [trackArtOptions, setTrackArtOptions] = useState(initialTrackArtOptions);
   const [subscriberSearch, setSubscriberSearch] = useState("");
   const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<
     SubscriberStatus | "all"
@@ -250,17 +219,11 @@ export function AudienceAdminPage({
     return firstDraft ? toCampaignDraft(firstDraft) : createEmptyCampaignDraft();
   });
   const [subscriberSaveState, setSubscriberSaveState] = useState<SaveState>("idle");
-  const [offerSaveState, setOfferSaveState] = useState<SaveState>("idle");
   const [campaignSaveState, setCampaignSaveState] = useState<SaveState>("idle");
   const [subscriberMessage, setSubscriberMessage] = useState<string | null>(null);
-  const [offerMessage, setOfferMessage] = useState<string | null>(null);
   const [campaignMessage, setCampaignMessage] = useState<string | null>(null);
   const [isRefreshingSubscribers, setIsRefreshingSubscribers] = useState(false);
   const [isRefreshingCampaigns, setIsRefreshingCampaigns] = useState(false);
-  const [trackUploadFile, setTrackUploadFile] = useState<File | null>(null);
-  const [artUploadFile, setArtUploadFile] = useState<File | null>(null);
-  const [isUploadingTrack, setIsUploadingTrack] = useState(false);
-  const [isUploadingArt, setIsUploadingArt] = useState(false);
 
   const selectedCampaignRecord = useMemo(
     () =>
@@ -479,113 +442,6 @@ export function AudienceAdminPage({
     }
   }
 
-  async function handleOfferSave() {
-    setOfferSaveState("saving");
-    setOfferMessage(null);
-
-    try {
-      const payload = await readJson<{
-        exclusive: ExclusiveOfferSettings;
-        message: string;
-      }>("/api/exclusive/offer", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(exclusiveOffer)
-      });
-
-      setExclusiveOffer(payload.exclusive);
-      setOfferSaveState("saved");
-      setOfferMessage(payload.message ?? "Exclusive offer saved.");
-    } catch (error) {
-      setOfferSaveState("error");
-      setOfferMessage(error instanceof Error ? error.message : "Unable to save offer.");
-    }
-  }
-
-  async function handleUploadAsset(assetType: "track" | "art") {
-    const file = assetType === "track" ? trackUploadFile : artUploadFile;
-
-    if (!file) {
-      setOfferSaveState("error");
-      setOfferMessage(
-        assetType === "track"
-          ? "Choose a track file first."
-          : "Choose an artwork file first."
-      );
-
-      return;
-    }
-
-    if (assetType === "track") {
-      setIsUploadingTrack(true);
-    } else {
-      setIsUploadingArt(true);
-    }
-
-    setOfferMessage(null);
-
-    try {
-      const formData = new FormData();
-
-      formData.append("assetType", assetType);
-      formData.append("file", file);
-
-      const payload = await readJson<{
-        assetType: "track" | "art";
-        fileName: string;
-        storedPath: string;
-        publicUrl: string | null;
-      }>("/api/exclusive/upload", {
-        method: "POST",
-        body: formData
-      });
-
-      if (assetType === "track") {
-        setTrackFileOptions((current) =>
-          Array.from(new Set([...current, payload.storedPath])).sort((left, right) =>
-            left.localeCompare(right)
-          )
-        );
-        setExclusiveOffer((current) => ({
-          ...current,
-          exclusive_track_file_path: payload.storedPath
-        }));
-        setTrackUploadFile(null);
-      } else {
-        const storedFileName = getStoredFileName(payload.storedPath);
-
-        setTrackArtOptions((current) =>
-          Array.from(new Set([...current, storedFileName])).sort((left, right) =>
-            left.localeCompare(right)
-          )
-        );
-        setExclusiveOffer((current) => ({
-          ...current,
-          exclusive_track_art_path: payload.publicUrl ?? ""
-        }));
-        setArtUploadFile(null);
-      }
-
-      setOfferSaveState("saved");
-      setOfferMessage(
-        assetType === "track" ? "Track uploaded." : "Artwork uploaded."
-      );
-    } catch (error) {
-      setOfferSaveState("error");
-      setOfferMessage(
-        error instanceof Error ? error.message : "Unable to upload the file."
-      );
-    } finally {
-      if (assetType === "track") {
-        setIsUploadingTrack(false);
-      } else {
-        setIsUploadingArt(false);
-      }
-    }
-  }
-
   async function handleCampaignSave() {
     setCampaignSaveState("saving");
     setCampaignMessage(null);
@@ -780,8 +636,7 @@ export function AudienceAdminPage({
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+      <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">
@@ -1048,395 +903,6 @@ export function AudienceAdminPage({
             ) : null}
           </div>
         </section>
-
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="pill">
-                <Sparkles size={12} />
-                Exclusive Track Offer
-              </div>
-              <h2 className="mt-3 text-2xl font-semibold text-ink">Public /exclusive setup</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                Configure the capture page, upload the gated track, and choose the
-                artwork shown after signup.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="pill">
-                {offerSaveState === "saving"
-                  ? "Saving..."
-                  : offerSaveState === "error"
-                    ? "Save error"
-                    : offerSaveState === "saved"
-                      ? "Saved"
-                      : "Ready"}
-              </span>
-              <button className="action-button-primary" onClick={() => void handleOfferSave()} type="button">
-                <Save size={16} />
-                Save Offer
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="field-label">Badge Text</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, badge_text: event.target.value}))
-                }
-                value={exclusiveOffer.badge_text}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">CTA Button</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, cta_label: event.target.value}))
-                }
-                value={exclusiveOffer.cta_label}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Headline</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, headline: event.target.value}))
-                }
-                value={exclusiveOffer.headline}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Subtext</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, subtext: event.target.value}))
-                }
-                value={exclusiveOffer.subtext}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Brand Line</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, brand_line: event.target.value}))
-                }
-                value={exclusiveOffer.brand_line}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Name Field Label</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, name_label: event.target.value}))
-                }
-                value={exclusiveOffer.name_label}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Email Field Label</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({...current, email_label: event.target.value}))
-                }
-                value={exclusiveOffer.email_label}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Consent Label</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    consent_label: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.consent_label}
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="field-label">Track Title</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    exclusive_track_title: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.exclusive_track_title}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Download Label</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    download_label: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.download_label}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Track Description</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    exclusive_track_description: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.exclusive_track_description}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Success Heading</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    success_heading: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.success_heading}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Duplicate Success Message</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    duplicate_message: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.duplicate_message}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Success Message</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    success_message: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.success_message}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Unavailable Heading</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    unavailable_heading: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.unavailable_heading}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Enabled</span>
-              <button
-                className={`flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition ${
-                  exclusiveOffer.exclusive_track_enabled
-                    ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
-                }`}
-                onClick={() =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    exclusive_track_enabled: !current.exclusive_track_enabled
-                  }))
-                }
-                type="button"
-              >
-                <span>
-                  {exclusiveOffer.exclusive_track_enabled
-                    ? "The exclusive page is live if the track file is present."
-                    : "The exclusive page will show an unavailable state."}
-                </span>
-                <span className="pill">
-                  {exclusiveOffer.exclusive_track_enabled ? "Enabled" : "Disabled"}
-                </span>
-              </button>
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Unavailable Body</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  setExclusiveOffer((current) => ({
-                    ...current,
-                    unavailable_body: event.target.value
-                  }))
-                }
-                value={exclusiveOffer.unavailable_body}
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-2">
-            <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
-              <p className="field-label">Track Asset</p>
-              <div className="mt-4 space-y-4">
-                <label className="space-y-2">
-                  <span className="field-label">Select Existing Track</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      setExclusiveOffer((current) => ({
-                        ...current,
-                        exclusive_track_file_path: event.target.value
-                      }))
-                    }
-                    value={exclusiveOffer.exclusive_track_file_path}
-                  >
-                    <option value="">No track selected</option>
-                    {trackFileOptions.map((fileName) => (
-                      <option key={fileName} value={fileName}>
-                        {fileName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="field-label">Upload New Track</span>
-                  <input
-                    accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
-                    className="field-input file:mr-3 file:rounded-full file:border-0 file:bg-[#c9a347] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#13161a]"
-                    onChange={(event) => setTrackUploadFile(event.target.files?.[0] ?? null)}
-                    type="file"
-                  />
-                </label>
-
-                <button
-                  className="action-button-secondary"
-                  disabled={!trackUploadFile || isUploadingTrack}
-                  onClick={() => void handleUploadAsset("track")}
-                  type="button"
-                >
-                  <UploadCloud size={16} />
-                  {isUploadingTrack ? "Uploading..." : "Upload Track"}
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
-              <p className="field-label">Artwork</p>
-              <div className="mt-4 space-y-4">
-                <label className="space-y-2">
-                  <span className="field-label">Select Existing Artwork</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      setExclusiveOffer((current) => ({
-                        ...current,
-                        exclusive_track_art_path: event.target.value
-                      }))
-                    }
-                    value={exclusiveOffer.exclusive_track_art_path}
-                  >
-                    <option value="">No artwork selected</option>
-                    {trackArtOptions.map((fileName) => (
-                      <option key={fileName} value={toExclusiveArtUrl(fileName)}>
-                        {fileName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="field-label">Upload New Artwork</span>
-                  <input
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                    className="field-input file:mr-3 file:rounded-full file:border-0 file:bg-[#c9a347] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#13161a]"
-                    onChange={(event) => setArtUploadFile(event.target.files?.[0] ?? null)}
-                    type="file"
-                  />
-                </label>
-
-                <button
-                  className="action-button-secondary"
-                  disabled={!artUploadFile || isUploadingArt}
-                  onClick={() => void handleUploadAsset("art")}
-                  type="button"
-                >
-                  <UploadCloud size={16} />
-                  {isUploadingArt ? "Uploading..." : "Upload Artwork"}
-                </button>
-
-                {exclusiveOffer.exclusive_track_art_path ? (
-                  <div className="rounded-[20px] border border-[#31353b] bg-[#0f1217] px-4 py-4">
-                    <p className="field-label">Current Art Preview</p>
-                    <div className="relative mt-3 aspect-square w-full overflow-hidden rounded-[18px]">
-                      <Image
-                        alt="Exclusive track artwork preview"
-                        className="object-cover"
-                        fill
-                        sizes="320px"
-                        src={exclusiveOffer.exclusive_track_art_path}
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-          </div>
-
-          {offerMessage ? (
-            <div
-              className={`rounded-[22px] px-4 py-3 text-sm ${
-                offerSaveState === "error"
-                  ? "border border-rose-500/30 bg-rose-500/10 text-rose-200"
-                  : "border border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-              }`}
-            >
-              {offerMessage}
-            </div>
-          ) : null}
-        </section>
-      </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">

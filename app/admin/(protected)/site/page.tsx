@@ -4,13 +4,25 @@ import {ArrowLeft, Globe2} from "lucide-react";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
-import {listSiteIconFiles} from "@/lib/server/storage";
+import {
+  listExclusiveArtFiles,
+  listExclusiveTrackFiles,
+  listSiteIconFiles
+} from "@/lib/server/storage";
 
 export default async function AdminSitePage() {
-  const [siteSettings, releaseSummaries, siteIconOptions] = await Promise.all([
+  const [
+    siteSettings,
+    releaseSummaries,
+    siteIconOptions,
+    exclusiveTrackFileOptions,
+    exclusiveTrackArtOptions
+  ] = await Promise.all([
     readSiteSettings(),
     readReleaseSummaries(),
-    listSiteIconFiles()
+    listSiteIconFiles(),
+    listExclusiveTrackFiles(),
+    listExclusiveArtFiles()
   ]);
 
   return (
@@ -29,8 +41,8 @@ export default async function AdminSitePage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
                 Manage the public vvviruz website separately from daily release
                 operations. This page controls shared profile copy, public imagery,
-                homepage content, the mobile link hub, and future-ready tracking
-                settings.
+                homepage content, the mobile link hub, exclusive track offer, and
+                future-ready tracking settings.
               </p>
             </div>
 
@@ -42,6 +54,8 @@ export default async function AdminSitePage() {
         </section>
 
         <SiteSettingsEditor
+          exclusiveTrackArtOptions={exclusiveTrackArtOptions}
+          exclusiveTrackFileOptions={exclusiveTrackFileOptions}
           initialSiteSettings={siteSettings}
           releaseOptions={releaseSummaries}
           siteIconOptions={siteIconOptions}

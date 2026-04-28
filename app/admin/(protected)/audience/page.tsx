@@ -5,26 +5,18 @@ import {ArrowLeft, MailPlus} from "lucide-react";
 
 import {AudienceAdminPage} from "@/components/audience-admin-page";
 import {listCampaigns, listEmailSendLogs, listSubscribers, readAudienceOverview} from "@/lib/repositories/audience";
-import {readExclusiveOfferSettings} from "@/lib/repositories/exclusive-offer";
-import {listExclusiveArtFiles, listExclusiveTrackFiles} from "@/lib/server/storage";
 
 export default async function AdminAudiencePageRoute() {
   const [
     overview,
     subscribers,
-    exclusiveOfferState,
     campaigns,
-    sendLogs,
-    trackFileOptions,
-    artFileOptions
+    sendLogs
   ] = await Promise.all([
     readAudienceOverview(),
     listSubscribers({status: "all"}),
-    readExclusiveOfferSettings(),
     listCampaigns(),
-    listEmailSendLogs(),
-    listExclusiveTrackFiles(),
-    listExclusiveArtFiles()
+    listEmailSendLogs()
   ]);
 
   return (
@@ -56,12 +48,9 @@ export default async function AdminAudiencePageRoute() {
 
         <AudienceAdminPage
           initialCampaigns={campaigns}
-          initialExclusiveOffer={exclusiveOfferState.exclusive}
           initialOverview={overview}
           initialSendLogs={sendLogs}
           initialSubscribers={subscribers}
-          initialTrackArtOptions={artFileOptions}
-          initialTrackFileOptions={trackFileOptions}
         />
       </div>
     </main>

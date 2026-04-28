@@ -362,12 +362,20 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-28 16:47 -04:00
+
+- Added daily `/links` analytics drilldowns for `by country`, `source`, `by link`, and `utm`, matching the quick breakdown workflow from the reference screenshot.
+- Moved exclusive track offer configuration out of Audience management and into Public Site management so public copy, images, links, tracking, and the exclusive offer live together.
+- Added a local Windows junction from the old `lyriclab` path to `vvviruzcommandcenter` so Codex patch operations resolve correctly after the project rename.
+- Right-aligned the public About page philosophy section.
+
 ### 2026-04-28 16:07 -04:00
 
 - Added Postgres deployment support with `prisma/schema.postgres.prisma`, Postgres generate/push scripts, and a Vercel build command that generates Prisma from the Postgres schema.
 - Added durable object-storage support through `ASSET_STORAGE_DRIVER=vercel-blob` and `@vercel/blob`, while preserving local disk storage for local/Docker runs.
 - Added first-party `/links` analytics tracking for page views, outbound link conversions, CTR, unique visitors, platform breakdowns, referrers, and UTM/source data.
 - Built the protected `/admin/analytics` dashboard and added an admin Site Settings control-map panel confirming public copy, images, links, and tracking are editable without code.
+
 ### 2026-04-24 22:25 -04:00
 
 - Added collaborator display to public release surfaces so collabs can appear on homepage featured cards, music cards, release detail pages, links landing pages, and public music search.

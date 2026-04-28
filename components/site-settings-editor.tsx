@@ -11,9 +11,13 @@ import type {
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
 
+import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
+
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 type SiteSettingsEditorProps = {
+  exclusiveTrackArtOptions: string[];
+  exclusiveTrackFileOptions: string[];
   initialSiteSettings: SiteSettingsRecord;
   releaseOptions: ReleaseSummary[];
   siteIconOptions: string[];
@@ -42,6 +46,8 @@ function parseLinkRows<T extends SocialLink>(value: string): T[] {
 }
 
 export function SiteSettingsEditor({
+  exclusiveTrackArtOptions,
+  exclusiveTrackFileOptions,
   initialSiteSettings,
   releaseOptions,
   siteIconOptions
@@ -1263,9 +1269,24 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
+        <ExclusiveOfferSettingsPanel
+          exclusiveOffer={settings.site_content.exclusive}
+          initialTrackArtOptions={exclusiveTrackArtOptions}
+          initialTrackFileOptions={exclusiveTrackFileOptions}
+          onChange={(exclusive) =>
+            setSettings((current) => ({
+              ...current,
+              site_content: {
+                ...current.site_content,
+                exclusive
+              }
+            }))
+          }
+        />
+
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 9</p>
+            <p className="field-label">Section 10</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Tracking</h3>
           </div>
 
@@ -1318,7 +1339,7 @@ export function SiteSettingsEditor({
 
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 10</p>
+            <p className="field-label">Section 11</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Release Page</h3>
           </div>
 
@@ -1438,7 +1459,7 @@ export function SiteSettingsEditor({
 
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 11</p>
+            <p className="field-label">Section 12</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Social Links</h3>
           </div>
 
@@ -1469,8 +1490,8 @@ export function SiteSettingsEditor({
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               Use this page to update the public header, nav labels, homepage hero,
               featured releases, carousel images, About copy/image, social links,
-              link-page campaign release, CTA labels, SEO text, and Meta Pixel setup
-              without changing code.
+              link-page campaign release, exclusive track offer, CTA labels, SEO text,
+              and Meta Pixel setup without changing code.
             </p>
           </div>
           <div className="grid gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b45e] sm:grid-cols-2">

@@ -196,6 +196,8 @@ export default async function PublicAboutPage() {
                   ABOUT_SECTION_SURFACES[index % ABOUT_SECTION_SURFACES.length]
                 } ${
                   section.id === "closing" ? "lg:col-span-2 text-center" : ""
+                } ${
+                  section.id === "philosophy" ? "text-right" : ""
                 }`}
                 key={section.id}
               >
@@ -219,6 +221,8 @@ export default async function PublicAboutPage() {
                   className={`mt-5 text-base leading-8 text-[#d8e0e8] ${
                     section.id === "closing"
                       ? "mx-auto max-w-4xl text-center text-xl font-medium leading-9 text-[#f2e8d8]"
+                      : section.id === "philosophy"
+                        ? "text-right"
                       : ""
                   }`}
                 >
