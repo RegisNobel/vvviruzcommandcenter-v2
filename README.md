@@ -389,6 +389,15 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-29 13:53 -04:00
+
+- Rotated the production `AUTH_SECRET`, re-encrypted the existing admin TOTP secret against the new auth secret, and cleared active production auth sessions so old session cookies are invalidated.
+- Converted application-owned server-side production Vercel environment variables to `sensitive` where safe, including admin auth, production database alias, email configuration, asset-driver configuration, and Resend runtime key entries.
+- Confirmed provider-managed Vercel Blob/Supabase/Postgres integration variables remain encrypted and should be rotated from their provider dashboards rather than manually overwritten in Vercel.
+- Attempted Resend API-key rotation through the official API; the current runtime key is intentionally send-only, so creating/revoking replacement keys must be completed in the Resend dashboard with a key-management-capable account session.
+- Re-ran a git-history secret scan and found no committed Resend API keys, Vercel Blob tokens, Postgres URLs, or the known plaintext admin password marker outside documentation/examples.
+- Redeployed production and smoke-tested public pages, admin redirect protection, login-page availability, and invalid-login rejection after the rotation.
+
 ### 2026-04-29 01:02 -04:00
 
 - Fixed production admin login by replacing the malformed Vercel `ADMIN_PASSWORD_HASH` value that had copied local escaped dollar signs literally from `.env.local`.
