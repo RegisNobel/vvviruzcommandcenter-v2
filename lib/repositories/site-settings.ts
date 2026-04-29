@@ -8,6 +8,7 @@ import {
 import type {
   BrandPillar,
   LinkHubItem,
+  ExclusiveCommunityBenefit,
   SiteContentSettings,
   SiteSettingsRecord,
   SocialLink
@@ -15,6 +16,50 @@ import type {
 import {createId} from "@/lib/utils";
 
 const SITE_SETTINGS_ID = "site-settings";
+
+const DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS: ExclusiveCommunityBenefit[] = [
+  {
+    id: "commission-suggest-concepts",
+    title: "Commission & Suggest Concepts",
+    description:
+      "Pitch song topics, anime ideas, character themes, and concepts you want to hear next."
+  },
+  {
+    id: "submit-bars-lines",
+    title: "Submit Bars & Lines",
+    description:
+      "Drop punchlines, hooks, or one-liners that could inspire upcoming songs."
+  },
+  {
+    id: "vote-multiversus-matchups",
+    title: "Vote on Multiversus Matchups",
+    description:
+      "Help choose future battles, character pairings, and theme directions."
+  },
+  {
+    id: "feature-tournaments",
+    title: "Feature Tournaments",
+    description:
+      "Compete in community challenges for a chance to earn a future feature opportunity."
+  },
+  {
+    id: "early-access-test-lab",
+    title: "Early Access & Test Lab",
+    description:
+      "Hear previews, vote on hooks, react to drafts, and help decide what hits hardest."
+  },
+  {
+    id: "community-status",
+    title: "Community Status",
+    description:
+      "Earn shoutouts, credits, special roles, and recognition inside the Command Center."
+  }
+];
+
+const LEGACY_EXCLUSIVE_COMMUNITY_DESCRIPTIONS = new Set([
+  "Compete in community challenges for a chance to earn a feature opportunity.",
+  "Active members can earn shoutouts, credits, special roles, and recognition inside the Lab."
+]);
 
 function createDefaultSiteContent(): SiteContentSettings {
   return {
@@ -28,7 +73,7 @@ function createDefaultSiteContent(): SiteContentSettings {
       about_page_description: "Bio, press info, and contact details for vvviruz.",
       links_page_title: "Links",
       links_page_description: "Fast mobile-friendly link hub for vvviruz.",
-      exclusive_page_title: "Exclusive",
+      exclusive_page_title: "Exclusives",
       exclusive_page_description:
         "Unlock an exclusive vvviruz track by joining the list.",
       release_not_found_title: "Release Not Found",
@@ -42,7 +87,7 @@ function createDefaultSiteContent(): SiteContentSettings {
       nav_music_label: "Music",
       nav_about_label: "About",
       nav_links_label: "Links",
-      nav_exclusive_label: "Exclusive",
+      nav_exclusive_label: "Exclusives",
       footer_copyright_text: `Copyright ${new Date().getFullYear()} vvviruz. All rights reserved.`
     },
   home: {
@@ -167,7 +212,18 @@ function createDefaultSiteContent(): SiteContentSettings {
     exclusive_track_description: "",
     exclusive_track_file_path: "",
     exclusive_track_art_path: "",
-    exclusive_track_enabled: false
+    exclusive_track_enabled: false,
+    discord_invite_url: "",
+    community_badge_text: "Fan Hub",
+    community_headline: "Join the vvviruz Command Center",
+    community_subheadline:
+      "Where fans don't just listen. They help shape what comes next.",
+    community_microcopy:
+      "Your access point to everything happening behind the scenes.",
+    community_cta_heading: "Ready to enter the Command Center?",
+    community_cta_label: "Join the vvviruz Command Center",
+    community_cta_helper: "Discord invite opens in a new tab.",
+    community_benefits: DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS
   },
   release: {
     back_to_music_label: "Back to music",
@@ -188,16 +244,30 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
   const normalizedLinksBadgeText = input?.links?.badge_text?.trim();
   const normalizedBrandMarkFile = input?.chrome?.brand_mark_file?.trim();
   const normalizedArtistImageFile = input?.about?.artist_image_file?.trim();
+  const normalizedExclusiveNavLabel = input?.chrome?.nav_exclusive_label?.trim();
+  const normalizedExclusivePageTitle = input?.metadata?.exclusive_page_title?.trim();
+  const normalizedCommunityHeadline = input?.exclusive?.community_headline?.trim();
+  const normalizedCommunityCtaLabel = input?.exclusive?.community_cta_label?.trim();
 
   return {
     metadata: {
       ...defaults.metadata,
-      ...input?.metadata
+      ...input?.metadata,
+      exclusive_page_title:
+        !normalizedExclusivePageTitle ||
+        normalizedExclusivePageTitle.toLowerCase() === "exclusive"
+          ? defaults.metadata.exclusive_page_title
+          : normalizedExclusivePageTitle
     },
     chrome: {
       ...defaults.chrome,
       ...input?.chrome,
-      brand_mark_file: normalizedBrandMarkFile || defaults.chrome.brand_mark_file
+      brand_mark_file: normalizedBrandMarkFile || defaults.chrome.brand_mark_file,
+      nav_exclusive_label:
+        !normalizedExclusiveNavLabel ||
+        normalizedExclusiveNavLabel.toLowerCase() === "exclusive"
+          ? defaults.chrome.nav_exclusive_label
+          : normalizedExclusiveNavLabel
     },
     home: {
       ...defaults.home,
@@ -250,7 +320,35 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     },
     exclusive: {
       ...defaults.exclusive,
-      ...input?.exclusive
+      ...input?.exclusive,
+      community_headline:
+        !normalizedCommunityHeadline ||
+        normalizedCommunityHeadline === "Join the vvviruz command center"
+          ? defaults.exclusive.community_headline
+          : normalizedCommunityHeadline,
+      community_cta_label:
+        !normalizedCommunityCtaLabel ||
+        normalizedCommunityCtaLabel === "Join the command center"
+          ? defaults.exclusive.community_cta_label
+          : normalizedCommunityCtaLabel,
+      community_benefits:
+        input?.exclusive?.community_benefits?.length
+          ? input.exclusive.community_benefits.map((benefit, index) => {
+              const defaultBenefit =
+                DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS[index] ??
+                DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS[0];
+
+              return {
+                id: benefit.id || defaultBenefit.id || createId(),
+                title: benefit.title || defaultBenefit.title,
+                description:
+                  !benefit.description ||
+                  LEGACY_EXCLUSIVE_COMMUNITY_DESCRIPTIONS.has(benefit.description)
+                    ? defaultBenefit.description
+                    : benefit.description
+              };
+            })
+          : DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS
     },
     release: {
       ...defaults.release,

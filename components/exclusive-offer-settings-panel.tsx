@@ -68,6 +68,17 @@ export function ExclusiveOfferSettingsPanel({
     });
   }
 
+  function updateCommunityBenefit(
+    benefitIndex: number,
+    patch: Partial<ExclusiveOfferSettings["community_benefits"][number]>
+  ) {
+    updateExclusiveOffer({
+      community_benefits: exclusiveOffer.community_benefits.map((benefit, index) =>
+        index === benefitIndex ? {...benefit, ...patch} : benefit
+      )
+    });
+  }
+
   async function handleUploadAsset(assetType: "track" | "art") {
     const file = assetType === "track" ? trackUploadFile : artUploadFile;
 
@@ -144,7 +155,7 @@ export function ExclusiveOfferSettingsPanel({
             Exclusive Track Offer
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Control the public `/exclusive` capture page, gated track, artwork,
+            Control the public `/exclusives` capture page, gated track, artwork,
             success copy, and availability from Public Site management.
           </p>
         </div>
@@ -328,6 +339,141 @@ export function ExclusiveOfferSettingsPanel({
           />
         </label>
       </div>
+
+      <section className="mt-5 rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
+        <div>
+          <p className="field-label">Community Section</p>
+          <h4 className="mt-2 text-xl font-semibold text-ink">
+            vvviruz command center promo
+          </h4>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            These fields control the community section that appears under the
+            exclusive-track signup area on `/exclusives`.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Discord Invite URL</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({discord_invite_url: event.target.value})
+              }
+              placeholder="https://discord.gg/..."
+              value={exclusiveOffer.discord_invite_url}
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="field-label">Community Badge Text</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_badge_text: event.target.value})
+              }
+              value={exclusiveOffer.community_badge_text}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Community Headline</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_headline: event.target.value})
+              }
+              value={exclusiveOffer.community_headline}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Community Subheadline</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_subheadline: event.target.value})
+              }
+              value={exclusiveOffer.community_subheadline}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Community Microcopy</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_microcopy: event.target.value})
+              }
+              value={exclusiveOffer.community_microcopy}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">CTA Block Heading</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_cta_heading: event.target.value})
+              }
+              value={exclusiveOffer.community_cta_heading}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Community CTA Label</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_cta_label: event.target.value})
+              }
+              value={exclusiveOffer.community_cta_label}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">CTA Helper Text</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({community_cta_helper: event.target.value})
+              }
+              value={exclusiveOffer.community_cta_helper}
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {exclusiveOffer.community_benefits.map((benefit, index) => (
+            <div
+              className="rounded-[22px] border border-[#30343b] bg-[#121418] p-4"
+              key={benefit.id || index}
+            >
+              <p className="field-label">Benefit {index + 1}</p>
+              <label className="mt-3 block space-y-2">
+                <span className="field-label">Title</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCommunityBenefit(index, {title: event.target.value})
+                  }
+                  value={benefit.title}
+                />
+              </label>
+              <label className="mt-3 block space-y-2">
+                <span className="field-label">Description</span>
+                <textarea
+                  className="field-input min-h-[96px]"
+                  onChange={(event) =>
+                    updateCommunityBenefit(index, {description: event.target.value})
+                  }
+                  value={benefit.description}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <section className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">

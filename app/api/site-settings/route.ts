@@ -25,6 +25,16 @@ const brandPillarSchema = z.object({
   imageFile: z.string().trim().default("")
 });
 
+const exclusiveCommunityBenefitSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || createId()),
+  title: z.string().trim().default(""),
+  description: z.string().trim().default("")
+});
+
 function normalizeLinkItems(
   value: Array<{
     id?: string;
@@ -89,7 +99,7 @@ const siteSettingsSchema = z.object({
       about_page_description: z.string().default(""),
       links_page_title: z.string().default(""),
       links_page_description: z.string().default(""),
-      exclusive_page_title: z.string().default(""),
+      exclusive_page_title: z.string().default("Exclusives"),
       exclusive_page_description: z.string().default(""),
       release_not_found_title: z.string().default(""),
       release_not_found_description: z.string().default("")
@@ -102,7 +112,7 @@ const siteSettingsSchema = z.object({
       nav_music_label: z.string().default(""),
       nav_about_label: z.string().default(""),
       nav_links_label: z.string().default(""),
-      nav_exclusive_label: z.string().default("Exclusive"),
+      nav_exclusive_label: z.string().default("Exclusives"),
       footer_copyright_text: z.string().default("")
     }),
     home: z.object({
@@ -182,7 +192,16 @@ const siteSettingsSchema = z.object({
       exclusive_track_description: z.string().default(""),
       exclusive_track_file_path: z.string().default(""),
       exclusive_track_art_path: z.string().default(""),
-      exclusive_track_enabled: z.boolean().default(false)
+      exclusive_track_enabled: z.boolean().default(false),
+      discord_invite_url: z.string().default(""),
+      community_badge_text: z.string().default(""),
+      community_headline: z.string().default(""),
+      community_subheadline: z.string().default(""),
+      community_microcopy: z.string().default(""),
+      community_cta_heading: z.string().default(""),
+      community_cta_label: z.string().default(""),
+      community_cta_helper: z.string().default(""),
+      community_benefits: z.array(exclusiveCommunityBenefitSchema).default([])
     }),
     release: z.object({
       back_to_music_label: z.string().default(""),

@@ -4,7 +4,11 @@ import Link from "next/link";
 
 import type {Metadata} from "next";
 
-import {getPublishedReleases, getSiteSettings} from "@/lib/repositories/public-site";
+import {
+  getPublicReleaseCategories,
+  getPublishedReleases,
+  getSiteSettings
+} from "@/lib/repositories/public-site";
 import type {ReleaseType} from "@/lib/types";
 
 import {PublicMusicLibrary} from "@/components/public-music-library";
@@ -29,13 +33,16 @@ function normalizeReleaseType(value: string | undefined): ReleaseType | "all" {
 export default async function PublicMusicPage({
   searchParams
 }: {
-  searchParams: Promise<{type?: string}>;
+  searchParams: Promise<{category?: string; type?: string}>;
 }) {
-  const {type} = await searchParams;
-  const activeType = normalizeReleaseType(type);
-  const [siteSettings, releases] = await Promise.all([
+  const {category, type} = await searchParams;
+  const activeCategory = category?.trim() || "";
+  const activeType = activeCategory ? "all" : normalizeReleaseType(type);
+  const [siteSettings, categories, releases] = await Promise.all([
     getSiteSettings(),
+    getPublicReleaseCategories(),
     getPublishedReleases({
+      ...(activeCategory ? {categorySlug: activeCategory} : {}),
       type: activeType,
       ...(activeType === "all" ? {} : {type: activeType})
     })
@@ -49,7 +56,7 @@ export default async function PublicMusicPage({
   const filterOptions: Array<{
     href: string;
     label: string;
-    value: ReleaseType | "all";
+    value: string;
   }> = [
     {href: "/music", label: content.all_releases_label, value: "all"},
     {href: "/music?type=nerdcore", label: content.nerdcore_label, value: "nerdcore"},
@@ -57,8 +64,14 @@ export default async function PublicMusicPage({
       href: "/music?type=mainstream",
       label: content.mainstream_label,
       value: "mainstream"
-    }
+    },
+    ...categories.map((releaseCategory) => ({
+      href: `/music?category=${encodeURIComponent(releaseCategory.slug)}`,
+      label: releaseCategory.name,
+      value: `category:${releaseCategory.slug}`
+    }))
   ];
+  const activeFilterValue = activeCategory ? `category:${activeCategory}` : activeType;
 
   return (
     <main className="px-4 py-8 sm:px-6 lg:px-8">
@@ -76,7 +89,7 @@ export default async function PublicMusicPage({
 
           <div className="mt-6 flex flex-wrap gap-3">
             {filterOptions.map((option) => {
-              const isActive = activeType === option.value;
+              const isActive = activeFilterValue === option.value;
 
               return (
                 <Link

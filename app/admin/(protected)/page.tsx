@@ -59,8 +59,7 @@ export default function AdminHomePage() {
                   <div className="rounded-[22px] bg-white/80 p-4">
                     <p className="text-sm font-semibold text-slate-900">Audience</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Capture subscribers, gate exclusive tracks, and run lean
-                      campaign sends from one page.
+                      Capture subscribers and run lean campaign sends from one page.
                     </p>
                   </div>
                   <div className="rounded-[22px] bg-white/80 p-4">
@@ -90,8 +89,8 @@ export default function AdminHomePage() {
                   Capture and email subscribers
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                  Manage the exclusive track offer, subscriber list, and lean
-                  campaign sends from one protected page.
+                  Manage the subscriber list and lean campaign sends from one
+                  protected page. Exclusive offer settings live under Public Site.
                 </p>
               </div>
               <ArrowRight className="mt-1 transition group-hover:translate-x-1" size={20} />

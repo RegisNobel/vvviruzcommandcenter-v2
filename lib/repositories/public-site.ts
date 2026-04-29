@@ -4,6 +4,7 @@ import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
 import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/types";
 
+import {listPublicReleaseCategories} from "@/lib/repositories/release-categories";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 
 type PublicReleaseModel = Prisma.ReleaseGetPayload<{
@@ -29,6 +30,19 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
     publicLyricsEnabled: true;
     createdOn: true;
     updatedOn: true;
+    categories: {
+      select: {
+        category: {
+          select: {
+            id: true;
+            name: true;
+            slug: true;
+            description: true;
+          };
+        };
+      };
+      orderBy: [{sortOrder: "asc"}];
+    };
   };
 }>;
 
@@ -59,7 +73,20 @@ const publicReleaseSelect = {
   featuredVideoUrl: true,
   publicLyricsEnabled: true,
   createdOn: true,
-  updatedOn: true
+  updatedOn: true,
+  categories: {
+    select: {
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true
+        }
+      }
+    },
+    orderBy: [{sortOrder: "asc"}]
+  }
 } satisfies Prisma.ReleaseSelect;
 
 function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
@@ -82,6 +109,13 @@ function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
     featured_video_url: release.featuredVideoUrl,
     public_lyrics_enabled: release.publicLyricsEnabled,
     lyrics: release.lyrics,
+    categories: release.categories.map((assignment) => ({
+      id: assignment.category.id,
+      name: assignment.category.name,
+      slug: assignment.category.slug,
+      description: assignment.category.description,
+      release_count: 0
+    })),
     created_on: release.createdOn.toISOString(),
     updated_on: release.updatedOn.toISOString()
   };
@@ -190,13 +224,27 @@ export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) 
 }
 
 export async function getPublishedReleases(options?: {
+  categorySlug?: string;
   limit?: number;
   type?: ReleaseType | "all";
 }) {
+  const normalizedCategorySlug = options?.categorySlug?.trim();
   const releases = await prisma.release.findMany({
     where: {
       isPublished: true,
-      ...(options?.type && options.type !== "all" ? {type: options.type} : {})
+      ...(normalizedCategorySlug
+        ? {
+            categories: {
+              some: {
+                category: {
+                  slug: normalizedCategorySlug
+                }
+              }
+            }
+          }
+        : options?.type && options.type !== "all"
+          ? {type: options.type}
+          : {})
     },
     select: publicReleaseSelect,
     orderBy: newestPublicReleaseOrder,
@@ -204,6 +252,10 @@ export async function getPublishedReleases(options?: {
   });
 
   return releases.map(toPublicRelease);
+}
+
+export async function getPublicReleaseCategories() {
+  return listPublicReleaseCategories();
 }
 
 export async function getPublishedReleaseBySlug(slug: string) {

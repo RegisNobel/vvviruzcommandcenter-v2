@@ -212,8 +212,8 @@ export default async function PublicLinksPage() {
                       data-analytics-event="links_link_click"
                       data-analytics-link-label={content.exclusive_cta_label}
                       data-analytics-link-type="exclusive"
-                      data-analytics-target-url="/exclusive"
-                      href="/exclusive"
+                      data-analytics-target-url="/exclusives"
+                      href="/exclusives"
                     >
                       {content.exclusive_cta_label}
                     </Link>

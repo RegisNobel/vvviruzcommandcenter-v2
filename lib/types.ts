@@ -187,6 +187,31 @@ export type BrandPillar = {
   imageFile: string;
 };
 
+export type ExclusiveCommunityBenefit = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export type ReleaseCategoryRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  sort_order: number;
+  release_ids: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type PublicReleaseCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  release_count: number;
+};
+
 export type SiteContentSettings = {
   metadata: {
     site_title: string;
@@ -291,6 +316,15 @@ export type SiteContentSettings = {
     exclusive_track_file_path: string;
     exclusive_track_art_path: string;
     exclusive_track_enabled: boolean;
+    discord_invite_url: string;
+    community_badge_text: string;
+    community_headline: string;
+    community_subheadline: string;
+    community_microcopy: string;
+    community_cta_heading: string;
+    community_cta_label: string;
+    community_cta_helper: string;
+    community_benefits: ExclusiveCommunityBenefit[];
   };
   release: {
     back_to_music_label: string;
@@ -392,6 +426,7 @@ export type PublicReleaseRecord = {
   featured_video_url: string;
   public_lyrics_enabled: boolean;
   lyrics: string;
+  categories: PublicReleaseCategory[];
   created_on: string;
   updated_on: string;
 };

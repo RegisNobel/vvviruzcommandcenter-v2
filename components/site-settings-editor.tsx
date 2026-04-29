@@ -372,7 +372,7 @@ export function SiteSettingsEditor({
             </label>
 
             <label className="space-y-2">
-              <span className="field-label">Exclusive Page Title</span>
+              <span className="field-label">Exclusives Page Title</span>
               <input
                 className="field-input"
                 onChange={(event) =>
@@ -443,7 +443,7 @@ export function SiteSettingsEditor({
             </label>
 
             <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Exclusive Page Description</span>
+              <span className="field-label">Exclusives Page Description</span>
               <textarea
                 className="field-input min-h-[110px]"
                 onChange={(event) =>

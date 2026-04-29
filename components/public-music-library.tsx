@@ -29,6 +29,7 @@ function matchesSearch(release: PublicReleaseRecord, query: string) {
     release.public_description,
     release.public_long_description,
     release.collaborator_name,
+    ...release.categories.map((category) => category.name),
     release.release_date
   ]
     .join(" ")

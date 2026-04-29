@@ -13,6 +13,12 @@ import {
 } from "@/lib/repositories/exclusive-offer";
 import {readAssetBuffer} from "@/lib/server/asset-storage";
 
+const exclusiveCommunityBenefitSchema = z.object({
+  id: z.string().default(""),
+  title: z.string().default(""),
+  description: z.string().default("")
+});
+
 const exclusiveOfferSchema = z.object({
   badge_text: z.string().default(""),
   headline: z.string().default(""),
@@ -32,7 +38,16 @@ const exclusiveOfferSchema = z.object({
   exclusive_track_description: z.string().default(""),
   exclusive_track_file_path: z.string().default(""),
   exclusive_track_art_path: z.string().default(""),
-  exclusive_track_enabled: z.boolean().default(false)
+  exclusive_track_enabled: z.boolean().default(false),
+  discord_invite_url: z.string().default(""),
+  community_badge_text: z.string().default(""),
+  community_headline: z.string().default(""),
+  community_subheadline: z.string().default(""),
+  community_microcopy: z.string().default(""),
+  community_cta_heading: z.string().default(""),
+  community_cta_label: z.string().default(""),
+  community_cta_helper: z.string().default(""),
+  community_benefits: z.array(exclusiveCommunityBenefitSchema).default([])
 });
 
 async function validateExclusiveAssets(values: z.infer<typeof exclusiveOfferSchema>) {

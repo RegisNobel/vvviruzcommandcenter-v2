@@ -1,7 +1,9 @@
 import Link from "next/link";
 import {ArrowLeft, Globe2} from "lucide-react";
 
+import {ReleaseCategorySettingsPanel} from "@/components/release-category-settings-panel";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
+import {listReleaseCategories} from "@/lib/repositories/release-categories";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {
@@ -14,12 +16,14 @@ export default async function AdminSitePage() {
   const [
     siteSettings,
     releaseSummaries,
+    releaseCategories,
     siteIconOptions,
     exclusiveTrackFileOptions,
     exclusiveTrackArtOptions
   ] = await Promise.all([
     readSiteSettings(),
     readReleaseSummaries(),
+    listReleaseCategories(),
     listSiteIconFiles(),
     listExclusiveTrackFiles(),
     listExclusiveArtFiles()
@@ -59,6 +63,11 @@ export default async function AdminSitePage() {
           initialSiteSettings={siteSettings}
           releaseOptions={releaseSummaries}
           siteIconOptions={siteIconOptions}
+        />
+
+        <ReleaseCategorySettingsPanel
+          initialCategories={releaseCategories}
+          releaseOptions={releaseSummaries}
         />
       </div>
     </main>

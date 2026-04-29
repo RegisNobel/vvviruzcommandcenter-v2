@@ -40,7 +40,7 @@ Public-facing artist hub with these routes:
 - `/music/[slug]`
 - `/about`
 - `/links`
-- `/exclusive`
+- `/exclusives`
 - `/unsubscribe`
 
 The public site reads only published release/site-settings data from SQLite and does not expose admin-only workflow state.
@@ -54,6 +54,7 @@ Release planning and execution workspace with:
 - tasks
 - cover art references
 - streaming links
+- manual public categories/projects for music-library filtering
 - linked video clips
 - linked copy entries
 - pinning and search
@@ -140,9 +141,10 @@ Placeholder route for future reporting and performance views.
 
 ### Audience and Email
 
-- public `/exclusive` capture flow
+- public `/exclusives` capture flow
 - duplicate-safe subscriber upserts
 - token-based gated download access
+- Discord/community CTA settings for the exclusives page
 - protected `/admin/audience` management
 - consent-aware campaign sends
 - unsubscribe suppression and email footers
@@ -170,6 +172,7 @@ Database-backed data:
 - public release metadata and slugs
 - release tasks
 - release streaming links
+- release categories and category assignments
 - site settings for the public website
 - subscribers
 - email campaigns
@@ -187,7 +190,8 @@ Asset-backed data:
 - cover art files
 - exported media
 - Whisper model files
-- other local binary assets under `storage/` in local mode`r`n- Vercel Blob objects when `ASSET_STORAGE_DRIVER=vercel-blob`
+- other local binary assets under `storage/` in local mode
+- Vercel Blob objects when `ASSET_STORAGE_DRIVER=vercel-blob`
 
 Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`, and `storage/auth` are now treated as import/back-up source material rather than the primary source of truth.
 
@@ -202,7 +206,7 @@ Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`
 - No cloud storage
 - No background worker layer
 - No Stripe, auth SaaS, or multi-user system
-- Public website now lives on `/`, `/music`, `/music/[slug]`, `/about`, `/links`, `/exclusive`, and `/unsubscribe`
+- Public website now lives on `/`, `/music`, `/music/[slug]`, `/about`, `/links`, `/exclusives`, and `/unsubscribe`
 - Private command center lives under `/admin`
 
 ## Local Development
@@ -261,7 +265,7 @@ npm run dev
 
 - [http://localhost:3000](http://localhost:3000)
 - [http://localhost:3000/music](http://localhost:3000/music)
-- [http://localhost:3000/exclusive](http://localhost:3000/exclusive)
+- [http://localhost:3000/exclusives](http://localhost:3000/exclusives)
 - [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
 ## Docker v1
@@ -296,7 +300,7 @@ docker compose exec app npm run setup:whisper
 
 - [http://localhost:3000](http://localhost:3000)
 - [http://localhost:3000/music](http://localhost:3000/music)
-- [http://localhost:3000/exclusive](http://localhost:3000/exclusive)
+- [http://localhost:3000/exclusives](http://localhost:3000/exclusives)
 - [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
 ## Vercel Deployment Prep
@@ -333,6 +337,20 @@ Required Vercel environment variables match `.env.example`:
 
 Local/Docker still default to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
 
+### Production Readiness Checklist
+
+Before deploying:
+
+- [ ] All environment variables set in Vercel
+- [ ] `DATABASE_URL` points to Postgres, not SQLite
+- [ ] `ASSET_STORAGE_DRIVER` is set to `vercel-blob`
+- [ ] Prisma schema pushed to the production database
+- [ ] Admin credentials securely generated
+- [ ] MFA enabled on all services
+- [ ] Email provider configured and tested
+- [ ] Public URLs verified
+- [ ] Backup strategy confirmed
+
 ## Useful Commands
 
 ```bash
@@ -361,6 +379,35 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-28 22:05 -04:00
+
+- Added a production readiness checklist to the README covering Vercel environment variables, Postgres, Vercel Blob, Prisma production schema setup, admin credential security, MFA, email provider testing, public URL checks, and backups.
+- Prepared the current working version for a GitHub push to `RegisNobel/vvviruzcommandcenter-v2`.
+
+### 2026-04-28 21:48 -04:00
+
+- Matched the public `/exclusives` exclusive-track reward section and Command Center section to the same max width for a cleaner stacked layout.
+- Removed the `VVVIRUZ DETECTED` divider so the page transitions through spacing instead of a separate visual strip.
+
+### 2026-04-28 21:06 -04:00
+
+- Redesigned the public `/exclusives` page into a more cohesive landing experience with a lighter exclusive-track reward card, a branded `VVVIRUZ DETECTED` divider, and a wider Command Center section.
+- Upgraded the Command Center benefit cards with numbered badges, visual markers, hover lift, border highlights, and subtle gold glow states.
+- Added editable Public Site settings for the Command Center microcopy, CTA heading, CTA label, and helper text while preserving the existing exclusive signup/download flow.
+
+### 2026-04-28 20:46 -04:00
+
+- Simplified the public `/exclusives` community block by removing the body paragraph and Discord-open-note text.
+- Centered the community headline, subheadline, and command-center CTA so the section reads like a tighter landing-page module.
+- Removed the now-unused Community Body Copy and CTA Note controls from Public Site settings.
+
+### 2026-04-28 17:54 -04:00
+
+- Renamed the public exclusive-track nav destination to `/exclusives` while keeping `/exclusive` as a redirect for old links.
+- Added a configurable vvviruz command center community section below the exclusive download flow, including editable Discord URL, badge, headline, CTA text, and benefit cards in Public Site settings.
+- Added Prisma-backed release categories/projects so admin can group existing releases into collections like Multiversus, Switch Series, or Lover Boy EP, and public visitors can filter `/music` by those categories.
+- Updated the public music search/filter flow so category membership participates in discovery without exposing admin-only release state.
 
 ### 2026-04-28 16:47 -04:00
 

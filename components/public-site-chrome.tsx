@@ -17,7 +17,7 @@ export function PublicSiteChrome({
     {href: "/music", label: siteSettings.site_content.chrome.nav_music_label},
     {href: "/about", label: siteSettings.site_content.chrome.nav_about_label},
     {href: "/links", label: siteSettings.site_content.chrome.nav_links_label},
-    {href: "/exclusive", label: siteSettings.site_content.chrome.nav_exclusive_label || "Exclusive"}
+    {href: "/exclusives", label: siteSettings.site_content.chrome.nav_exclusive_label || "Exclusives"}
   ];
 
   return (

@@ -83,7 +83,7 @@ export function buildCampaignUnsubscribeUrl(token: string) {
 }
 
 export function buildExclusivePageUrl() {
-  return `${getPublicSiteUrl()}/exclusive`;
+  return `${getPublicSiteUrl()}/exclusives`;
 }
 
 export async function renderCampaignEmail(input: CampaignEmailInput) {
@@ -202,4 +202,3 @@ export async function sendCampaignEmail(input: CampaignEmailInput) {
     providerMessageId: payload.id
   };
 }
-

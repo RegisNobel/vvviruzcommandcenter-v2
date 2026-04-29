@@ -1262,8 +1262,8 @@ export function AudienceAdminPage({
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted">
           <p>
             Public capture lives on{" "}
-            <Link className="font-semibold text-[#d7b45e] hover:text-[#edd08a]" href="/exclusive" target="_blank">
-              /exclusive
+            <Link className="font-semibold text-[#d7b45e] hover:text-[#edd08a]" href="/exclusives" target="_blank">
+              /exclusives
             </Link>
             . Download access is token-based and the raw storage path is never exposed.
           </p>

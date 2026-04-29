@@ -75,10 +75,39 @@ model Release {
   streamingLinks   ReleaseStreamingLink[]
   projects         LyricProject[]
   copies           CopyEntry[]
+  categories       ReleaseCategoryAssignment[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
   @@index([isFeatured, releaseDate])
+}
+
+model ReleaseCategory {
+  id          String                      @id
+  name        String
+  slug        String                      @unique
+  description String                      @default("")
+  sortOrder   Int                         @default(0)
+  createdAt   DateTime
+  updatedAt   DateTime
+  releases    ReleaseCategoryAssignment[]
+
+  @@index([sortOrder, name])
+}
+
+model ReleaseCategoryAssignment {
+  id         String          @id
+  categoryId String
+  releaseId  String
+  sortOrder  Int             @default(0)
+  createdAt  DateTime
+  updatedAt  DateTime
+  category   ReleaseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  release    Release         @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, releaseId])
+  @@index([releaseId])
+  @@index([categoryId, sortOrder])
 }
 
 model ReleaseTask {
