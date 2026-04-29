@@ -380,6 +380,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-28 22:39 -04:00
+
+- Created and locally linked the Vercel project `vvviruzcommandcenter-v2` under the `akolly-koudouvos-projects` scope.
+- Confirmed the linked Vercel project ID is `prj_2r2wj9cuTQCI2TbVwCDfynMBV18E`.
+- Vercel CLI added `.vercel` to `.gitignore`; GitHub auto-linking still requires adding a Vercel Login Connection to the GitHub account.
+
 ### 2026-04-28 22:05 -04:00
 
 - Added a production readiness checklist to the README covering Vercel environment variables, Postgres, Vercel Blob, Prisma production schema setup, admin credential security, MFA, email provider testing, public URL checks, and backups.

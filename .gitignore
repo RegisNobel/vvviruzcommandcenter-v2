@@ -34,3 +34,5 @@ storage/uploads/*
 !storage/releases/.gitkeep
 !storage/uploads/.gitkeep
 whisper.cpp
+
+.vercel
