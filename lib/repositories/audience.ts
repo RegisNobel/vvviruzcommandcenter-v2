@@ -2,6 +2,7 @@ import {randomBytes} from "node:crypto";
 
 import {prisma} from "@/lib/db/prisma";
 import {toDate} from "@/lib/db/serialization";
+import {normalizeEmailAddress} from "@/lib/email/validation";
 import type {
   AudienceFilter,
   AudienceOverview,
@@ -16,7 +17,7 @@ import type {
 import {createId} from "@/lib/utils";
 
 function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+  return normalizeEmailAddress(email);
 }
 
 function createToken() {
@@ -558,4 +559,3 @@ export async function listEmailSendLogs() {
 
   return logs.map(toEmailSendLogRecord);
 }
-

@@ -4,36 +4,66 @@ export const dynamic = "force-dynamic";
 import {NextResponse} from "next/server";
 import {z} from "zod";
 
-import {getExclusiveSignupThrottle, recordExclusiveSignupAttempt} from "@/lib/exclusive-rate-limit";
+import {emailField} from "@/lib/email/validation";
+import {
+  consumeRateLimit,
+  getClientIpAddress,
+  retryAfterSeconds,
+  type RateLimitState
+} from "@/lib/public-rate-limit";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 import {upsertExclusiveSubscriber} from "@/lib/repositories/audience";
 import type {ExclusiveClaimResponse} from "@/lib/types";
 
 const claimSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
-  email: z.string().trim().email("Enter a valid email address."),
+  email: emailField("Enter a valid email address."),
   consent_given: z.boolean().default(false)
 });
 
-function getClientIpAddress(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+
+function rateLimitResponse(state: RateLimitState) {
+  return NextResponse.json(
+    {message: "Too many signup attempts. Try again in a few minutes."},
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(retryAfterSeconds(state.retryAfterMs))
+      }
+    }
+  );
 }
 
 export async function POST(request: Request) {
   const clientIp = getClientIpAddress(request);
-  const throttleState = getExclusiveSignupThrottle(clientIp);
+  const ipThrottleState = await consumeRateLimit({
+    bucket: "exclusive-claim-ip",
+    key: clientIp,
+    maxAttempts: 8,
+    windowMs: TEN_MINUTES_MS,
+    blockMs: FIFTEEN_MINUTES_MS
+  });
 
-  if (throttleState.blocked) {
-    return NextResponse.json(
-      {message: "Too many signup attempts. Try again in a few minutes."},
-      {status: 429}
-    );
+  if (!ipThrottleState.allowed) {
+    return rateLimitResponse(ipThrottleState);
   }
-
-  recordExclusiveSignupAttempt(clientIp);
 
   try {
     const payload = claimSchema.parse(await request.json());
+    const emailThrottleState = await consumeRateLimit({
+      bucket: "exclusive-claim-email",
+      key: payload.email,
+      maxAttempts: 3,
+      windowMs: TEN_MINUTES_MS,
+      blockMs: FIFTEEN_MINUTES_MS
+    });
+
+    if (!emailThrottleState.allowed) {
+      return rateLimitResponse(emailThrottleState);
+    }
+
     const {offer, isAvailable} = await readPublicExclusiveOffer();
 
     if (!isAvailable) {
@@ -80,4 +110,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

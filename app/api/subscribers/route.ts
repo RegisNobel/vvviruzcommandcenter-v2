@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {emailField} from "@/lib/email/validation";
 import {
   createSubscriber,
   listSubscribers,
@@ -14,7 +15,7 @@ import type {SubscriberSource, SubscriberStatus} from "@/lib/types";
 
 const subscriberCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
-  email: z.string().trim().email("Enter a valid email."),
+  email: emailField("Enter a valid email."),
   source: z.enum(["exclusive", "manual"]).default("manual"),
   status: z.enum(["active", "unsubscribed"]).default("active"),
   consent_given: z.boolean().default(false)
@@ -72,4 +73,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

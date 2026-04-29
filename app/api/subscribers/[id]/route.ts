@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {emailField} from "@/lib/email/validation";
 import {
   deleteSubscriber,
   markSubscriberUnsubscribed,
@@ -14,7 +15,7 @@ import type {SubscriberSource} from "@/lib/types";
 
 const subscriberUpdateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
-  email: z.string().trim().email("Enter a valid email."),
+  email: emailField("Enter a valid email."),
   source: z.enum(["exclusive", "manual"]).default("manual"),
   status: z.enum(["active", "unsubscribed"]),
   consent_given: z.boolean().default(false),
@@ -89,4 +90,3 @@ export async function DELETE(
     );
   }
 }
-

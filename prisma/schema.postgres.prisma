@@ -282,3 +282,17 @@ model AnalyticsEvent {
   @@index([visitorId, createdAt])
 }
 
+model PublicRateLimit {
+  id              String    @id
+  bucket          String
+  key             String
+  count           Int       @default(0)
+  windowStartedAt DateTime
+  blockedUntil    DateTime?
+  updatedAt       DateTime
+
+  @@unique([bucket, key])
+  @@index([bucket, updatedAt])
+  @@index([blockedUntil])
+}
+

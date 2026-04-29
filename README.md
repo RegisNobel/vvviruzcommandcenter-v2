@@ -389,6 +389,13 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-29 14:14 -04:00
+
+- Added middleware-level burst protection for public `/api/exclusive/claim` and `/api/analytics/track` POST requests so obvious repeated traffic is rejected before reaching route handlers.
+- Replaced the old in-memory exclusive signup limiter with a Prisma-backed `PublicRateLimit` table so exclusive track claims are durably throttled by both IP address and normalized email address across production server instances.
+- Added shared email normalization and validation for public exclusive signups and admin subscriber CRUD, including length, whitespace, domain, and repeated-dot checks beyond the browser `type=email` guard.
+- Applied the local SQLite migration and verified the updated SQLite and Postgres Prisma clients generate cleanly.
+
 ### 2026-04-29 13:53 -04:00
 
 - Rotated the production `AUTH_SECRET`, re-encrypted the existing admin TOTP secret against the new auth secret, and cleared active production auth sessions so old session cookies are invalidated.

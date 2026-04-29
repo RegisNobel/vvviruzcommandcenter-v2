@@ -7,8 +7,80 @@ type MiddlewareCookiePayload = {
   v: 1;
 };
 
+type EdgeRateLimitState = {
+  count: number;
+  blockedUntil: number;
+  windowStartedAt: number;
+};
+
+type EdgeRateLimitRule = {
+  blockMs: number;
+  maxRequests: number;
+  windowMs: number;
+};
+
 const ADMIN_COOKIE = "vvv_admin_session";
 const encoder = new TextEncoder();
+const edgeRateLimits = new Map<string, EdgeRateLimitState>();
+const edgeRateLimitRules: Record<string, EdgeRateLimitRule> = {
+  "/api/analytics/track": {
+    blockMs: 60 * 1000,
+    maxRequests: 120,
+    windowMs: 60 * 1000
+  },
+  "/api/exclusive/claim": {
+    blockMs: 10 * 60 * 1000,
+    maxRequests: 20,
+    windowMs: 10 * 60 * 1000
+  }
+};
+
+function getMiddlewareIpAddress(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    "local"
+  );
+}
+
+function consumeEdgeRateLimit(request: NextRequest, pathname: string) {
+  if (request.method !== "POST") {
+    return null;
+  }
+
+  const rule = edgeRateLimitRules[pathname];
+
+  if (!rule) {
+    return null;
+  }
+
+  const now = Date.now();
+  const key = `${pathname}:${getMiddlewareIpAddress(request)}`;
+  const current = edgeRateLimits.get(key);
+
+  if (current?.blockedUntil && current.blockedUntil > now) {
+    return current.blockedUntil - now;
+  }
+
+  const windowExpired = !current || current.windowStartedAt + rule.windowMs <= now;
+  const nextState: EdgeRateLimitState = {
+    count: windowExpired ? 1 : current.count + 1,
+    blockedUntil: 0,
+    windowStartedAt: windowExpired ? now : current.windowStartedAt
+  };
+
+  if (nextState.count > rule.maxRequests) {
+    nextState.blockedUntil = now + rule.blockMs;
+    edgeRateLimits.set(key, nextState);
+
+    return rule.blockMs;
+  }
+
+  edgeRateLimits.set(key, nextState);
+
+  return null;
+}
 
 function base64UrlToBase64(value: string) {
   const padded = value.padEnd(Math.ceil(value.length / 4) * 4, "=");
@@ -94,6 +166,24 @@ function redirectTo(request: NextRequest, pathname: string) {
 
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;
+  const retryAfterMs = consumeEdgeRateLimit(request, pathname);
+
+  if (retryAfterMs) {
+    return NextResponse.json(
+      {message: "Too many requests. Try again shortly."},
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(1, Math.ceil(retryAfterMs / 1000)))
+        }
+      }
+    );
+  }
+
+  if (edgeRateLimitRules[pathname]) {
+    return NextResponse.next();
+  }
+
   const cookie = request.cookies.get(ADMIN_COOKIE)?.value;
   const session = await verifySessionCookie(cookie);
   const stage = session?.stage ?? null;
@@ -166,5 +256,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  matcher: ["/admin/:path*", "/api/analytics/track", "/api/exclusive/claim"]
 };
