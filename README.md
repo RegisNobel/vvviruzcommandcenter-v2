@@ -389,6 +389,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-29 00:04 -04:00
+
+- Configured Resend production email settings in Vercel with `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`, and `ADMIN_TEST_EMAIL`.
+- Set the production sender identity to `vvviruz <inquiry@vvviruz.com>` and admin test recipient to `inquiry@vvviruz.com`.
+- Verified the pulled Vercel production environment contains the required email variables without exposing secret values.
+
 ### 2026-04-28 23:22 -04:00
 
 - Added repeatable production support scripts for exporting the local SQLite data snapshot, importing that snapshot into a Postgres-backed Prisma client, and uploading local media assets to Vercel Blob.
