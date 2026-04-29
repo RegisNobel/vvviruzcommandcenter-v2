@@ -389,6 +389,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-29 01:02 -04:00
+
+- Fixed production admin login by replacing the malformed Vercel `ADMIN_PASSWORD_HASH` value that had copied local escaped dollar signs literally from `.env.local`.
+- Verified the production username/password step now redirects to `/admin/2fa` on both `vvviruz.com` and the Vercel app URL.
+- Updated production `PUBLIC_SITE_URL` and `NEXT_PUBLIC_SITE_URL` to the canonical custom domain `https://vvviruz.com`.
+
 ### 2026-04-29 00:04 -04:00
 
 - Configured Resend production email settings in Vercel with `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `EMAIL_FROM`, and `ADMIN_TEST_EMAIL`.
