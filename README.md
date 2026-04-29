@@ -395,7 +395,7 @@ docker compose up --build -d
 - Updated the asset API route so existing `/api/assets/...` references can resolve from Blob in production when local disk storage is unavailable.
 - Updated admin asset listing helpers so site icons and exclusive offer assets can be listed from Blob when `ASSET_STORAGE_DRIVER=vercel-blob`.
 - Verified Vercel production env has Postgres, Blob, admin auth, and public-site URL settings populated; Resend-specific email secrets still need to be added before campaign sending is production-ready.
-- Pushed the current local data snapshot into production Postgres and uploaded local media assets to Blob: 12 site icons, 28 covers, 2 backgrounds, 18 audio uploads, and 1 export.
+- Pushed the current local data snapshot into production Postgres, including the admin identity for existing TOTP continuity but no active local sessions, and uploaded local media assets to Blob: 12 site icons, 28 covers, 2 backgrounds, 18 audio uploads, and 1 export.
 
 ### 2026-04-28 22:39 -04:00
 
