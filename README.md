@@ -158,9 +158,11 @@ Placeholder route for future reporting and performance views.
 - FFmpeg via `ffmpeg-static`
 - FFprobe via `ffprobe-static`
 - local Whisper via `@remotion/install-whisper-cpp`
-- SQLite
+- SQLite for local development and Docker
+- Postgres for Vercel production
 - Prisma
-- local filesystem storage for media assets
+- local filesystem storage for media assets in local mode
+- Vercel Blob for durable production media assets
 
 ## Persistence Model
 
@@ -201,9 +203,9 @@ Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`
 - SQLite database file at `storage/vvviruz-command-center.db`
 - Prisma as the relational data layer and migration system
 - Thin repository layer under `lib/repositories/*`
-- File system remains the home for large media assets
+- File system remains the home for large media assets locally
+- Vercel Blob stores media assets for production deployments
 - Single server process
-- No cloud storage
 - No background worker layer
 - No Stripe, auth SaaS, or multi-user system
 - Public website now lives on `/`, `/music`, `/music/[slug]`, `/about`, `/links`, `/exclusives`, and `/unsubscribe`
@@ -312,12 +314,16 @@ Vercel deployment path:
 1. Provision Postgres through Vercel Marketplace/Neon or another Postgres host.
 2. Set `DATABASE_URL` to the Postgres connection string.
 3. Provision Vercel Blob and set `ASSET_STORAGE_DRIVER=vercel-blob` plus `BLOB_READ_WRITE_TOKEN`.
-4. Run `npm run db:push:postgres` once from a trusted machine or CI step to create/update the Postgres schema.
-5. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel` and generates Prisma from `prisma/schema.postgres.prisma`.
+4. Export the current local SQLite data with `npm run db:export:snapshot`.
+5. Push the Postgres schema with `DATABASE_URL` pointed at a non-pooling Postgres connection when available.
+6. Import the snapshot with `npm run db:import:snapshot`.
+7. Upload local media assets with `npm run assets:upload:blob`.
+8. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel` and generates Prisma from `prisma/schema.postgres.prisma`.
 
 Required Vercel environment variables match `.env.example`:
 
 - `DATABASE_URL`
+- `POSTGRES_URL_NON_POOLING` or equivalent direct/non-pooling URL for trusted schema/data operations
 - `NEXT_PUBLIC_SITE_URL`
 - `PUBLIC_SITE_URL`
 - `ASSET_STORAGE_DRIVER`
@@ -360,6 +366,9 @@ npm run db:migrate:dev -- --name your_change_name
 npm run db:migrate:deploy
 npm run db:generate:postgres
 npm run db:push:postgres
+npm run db:export:snapshot
+npm run db:import:snapshot
+npm run assets:upload:blob
 npm run db:import
 npm run dev
 npm run build
@@ -379,6 +388,14 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-28 23:22 -04:00
+
+- Added repeatable production support scripts for exporting the local SQLite data snapshot, importing that snapshot into a Postgres-backed Prisma client, and uploading local media assets to Vercel Blob.
+- Updated the asset API route so existing `/api/assets/...` references can resolve from Blob in production when local disk storage is unavailable.
+- Updated admin asset listing helpers so site icons and exclusive offer assets can be listed from Blob when `ASSET_STORAGE_DRIVER=vercel-blob`.
+- Verified Vercel production env has Postgres, Blob, admin auth, and public-site URL settings populated; Resend-specific email secrets still need to be added before campaign sending is production-ready.
+- Pushed the current local data snapshot into production Postgres and uploaded local media assets to Blob: 12 site icons, 28 covers, 2 backgrounds, 18 audio uploads, and 1 export.
 
 ### 2026-04-28 22:39 -04:00
 

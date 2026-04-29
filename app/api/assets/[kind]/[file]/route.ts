@@ -11,7 +11,7 @@ import {NextResponse} from "next/server";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {canPubliclyReadCoverAsset} from "@/lib/repositories/public-site";
 import {canPubliclyReadExclusiveArtAsset} from "@/lib/repositories/exclusive-offer";
-import {resolveAssetPath} from "@/lib/server/storage";
+import {resolveAssetToLocalPath} from "@/lib/server/asset-storage";
 
 function getContentType(fileName: string) {
   const extension = path.extname(fileName).toLowerCase();
@@ -127,7 +127,7 @@ export async function GET(
       }
     }
 
-    const filePath = await resolveAssetPath(kind, file);
+    const filePath = await resolveAssetToLocalPath(kind, file, "public");
     const stats = await fsPromises.stat(filePath);
     const contentDisposition =
       kind === "export"

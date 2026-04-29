@@ -44,6 +44,44 @@ const EXCLUSIVE_ART_EXTENSIONS = new Set([
   ".webp"
 ]);
 
+function isDurableObjectStorageEnabled() {
+  return process.env.ASSET_STORAGE_DRIVER === "vercel-blob";
+}
+
+function getBlobPrefix() {
+  return process.env.BLOB_PREFIX?.trim().replace(/^\/+|\/+$/g, "") || "vvviruz";
+}
+
+async function listBlobAssetFiles(
+  kind: "site-icon" | "exclusive-track" | "exclusive-art",
+  allowedExtensions: Set<string>
+) {
+  const {list} = await import("@vercel/blob");
+  const files = new Set<string>();
+  let cursor: string | undefined;
+  let hasMore = true;
+
+  while (hasMore) {
+    const result = await list({
+      prefix: `${getBlobPrefix()}/${kind}/`,
+      cursor
+    });
+
+    for (const blob of result.blobs) {
+      const fileName = fileNameFromPath(blob.pathname);
+
+      if (allowedExtensions.has(path.extname(fileName).toLowerCase())) {
+        files.add(fileName);
+      }
+    }
+
+    cursor = result.cursor;
+    hasMore = Boolean(result.hasMore && cursor);
+  }
+
+  return Array.from(files).sort((left, right) => left.localeCompare(right));
+}
+
 export async function ensureStorageDirs() {
   await Promise.all([
     fs.mkdir(uploadsDir, {recursive: true}),
@@ -60,6 +98,10 @@ export async function ensureStorageDirs() {
 }
 
 export async function listSiteIconFiles() {
+  if (isDurableObjectStorageEnabled()) {
+    return listBlobAssetFiles("site-icon", SITE_ICON_EXTENSIONS);
+  }
+
   await ensureStorageDirs();
   const entries = await fs.readdir(siteIconsDir, {withFileTypes: true});
 
@@ -70,7 +112,15 @@ export async function listSiteIconFiles() {
     .sort((left, right) => left.localeCompare(right));
 }
 
-async function listFilesByExtension(directory: string, allowedExtensions: Set<string>) {
+async function listFilesByExtension(
+  kind: "exclusive-track" | "exclusive-art",
+  directory: string,
+  allowedExtensions: Set<string>
+) {
+  if (isDurableObjectStorageEnabled()) {
+    return listBlobAssetFiles(kind, allowedExtensions);
+  }
+
   await ensureStorageDirs();
   const entries = await fs.readdir(directory, {withFileTypes: true});
 
@@ -82,11 +132,15 @@ async function listFilesByExtension(directory: string, allowedExtensions: Set<st
 }
 
 export async function listExclusiveTrackFiles() {
-  return listFilesByExtension(exclusiveTracksDir, EXCLUSIVE_TRACK_EXTENSIONS);
+  return listFilesByExtension(
+    "exclusive-track",
+    exclusiveTracksDir,
+    EXCLUSIVE_TRACK_EXTENSIONS
+  );
 }
 
 export async function listExclusiveArtFiles() {
-  return listFilesByExtension(exclusiveArtDir, EXCLUSIVE_ART_EXTENSIONS);
+  return listFilesByExtension("exclusive-art", exclusiveArtDir, EXCLUSIVE_ART_EXTENSIONS);
 }
 
 export function sanitizeAssetId(assetId: string) {

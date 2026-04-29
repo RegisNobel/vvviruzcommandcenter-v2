@@ -22,6 +22,9 @@
     "db:generate:postgres": "node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma",
     "db:push:postgres": "node scripts/run-prisma.mjs db push --schema prisma/schema.postgres.prisma",
     "db:studio:postgres": "node scripts/run-prisma.mjs studio --schema prisma/schema.postgres.prisma",
+    "db:export:snapshot": "tsx scripts/export-db-snapshot.ts",
+    "db:import:snapshot": "tsx scripts/import-db-snapshot.ts",
+    "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "build:vercel": "npm run db:generate:postgres && next build"
   },
   "dependencies": {
