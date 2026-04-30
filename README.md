@@ -424,6 +424,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-04-30 00:18 -04:00
+
+- Located the Google Drive `command center` folder created for offsite backups and stored its folder ID in Vercel as `GOOGLE_DRIVE_BACKUP_FOLDER_ID`.
+- Confirmed `CRON_SECRET`, `BACKUP_ENCRYPTION_SECRET`, `GOOGLE_DRIVE_BACKUP_ENABLED`, and `GOOGLE_DRIVE_BACKUP_FOLDER_ID` are present as sensitive production Vercel env vars.
+- Kept Google Drive offsite uploads disabled until `GOOGLE_DRIVE_CLIENT_EMAIL` and `GOOGLE_DRIVE_PRIVATE_KEY` are added and the Drive folder is shared with that service account.
+
 ### 2026-04-29 22:40 -04:00
 
 - Added an automated backup system with a protected `/api/cron/backups` route and a daily Vercel Cron schedule.
