@@ -343,6 +343,12 @@ Required Vercel environment variables match `.env.example`:
 - `CRON_SECRET`
 - `BACKUP_ENCRYPTION_SECRET`
 - `GOOGLE_DRIVE_BACKUP_ENABLED`
+- `GOOGLE_DRIVE_AUTH_MODE`
+- `GOOGLE_DRIVE_OAUTH_CLIENT_ID`
+- `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN`
+- `GOOGLE_DRIVE_OAUTH_REDIRECT_URI`
+- `GOOGLE_DRIVE_OAUTH_SCOPE`
 - `GOOGLE_DRIVE_CLIENT_EMAIL`
 - `GOOGLE_DRIVE_PRIVATE_KEY`
 - `GOOGLE_DRIVE_BACKUP_FOLDER_ID`
@@ -351,7 +357,7 @@ Local/Docker still default to SQLite and local disk storage. Vercel should use P
 
 ### Automated Backups
 
-Production backups run through the protected `/api/cron/backups` endpoint and the daily Vercel Cron entry in `vercel.json`.
+Production backups run through the protected `/api/cron/backups` endpoint and the daily Vercel Cron entry in `vercel.json`. The current schedule is `0 9 * * *`, which runs once per day at 09:00 UTC. During Eastern daylight time, that is 5:00 AM America/New_York.
 
 Backup artifacts:
 
@@ -367,10 +373,11 @@ Primary backup destination:
 
 Optional offsite destination:
 
-- Google Drive uploads are enabled only when `GOOGLE_DRIVE_BACKUP_ENABLED=1` and the Google Drive service-account env vars are configured.
-- The app expects `GOOGLE_DRIVE_BACKUP_FOLDER_ID` to point at a Google Drive folder named `command center`.
-- Share that Drive folder with the service account email in `GOOGLE_DRIVE_CLIENT_EMAIL`.
-- The Codex Drive connector can search Drive files but does not currently expose folder creation, so the folder has to be created once in Google Drive before enabling offsite uploads.
+- Google Drive uploads are enabled only when `GOOGLE_DRIVE_BACKUP_ENABLED=1`.
+- Preferred production mode is personal-user OAuth: set `GOOGLE_DRIVE_AUTH_MODE=oauth`, `GOOGLE_DRIVE_OAUTH_CLIENT_ID`, `GOOGLE_DRIVE_OAUTH_CLIENT_SECRET`, and `GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN`.
+- `GOOGLE_DRIVE_BACKUP_FOLDER_ID` can point at the personal Drive `command center` folder. If omitted, Google stores backup artifacts in the authorized account's Drive root.
+- Run `npm run setup:drive-oauth` locally after creating a Google OAuth client with `http://127.0.0.1:53682/oauth2callback` as an authorized redirect URI. The helper opens a local callback server and prints the refresh token for Vercel.
+- Service-account mode is still available with `GOOGLE_DRIVE_AUTH_MODE=service_account`, `GOOGLE_DRIVE_CLIENT_EMAIL`, and `GOOGLE_DRIVE_PRIVATE_KEY`, but normal My Drive uploads fail because service accounts do not have personal Drive storage quota. Use that mode only with a Google Workspace Shared Drive or delegated setup.
 
 Recovery posture:
 
@@ -404,6 +411,7 @@ npm run db:push:postgres
 npm run db:export:snapshot
 npm run db:import:snapshot
 npm run assets:upload:blob
+npm run setup:drive-oauth
 npm run db:import
 npm run dev
 npm run build
@@ -423,6 +431,20 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-30 02:09 -04:00
+
+- Enabled Google Drive offsite backups in production through personal-user OAuth so encrypted backup artifacts upload against the owner's Drive quota instead of service-account storage.
+- Stored the OAuth backup env vars in Vercel as sensitive production values and kept the local OAuth callback output out of source control.
+- Verified the protected production backup route uploads both database snapshots and asset manifests to Vercel Blob and Google Drive.
+- Documented the active daily backup schedule as 09:00 UTC, currently 5:00 AM America/New_York during daylight saving time.
+
+### 2026-04-30 01:23 -04:00
+
+- Switched the Google Drive backup adapter to support personal-user OAuth refresh-token auth so offsite backups can upload against the owner's Drive quota.
+- Kept the existing service-account path as an explicit `GOOGLE_DRIVE_AUTH_MODE=service_account` fallback for future Shared Drive or delegated setups.
+- Added `npm run setup:drive-oauth` to generate a Google authorization URL, capture the local callback, and exchange the code for a refresh token.
+- Updated `.env.example` and README backup documentation with the OAuth env vars and setup flow.
 
 ### 2026-04-30 00:18 -04:00
 

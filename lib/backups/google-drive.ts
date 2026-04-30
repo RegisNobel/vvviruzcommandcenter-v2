@@ -18,6 +18,27 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files";
 const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
+type GoogleDriveConfig =
+  | {
+      enabled: false;
+      reason: string;
+    }
+  | {
+      authMode: "oauth";
+      clientId: string;
+      clientSecret: string;
+      enabled: true;
+      folderId: string;
+      refreshToken: string;
+    }
+  | {
+      authMode: "service_account";
+      clientEmail: string;
+      enabled: true;
+      folderId: string;
+      privateKey: string;
+    };
+
 function base64UrlEncode(value: string | Buffer) {
   return Buffer.from(value)
     .toString("base64")
@@ -26,33 +47,57 @@ function base64UrlEncode(value: string | Buffer) {
     .replace(/=+$/g, "");
 }
 
-function readGoogleDriveConfig() {
+function readGoogleDriveConfig(): GoogleDriveConfig {
   const enabled = process.env.GOOGLE_DRIVE_BACKUP_ENABLED === "1";
+  const authMode = process.env.GOOGLE_DRIVE_AUTH_MODE?.trim() || "";
+  const folderId = process.env.GOOGLE_DRIVE_BACKUP_FOLDER_ID?.trim() || "";
+  const oauthClientId = process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID?.trim() || "";
+  const oauthClientSecret = process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET?.trim() || "";
+  const oauthRefreshToken = process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN?.trim() || "";
   const clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL?.trim() || "";
   const privateKey = (process.env.GOOGLE_DRIVE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-  const folderId = process.env.GOOGLE_DRIVE_BACKUP_FOLDER_ID?.trim() || "";
 
   if (!enabled) {
     return {enabled: false as const, reason: "Google Drive backups are disabled."};
+  }
+
+  if (authMode === "oauth" || (!authMode && oauthRefreshToken)) {
+    if (!oauthClientId || !oauthClientSecret || !oauthRefreshToken) {
+      return {
+        enabled: false as const,
+        reason:
+          "Google Drive OAuth backups need GOOGLE_DRIVE_OAUTH_CLIENT_ID, GOOGLE_DRIVE_OAUTH_CLIENT_SECRET, and GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN."
+      };
+    }
+
+    return {
+      authMode: "oauth",
+      clientId: oauthClientId,
+      clientSecret: oauthClientSecret,
+      enabled: true as const,
+      folderId,
+      refreshToken: oauthRefreshToken
+    };
   }
 
   if (!clientEmail || !privateKey || !folderId) {
     return {
       enabled: false as const,
       reason:
-        "Google Drive backups need GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, and GOOGLE_DRIVE_BACKUP_FOLDER_ID."
+        "Google Drive service-account backups need GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, and GOOGLE_DRIVE_BACKUP_FOLDER_ID."
     };
   }
 
   return {
+    authMode: "service_account",
     enabled: true as const,
     clientEmail,
-    privateKey,
-    folderId
+    folderId,
+    privateKey
   };
 }
 
-async function getGoogleAccessToken(config: {
+async function getServiceAccountAccessToken(config: {
   clientEmail: string;
   privateKey: string;
 }) {
@@ -94,6 +139,48 @@ async function getGoogleAccessToken(config: {
   return payload.access_token;
 }
 
+async function getOAuthAccessToken(config: {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+}) {
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: config.refreshToken
+    })
+  });
+  const payload = (await response.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!response.ok || !payload.access_token) {
+    throw new Error(
+      payload.error_description ||
+        payload.error ||
+        "Unable to refresh Google Drive OAuth access token."
+    );
+  }
+
+  return payload.access_token;
+}
+
+async function getGoogleAccessToken(config: Exclude<GoogleDriveConfig, {enabled: false}>) {
+  if (config.authMode === "oauth") {
+    return getOAuthAccessToken(config);
+  }
+
+  return getServiceAccountAccessToken(config);
+}
+
 export async function uploadBackupArtifactToGoogleDrive({
   buffer,
   fileName
@@ -112,7 +199,7 @@ export async function uploadBackupArtifactToGoogleDrive({
   const metadata = {
     mimeType: "application/octet-stream",
     name: fileName,
-    parents: [config.folderId]
+    ...(config.folderId ? {parents: [config.folderId]} : {})
   };
   const multipartBody = Buffer.concat([
     Buffer.from(
@@ -125,7 +212,7 @@ export async function uploadBackupArtifactToGoogleDrive({
     Buffer.from(`\r\n--${boundary}--`, "utf8")
   ]);
   const response = await fetch(
-    `${GOOGLE_DRIVE_UPLOAD_URL}?uploadType=multipart&fields=id,webViewLink`,
+    `${GOOGLE_DRIVE_UPLOAD_URL}?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink`,
     {
       method: "POST",
       headers: {
@@ -148,7 +235,7 @@ export async function uploadBackupArtifactToGoogleDrive({
   return {
     enabled: true,
     fileId: payload.id,
-    folderId: config.folderId,
+    folderId: config.folderId || "root",
     webViewLink: payload.webViewLink || ""
   };
 }
