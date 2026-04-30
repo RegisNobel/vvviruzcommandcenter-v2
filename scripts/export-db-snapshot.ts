@@ -23,7 +23,8 @@ async function main() {
     subscribers: await prisma.subscriber.findMany(),
     emailCampaigns: await prisma.emailCampaign.findMany(),
     emailSendLogs: await prisma.emailSendLog.findMany(),
-    analyticsEvents: await prisma.analyticsEvent.findMany()
+    analyticsEvents: await prisma.analyticsEvent.findMany(),
+    backupRuns: await prisma.backupRun.findMany()
   };
 
   await fs.mkdir(path.dirname(snapshotPath), {recursive: true});

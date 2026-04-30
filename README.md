@@ -340,8 +340,40 @@ Required Vercel environment variables match `.env.example`:
 - `EMAIL_FROM`
 - `ADMIN_TEST_EMAIL`
 - `EMAIL_POSTAL_ADDRESS`
+- `CRON_SECRET`
+- `GOOGLE_DRIVE_BACKUP_ENABLED`
+- `GOOGLE_DRIVE_CLIENT_EMAIL`
+- `GOOGLE_DRIVE_PRIVATE_KEY`
+- `GOOGLE_DRIVE_BACKUP_FOLDER_ID`
 
 Local/Docker still default to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
+
+### Automated Backups
+
+Production backups run through the protected `/api/cron/backups` endpoint and the daily Vercel Cron entry in `vercel.json`.
+
+Backup artifacts:
+
+- Database snapshot: compressed JSON export of structured Prisma data.
+- Asset manifest: compressed JSON inventory of local assets or Vercel Blob objects.
+- Backup history: `BackupRun` records store status, destination, checksums, artifact size, counts, and errors.
+
+Primary backup destination:
+
+- Private Vercel Blob paths under `BLOB_PREFIX/backups/...`.
+
+Optional offsite destination:
+
+- Google Drive uploads are enabled only when `GOOGLE_DRIVE_BACKUP_ENABLED=1` and the Google Drive service-account env vars are configured.
+- The app expects `GOOGLE_DRIVE_BACKUP_FOLDER_ID` to point at a Google Drive folder named `command center`.
+- Share that Drive folder with the service account email in `GOOGLE_DRIVE_CLIENT_EMAIL`.
+- The Codex Drive connector can search Drive files but does not currently expose folder creation, so the folder has to be created once in Google Drive before enabling offsite uploads.
+
+Recovery posture:
+
+- Supabase/Postgres provider backups remain the first line of defense for database restore.
+- App-level snapshots provide portable logical exports and an extra recovery path.
+- Vercel Blob remains the primary durable media store; the asset manifest gives us a restore/audit inventory. Full binary asset mirroring to Drive should be added later only if storage size and cron duration stay manageable.
 
 ### Production Readiness Checklist
 
@@ -355,7 +387,7 @@ Before deploying:
 - [ ] MFA enabled on all services
 - [ ] Email provider configured and tested
 - [ ] Public URLs verified
-- [ ] Backup strategy confirmed
+- [ ] Backup strategy confirmed, including `CRON_SECRET` and provider backup retention
 
 ## Useful Commands
 
@@ -388,6 +420,14 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-29 22:40 -04:00
+
+- Added an automated backup system with a protected `/api/cron/backups` route and a daily Vercel Cron schedule.
+- Added a `BackupRun` database model to track backup status, destinations, checksums, artifact sizes, record counts, and failure messages.
+- Added compressed database snapshot generation and compressed asset-manifest generation, stored under private Vercel Blob backup paths.
+- Added optional Google Drive offsite upload support for backup artifacts through service-account credentials and `GOOGLE_DRIVE_BACKUP_FOLDER_ID`.
+- Documented the required Google Drive `command center` folder setup, including the current connector limitation that the folder must be created/shared manually before offsite uploads are enabled.
 
 ### 2026-04-29 14:14 -04:00
 

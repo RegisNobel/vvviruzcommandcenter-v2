@@ -296,3 +296,23 @@ model PublicRateLimit {
   @@index([blockedUntil])
 }
 
+model BackupRun {
+  id                  String    @id
+  type                String
+  status              String
+  destination         String    @default("")
+  blobPath            String    @default("")
+  googleDriveFileId   String?
+  googleDriveFolderId String?
+  sizeBytes           Int?
+  checksumSha256      String?
+  recordCounts        String    @default("{}")
+  errorMessage        String?
+  startedAt           DateTime
+  finishedAt          DateTime?
+  createdAt           DateTime
+
+  @@index([type, startedAt])
+  @@index([status, startedAt])
+}
+

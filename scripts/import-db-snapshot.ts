@@ -25,6 +25,7 @@ type Snapshot = {
   emailCampaigns?: SnapshotRecord[];
   emailSendLogs?: SnapshotRecord[];
   analyticsEvents?: SnapshotRecord[];
+  backupRuns?: SnapshotRecord[];
 };
 
 const dateFieldsByModel: Record<string, string[]> = {
@@ -40,7 +41,8 @@ const dateFieldsByModel: Record<string, string[]> = {
   subscriber: ["createdAt", "updatedAt", "unsubscribedAt"],
   emailCampaign: ["sentAt", "createdAt", "updatedAt"],
   emailSendLog: ["sentAt", "createdAt"],
-  analyticsEvent: ["createdAt"]
+  analyticsEvent: ["createdAt"],
+  backupRun: ["startedAt", "finishedAt", "createdAt"]
 };
 
 function hydrateDates(modelName: string, record: SnapshotRecord) {
@@ -108,6 +110,7 @@ async function main() {
   counts.emailCampaigns = await upsertMany("emailCampaign", snapshot.emailCampaigns);
   counts.emailSendLogs = await upsertMany("emailSendLog", snapshot.emailSendLogs);
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
+  counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
 
   console.log(
     JSON.stringify(
