@@ -341,6 +341,7 @@ Required Vercel environment variables match `.env.example`:
 - `ADMIN_TEST_EMAIL`
 - `EMAIL_POSTAL_ADDRESS`
 - `CRON_SECRET`
+- `BACKUP_ENCRYPTION_SECRET`
 - `GOOGLE_DRIVE_BACKUP_ENABLED`
 - `GOOGLE_DRIVE_CLIENT_EMAIL`
 - `GOOGLE_DRIVE_PRIVATE_KEY`
@@ -357,10 +358,12 @@ Backup artifacts:
 - Database snapshot: compressed JSON export of structured Prisma data.
 - Asset manifest: compressed JSON inventory of local assets or Vercel Blob objects.
 - Backup history: `BackupRun` records store status, destination, checksums, artifact size, counts, and errors.
+- Backup encryption: artifacts are gzip-compressed first, then encrypted with `BACKUP_ENCRYPTION_SECRET` before leaving the server.
 
 Primary backup destination:
 
-- Private Vercel Blob paths under `BLOB_PREFIX/backups/...`.
+- Encrypted Vercel Blob paths under `BLOB_PREFIX/backups/...`.
+- The current Blob store is public-access, so backup files must remain encrypted at rest. Do not upload raw database snapshots to the public Blob store.
 
 Optional offsite destination:
 
@@ -387,7 +390,7 @@ Before deploying:
 - [ ] MFA enabled on all services
 - [ ] Email provider configured and tested
 - [ ] Public URLs verified
-- [ ] Backup strategy confirmed, including `CRON_SECRET` and provider backup retention
+- [ ] Backup strategy confirmed, including `CRON_SECRET`, `BACKUP_ENCRYPTION_SECRET`, and provider backup retention
 
 ## Useful Commands
 
@@ -426,7 +429,8 @@ docker compose up --build -d
 - Added an automated backup system with a protected `/api/cron/backups` route and a daily Vercel Cron schedule.
 - Added a `BackupRun` database model to track backup status, destinations, checksums, artifact sizes, record counts, and failure messages.
 - Added compressed database snapshot generation and compressed asset-manifest generation, stored under private Vercel Blob backup paths.
-- Added optional Google Drive offsite upload support for backup artifacts through service-account credentials and `GOOGLE_DRIVE_BACKUP_FOLDER_ID`.
+- Added backup artifact encryption before upload because the current Vercel Blob store is public-access and must not receive raw database snapshots.
+- Added optional Google Drive offsite upload support for encrypted backup artifacts through service-account credentials and `GOOGLE_DRIVE_BACKUP_FOLDER_ID`.
 - Documented the required Google Drive `command center` folder setup, including the current connector limitation that the folder must be created/shared manually before offsite uploads are enabled.
 
 ### 2026-04-29 14:14 -04:00

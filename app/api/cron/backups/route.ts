@@ -8,6 +8,7 @@ import {
   uploadBackupArtifactToBlob,
   type BackupArtifactType
 } from "@/lib/backups/blob-storage";
+import {checksumSha256, encryptBackupArtifact} from "@/lib/backups/encryption";
 import {uploadBackupArtifactToGoogleDrive} from "@/lib/backups/google-drive";
 import {
   createAssetManifestArtifact,
@@ -62,14 +63,16 @@ async function runBackupJob(job: BackupJob) {
 
   try {
     const artifact = await job.createArtifact();
+    const encryptedBuffer = encryptBackupArtifact(artifact.buffer);
+    const encryptedChecksum = checksumSha256(encryptedBuffer);
     const blob = await uploadBackupArtifactToBlob({
-      buffer: artifact.buffer,
+      buffer: encryptedBuffer,
       fileStem: job.fileStem,
       type: job.blobType
     });
     const driveFileName = blob.pathname.split("/").pop() || `${job.fileStem}.json.gz`;
     const drive = await uploadBackupArtifactToGoogleDrive({
-      buffer: artifact.buffer,
+      buffer: encryptedBuffer,
       fileName: driveFileName
     });
     const destinations = ["vercel_blob"];
@@ -80,12 +83,12 @@ async function runBackupJob(job: BackupJob) {
 
     await markBackupRunSuccess(run.id, {
       blobPath: blob.pathname,
-      checksumSha256: artifact.checksumSha256,
+      checksumSha256: encryptedChecksum,
       destination: destinations.join(","),
       googleDriveFileId: drive.enabled ? drive.fileId : null,
       googleDriveFolderId: drive.enabled ? drive.folderId : null,
       recordCounts: artifact.recordCounts,
-      sizeBytes: artifact.sizeBytes
+      sizeBytes: encryptedBuffer.byteLength
     });
 
     return {
@@ -94,7 +97,7 @@ async function runBackupJob(job: BackupJob) {
       googleDrive: drive.enabled ? "uploaded" : drive.reason,
       recordCounts: artifact.recordCounts,
       runId: run.id,
-      sizeBytes: artifact.sizeBytes,
+      sizeBytes: encryptedBuffer.byteLength,
       status: "success",
       type: job.runType
     };

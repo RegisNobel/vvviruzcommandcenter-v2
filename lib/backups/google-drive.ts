@@ -110,7 +110,7 @@ export async function uploadBackupArtifactToGoogleDrive({
   const accessToken = await getGoogleAccessToken(config);
   const boundary = `vvviruz-${randomUUID()}`;
   const metadata = {
-    mimeType: "application/gzip",
+    mimeType: "application/octet-stream",
     name: fileName,
     parents: [config.folderId]
   };
@@ -118,7 +118,7 @@ export async function uploadBackupArtifactToGoogleDrive({
     Buffer.from(
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(
         metadata
-      )}\r\n--${boundary}\r\nContent-Type: application/gzip\r\n\r\n`,
+      )}\r\n--${boundary}\r\nContent-Type: application/octet-stream\r\n\r\n`,
       "utf8"
     ),
     buffer,

@@ -26,13 +26,13 @@ export async function uploadBackupArtifactToBlob({
   fileStem: string;
   type: BackupArtifactType;
 }) {
-  const fileName = `${fileStem}-${formatBackupTimestamp(new Date())}.json.gz`;
+  const fileName = `${fileStem}-${formatBackupTimestamp(new Date())}.json.gz.enc`;
   const pathname = getBackupBlobPath(type, fileName);
   const blob = await put(pathname, buffer, {
-    access: "private",
+    access: "public",
     addRandomSuffix: false,
     allowOverwrite: false,
-    contentType: "application/gzip"
+    contentType: "application/octet-stream"
   });
 
   return {
