@@ -1,7 +1,7 @@
 {
   "name": "vvviruz-command-center",
   "version": "1.0.0",
-  "description": "Local-first creative command center for releases, lyric videos, and copy workflows.",
+  "description": "Local-first creative command center for releases, audience, analytics, and copy workflows.",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,7 +16,6 @@
     "db:studio": "node scripts/run-prisma.mjs studio",
     "generate:auth-secret": "node scripts/generate-auth-secret.mjs",
     "hash:admin-password": "node scripts/hash-admin-password.mjs",
-    "setup:whisper": "tsx scripts/setup-whisper.ts",
     "sync:releases": "tsx scripts/sync-releases.ts",
     "normalize:releases": "tsx scripts/normalize-release-titles.ts",
     "db:generate:postgres": "node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma",
@@ -30,25 +29,15 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
-    "@remotion/bundler": "4.0.448",
-    "@remotion/install-whisper-cpp": "4.0.448",
-    "@remotion/player": "4.0.448",
-    "@remotion/renderer": "4.0.448",
     "@vercel/blob": "^2.3.3",
     "clsx": "^2.1.1",
-    "execa": "^9.6.0",
-    "ffmpeg-static": "^5.2.0",
-    "ffprobe-static": "^3.1.0",
     "lucide-react": "^0.469.0",
-    "music-metadata": "^10.5.1",
     "next": "15.5.15",
     "prisma": "^6.16.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "remotion": "4.0.448",
     "server-only": "^0.0.1",
     "tailwind-merge": "^2.5.5",
-    "wavesurfer.js": "^7.9.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {

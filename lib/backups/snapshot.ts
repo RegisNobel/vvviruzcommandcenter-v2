@@ -8,13 +8,10 @@ import {gzipSync} from "node:zlib";
 import {prisma} from "@/lib/db/prisma";
 import {getAssetStorageDriver, getBlobPath, type StoredAssetKind} from "@/lib/server/asset-storage";
 import {
-  backgroundsDir,
   exclusiveArtDir,
   exclusiveTracksDir,
-  exportsDir,
   releaseCoversDir,
-  siteIconsDir,
-  uploadsDir
+  siteIconsDir
 } from "@/lib/server/storage";
 
 type SnapshotArtifact = {
@@ -32,11 +29,8 @@ type LocalAssetDirectory = {
 const localAssetDirectories: LocalAssetDirectory[] = [
   {kind: "site-icon", directory: siteIconsDir},
   {kind: "cover", directory: releaseCoversDir},
-  {kind: "background", directory: backgroundsDir},
   {kind: "exclusive-art", directory: exclusiveArtDir},
-  {kind: "exclusive-track", directory: exclusiveTracksDir},
-  {kind: "audio", directory: uploadsDir},
-  {kind: "export", directory: exportsDir}
+  {kind: "exclusive-track", directory: exclusiveTracksDir}
 ];
 
 function toGzipJsonArtifact(value: unknown, recordCounts: Record<string, number>): SnapshotArtifact {

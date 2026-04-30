@@ -2,9 +2,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import {NextResponse} from "next/server";
+import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {createEmptyRelease, summarizeRelease, touchRelease} from "@/lib/releases";
 import {readReleaseSummaries, saveRelease} from "@/lib/server/releases";
 
@@ -61,6 +63,9 @@ export async function POST(request: Request) {
   const release = touchRelease(createEmptyRelease(parsed.data));
 
   await saveRelease(release);
+
+  revalidateTag(PUBLIC_CACHE_TAGS.releases);
+  revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
 
   return NextResponse.json({
     release,

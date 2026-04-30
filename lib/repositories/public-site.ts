@@ -1,7 +1,9 @@
 import type {Prisma} from "@prisma/client";
+import {unstable_cache} from "next/cache";
 
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
+import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/types";
 
 import {listPublicReleaseCategories} from "@/lib/repositories/release-categories";
@@ -122,10 +124,19 @@ function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
 }
 
 export async function getSiteSettings(): Promise<SiteSettingsRecord> {
-  return readSiteSettings();
+  return getCachedSiteSettings();
 }
 
-export async function getFeaturedRelease() {
+const getCachedSiteSettings = unstable_cache(
+  async () => readSiteSettings(),
+  ["public-site-settings"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.siteSettings]
+  }
+);
+
+const getCachedFeaturedRelease = unstable_cache(
+  async () => {
   const release = await prisma.release.findFirst({
     where: {
       isPublished: true
@@ -135,9 +146,19 @@ export async function getFeaturedRelease() {
   });
 
   return release ? toPublicRelease(release) : null;
+  },
+  ["public-featured-release"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getFeaturedRelease() {
+  return getCachedFeaturedRelease();
 }
 
-export async function getLinksPageRelease(selectedReleaseId: string) {
+const getCachedLinksPageRelease = unstable_cache(
+  async (selectedReleaseId: string) => {
   const normalizedId = selectedReleaseId.trim();
 
   if (normalizedId) {
@@ -154,11 +175,21 @@ export async function getLinksPageRelease(selectedReleaseId: string) {
     }
   }
 
-  return getFeaturedRelease();
+  return getCachedFeaturedRelease();
+  },
+  ["public-links-page-release"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getLinksPageRelease(selectedReleaseId: string) {
+  return getCachedLinksPageRelease(selectedReleaseId.trim());
 }
 
-export async function getPublishedFeaturedReleasesByIds(releaseIds: string[]) {
-  const normalizedIds = releaseIds.map((value) => value.trim()).filter(Boolean).slice(0, 3);
+const getCachedPublishedFeaturedReleasesByIds = unstable_cache(
+  async (releaseIdsKey: string) => {
+  const normalizedIds = releaseIdsKey.split("|").filter(Boolean).slice(0, 3);
 
   if (normalizedIds.length === 0) {
     return [];
@@ -179,6 +210,17 @@ export async function getPublishedFeaturedReleasesByIds(releaseIds: string[]) {
   return normalizedIds
     .map((releaseId) => releasesById.get(releaseId))
     .filter((release): release is PublicReleaseRecord => Boolean(release));
+  },
+  ["public-featured-releases-by-id"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getPublishedFeaturedReleasesByIds(releaseIds: string[]) {
+  const releaseIdsKey = releaseIds.map((value) => value.trim()).filter(Boolean).slice(0, 3).join("|");
+
+  return getCachedPublishedFeaturedReleasesByIds(releaseIdsKey);
 }
 
 function shuffleItems<T>(items: T[]) {
@@ -195,8 +237,9 @@ function shuffleItems<T>(items: T[]) {
   return clone;
 }
 
-export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) {
-  const selected = await getPublishedFeaturedReleasesByIds(selectedReleaseIds);
+const getCachedHomepageFeaturedReleases = unstable_cache(
+  async (selectedReleaseIdsKey: string) => {
+  const selected = await getCachedPublishedFeaturedReleasesByIds(selectedReleaseIdsKey);
 
   if (selected.length >= 3) {
     return selected.slice(0, 3);
@@ -221,14 +264,29 @@ export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) 
     .map(toPublicRelease);
 
   return [...selected, ...randomExtras].slice(0, 3);
+  },
+  ["public-homepage-featured-releases"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) {
+  const selectedReleaseIdsKey = selectedReleaseIds
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .join("|");
+
+  return getCachedHomepageFeaturedReleases(selectedReleaseIdsKey);
 }
 
-export async function getPublishedReleases(options?: {
-  categorySlug?: string;
-  limit?: number;
-  type?: ReleaseType | "all";
-}) {
-  const normalizedCategorySlug = options?.categorySlug?.trim();
+const getCachedPublishedReleases = unstable_cache(
+  async (
+    normalizedCategorySlug: string,
+    type: ReleaseType | "all",
+    limit: number
+  ) => {
   const releases = await prisma.release.findMany({
     where: {
       isPublished: true,
@@ -242,23 +300,49 @@ export async function getPublishedReleases(options?: {
               }
             }
           }
-        : options?.type && options.type !== "all"
-          ? {type: options.type}
+        : type !== "all"
+          ? {type}
           : {})
     },
     select: publicReleaseSelect,
     orderBy: newestPublicReleaseOrder,
-    ...(options?.limit ? {take: options.limit} : {})
+    ...(limit > 0 ? {take: limit} : {})
   });
 
   return releases.map(toPublicRelease);
+  },
+  ["public-published-releases"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
+  }
+);
+
+export async function getPublishedReleases(options?: {
+  categorySlug?: string;
+  limit?: number;
+  type?: ReleaseType | "all";
+}) {
+  const normalizedCategorySlug = options?.categorySlug?.trim();
+  const type = options?.type ?? "all";
+  const limit = options?.limit ?? 0;
+
+  return getCachedPublishedReleases(normalizedCategorySlug || "", type, limit);
 }
+
+const getCachedPublicReleaseCategories = unstable_cache(
+  async () => listPublicReleaseCategories(),
+  ["public-release-categories"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
+  }
+);
 
 export async function getPublicReleaseCategories() {
-  return listPublicReleaseCategories();
+  return getCachedPublicReleaseCategories();
 }
 
-export async function getPublishedReleaseBySlug(slug: string) {
+const getCachedPublishedReleaseBySlug = unstable_cache(
+  async (slug: string) => {
   const release = await prisma.release.findFirst({
     where: {
       slug,
@@ -268,9 +352,19 @@ export async function getPublishedReleaseBySlug(slug: string) {
   });
 
   return release ? toPublicRelease(release) : null;
+  },
+  ["public-release-by-slug"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getPublishedReleaseBySlug(slug: string) {
+  return getCachedPublishedReleaseBySlug(slug);
 }
 
-export async function getRelatedPublishedReleases(releaseId: string, type: ReleaseType) {
+const getCachedRelatedPublishedReleases = unstable_cache(
+  async (releaseId: string, type: ReleaseType) => {
   const sameType = await prisma.release.findMany({
     where: {
       id: {
@@ -301,20 +395,38 @@ export async function getRelatedPublishedReleases(releaseId: string, type: Relea
   });
 
   return [...sameType, ...fallback].map(toPublicRelease);
+  },
+  ["public-related-releases"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getRelatedPublishedReleases(releaseId: string, type: ReleaseType) {
+  return getCachedRelatedPublishedReleases(releaseId, type);
 }
 
-export async function getPublishedReleaseSlugs() {
-  return prisma.release.findMany({
+const getCachedPublishedReleaseSlugs = unstable_cache(
+  async () => prisma.release.findMany({
     where: {
       isPublished: true
     },
     select: {
       slug: true
     }
-  });
+  }),
+  ["public-release-slugs"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function getPublishedReleaseSlugs() {
+  return getCachedPublishedReleaseSlugs();
 }
 
-export async function canPubliclyReadCoverAsset(fileName: string) {
+const getCachedCanPubliclyReadCoverAsset = unstable_cache(
+  async (fileName: string) => {
   const release = await prisma.release.findFirst({
     where: {
       isPublished: true,
@@ -331,6 +443,15 @@ export async function canPubliclyReadCoverAsset(fileName: string) {
   });
 
   return Boolean(release);
+  },
+  ["public-readable-cover-asset"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases]
+  }
+);
+
+export async function canPubliclyReadCoverAsset(fileName: string) {
+  return getCachedCanPubliclyReadCoverAsset(fileName);
 }
 
 

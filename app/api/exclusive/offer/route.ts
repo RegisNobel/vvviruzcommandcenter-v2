@@ -4,9 +4,11 @@ export const dynamic = "force-dynamic";
 import path from "node:path";
 
 import {NextResponse} from "next/server";
+import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {
   readExclusiveOfferSettings,
   writeExclusiveOfferSettings
@@ -98,6 +100,9 @@ export async function PUT(request: Request) {
     await validateExclusiveAssets(payload);
 
     const siteSettings = await writeExclusiveOfferSettings(payload);
+
+    revalidateTag(PUBLIC_CACHE_TAGS.siteSettings);
+    revalidateTag(PUBLIC_CACHE_TAGS.exclusiveOffer);
 
     return NextResponse.json({
       exclusive: siteSettings.site_content.exclusive,

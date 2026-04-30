@@ -5,13 +5,10 @@ import {put} from "@vercel/blob";
 
 import {getBlobPath, type StoredAssetAccess, type StoredAssetKind} from "../lib/server/asset-storage";
 import {
-  backgroundsDir,
   exclusiveArtDir,
   exclusiveTracksDir,
-  exportsDir,
   releaseCoversDir,
-  siteIconsDir,
-  uploadsDir
+  siteIconsDir
 } from "../lib/server/storage";
 
 type AssetDirectory = {
@@ -24,11 +21,8 @@ const envFiles = [".env", ".env.local", ".env.production.local"];
 const assetDirectories: AssetDirectory[] = [
   {kind: "site-icon", directory: siteIconsDir, access: "public"},
   {kind: "cover", directory: releaseCoversDir, access: "public"},
-  {kind: "background", directory: backgroundsDir, access: "public"},
   {kind: "exclusive-art", directory: exclusiveArtDir, access: "public"},
-  {kind: "exclusive-track", directory: exclusiveTracksDir, access: "private"},
-  {kind: "audio", directory: uploadsDir, access: "public"},
-  {kind: "export", directory: exportsDir, access: "public"}
+  {kind: "exclusive-track", directory: exclusiveTracksDir, access: "private"}
 ];
 
 async function loadEnvFile(filePath: string) {
@@ -86,12 +80,8 @@ function getContentType(fileName: string) {
       return "image/svg+xml";
     case ".webp":
       return "image/webp";
-    case ".mp4":
-      return "video/mp4";
-    case ".mov":
-      return "video/quicktime";
-    case ".webm":
-      return "video/webm";
+    case ".gif":
+      return "image/gif";
     default:
       return "application/octet-stream";
   }

@@ -35,7 +35,6 @@ const releasePlanningInclude = {
   streamingLinks: true,
   _count: {
     select: {
-      projects: true,
       copies: true
     }
   }
@@ -266,7 +265,6 @@ function toRoadmapPlanItem(release: ReleasePlanningWithRelations): ReleasePlanIt
     stage_steps: snapshot.stage_steps,
     task_count: record.tasks.length,
     completed_task_count: record.tasks.filter((task) => task.completed).length,
-    clip_count: release._count.projects,
     copy_count: release._count.copies,
     has_cover_art: hasReleaseCoverArt(record),
     has_streaming_links: hasStreamingLinks,

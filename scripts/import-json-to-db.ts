@@ -4,13 +4,11 @@ import path from "node:path";
 import type {AdminUserRecord, AuthSessionRecord} from "../lib/auth/types";
 import {writeAdminUser, writeSession} from "../lib/repositories/auth";
 import {saveCopy} from "../lib/repositories/copies";
-import {saveProject} from "../lib/repositories/projects";
 import {saveRelease} from "../lib/repositories/releases";
 import {hydrateCopy} from "../lib/copy";
 import {hydrateRelease} from "../lib/releases";
 import {ensureStorageDirs, storageRoot} from "../lib/server/storage";
-import type {CopyRecord, LyricProject, ReleaseRecord} from "../lib/types";
-import {hydrateProject} from "../lib/video/project";
+import type {CopyRecord, ReleaseRecord} from "../lib/types";
 import {prisma} from "../lib/db/prisma";
 
 const authRoot = path.join(storageRoot, "auth");
@@ -18,7 +16,6 @@ const sessionsDir = path.join(authRoot, "sessions");
 const adminUserPath = path.join(authRoot, "admin-user.json");
 const releasesDir = path.join(storageRoot, "releases");
 const copiesDir = path.join(storageRoot, "copies");
-const projectsDir = path.join(storageRoot, "projects");
 
 type ImportCounters = {
   created: number;
@@ -30,7 +27,6 @@ type ImportCounters = {
 type ImportSummary = {
   releases: ImportCounters;
   copies: ImportCounters;
-  projects: ImportCounters;
   adminUsers: ImportCounters;
   sessions: ImportCounters;
 };
@@ -48,7 +44,6 @@ function createSummary(): ImportSummary {
   return {
     releases: createCounters(),
     copies: createCounters(),
-    projects: createCounters(),
     adminUsers: createCounters(),
     sessions: createCounters()
   };
@@ -129,34 +124,6 @@ async function importCopies(summary: ImportSummary) {
   }
 }
 
-async function importProjects(summary: ImportSummary) {
-  const projects = await readJsonFiles<LyricProject>(projectsDir);
-
-  for (const projectFile of projects) {
-    try {
-      const existing = await prisma.lyricProject.findUnique({
-        where: {
-          id: projectFile.payload.id
-        },
-        select: {
-          id: true
-        }
-      });
-
-      await saveProject(hydrateProject(projectFile.payload));
-
-      if (existing) {
-        summary.projects.updated += 1;
-      } else {
-        summary.projects.created += 1;
-      }
-    } catch (error) {
-      summary.projects.failed += 1;
-      console.error(`[project] ${projectFile.fileName}:`, error);
-    }
-  }
-}
-
 async function importAdminUser(summary: ImportSummary) {
   try {
     const raw = await fs.readFile(adminUserPath, "utf8");
@@ -223,7 +190,6 @@ async function main() {
 
   await importReleases(summary);
   await importCopies(summary);
-  await importProjects(summary);
   await importAdminUser(summary);
   await importSessions(summary);
 

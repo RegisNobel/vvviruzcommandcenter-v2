@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   Captions,
   Check,
-  Film,
   FolderOpen,
   ImagePlus,
   Lock,
@@ -42,13 +41,11 @@ import {formatCopyType, getCopyHeading} from "@/lib/copy";
 import type {ReleaseChecklistKey} from "@/lib/releases";
 import type {
   CopySummary,
-  ProjectSummary,
   ReleaseCoverUploadResponse,
   ReleaseRecord,
   ReleaseStageLabel,
   ReleaseType
 } from "@/lib/types";
-import {formatMs} from "@/lib/utils";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -349,17 +346,14 @@ function AppleMusicLogo(props: SVGProps<SVGSVGElement>) {
 
 export function ReleaseDetailEditor({
   initialLinkedCopies,
-  initialRelease,
-  initialLinkedProjects
+  initialRelease
 }: {
   initialLinkedCopies: CopySummary[];
   initialRelease: ReleaseRecord;
-  initialLinkedProjects: ProjectSummary[];
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
   const [linkedCopies, setLinkedCopies] = useState(initialLinkedCopies);
-  const [linkedProjects, setLinkedProjects] = useState(initialLinkedProjects);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -585,36 +579,6 @@ export function ReleaseDetailEditor({
     await persistRelease(release, {successMessage: "Release saved."});
   }
 
-  async function handleUnlinkProject(projectId: string) {
-    setMessage(null);
-
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          release_id: null
-        })
-      });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Unlink failed.");
-      }
-
-      setLinkedProjects((currentProjects) =>
-        currentProjects.filter((project) => project.id !== projectId)
-      );
-      setMessage("Clip unlinked from this release.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unlink failed unexpectedly.");
-    }
-  }
-
   async function handleUnlinkCopy(copyId: string) {
     setMessage(null);
 
@@ -711,7 +675,7 @@ export function ReleaseDetailEditor({
 
   async function handleDeleteRelease() {
     const shouldDelete = window.confirm(
-      "Delete this release? Linked Video Lab projects and Copy Lab entries will be unlinked, not deleted."
+      "Delete this release? Linked Copy Lab entries will be unlinked, not deleted."
     );
 
     if (!shouldDelete) {
@@ -1523,80 +1487,6 @@ export function ReleaseDetailEditor({
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Section 8</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Generated Clips
-                </h2>
-                <p className="mt-2 text-sm text-[#8a9098]">
-                  Any Video Lab project started with this release attached appears
-                  here automatically.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link className={pagePrimaryButtonClass} href={`/admin/video-lab?releaseId=${release.id}`}>
-                  <Film size={16} />
-                  Create Clip
-                </Link>
-              </div>
-
-              <div className="space-y-3">
-                {linkedProjects.map((linkedProject) => (
-                  <article
-                    className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4"
-                    key={linkedProject.id}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-[#ede7dc]">
-                          {linkedProject.title}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className={pagePillClass}>
-                            Created {formatTimestamp(linkedProject.createdAt)}
-                          </span>
-                          <span className={pagePillClass}>
-                            {linkedProject.aspectRatio}
-                          </span>
-                          <span className={pagePillClass}>
-                            {linkedProject.durationMs
-                              ? formatMs(linkedProject.durationMs)
-                              : "No audio yet"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <Link
-                          className={pageSecondaryButtonClass}
-                          href={`/admin/video-lab?projectId=${linkedProject.id}`}
-                        >
-                          <FolderOpen size={16} />
-                          Open
-                        </Link>
-                        <button
-                          className={pageTertiaryButtonClass}
-                          onClick={() => void handleUnlinkProject(linkedProject.id)}
-                          type="button"
-                        >
-                          <Link2Off size={16} />
-                          Unlink
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-
-                {linkedProjects.length === 0 ? (
-                  <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
-                    No Video Lab projects are linked to this release yet.
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
-              <div>
-                <p className={pageLabelClass}>Section 9</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Copy Pairs
                 </h2>

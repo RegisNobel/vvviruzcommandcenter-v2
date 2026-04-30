@@ -10,5 +10,4 @@ services:
       - "3000:3000"
     volumes:
       - ./storage:/app/storage
-      - ./whisper.cpp:/app/whisper.cpp
     restart: unless-stopped

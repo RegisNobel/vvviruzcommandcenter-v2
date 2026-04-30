@@ -2,17 +2,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import {NextResponse} from "next/server";
+import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {touchCopy} from "@/lib/copy";
+import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {readCopy, readCopiesByReleaseId, saveCopy} from "@/lib/server/copies";
 import {deleteRelease, readRelease, saveRelease} from "@/lib/server/releases";
-import {
-  readProject,
-  readProjectsByReleaseId,
-  saveProject
-} from "@/lib/server/storage";
 import {
   getReleasePublishBlockers,
   hydrateRelease,
@@ -20,7 +17,6 @@ import {
   touchRelease
 } from "@/lib/releases";
 import type {ReleaseRecord} from "@/lib/types";
-import {touchProject} from "@/lib/video/project";
 
 const patchReleaseSchema = z.object({
   pinned: z.boolean().optional()
@@ -83,6 +79,9 @@ export async function PUT(
 
     await saveRelease(normalized);
 
+    revalidateTag(PUBLIC_CACHE_TAGS.releases);
+    revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
+
     return NextResponse.json({
       release: normalized,
       summary: summarizeRelease(normalized)
@@ -121,6 +120,9 @@ export async function PATCH(
 
     await saveRelease(normalized);
 
+    revalidateTag(PUBLIC_CACHE_TAGS.releases);
+    revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
+
     return NextResponse.json({
       release: normalized,
       summary: summarizeRelease(normalized)
@@ -142,22 +144,9 @@ export async function DELETE(
 
   try {
     const {id} = await params;
-    const [linkedProjects, linkedCopies] = await Promise.all([
-      readProjectsByReleaseId(id),
-      readCopiesByReleaseId(id)
-    ]);
+    const linkedCopies = await readCopiesByReleaseId(id);
 
     await Promise.all([
-      ...linkedProjects.map(async (projectSummary) => {
-        const project = await readProject(projectSummary.id);
-
-        await saveProject(
-          touchProject({
-            ...project,
-            release_id: null
-          })
-        );
-      }),
       ...linkedCopies.map(async (copySummary) => {
         const copy = await readCopy(copySummary.id);
 
@@ -171,6 +160,9 @@ export async function DELETE(
     ]);
 
     await deleteRelease(id);
+
+    revalidateTag(PUBLIC_CACHE_TAGS.releases);
+    revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
 
     return NextResponse.json({success: true});
   } catch {

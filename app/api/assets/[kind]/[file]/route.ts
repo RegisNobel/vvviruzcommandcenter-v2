@@ -32,12 +32,8 @@ function getContentType(fileName: string) {
       return "image/svg+xml";
     case ".webp":
       return "image/webp";
-    case ".mp4":
-      return "video/mp4";
-    case ".mov":
-      return "video/quicktime";
-    case ".webm":
-      return "video/webm";
+    case ".gif":
+      return "image/gif";
     case ".json":
       return "application/json";
     default:
@@ -104,10 +100,7 @@ export async function GET(
     const {kind, file} = await params;
 
     if (
-      kind !== "audio" &&
-      kind !== "background" &&
       kind !== "cover" &&
-      kind !== "export" &&
       kind !== "site-icon" &&
       kind !== "exclusive-art"
     ) {
@@ -129,10 +122,7 @@ export async function GET(
 
     const filePath = await resolveAssetToLocalPath(kind, file, "public");
     const stats = await fsPromises.stat(filePath);
-    const contentDisposition =
-      kind === "export"
-        ? `attachment; filename="${file}"`
-        : `inline; filename="${file}"`;
+    const contentDisposition = `inline; filename="${file}"`;
     const range = parseByteRangeHeader(request.headers.get("range"), stats.size);
 
     if (range === "invalid") {

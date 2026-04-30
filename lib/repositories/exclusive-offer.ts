@@ -1,5 +1,8 @@
 import path from "node:path";
 
+import {unstable_cache} from "next/cache";
+
+import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import type {SiteSettingsRecord} from "@/lib/types";
 
 import {readSiteSettings, writeSiteSettings} from "@/lib/repositories/site-settings";
@@ -47,7 +50,8 @@ export async function writeExclusiveOfferSettings(
   return writeSiteSettings(nextSettings);
 }
 
-export async function readPublicExclusiveOffer() {
+const getCachedPublicExclusiveOffer = unstable_cache(
+  async () => {
   const siteSettings = await readSiteSettings();
   const offer = siteSettings.site_content.exclusive;
   const hasTrackFile = Boolean(offer.exclusive_track_file_path.trim());
@@ -59,6 +63,15 @@ export async function readPublicExclusiveOffer() {
     offer,
     isAvailable
   };
+  },
+  ["public-exclusive-offer"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.siteSettings, PUBLIC_CACHE_TAGS.exclusiveOffer]
+  }
+);
+
+export async function readPublicExclusiveOffer() {
+  return getCachedPublicExclusiveOffer();
 }
 
 export async function canPubliclyReadExclusiveArtAsset(fileName: string) {
@@ -74,4 +87,3 @@ export async function canPubliclyReadExclusiveArtAsset(fileName: string) {
 
   return artAssetName === sanitizeAssetId(fileName);
 }
-

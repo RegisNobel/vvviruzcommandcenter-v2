@@ -1,19 +1,18 @@
 # vvviruz' command center
 
-`vvviruz' command center` is a local-first creative operating system for managing music releases, building short-form video clips, organizing promotional copy, and powering the public vvviruz artist website from the same database-backed source of truth.
+`vvviruz' command center` is a local-first creative operating system for managing music releases, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
 
 It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.
 
 ## Project Summary
 
-This project combines a public-facing music website, a release tracker, a video studio, and a copywriting workspace into one Next.js app with a secure admin boundary under `/admin`.
+This project combines a public-facing music website, a release tracker, an audience workspace, an analytics surface, and a copywriting workspace into one Next.js app with a secure admin boundary under `/admin`.
 
 The core idea is simple: keep the full creative workflow local, fast, and organized.
 
 - plan and track releases
 - publish a lean public artist site from structured release data
-- generate video clips with live preview and export
-- connect clips and copy directly to releases
+- connect copy directly to releases
 - capture audience emails and gate exclusive downloads
 - run everything from local storage with no cloud dependency
 
@@ -21,8 +20,7 @@ The core idea is simple: keep the full creative workflow local, fast, and organi
 
 - It is a full-stack internal product, not a static portfolio shell.
 - It includes a real admin/auth boundary with server-enforced sessions and TOTP-based 2FA.
-- It mixes product thinking, workflow design, media tooling, and local-first architecture.
-- It uses Remotion, FFmpeg, and Whisper together inside a modern App Router stack.
+- It mixes product thinking, workflow design, audience capture, analytics, and local-first architecture.
 - It is designed to support an artist workflow end to end instead of solving one isolated UI problem.
 
 ## Core Modules
@@ -55,7 +53,6 @@ Release planning and execution workspace with:
 - cover art references
 - streaming links
 - manual public categories/projects for music-library filtering
-- linked video clips
 - linked copy entries
 - pinning and search
 
@@ -69,19 +66,6 @@ Email capture and outreach workspace with:
 - draft, test, and full campaign sends
 - per-recipient delivery logs
 - unsubscribe handling
-
-### Video Lab
-
-Short-form video builder with:
-
-- release-aware project setup
-- audio upload and trimming
-- local transcription
-- lyric timing edits
-- live Remotion preview
-- style controls
-- MP4 export
-- SRT export
 
 ### Copy Lab
 
@@ -119,19 +103,7 @@ Placeholder route for future reporting and performance views.
 - release date and concept management
 - ordered stage progression with cover art as a required gate before beat completion
 - computed snapshot, next action, and blockers
-- generated clips section
 - linked copy section
-
-### Video Workflow
-
-- waveform-based trim flow for clips over 30 seconds
-- local Whisper transcription with English, French, Spanish, and auto-detect
-- lyric line editing and retiming
-- live preview updates with Remotion Player
-- `9:16` and `16:9` aspect ratio support
-- draggable lyric placement in preview
-- solid, gradient, motion, photo, and video backgrounds
-- H.264/AAC export
 
 ### Copy Workflow
 
@@ -154,10 +126,6 @@ Placeholder route for future reporting and performance views.
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Remotion
-- FFmpeg via `ffmpeg-static`
-- FFprobe via `ffprobe-static`
-- local Whisper via `@remotion/install-whisper-cpp`
 - SQLite for local development and Docker
 - Postgres for Vercel production
 - Prisma
@@ -179,23 +147,20 @@ Database-backed data:
 - subscribers
 - email campaigns
 - email send logs
-- video lab project metadata
-- lyric lines and timing
 - copy lab entries
 - admin user metadata
 - admin sessions
+- analytics events and backup run records
 
 Asset-backed data:
 
-- uploaded audio
-- uploaded background photos and videos
 - cover art files
-- exported media
-- Whisper model files
+- public site icons
+- exclusive-track audio and art files
 - other local binary assets under `storage/` in local mode
 - Vercel Blob objects when `ASSET_STORAGE_DRIVER=vercel-blob`
 
-Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`, and `storage/auth` are now treated as import/back-up source material rather than the primary source of truth.
+Legacy JSON files under `storage/releases`, `storage/copies`, and `storage/auth` are now treated as import/back-up source material rather than the primary source of truth. Legacy Video Lab database tables may remain in snapshots for recovery until a future cleanup migration, but no active UI or routes depend on them.
 
 ## Architecture Notes
 
@@ -219,13 +184,7 @@ Legacy JSON files under `storage/releases`, `storage/copies`, `storage/projects`
 npm install
 ```
 
-2. Install Whisper locally
-
-```bash
-npm run setup:whisper
-```
-
-3. Create local env vars in `.env.local`
+2. Create local env vars in `.env.local`
 
 ```bash
 DATABASE_URL=file:../storage/vvviruz-command-center.db
@@ -244,20 +203,20 @@ PUBLIC_SITE_URL=http://localhost:3000
 EMAIL_POSTAL_ADDRESS=Optional mailing footer line
 ```
 
-4. Generate the Prisma client and apply the tracked schema
+3. Generate the Prisma client and apply the tracked schema
 
 ```bash
 npm run db:generate
 npm run db:migrate:deploy
 ```
 
-5. If you are migrating an existing local JSON workspace, import it once
+4. If you are migrating an existing local JSON workspace, import it once
 
 ```bash
 npm run db:import
 ```
 
-6. Start the app
+5. Start the app
 
 ```bash
 npm run dev
@@ -292,13 +251,7 @@ docker compose up --build -d
 docker compose exec app npm run db:import
 ```
 
-6. If Whisper models are not installed yet:
-
-```bash
-docker compose exec app npm run setup:whisper
-```
-
-7. Open:
+6. Open:
 
 - [http://localhost:3000](http://localhost:3000)
 - [http://localhost:3000/music](http://localhost:3000/music)
@@ -417,7 +370,6 @@ npm run dev
 npm run build
 npm run lint
 npm run typecheck
-npm run setup:whisper
 npm run sync:releases
 npm run normalize:releases
 docker compose up --build -d
@@ -431,6 +383,20 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-30 13:24 -04:00
+
+- Added tag-based server-side caching for public site settings, published releases, release categories, release-detail lookups, related releases, link-page release selection, and exclusive offer reads.
+- Added explicit public cache invalidation when admin saves site settings, exclusive offer settings, releases, release pin/status edits, release deletes, or music categories.
+- Kept public pages dynamic so admin changes still appear after cache invalidation instead of requiring a server restart.
+- Verified warm dev-server route times dropped to roughly `70-200ms` in Next logs after initial dev compilation.
+
+### 2026-04-30 08:30 -04:00
+
+- Removed the admin Video Lab feature surface, including the nav link, admin dashboard card, `/admin/video-lab` route, and legacy `/admin/lyric-lab` redirect.
+- Removed Video Lab upload, trim, transcription, project, background, and export API handlers plus Remotion, FFmpeg, Whisper, waveform, and video-rendering runtime code.
+- Removed the release-detail Generated Clips section so release pages now show active release planning and Copy Lab linking only.
+- Pruned Video Lab dependencies and setup commands from package metadata, Docker config, Tailwind scanning, and active README setup docs while leaving legacy Prisma tables intact for a future reversible cleanup migration.
 
 ### 2026-04-30 02:09 -04:00
 

@@ -5,21 +5,15 @@ import path from "node:path";
 import {fileNameFromPath} from "@/lib/utils";
 
 import {
-  backgroundsDir,
   ensureStorageDirs,
   exclusiveArtDir,
   exclusiveTracksDir,
-  exportsDir,
   releaseCoversDir,
-  siteIconsDir,
-  uploadsDir
+  siteIconsDir
 } from "@/lib/server/storage";
 
 export type StoredAssetKind =
-  | "audio"
-  | "background"
   | "cover"
-  | "export"
   | "site-icon"
   | "exclusive-art"
   | "exclusive-track";
@@ -47,10 +41,6 @@ export function isRemoteAssetReference(value: string) {
 
 function getAssetDirectory(kind: StoredAssetKind) {
   switch (kind) {
-    case "audio":
-      return uploadsDir;
-    case "background":
-      return backgroundsDir;
     case "cover":
       return releaseCoversDir;
     case "site-icon":
@@ -59,8 +49,6 @@ function getAssetDirectory(kind: StoredAssetKind) {
       return exclusiveArtDir;
     case "exclusive-track":
       return exclusiveTracksDir;
-    case "export":
-      return exportsDir;
   }
 }
 
