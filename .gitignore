@@ -38,3 +38,4 @@ storage/uploads/*
 whisper.cpp
 
 .vercel
+test.js

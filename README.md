@@ -1,6 +1,6 @@
 # vvviruz' command center
 
-`vvviruz' command center` is a local-first creative operating system for managing music releases, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
+`vvviruz' command center` is a local-first creative operating system for managing music releases, tracking collaborations and features, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
 
 It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.
 
@@ -41,7 +41,7 @@ Public-facing artist hub with these routes:
 - `/exclusives`
 - `/unsubscribe`
 
-The public site reads only published release/site-settings data from SQLite and does not expose admin-only workflow state.
+The public site reads only published release/site-settings data and does not expose admin-only workflow state.
 
 ### Releases
 
@@ -54,6 +54,17 @@ Release planning and execution workspace with:
 - streaming links
 - manual public categories/projects for music-library filtering
 - linked copy entries
+
+### Appears On
+
+Collaboration and feature tracking with:
+
+- admin paste-and-resolve workflow from a Spotify URL via the Odesli API
+- auto-filled title, artists, and cover art
+- manual Apple Music, YouTube, and YouTube Music URL inputs
+- publish toggle and sort order
+- managed from the Public Site admin page alongside release categories
+- public toggle pill on `/music` to switch between Releases and Appears On views
 - pinning and search
 
 ### Audience
@@ -79,7 +90,7 @@ Hook/caption management workspace with:
 
 ### Photo Lab
 
-Placeholder route for future cover art generation workflows.
+Placeholder route for future cover art and visual asset generation workflows.
 
 ### Analytics
 
@@ -111,6 +122,14 @@ Performance workspace with:
 - ordered stage progression with cover art as a required gate before beat completion
 - computed snapshot, next action, and blockers
 - linked copy section
+
+### Appears On Management
+
+- Spotify URL paste-and-resolve via the Odesli (Songlink) API
+- auto-populated metadata: title, artists, and cover art URL
+- manual override fields for Apple Music, YouTube Music, and YouTube URLs
+- publish toggle and sort ordering
+- centralized management under the Public Site admin page
 
 ### Copy Workflow
 
@@ -150,6 +169,7 @@ Database-backed data:
 - release tasks
 - release streaming links
 - release categories and category assignments
+- appears-on collaboration entries
 - site settings for the public website
 - subscribers
 - email campaigns
@@ -182,6 +202,7 @@ Legacy JSON files under `storage/releases`, `storage/copies`, and `storage/auth`
 - No background worker layer
 - No Stripe, auth SaaS, or multi-user system
 - Public website now lives on `/`, `/music`, `/music/[slug]`, `/about`, `/links`, `/exclusives`, and `/unsubscribe`
+- Public `/music` page supports a toggle between Releases and Appears On views
 - Private command center lives under `/admin`
 
 ## Local Development
@@ -273,18 +294,18 @@ The source is prepared for Vercel's Next.js build flow with `vercel.json`, `.ver
 Vercel deployment path:
 
 1. Provision Postgres through Vercel Marketplace/Neon or another Postgres host.
-2. Set `DATABASE_URL` to the Postgres connection string.
+2. Set `DATABASE_URL` to the Postgres connection string. If `DATABASE_URL` is not set, the Prisma helper script will automatically fall back to `POSTGRES_PRISMA_URL` or `POSTGRES_URL`.
 3. Provision Vercel Blob and set `ASSET_STORAGE_DRIVER=vercel-blob` plus `BLOB_READ_WRITE_TOKEN`.
 4. Export the current local SQLite data with `npm run db:export:snapshot`.
 5. Push the Postgres schema with `DATABASE_URL` pointed at a non-pooling Postgres connection when available.
 6. Import the snapshot with `npm run db:import:snapshot`.
 7. Upload local media assets with `npm run assets:upload:blob`.
-8. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel` and generates Prisma from `prisma/schema.postgres.prisma`.
+8. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel`. This command pushes the Postgres schema with `db:push:postgres`, generates Prisma from `prisma/schema.postgres.prisma`, and then runs `next build`.
 
 Required Vercel environment variables match `.env.example`:
 
-- `DATABASE_URL`
-- `POSTGRES_URL_NON_POOLING` or equivalent direct/non-pooling URL for trusted schema/data operations
+- `DATABASE_URL` (auto-detected from `POSTGRES_PRISMA_URL` or `POSTGRES_URL` if not set)
+- `POSTGRES_URL_NON_POOLING` or equivalent direct/non-pooling URL for trusted schema/data operations (auto-mapped to `DIRECT_URL` by the Prisma helper)
 - `NEXT_PUBLIC_SITE_URL`
 - `PUBLIC_SITE_URL`
 - `ASSET_STORAGE_DRIVER`
@@ -391,6 +412,21 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-01 10:00 -04:00
+
+- Added the Appears On feature for managing music collaborations and features.
+- Added the `AppearsOn` Prisma model to both SQLite and Postgres schemas with title, artists, cover art URL, streaming links, publish toggle, and sort order.
+- Added an Odesli (Songlink) API integration under `lib/server/odesli.ts` that auto-resolves metadata and cover art from a pasted Spotify URL.
+- Added admin create/edit pages under `/admin/appears-on` with a paste-and-resolve workflow for Spotify URLs and manual input fields for Apple Music, YouTube Music, and YouTube links.
+- Integrated Appears On management into the Public Site admin page (`/admin/site`) alongside release categories, rather than as a standalone admin navigation item.
+- Added a Releases/Appears On toggle pill on the public `/music` page so visitors can switch between original releases and collaboration entries.
+- Added the `PublicAppearsOnLibrary` component for rendering published collaboration cards with cover art, artists, and streaming-platform links.
+- Fixed public site footer positioning by converting the page shell to a flex column layout with `flex-grow` on the main content area so the footer always sits at the bottom of the viewport.
+- Updated `scripts/run-prisma.mjs` to automatically detect Vercel-provided Postgres environment variables (`POSTGRES_PRISMA_URL`, `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`) when `DATABASE_URL` or `DIRECT_URL` are not explicitly set.
+- Added `directUrl` to `prisma/schema.postgres.prisma` so `db:push` bypasses connection pooling during schema migrations on Vercel.
+- Updated `build:vercel` to run `db:push:postgres` before `db:generate:postgres` and `next build` so new schema changes are applied to production Postgres automatically during deployment.
+- Removed accidentally committed `test.js` scratch file and added it to `.gitignore`.
 
 ### 2026-04-30 20:27 -04:00
 
@@ -591,7 +627,7 @@ docker compose up --build -d
 
 - Started a mobile-first responsiveness pass across the public site and protected command center after confirming LAN access from a phone.
 - Added global overflow safety rails, mobile-safe form sizing, horizontally scrollable nav rows, and wrapped panel headers to reduce narrow-screen layout collisions.
-- Tuned public homepage cards, streaming buttons, About social tiles, Video Lab preview/library panels, Releases, Roadmap, Audience, and shared admin panels so phone layouts stack cleanly while desktop breakpoints remain intact.
+- Tuned public homepage cards, streaming buttons, About social tiles, Releases, Roadmap, Audience, and shared admin panels so phone layouts stack cleanly while desktop breakpoints remain intact.
 
 ### 2026-04-24 14:45 -04:00
 
@@ -778,7 +814,7 @@ docker compose up --build -d
 
 - Moved the remaining public About-page hardcoded labels into `site_settings` so the statement heading, narrative heading, contact title, and contact email label are all admin-editable.
 - Centered the About narrative heading and fully centered the Contact section layout and card content.
-- Kept the About page aligned with the ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œsite settings drives public copyÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â rule instead of leaving one-off hardcoded strings in the public UI.
+- Kept the About page aligned with the "site settings drives public copy" rule instead of leaving one-off hardcoded strings in the public UI.
 
 ### 2026-04-23 21:09 -04:00
 
@@ -824,7 +860,7 @@ docker compose up --build -d
 - Migrated structured app persistence from ad hoc JSON files to SQLite via Prisma.
 - Added a repository layer under `lib/repositories/*` so route handlers and components can keep stable contracts while storage lives behind cleaner adapters.
 - Moved releases, release tasks, release streaming links, lyric project metadata, lyric lines, copy entries, admin user metadata, and admin sessions into the database.
-- Kept large media assets and generated files on disk under `storage/` and `whisper.cpp`.
+- Kept large media assets and generated files on disk under `storage/`.
 - Added Prisma scripts, initial migration files, JSON-to-SQLite import tooling, and Docker migration support.
 - Imported the current local JSON workspace into SQLite and verified the migration counts.
 
