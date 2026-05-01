@@ -35,7 +35,6 @@ export function PublicReleaseCard({
               priority={priority}
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               src={release.cover_art_path}
-              unoptimized
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_45%),linear-gradient(180deg,#171a1f_0%,#0d0f12_100%)] px-6 text-center text-sm uppercase tracking-[0.28em] text-[#d0b16b]">

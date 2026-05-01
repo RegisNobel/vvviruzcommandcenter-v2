@@ -109,7 +109,6 @@ export default async function PublicHomePage() {
                               priority={index === 0}
                               sizes="88px"
                               src={release.cover_art_path}
-                              unoptimized
                             />
                           ) : (
                             <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_45%),linear-gradient(180deg,#171a1f_0%,#0d0f12_100%)] px-3 text-center text-[10px] uppercase tracking-[0.24em] text-[#d0b16b]">

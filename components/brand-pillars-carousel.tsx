@@ -98,7 +98,6 @@ export function BrandPillarsCarousel({pillars}: BrandPillarsCarouselProps) {
                       DEFAULT_BRAND_PILLAR_ICON_FILES[index % visiblePillars.length] ||
                       DEFAULT_BRAND_PILLAR_ICON_FILES[0]
                   )}
-                  unoptimized
                 />
               </div>
 

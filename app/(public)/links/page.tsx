@@ -130,7 +130,6 @@ export default async function PublicLinksPage() {
                 priority
                 sizes="100vw"
                 src={selectedRelease.cover_art_path}
-                unoptimized
               />
             </div>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,9,0.46),rgba(7,9,13,0.9)_35%,rgba(7,9,13,0.98))]" />
@@ -159,7 +158,6 @@ export default async function PublicLinksPage() {
                     priority
                     sizes="208px"
                     src={selectedRelease.cover_art_path}
-                    unoptimized
                   />
                 </div>
               ) : (

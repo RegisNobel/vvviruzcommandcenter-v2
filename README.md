@@ -422,6 +422,14 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-01 17:48 -04:00
+
+- Prepared a public-site performance patch for the image-heavy pages.
+- Removed `unoptimized` from public `next/image` usage so Next can generate optimized image variants.
+- Added Vercel Blob host allowlisting, AVIF/WebP output formats, and a one-day minimum optimized-image cache TTL in `next.config.mjs`.
+- Added cache-control headers, `ETag`, `Last-Modified`, and `304 Not Modified` support to public asset responses while keeping private assets on `private, no-store`.
+- Verified the asset cache path locally with a `200` first request and `304` repeat request using `If-None-Match`.
+
 ### 2026-05-01 16:50 -04:00
 
 - Updated release-level Ads Analytics to correctly handle summarized Meta CSV exports without double-counting overlapping batches.

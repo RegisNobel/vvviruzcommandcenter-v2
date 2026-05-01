@@ -38,7 +38,6 @@ export function PublicSiteChrome({
                   src={getSiteIconUrl(
                     siteSettings.site_content.chrome.brand_mark_file || DEFAULT_SITE_LOGO_FILE
                   )}
-                  unoptimized
                 />
               </span>
               <div className="min-w-0">

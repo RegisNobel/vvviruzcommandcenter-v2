@@ -88,6 +88,28 @@ function parseByteRangeHeader(rangeHeader: string | null, fileSize: number) {
   };
 }
 
+function createAssetEtag(fileName: string, fileSize: number, modifiedTimeMs: number) {
+  return `W/"${encodeURIComponent(fileName)}-${fileSize}-${Math.trunc(modifiedTimeMs)}"`;
+}
+
+function canUseCachedAsset(request: Request, etag: string, modifiedDate: Date) {
+  const ifNoneMatch = request.headers.get("if-none-match");
+
+  if (ifNoneMatch?.split(",").map((value) => value.trim()).includes(etag)) {
+    return true;
+  }
+
+  const ifModifiedSince = request.headers.get("if-modified-since");
+
+  if (!ifModifiedSince) {
+    return false;
+  }
+
+  const sinceDate = new Date(ifModifiedSince);
+
+  return !Number.isNaN(sinceDate.getTime()) && modifiedDate <= sinceDate;
+}
+
 export async function GET(
   request: Request,
   {
@@ -124,6 +146,22 @@ export async function GET(
     const stats = await fsPromises.stat(filePath);
     const contentDisposition = `inline; filename="${file}"`;
     const range = parseByteRangeHeader(request.headers.get("range"), stats.size);
+    const cacheControl = isPublicAsset
+      ? "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+      : "private, no-store";
+    const lastModified = stats.mtime;
+    const etag = createAssetEtag(file, stats.size, stats.mtimeMs);
+
+    if (!range && canUseCachedAsset(request, etag, lastModified)) {
+      return new NextResponse(null, {
+        status: 304,
+        headers: {
+          "Cache-Control": cacheControl,
+          "ETag": etag,
+          "Last-Modified": lastModified.toUTCString()
+        }
+      });
+    }
 
     if (range === "invalid") {
       return new NextResponse(null, {
@@ -131,7 +169,9 @@ export async function GET(
         headers: {
           "Content-Range": `bytes */${stats.size}`,
           "Accept-Ranges": "bytes",
-          "Cache-Control": "no-store"
+          "Cache-Control": cacheControl,
+          "ETag": etag,
+          "Last-Modified": lastModified.toUTCString()
         }
       });
     }
@@ -140,7 +180,9 @@ export async function GET(
       "Content-Type": getContentType(file),
       "Content-Disposition": contentDisposition,
       "Accept-Ranges": "bytes",
-      "Cache-Control": "no-store"
+      "Cache-Control": cacheControl,
+      "ETag": etag,
+      "Last-Modified": lastModified.toUTCString()
     };
 
     if (range) {

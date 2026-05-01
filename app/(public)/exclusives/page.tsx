@@ -48,7 +48,6 @@ export default async function PublicExclusivesPage() {
               priority
               sizes="100vw"
               src={offer.exclusive_track_art_path}
-              unoptimized
             />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,9,0.58),rgba(7,9,13,0.92)_32%,rgba(6,8,11,0.99))]" />
@@ -76,7 +75,6 @@ export default async function PublicExclusivesPage() {
                   priority
                   sizes="208px"
                   src={offer.exclusive_track_art_path}
-                  unoptimized
                 />
               </div>
             </div>

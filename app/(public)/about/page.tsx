@@ -176,7 +176,6 @@ export default async function PublicAboutPage() {
                 src={getSiteIconUrl(
                   content.artist_image_file || DEFAULT_SITE_ARTIST_IMAGE_FILE
                 )}
-                unoptimized
               />
             </div>
           </div>
@@ -269,7 +268,6 @@ export default async function PublicAboutPage() {
                           className={`max-h-8 sm:max-h-9 w-auto object-contain opacity-90 transition duration-300 group-hover:opacity-100 ${accent.imageClassName}`.trim()}
                           height={36}
                           src={getSiteIconUrl(socialLogoFile)}
-                          unoptimized
                           width={36}
                         />
                       </span>

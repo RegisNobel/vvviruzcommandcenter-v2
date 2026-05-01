@@ -113,7 +113,6 @@ export default async function PublicReleaseDetailPage({
                     priority
                     sizes="(max-width: 1024px) 100vw, 42vw"
                     src={release.cover_art_path}
-                    unoptimized
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_42%),linear-gradient(180deg,#16191f_0%,#0d0f13_100%)] px-6 text-center text-sm uppercase tracking-[0.32em] text-[#d0b16b]">
