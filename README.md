@@ -71,7 +71,9 @@ Collaboration and feature tracking with:
 
 Email capture and outreach workspace with:
 
-- public exclusive-track landing page
+- public exclusive-track landing page with Instant Unlock or Email Only delivery modes
+- private external URL support for unlisted YouTube, SoundCloud, BandLab, or Dropbox links
+- transactional email delivery via Resend with compliant unsubscribe URLs
 - subscriber CRUD and CSV export
 - exclusive offer settings
 - draft, test, and full campaign sends
@@ -100,6 +102,9 @@ Performance workspace with:
 - country, source, link, and UTM breakdowns
 - CSV-first Meta Ads Analytics under `/admin/ads`
 - ad import batches, campaign dashboards, Copy Lab linking, and strategy breakdowns
+- smart batch selection: Release-to-Date priority, non-overlapping combination, and snapshot fallback
+- release-level Best/Worst Ad and Best/Worst Hook identification by CPR
+- semi-automated Campaign Learning draft generation from current Ads Performance data
 - manual campaign learnings for release readouts
 
 ## Feature Highlights
@@ -139,9 +144,13 @@ Performance workspace with:
 
 ### Audience and Email
 
-- public `/exclusives` capture flow
+- public `/exclusives` capture flow with Instant Unlock and Email Only delivery modes
+- private external URL support for unlisted YouTube, BandLab, SoundCloud, or Dropbox links
+- configurable Instant Unlock button label and "Also send link by email" hybrid option
+- transactional email delivery via `sendCampaignEmail` with dynamically generated unsubscribe URLs
+- strict admin validation preventing blank email subject/body when email delivery is enabled
 - duplicate-safe subscriber upserts
-- token-based gated download access
+- token-based gated download access for uploaded track files
 - Discord/community CTA settings for the exclusives page
 - protected `/admin/audience` management
 - consent-aware campaign sends
@@ -412,6 +421,22 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-01 16:50 -04:00
+
+- Updated release-level Ads Analytics to correctly handle summarized Meta CSV exports without double-counting overlapping batches.
+- Added smart batch selection logic: prefers Release-to-Date or Full Campaign exports, combines non-overlapping fixed-period batches, and falls back to the most recent snapshot when ranges overlap.
+- Added Best Ad, Worst Ad, Best Hook, and Worst Hook identification to the release-level Ads Performance summary using CPR-based ranking with minimum spend and result thresholds.
+- Added a "Generate Draft Learning" button to the Campaign Learning section that pre-fills Campaign Summary, What Worked, What Failed, Next Test, and Decision fields from the current Ads Performance snapshot.
+- Draft learnings include source label, reporting date range, attribution setting, and key metrics; they do not autosave and require manual review.
+- Added an Instant Unlock experience to the public `/exclusives` capture flow so visitors can access an external private link immediately after submitting their name and email.
+- Added admin Unlock Experience controls with two modes: Instant Unlock (default) and Email Only, plus an "Also send link by email" checkbox for hybrid delivery.
+- Added admin fields for Private External URL, Instant Unlock Button Label, Email Subject, and Email Body to the Exclusive Track Offer settings panel.
+- Added strict validation that prevents saving site settings when email delivery is enabled but the email subject or body is blank.
+- Updated the public exclusive offer availability logic to accept a Private External URL as a valid unlock mechanism alongside uploaded track files.
+- Updated the `/api/exclusive/claim` endpoint to support transactional email delivery via `sendCampaignEmail` with dynamically generated unsubscribe URLs for Resend compliance.
+- Updated the public exclusive signup form to conditionally render an external link CTA button, a legacy file download button, or a check-your-inbox message depending on the configured unlock experience.
+- Centered the exclusive track title and badge text in the public `/exclusives` preview card.
 
 ### 2026-05-01 10:00 -04:00
 
