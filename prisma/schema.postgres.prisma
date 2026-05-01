@@ -431,3 +431,19 @@ model BackupRun {
   @@index([status, startedAt])
 }
 
+model AppearsOn {
+  id            String   @id
+  title         String
+  artists       String
+  coverArtUrl   String
+  spotifyUrl    String
+  appleMusicUrl String   @default("")
+  youtubeMusicUrl String @default("")
+  youtubeUrl    String   @default("")
+  isPublished   Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime
+  updatedAt     DateTime
+
+  @@index([isPublished, sortOrder])
+}

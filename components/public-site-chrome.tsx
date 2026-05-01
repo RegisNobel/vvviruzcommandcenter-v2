@@ -21,7 +21,7 @@ export function PublicSiteChrome({
   ];
 
   return (
-    <div className="min-h-screen bg-[#090b0f] text-[#f3eddf]">
+    <div className="flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf]">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090b0f]/86 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1280px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <Link className="min-w-0" href="/">
@@ -66,12 +66,12 @@ export function PublicSiteChrome({
         </div>
       </header>
 
-      <div className="relative isolate">
+      <main className="relative isolate flex-grow">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.16),transparent_42%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_28%)]" />
         {children}
-      </div>
+      </main>
 
-      <footer className="border-t border-white/10 bg-[#0b0e12]">
+      <footer className="mt-auto border-t border-white/10 bg-[#0b0e12]">
         <div className="mx-auto max-w-[1280px] px-4 py-6 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-[#98a0a8]">
             {siteSettings.site_content.chrome.footer_copyright_text}

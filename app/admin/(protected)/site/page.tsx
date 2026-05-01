@@ -3,7 +3,9 @@ import {ArrowLeft, Globe2} from "lucide-react";
 
 import {ReleaseCategorySettingsPanel} from "@/components/release-category-settings-panel";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
+import {AppearsOnSettingsPanel} from "@/components/appears-on-settings-panel";
 import {listReleaseCategories} from "@/lib/repositories/release-categories";
+import {readAllAppearsOn} from "@/lib/repositories/appears-on";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {
@@ -19,14 +21,16 @@ export default async function AdminSitePage() {
     releaseCategories,
     siteIconOptions,
     exclusiveTrackFileOptions,
-    exclusiveTrackArtOptions
+    exclusiveTrackArtOptions,
+    appearsOnRecords
   ] = await Promise.all([
     readSiteSettings(),
     readReleaseSummaries(),
     listReleaseCategories(),
     listSiteIconFiles(),
     listExclusiveTrackFiles(),
-    listExclusiveArtFiles()
+    listExclusiveArtFiles(),
+    readAllAppearsOn()
   ]);
 
   return (
@@ -69,6 +73,8 @@ export default async function AdminSitePage() {
           initialCategories={releaseCategories}
           releaseOptions={releaseSummaries}
         />
+
+        <AppearsOnSettingsPanel records={appearsOnRecords} />
       </div>
     </main>
   );

@@ -564,3 +564,18 @@ export type AdImportBatchDetail = AdImportBatchSummary & {
   link_follow_through: AdLinkFollowThroughRecord[];
   learning: AdCampaignLearningRecord | null;
 };
+
+export type AppearsOnRecord = {
+  id: string;
+  title: string;
+  artists: string;
+  cover_art_url: string;
+  spotify_url: string;
+  apple_music_url: string;
+  youtube_music_url: string;
+  youtube_url: string;
+  is_published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
