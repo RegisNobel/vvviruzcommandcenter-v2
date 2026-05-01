@@ -13,6 +13,10 @@ import {
 } from "@/lib/public-rate-limit";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 import {upsertExclusiveSubscriber} from "@/lib/repositories/audience";
+import {
+  buildCampaignUnsubscribeUrl,
+  sendCampaignEmail
+} from "@/lib/email/campaigns";
 import type {ExclusiveClaimResponse} from "@/lib/types";
 
 const claimSchema = z.object({
@@ -78,14 +82,47 @@ export async function POST(request: Request) {
       email: payload.email,
       consentGiven: payload.consent_given
     });
+
+    let targetLink = "";
+    if (offer.private_external_url?.trim()) {
+      targetLink = offer.private_external_url.trim();
+    } else if (offer.exclusive_track_file_path?.trim()) {
+      const baseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+      targetLink = `${baseUrl}/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`;
+    }
+
+    if (offer.unlock_experience === "email_only" || offer.also_email_link) {
+      if (offer.email_subject?.trim() && offer.email_body?.trim()) {
+        try {
+          await sendCampaignEmail({
+            to: subscriber.email,
+            subject: offer.email_subject,
+            previewText: "",
+            body: offer.email_body,
+            ctaLabel: offer.instant_unlock_button_label || "Access Exclusive",
+            ctaUrl: targetLink || undefined,
+            unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
+          });
+        } catch (emailError) {
+          console.error("Failed to send transactional exclusive email:", emailError);
+          if (offer.unlock_experience === "email_only") {
+            throw new Error("Unable to send the email right now. Please try again later.");
+          }
+        }
+      }
+    }
+
     const response: ExclusiveClaimResponse = {
-      downloadUrl: `/api/exclusive/download?token=${encodeURIComponent(
+      downloadUrl: offer.exclusive_track_file_path?.trim() ? `/api/exclusive/download?token=${encodeURIComponent(
         subscriber.download_token
-      )}`,
+      )}` : undefined,
+      privateExternalUrl: offer.private_external_url?.trim() || undefined,
+      unlockExperience: offer.unlock_experience,
+      instantUnlockButtonLabel: offer.instant_unlock_button_label || "Listen Now",
       isDuplicate,
       message: isDuplicate
         ? offer.duplicate_message
-        : offer.success_message || "Your download is unlocked below.",
+        : offer.success_message || "Your exclusive is unlocked.",
       subscriber: {
         id: subscriber.id,
         name: subscriber.name,

@@ -321,7 +321,7 @@ export function ExclusiveOfferSettingsPanel({
           >
             <span>
               {exclusiveOffer.exclusive_track_enabled
-                ? "The exclusive page is live if the track file is present."
+                ? "The exclusive page is live if a track asset/URL and Track Title are present."
                 : "The exclusive page will show an unavailable state."}
             </span>
             <span className="pill">
@@ -472,6 +472,115 @@ export function ExclusiveOfferSettingsPanel({
               </label>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
+        <div>
+          <p className="field-label">Delivery & Experience</p>
+          <h4 className="mt-2 text-xl font-semibold text-ink">
+            Unlock Mode & Email Settings
+          </h4>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <span className="field-label">Unlock Experience</span>
+            <div className="flex gap-2">
+              <button
+                className={`flex-1 rounded-[18px] border px-4 py-3 text-center transition ${
+                  exclusiveOffer.unlock_experience === "instant_unlock"
+                    ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962]"
+                }`}
+                onClick={() => updateExclusiveOffer({unlock_experience: "instant_unlock"})}
+                type="button"
+              >
+                Instant Unlock
+              </button>
+              <button
+                className={`flex-1 rounded-[18px] border px-4 py-3 text-center transition ${
+                  exclusiveOffer.unlock_experience === "email_only"
+                    ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962]"
+                }`}
+                onClick={() => updateExclusiveOffer({unlock_experience: "email_only"})}
+                type="button"
+              >
+                Email Only
+              </button>
+            </div>
+          </div>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Private External URL</span>
+            <input
+              className="field-input"
+              onChange={(event) =>
+                updateExclusiveOffer({private_external_url: event.target.value})
+              }
+              placeholder="https://..."
+              value={exclusiveOffer.private_external_url}
+            />
+            <p className="text-xs text-muted">
+              Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Track Asset.
+            </p>
+          </label>
+
+          {exclusiveOffer.unlock_experience === "instant_unlock" ? (
+            <label className="space-y-2">
+              <span className="field-label">Instant Unlock Button Label</span>
+              <input
+                className="field-input"
+                onChange={(event) =>
+                  updateExclusiveOffer({instant_unlock_button_label: event.target.value})
+                }
+                value={exclusiveOffer.instant_unlock_button_label}
+              />
+            </label>
+          ) : null}
+
+          {exclusiveOffer.unlock_experience === "instant_unlock" ? (
+            <label className="flex items-center gap-3 space-y-0 rounded-[18px] border border-[#30343b] bg-[#15181c] px-4 py-3">
+              <input
+                checked={exclusiveOffer.also_email_link}
+                className="h-4 w-4 rounded border-white/20 bg-[#12161b] text-[#c9a347] focus:ring-[#c9a347]"
+                onChange={(event) =>
+                  updateExclusiveOffer({also_email_link: event.target.checked})
+                }
+                type="checkbox"
+              />
+              <span className="text-sm font-medium text-[#d5d9df]">
+                Also send link by email
+              </span>
+            </label>
+          ) : null}
+
+          {(exclusiveOffer.unlock_experience === "email_only" || exclusiveOffer.also_email_link) ? (
+            <>
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">Email Subject</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateExclusiveOffer({email_subject: event.target.value})
+                  }
+                  value={exclusiveOffer.email_subject}
+                />
+              </label>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">Email Body</span>
+                <textarea
+                  className="field-input min-h-[110px]"
+                  onChange={(event) =>
+                    updateExclusiveOffer({email_body: event.target.value})
+                  }
+                  value={exclusiveOffer.email_body}
+                />
+              </label>
+            </>
+          ) : null}
         </div>
       </section>
 

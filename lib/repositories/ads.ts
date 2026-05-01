@@ -24,7 +24,8 @@ import type {
   AdImportBatchSummary,
   AdLinkFollowThroughRecord,
   AdStrategyBreakdownRow,
-  CopySummary
+  CopySummary,
+  ReleaseAdMetricsOverview
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
 import {
@@ -930,4 +931,236 @@ export async function readLatestAdCampaignLearningForRelease(releaseId: string) 
   });
 
   return learning ? toLearningRecord(learning) : null;
+}
+
+const emptyReleaseAdMetrics: ReleaseAdMetricsOverview = {
+  has_data: false,
+  source_label: "No data",
+  source_context: null,
+  total_spend: 0,
+  total_impressions: 0,
+  total_reach: 0,
+  total_results: 0,
+  total_link_clicks: 0,
+  total_thru_plays: null,
+  total_video_100: null,
+  ctr: null,
+  cpc: null,
+  cpr: null,
+  batch_count: 0,
+  report_count: 0,
+  best_ad: null,
+  worst_ad: null,
+  best_hook: null,
+  worst_hook: null,
+  batches: []
+};
+
+export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAdMetricsOverview> {
+  const batches = await prisma.adImportBatch.findMany({
+    where: {
+      releaseId
+    },
+    include: {
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  if (batches.length === 0) {
+    return emptyReleaseAdMetrics;
+  }
+
+  let metricBatches: typeof batches;
+  let sourceLabel = "";
+  let sourceContext: ReleaseAdMetricsOverview["source_context"] = null;
+
+  const r2dBatch = batches.find(b => b.batchType === "Release-to-Date" || b.batchType === "Full Campaign");
+
+  if (r2dBatch) {
+    metricBatches = [r2dBatch];
+    sourceLabel = r2dBatch.batchType === "Full Campaign" ? "Using Full Campaign export" : "Using Release-to-Date export";
+    sourceContext = {
+      reporting_start: r2dBatch.reportingStart ? r2dBatch.reportingStart.toISOString() : null,
+      reporting_end: r2dBatch.reportingEnd ? r2dBatch.reportingEnd.toISOString() : null,
+      batch_type: r2dBatch.batchType,
+      exported_at: r2dBatch.exportedAt ? r2dBatch.exportedAt.toISOString() : null,
+      attribution_setting: r2dBatch.attributionSetting || defaultAdAttributionSetting
+    };
+  } else {
+    const summarizedBatches = batches.map(batch => ({
+      batch_type: normalizeAdBatchType(batch.batchType),
+      reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+      reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+    }));
+    const canCombine = canCombineAdBatchTotals(summarizedBatches);
+    
+    if (canCombine && batches.length > 0) {
+      metricBatches = batches;
+      sourceLabel = "Combined non-overlapping fixed-period exports";
+      
+      const starts = metricBatches.map(b => b.reportingStart?.getTime()).filter(Boolean) as number[];
+      const ends = metricBatches.map(b => b.reportingEnd?.getTime()).filter(Boolean) as number[];
+      
+      sourceContext = {
+        reporting_start: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
+        reporting_end: ends.length ? new Date(Math.max(...ends)).toISOString() : null,
+        batch_type: "Combined Fixed Period",
+        exported_at: metricBatches[0].exportedAt ? metricBatches[0].exportedAt.toISOString() : null,
+        attribution_setting: metricBatches[0].attributionSetting || defaultAdAttributionSetting
+      };
+    } else {
+      metricBatches = [batches[0]];
+      sourceLabel = "Using latest summarized Meta snapshot";
+      sourceContext = {
+        reporting_start: batches[0].reportingStart ? batches[0].reportingStart.toISOString() : null,
+        reporting_end: batches[0].reportingEnd ? batches[0].reportingEnd.toISOString() : null,
+        batch_type: batches[0].batchType,
+        exported_at: batches[0].exportedAt ? batches[0].exportedAt.toISOString() : null,
+        attribution_setting: batches[0].attributionSetting || defaultAdAttributionSetting
+      };
+    }
+  }
+
+  const allReports = metricBatches.flatMap((batch) => batch.reports);
+  const averages = createBatchAverages(allReports);
+  const reportRecords = allReports.map((report) => toReportRecord(report as AdReportWithLinks, averages));
+
+  const totalSpend = sum(allReports.map((r) => r.spend));
+  const totalImpressions = sum(allReports.map((r) => r.impressions));
+  const totalReach = sum(allReports.map((r) => r.reach));
+  const totalResults = sum(allReports.map((r) => r.results));
+  const totalLinkClicks = sum(allReports.map((r) => r.linkClicks));
+  const totalThruPlays = sum(allReports.map((r) => r.thruPlays));
+  const totalVideo100 = sum(allReports.map((r) => r.video100));
+
+  const getCpr = (r: AdCreativeReportRecord) => r.cost_per_result ?? cost(r.spend ?? 0, r.results ?? 0);
+
+  // Best ad: lowest CPR among reports with meaningful spend and results
+  const qualifyingForBest = reportRecords.filter(
+    (r) => (r.spend ?? 0) >= 10 && (r.results ?? 0) >= 3 && getCpr(r) !== null
+  );
+  const bestAdReport = qualifyingForBest.length > 0
+    ? qualifyingForBest.reduce((best, current) =>
+        (getCpr(current) ?? Infinity) < (getCpr(best) ?? Infinity) ? current : best
+      )
+    : null;
+
+  // Worst ad: highest CPR among reports with meaningful spend, or zero results with high spend
+  const qualifyingForWorst = reportRecords.filter(
+    (r) => (r.spend ?? 0) >= 10
+  );
+  const worstAdReport = qualifyingForWorst.length > 0
+    ? qualifyingForWorst.reduce((worst, current) => {
+        const currentCpr = getCpr(current) ?? Infinity;
+        const worstCpr = getCpr(worst) ?? Infinity;
+
+        return currentCpr > worstCpr ? current : worst;
+      })
+    : null;
+
+  // Best hook: aggregate by hook_type across all reports, pick lowest CPR
+  const hookMap = new Map<string, { spend: number; results: number; link_clicks: number; impressions: number }>();
+
+  for (const report of reportRecords) {
+    const hookType = report.linked_copy?.hook_type ?? null;
+
+    if (!hookType) {
+      continue;
+    }
+
+    const current = hookMap.get(hookType) ?? { spend: 0, results: 0, link_clicks: 0, impressions: 0 };
+
+    current.spend += report.spend ?? 0;
+    current.results += report.results ?? 0;
+    current.link_clicks += report.link_clicks ?? 0;
+    current.impressions += report.impressions ?? 0;
+    hookMap.set(hookType, current);
+  }
+
+  let bestHook: ReleaseAdMetricsOverview["best_hook"] = null;
+  let worstHook: ReleaseAdMetricsOverview["worst_hook"] = null;
+
+  for (const [label, data] of hookMap) {
+    const hookCpr = cost(data.spend, data.results);
+    const hookCtr = ratio(data.link_clicks, data.impressions);
+    
+    const hookSummary = {
+      label,
+      spend: data.spend,
+      results: data.results,
+      link_clicks: data.link_clicks,
+      cpr: hookCpr,
+      ctr: hookCtr
+    };
+
+    if (data.results >= 1) {
+      if (!bestHook || (hookCpr !== null && (bestHook.cpr === null || hookCpr < bestHook.cpr))) {
+        bestHook = hookSummary;
+      }
+    }
+
+    if (data.spend >= 10) {
+      if (!worstHook || (hookCpr === null && worstHook.cpr !== null) || (hookCpr !== null && worstHook.cpr !== null && hookCpr > worstHook.cpr)) {
+        worstHook = hookSummary;
+      }
+    }
+  }
+
+  return {
+    has_data: true,
+    source_label: sourceLabel,
+    source_context: sourceContext,
+    total_spend: totalSpend,
+    total_impressions: totalImpressions,
+    total_reach: totalReach,
+    total_results: totalResults,
+    total_link_clicks: totalLinkClicks,
+    total_thru_plays: totalThruPlays > 0 ? totalThruPlays : null,
+    total_video_100: totalVideo100 > 0 ? totalVideo100 : null,
+    ctr: ratio(totalLinkClicks, totalImpressions),
+    cpc: cost(totalSpend, totalLinkClicks),
+    cpr: cost(totalSpend, totalResults),
+    batch_count: batches.length,
+    report_count: allReports.length,
+    best_ad: bestAdReport
+      ? {
+          ad_name: bestAdReport.ad_name,
+          spend: bestAdReport.spend ?? 0,
+          results: bestAdReport.results ?? 0,
+          cpr: getCpr(bestAdReport),
+          ctr: bestAdReport.ctr,
+          signals: bestAdReport.performance_signals
+        }
+      : null,
+    worst_ad: worstAdReport && worstAdReport.id !== bestAdReport?.id
+      ? {
+          ad_name: worstAdReport.ad_name,
+          spend: worstAdReport.spend ?? 0,
+          results: worstAdReport.results ?? 0,
+          cpr: getCpr(worstAdReport),
+          ctr: worstAdReport.ctr,
+          signals: worstAdReport.performance_signals
+        }
+      : null,
+    best_hook: bestHook,
+    worst_hook: worstHook && worstHook.label !== bestHook?.label ? worstHook : null,
+    batches: batches.map((batch) => ({
+      id: batch.id,
+      name: batch.name,
+      spend: sum(batch.reports.map((r) => r.spend)),
+      report_count: batch.reports.length,
+      created_at: batch.createdAt.toISOString()
+    }))
+  };
 }

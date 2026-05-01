@@ -5,6 +5,7 @@ export const defaultAdAttributionSetting = "7-day click, 1-day view, 1-day engag
 export const adBatchTypeOptions: AdBatchType[] = [
   "Rolling Snapshot",
   "Fixed Period",
+  "Release-to-Date",
   "Full Campaign"
 ];
 

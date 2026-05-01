@@ -55,8 +55,9 @@ const getCachedPublicExclusiveOffer = unstable_cache(
   const siteSettings = await readSiteSettings();
   const offer = siteSettings.site_content.exclusive;
   const hasTrackFile = Boolean(offer.exclusive_track_file_path.trim());
+  const hasExternalLink = Boolean(offer.private_external_url.trim());
   const hasTrackTitle = Boolean(offer.exclusive_track_title.trim());
-  const isAvailable = offer.exclusive_track_enabled && hasTrackFile && hasTrackTitle;
+  const isAvailable = offer.exclusive_track_enabled && (hasTrackFile || hasExternalLink) && hasTrackTitle;
 
   return {
     siteSettings,

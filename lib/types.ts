@@ -195,6 +195,12 @@ export type SiteContentSettings = {
     exclusive_track_file_path: string;
     exclusive_track_art_path: string;
     exclusive_track_enabled: boolean;
+    unlock_experience: "instant_unlock" | "email_only";
+    private_external_url: string;
+    instant_unlock_button_label: string;
+    also_email_link: boolean;
+    email_subject: string;
+    email_body: string;
     discord_invite_url: string;
     community_badge_text: string;
     community_headline: string;
@@ -376,7 +382,10 @@ export type EmailSendLogRecord = {
 };
 
 export type ExclusiveClaimResponse = {
-  downloadUrl: string;
+  downloadUrl?: string; // Kept for backwards compatibility/fallback
+  privateExternalUrl?: string;
+  unlockExperience: "instant_unlock" | "email_only";
+  instantUnlockButtonLabel: string;
   isDuplicate: boolean;
   message: string;
   subscriber: Pick<
@@ -438,7 +447,7 @@ export type CopySummary = {
 
 export type AdCampaignDecision = "scale" | "retest" | "iterate" | "pause" | "archive";
 
-export type AdBatchType = "Rolling Snapshot" | "Fixed Period" | "Full Campaign";
+export type AdBatchType = "Rolling Snapshot" | "Fixed Period" | "Release-to-Date" | "Full Campaign";
 
 export type AdBatchComparisonMode = "Snapshot Comparison" | "Combined Fixed Period";
 
@@ -578,4 +587,59 @@ export type AppearsOnRecord = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+};
+
+export type ReleaseAdHighlightAd = {
+  ad_name: string;
+  spend: number;
+  results: number;
+  cpr: number | null;
+  ctr: number | null;
+  signals: string[];
+};
+
+export type ReleaseAdHighlightHook = {
+  label: string;
+  spend: number;
+  results: number;
+  link_clicks: number;
+  cpr: number | null;
+  ctr: number | null;
+};
+
+export type ReleaseAdBatchRef = {
+  id: string;
+  name: string;
+  spend: number;
+  report_count: number;
+  created_at: string;
+};
+
+export type ReleaseAdMetricsOverview = {
+  has_data: boolean;
+  source_label: string;
+  source_context: {
+    reporting_start: string | null;
+    reporting_end: string | null;
+    batch_type: string;
+    exported_at: string | null;
+    attribution_setting: string;
+  } | null;
+  total_spend: number;
+  total_impressions: number;
+  total_reach: number;
+  total_results: number;
+  total_link_clicks: number;
+  total_thru_plays: number | null;
+  total_video_100: number | null;
+  ctr: number | null;
+  cpc: number | null;
+  cpr: number | null;
+  batch_count: number;
+  report_count: number;
+  best_ad: ReleaseAdHighlightAd | null;
+  worst_ad: ReleaseAdHighlightAd | null;
+  best_hook: ReleaseAdHighlightHook | null;
+  worst_hook: ReleaseAdHighlightHook | null;
+  batches: ReleaseAdBatchRef[];
 };

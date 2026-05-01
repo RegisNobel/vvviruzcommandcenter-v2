@@ -95,7 +95,7 @@ export default async function PublicExclusivesPage() {
           ) : null}
 
           {offer.exclusive_track_title.trim() ? (
-            <div className="mx-auto mt-8 max-w-[560px] rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-left">
+            <div className="mx-auto mt-8 max-w-[560px] rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
                 Exclusive Track
               </p>

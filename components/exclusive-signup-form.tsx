@@ -30,6 +30,9 @@ export function ExclusiveSignupForm({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState("");
+  const [privateExternalUrl, setPrivateExternalUrl] = useState("");
+  const [unlockExperience, setUnlockExperience] = useState<"instant_unlock" | "email_only">("instant_unlock");
+  const [instantUnlockButtonLabel, setInstantUnlockButtonLabel] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,14 +53,20 @@ export function ExclusiveSignupForm({
       });
       const payload = (await response.json()) as {
         downloadUrl?: string;
+        privateExternalUrl?: string;
+        unlockExperience?: "instant_unlock" | "email_only";
+        instantUnlockButtonLabel?: string;
         message?: string;
       };
 
-      if (!response.ok || !payload.downloadUrl) {
+      if (!response.ok) {
         throw new Error(payload.message ?? "Unable to unlock the track right now.");
       }
 
-      setDownloadUrl(payload.downloadUrl);
+      setDownloadUrl(payload.downloadUrl || "");
+      setPrivateExternalUrl(payload.privateExternalUrl || "");
+      setUnlockExperience(payload.unlockExperience || "instant_unlock");
+      setInstantUnlockButtonLabel(payload.instantUnlockButtonLabel || "Listen Now");
       setMessage(payload.message ?? "Your download is unlocked below.");
       setSaveState("success");
     } catch (error) {
@@ -76,19 +85,33 @@ export function ExclusiveSignupForm({
           {successHeading}
         </h2>
         <p className="mt-3 text-sm leading-7 text-[#c3ccd5]">{message}</p>
-        <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
-            Unlocked Track
-          </p>
-          <p className="mt-3 text-xl font-semibold text-[#f7f1e6]">{trackTitle}</p>
-          <a
-            className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#c9a347]/40 bg-[#c9a347]/14 px-5 py-3 text-sm font-semibold text-[#f2dfb0] transition hover:border-[#c9a347]/60 hover:bg-[#c9a347]/20"
-            href={downloadUrl}
-          >
-            <Download size={16} />
-            {downloadLabel}
-          </a>
-        </div>
+        
+        {unlockExperience === "instant_unlock" ? (
+          <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 px-5 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
+              Unlocked Track
+            </p>
+            <p className="mt-3 text-xl font-semibold text-[#f7f1e6]">{trackTitle}</p>
+            {privateExternalUrl ? (
+              <a
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#c9a347]/40 bg-[#c9a347]/14 px-5 py-3 text-sm font-semibold text-[#f2dfb0] transition hover:border-[#c9a347]/60 hover:bg-[#c9a347]/20"
+                href={privateExternalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {instantUnlockButtonLabel}
+              </a>
+            ) : downloadUrl ? (
+              <a
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#c9a347]/40 bg-[#c9a347]/14 px-5 py-3 text-sm font-semibold text-[#f2dfb0] transition hover:border-[#c9a347]/60 hover:bg-[#c9a347]/20"
+                href={downloadUrl}
+              >
+                <Download size={16} />
+                {downloadLabel}
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   }

@@ -182,6 +182,15 @@ export function SiteSettingsEditor({
     setSaveState("saving");
     setMessage(null);
 
+    const exclusiveSettings = settings.site_content.exclusive;
+    if (exclusiveSettings.unlock_experience === "email_only" || exclusiveSettings.also_email_link) {
+      if (!exclusiveSettings.email_subject?.trim() || !exclusiveSettings.email_body?.trim()) {
+        setSaveState("error");
+        setMessage("Email Subject and Email Body are required for Exclusive Email delivery.");
+        return;
+      }
+    }
+
     const payload: SiteSettingsRecord = {
       ...settings,
       social_links: parseLinkRows<SocialLink>(socialLinksText)

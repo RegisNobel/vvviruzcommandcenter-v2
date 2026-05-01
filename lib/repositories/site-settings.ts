@@ -213,6 +213,12 @@ function createDefaultSiteContent(): SiteContentSettings {
     exclusive_track_file_path: "",
     exclusive_track_art_path: "",
     exclusive_track_enabled: false,
+    unlock_experience: "instant_unlock",
+    private_external_url: "",
+    instant_unlock_button_label: "Listen Now",
+    also_email_link: true,
+    email_subject: "Your Exclusive Track",
+    email_body: "Thank you for joining the vvviruz Command Center.\n\nHere is your exclusive link to the vault.",
     discord_invite_url: "",
     community_badge_text: "Fan Hub",
     community_headline: "Join the vvviruz Command Center",
@@ -321,6 +327,10 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     exclusive: {
       ...defaults.exclusive,
       ...input?.exclusive,
+      unlock_experience: input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience,
+      instant_unlock_button_label: input?.exclusive?.instant_unlock_button_label || defaults.exclusive.instant_unlock_button_label,
+      email_subject: input?.exclusive?.email_subject || defaults.exclusive.email_subject,
+      email_body: input?.exclusive?.email_body || defaults.exclusive.email_body,
       community_headline:
         !normalizedCommunityHeadline ||
         normalizedCommunityHeadline === "Join the vvviruz command center"

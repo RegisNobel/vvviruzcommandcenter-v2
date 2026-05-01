@@ -12,18 +12,27 @@ import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {
+  Activity,
   ArrowLeft,
+  ArrowRight,
+  BarChart3,
   Captions,
   Check,
+  ChevronDown,
+  ChevronUp,
+  Eye,
   FolderOpen,
   ImagePlus,
   Lock,
   Link2Off,
+  MousePointerClick,
   Plus,
   RefreshCw,
   Save,
   Sparkles,
+  Target,
   Trash2,
+  TrendingUp,
   Unlock
 } from "lucide-react";
 
@@ -47,13 +56,23 @@ import type {ReleaseChecklistKey} from "@/lib/releases";
 import type {
   CopySummary,
   AdCampaignLearningRecord,
+  ReleaseAdMetricsOverview,
   ReleaseCoverUploadResponse,
   ReleaseRecord,
   ReleaseStageLabel,
-  ReleaseType
+  ReleaseType,
+  AdCampaignDecision
 } from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+
+const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
+  {value: "scale", label: "Scale"},
+  {value: "retest", label: "Retest"},
+  {value: "iterate", label: "Iterate"},
+  {value: "pause", label: "Pause"},
+  {value: "archive", label: "Archive"}
+];
 
 type ReleaseFlowStageDefinition = {
   id: ReleaseChecklistKey | "cover_art";
@@ -195,6 +214,25 @@ function formatTimestamp(value: string) {
     hour: "numeric",
     minute: "2-digit"
   }).format(date);
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(value);
+}
+
+function formatPercentage(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value / 100);
 }
 
 function formatReleaseType(value: ReleaseType) {
@@ -351,10 +389,12 @@ function AppleMusicLogo(props: SVGProps<SVGSVGElement>) {
 }
 
 export function ReleaseDetailEditor({
+  adMetrics,
   initialLinkedCopies,
   initialRelease,
   latestAdLearning
 }: {
+  adMetrics: ReleaseAdMetricsOverview;
   initialLinkedCopies: CopySummary[];
   initialRelease: ReleaseRecord;
   latestAdLearning: AdCampaignLearningRecord | null;
@@ -374,6 +414,15 @@ export function ReleaseDetailEditor({
   const lastSavedSnapshotRef = useRef<string>(serializeRelease(initialRelease));
   const autosaveTimerRef = useRef<number | null>(null);
   const latestDraftSnapshotRef = useRef<string>(serializeRelease(initialRelease));
+
+  const [learningDraft, setLearningDraft] = useState({
+    summary: latestAdLearning?.summary ?? "",
+    what_worked: latestAdLearning?.what_worked ?? "",
+    what_failed: latestAdLearning?.what_failed ?? "",
+    next_test: latestAdLearning?.next_test ?? "",
+    decision: latestAdLearning?.decision ?? "iterate"
+  });
+  const [isSavingLearning, setIsSavingLearning] = useState(false);
 
   const progress = useMemo(() => calculateReleaseProgress(release), [release]);
   const snapshotStage = useMemo(() => getSnapshotStage(release), [release]);
@@ -710,6 +759,131 @@ export function ReleaseDetailEditor({
     } catch (error) {
       setIsDeleting(false);
       setMessage(error instanceof Error ? error.message : "Delete failed unexpectedly.");
+    }
+  }
+
+  function handleGenerateDraft() {
+    if (
+      learningDraft.summary ||
+      learningDraft.what_worked ||
+      learningDraft.what_failed ||
+      learningDraft.next_test
+    ) {
+      if (!window.confirm("Overwrite current draft with generated learning?")) {
+        return;
+      }
+    }
+
+    const {
+      source_label,
+      source_context,
+      total_spend,
+      total_link_clicks,
+      total_results,
+      cpr,
+      ctr,
+      cpc,
+      best_ad,
+      worst_ad,
+      best_hook,
+      worst_hook
+    } = adMetrics;
+
+    const summaryStr = `This report is based on ${source_label} for ${source_context?.reporting_start ? formatTimestamp(source_context.reporting_start) : "unknown date"} to ${source_context?.reporting_end ? formatTimestamp(source_context.reporting_end) : "unknown date"} using ${source_context?.attribution_setting || "default attribution"}. The campaign spent ${formatCurrency(total_spend)}, generated ${formatNumber(total_link_clicks)} clicks, ${formatNumber(total_results)} results, ${cpr !== null ? formatCurrency(cpr) : "N/A"} CPR, ${ctr !== null ? formatPercentage(ctr * 100) : "N/A"} CTR, and ${cpc !== null ? formatCurrency(cpc) : "N/A"} CPC.`;
+
+    let workedStr = "";
+    if (best_ad || best_hook) {
+      if (best_ad) {
+        workedStr += `The strongest creative was "${best_ad.ad_name}" at ${best_ad.cpr !== null ? formatCurrency(best_ad.cpr) : "N/A"} CPR. `;
+      }
+      if (best_hook) {
+        workedStr += `The top performing hook angle was ${formatHookType(best_hook.label as any)} at ${best_hook.cpr !== null ? formatCurrency(best_hook.cpr) : "N/A"} CPR. `;
+      }
+      if (best_ad?.signals && best_ad.signals.length > 0) {
+        workedStr += `High-level signal: ${best_ad.signals[0]}.`;
+      }
+    } else {
+      workedStr = "No clear winners identified yet.";
+    }
+
+    let failedStr = "";
+    if (worst_ad || worst_hook) {
+      if (worst_ad) {
+        failedStr += `The weakest creative crossing the minimum spend threshold was "${worst_ad.ad_name}" at ${worst_ad.cpr !== null ? formatCurrency(worst_ad.cpr) : "N/A"} CPR. `;
+      }
+      if (worst_hook) {
+        failedStr += `The weakest hook signal was ${formatHookType(worst_hook.label as any)}. `;
+      }
+    } else {
+      failedStr = "No significant failures identified or spend is too low to determine.";
+    }
+
+    let nextTestStr = "";
+    if (best_hook) {
+      nextTestStr += `Test another creative using the ${formatHookType(best_hook.label as any)} hook type. `;
+    }
+    if (best_ad) {
+      nextTestStr += `Use "${best_ad.ad_name}" as the reference creative for the next iteration. `;
+    }
+    if (worst_hook) {
+      nextTestStr += `Retest ${formatHookType(worst_hook.label as any)} only with stronger creative or keep it secondary.`;
+    }
+    if (!nextTestStr) {
+      nextTestStr = "Continue testing new hooks and creatives to find a baseline.";
+    }
+
+    let decision: AdCampaignDecision = "iterate";
+    if (total_spend > 50 && cpr !== null && cpr < 0.5) {
+      decision = "scale";
+    } else if (best_ad && worst_ad) {
+      decision = "iterate";
+    } else if (total_results > 0 && total_spend < 50) {
+      decision = "retest";
+    } else if (total_spend > 50 && (cpr === null || cpr > 2)) {
+      decision = "pause";
+    }
+
+    setLearningDraft({
+      summary: summaryStr.trim(),
+      what_worked: workedStr.trim(),
+      what_failed: failedStr.trim(),
+      next_test: nextTestStr.trim(),
+      decision
+    });
+  }
+
+  async function handleLearningSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!adMetrics.batches.length) return;
+    
+    setIsSavingLearning(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/ads/batches/${adMetrics.batches[0].id}/learnings`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...learningDraft,
+          release_id: release.id
+        })
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {message?: string}
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Learning save failed.");
+      }
+
+      setMessage("Campaign learning saved.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Learning save failed.");
+    } finally {
+      setIsSavingLearning(false);
     }
   }
 
@@ -1572,12 +1746,12 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+            <section className={`${pagePanelClass} space-y-6 px-4 py-5 sm:px-6 sm:py-6`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className={pageLabelClass}>Ads Analytics</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                    Campaign Learning
+                    Ads Performance
                   </h2>
                 </div>
                 <Link className={pageSecondaryButtonClass} href={`/admin/ads?releaseId=${release.id}`}>
@@ -1585,31 +1759,353 @@ export function ReleaseDetailEditor({
                 </Link>
               </div>
 
-              {latestAdLearning ? (
-                <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4 text-sm leading-6 text-[#aeb3bb]">
-                  <div className="flex flex-wrap gap-2">
-                    <span className={pagePillClass}>
-                      Decision: {latestAdLearning.decision}
-                    </span>
-                    <span className={pagePillClass}>
-                      Updated {formatTimestamp(latestAdLearning.updated_at)}
-                    </span>
-                  </div>
-                  <p className="mt-4 text-[#ede7dc]">
-                    {latestAdLearning.summary || "No summary written yet."}
-                  </p>
-                  {latestAdLearning.next_test ? (
-                    <p className="mt-3">
-                      <span className={pageLabelClass}>Next Test</span>
-                      <span className="mt-1 block text-[#ede7dc]">
-                        {latestAdLearning.next_test}
-                      </span>
-                    </p>
-                  ) : null}
+              {!adMetrics.has_data ? (
+                <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
+                  No ad data has been imported for this release yet.
                 </div>
               ) : (
-                <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
-                  No Ads Analytics learning is saved for this release yet.
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-sm font-semibold text-[#ede7dc]">
+                      Source: {adMetrics.source_label}
+                    </p>
+                    {adMetrics.source_context ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className={pagePillClass}>{adMetrics.source_context.batch_type}</span>
+                        {adMetrics.source_context.reporting_start && adMetrics.source_context.reporting_end ? (
+                          <span className={pagePillClass}>
+                            {formatTimestamp(adMetrics.source_context.reporting_start)} – {formatTimestamp(adMetrics.source_context.reporting_end)}
+                          </span>
+                        ) : null}
+                        {adMetrics.source_context.exported_at ? (
+                          <span className={pagePillClass}>
+                            Exported: {formatTimestamp(adMetrics.source_context.exported_at)}
+                          </span>
+                        ) : null}
+                        {adMetrics.source_context.attribution_setting ? (
+                          <span className={pagePillClass}>
+                            Attribution: {adMetrics.source_context.attribution_setting}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {adMetrics.source_label === "Using latest summarized Meta snapshot" ? (
+                    <div className="rounded-[20px] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-[#f2dfb5]">
+                      This view uses the latest summarized Meta snapshot because the available imports overlap or are rolling snapshots. For an official Release-to-Date read, upload one custom Meta export covering the full release window.
+                    </div>
+                  ) : null}
+
+                  {/* Top line metrics */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <Activity size={14} className="text-[#aeb3bb]" />
+                        Spend
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-[#ede7dc]">
+                        {formatCurrency(adMetrics.total_spend)}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <Eye size={14} className="text-[#aeb3bb]" />
+                        Impressions
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-[#ede7dc]">
+                        {formatNumber(adMetrics.total_impressions)}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <MousePointerClick size={14} className="text-[#aeb3bb]" />
+                        Clicks
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-[#ede7dc]">
+                        {formatNumber(adMetrics.total_link_clicks)}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <Check size={14} className="text-[#aeb3bb]" />
+                        Results
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-[#ede7dc]">
+                        {formatNumber(adMetrics.total_results)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Secondary metrics */}
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <Eye size={14} className="text-[#aeb3bb]" />
+                        Reach
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {formatNumber(adMetrics.total_reach)}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <BarChart3 size={14} className="text-[#aeb3bb]" />
+                        CPR
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {adMetrics.cpr !== null ? formatCurrency(adMetrics.cpr) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <TrendingUp size={14} className="text-[#aeb3bb]" />
+                        CTR
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {adMetrics.ctr !== null ? formatPercentage(adMetrics.ctr) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <BarChart3 size={14} className="text-[#aeb3bb]" />
+                        CPC
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {adMetrics.cpc !== null ? formatCurrency(adMetrics.cpc) : "N/A"}
+                      </p>
+                    </div>
+                    {adMetrics.total_thru_plays !== null ? (
+                      <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                          <Activity size={14} className="text-[#aeb3bb]" />
+                          ThruPlays
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                          {formatNumber(adMetrics.total_thru_plays)}
+                        </p>
+                      </div>
+                    ) : null}
+                    {adMetrics.total_video_100 !== null ? (
+                      <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                          <Activity size={14} className="text-[#aeb3bb]" />
+                          100% Plays
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                          {formatNumber(adMetrics.total_video_100)}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Highlights (Best/Worst Ad, Best Hook) */}
+                  <div className="space-y-3">
+                    {adMetrics.best_ad ? (
+                      <div className="flex items-start gap-3 rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                          🏆
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#ede7dc]">Best Ad: {adMetrics.best_ad.ad_name}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#aeb3bb]">
+                            <span>{formatCurrency(adMetrics.best_ad.spend)} spend</span>
+                            <span>&middot;</span>
+                            <span>{formatNumber(adMetrics.best_ad.results)} results</span>
+                            <span>&middot;</span>
+                            <span className="font-medium text-emerald-400">
+                              {adMetrics.best_ad.cpr !== null ? `${formatCurrency(adMetrics.best_ad.cpr)} CPR` : "N/A CPR"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {adMetrics.worst_ad ? (
+                      <div className="flex items-start gap-3 rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-coral/10 text-coral">
+                          🔻
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#ede7dc]">Worst Ad: {adMetrics.worst_ad.ad_name}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#aeb3bb]">
+                            <span>{formatCurrency(adMetrics.worst_ad.spend)} spend</span>
+                            <span>&middot;</span>
+                            <span>{formatNumber(adMetrics.worst_ad.results)} results</span>
+                            <span>&middot;</span>
+                            <span className="font-medium text-coral">
+                              {adMetrics.worst_ad.cpr !== null ? `${formatCurrency(adMetrics.worst_ad.cpr)} CPR` : "N/A CPR"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {adMetrics.best_hook ? (
+                      <div className="flex items-start gap-3 rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f0eadf]/10 text-[#f0eadf]">
+                          🎯
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#ede7dc]">Best Hook: {formatHookType(adMetrics.best_hook.label as any)}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#aeb3bb]">
+                            <span>{formatCurrency(adMetrics.best_hook.spend)} spend</span>
+                            <span>&middot;</span>
+                            <span>{formatNumber(adMetrics.best_hook.results)} results</span>
+                            <span>&middot;</span>
+                            <span className="font-medium text-[#f0eadf]">
+                              {adMetrics.best_hook.cpr !== null ? `${formatCurrency(adMetrics.best_hook.cpr)} CPR` : "N/A CPR"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {adMetrics.worst_hook ? (
+                      <div className="flex items-start gap-3 rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#31353b] text-[#8a9098]">
+                          ⚠️
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#ede7dc]">Worst Hook: {formatHookType(adMetrics.worst_hook.label as any)}</p>
+                          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#aeb3bb]">
+                            <span>{formatCurrency(adMetrics.worst_hook.spend)} spend</span>
+                            <span>&middot;</span>
+                            <span>{formatNumber(adMetrics.worst_hook.results)} results</span>
+                            <span>&middot;</span>
+                            <span className="font-medium text-[#8a9098]">
+                              {adMetrics.worst_hook.cpr !== null ? `${formatCurrency(adMetrics.worst_hook.cpr)} CPR` : "N/A CPR"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* Campaign Learning */}
+                  <form className="space-y-4 pt-2" onSubmit={handleLearningSave}>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <p className={pageLabelClass}>Campaign Learning</p>
+                      <button
+                        type="button"
+                        onClick={handleGenerateDraft}
+                        className="flex items-center gap-2 rounded-full bg-[#20242b] px-3 py-1.5 text-xs font-medium text-[#f0eadf] transition hover:bg-[#2a2f38]"
+                      >
+                        <Sparkles size={14} />
+                        Draft From Current Snapshot
+                      </button>
+                    </div>
+                    
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-5">
+                      <div className="mb-5 rounded-[16px] border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-xs leading-5 text-blue-200">
+                        Draft is based on current Ads Analytics data. Review before saving.
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <label className="block space-y-1.5">
+                          <span className="text-xs font-medium text-[#7f858d]">Campaign Summary</span>
+                          <textarea
+                            className="w-full resize-none rounded-[14px] border border-[#31353b] bg-[#1a1d23] px-3 py-2 text-sm text-[#ede7dc] outline-none transition focus:border-[#424852] focus:bg-[#20242b]"
+                            rows={3}
+                            value={learningDraft.summary}
+                            onChange={(e) => setLearningDraft(curr => ({...curr, summary: e.target.value}))}
+                          />
+                        </label>
+                        
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <label className="block space-y-1.5">
+                            <span className="text-xs font-medium text-[#7f858d]">What Worked</span>
+                            <textarea
+                              className="w-full resize-none rounded-[14px] border border-[#31353b] bg-[#1a1d23] px-3 py-2 text-sm text-[#ede7dc] outline-none transition focus:border-[#424852] focus:bg-[#20242b]"
+                              rows={3}
+                              value={learningDraft.what_worked}
+                              onChange={(e) => setLearningDraft(curr => ({...curr, what_worked: e.target.value}))}
+                            />
+                          </label>
+                          <label className="block space-y-1.5">
+                            <span className="text-xs font-medium text-[#7f858d]">What Failed</span>
+                            <textarea
+                              className="w-full resize-none rounded-[14px] border border-[#31353b] bg-[#1a1d23] px-3 py-2 text-sm text-[#ede7dc] outline-none transition focus:border-[#424852] focus:bg-[#20242b]"
+                              rows={3}
+                              value={learningDraft.what_failed}
+                              onChange={(e) => setLearningDraft(curr => ({...curr, what_failed: e.target.value}))}
+                            />
+                          </label>
+                        </div>
+                        
+                        <label className="block space-y-1.5">
+                          <span className="text-xs font-medium text-[#7f858d]">Next Test</span>
+                          <textarea
+                            className="w-full resize-none rounded-[14px] border border-[#31353b] bg-[#1a1d23] px-3 py-2 text-sm text-[#ede7dc] outline-none transition focus:border-[#424852] focus:bg-[#20242b]"
+                            rows={2}
+                            value={learningDraft.next_test}
+                            onChange={(e) => setLearningDraft(curr => ({...curr, next_test: e.target.value}))}
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap items-end justify-between gap-4 pt-2">
+                          <label className="space-y-1.5">
+                            <span className="text-xs font-medium text-[#7f858d]">Decision</span>
+                            <select
+                              className="block rounded-[14px] border border-[#31353b] bg-[#1a1d23] px-3 py-2 text-sm text-[#ede7dc] outline-none transition focus:border-[#424852]"
+                              value={learningDraft.decision}
+                              onChange={(e) => setLearningDraft(curr => ({...curr, decision: e.target.value as AdCampaignDecision}))}
+                            >
+                              {decisionOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <div className="flex items-center gap-3">
+                            {latestAdLearning?.updated_at && (
+                              <span className="text-xs text-[#7f858d]">
+                                Last saved: {formatTimestamp(latestAdLearning.updated_at)}
+                              </span>
+                            )}
+                            <button
+                              type="submit"
+                              disabled={isSavingLearning}
+                              className="flex items-center gap-2 rounded-full bg-[#f0eadf] px-4 py-2 text-sm font-semibold text-[#09120b] transition hover:bg-white disabled:opacity-50"
+                            >
+                              <Save size={16} />
+                              {isSavingLearning ? "Saving..." : "Save Learning"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+
+                  {/* Batch History */}
+                  <details className="group space-y-3 pt-2">
+                    <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-[#ede7dc] outline-none hover:text-white">
+                      <span>Import History ({adMetrics.batch_count} batches)</span>
+                      <span className="text-[#7f858d] transition-transform duration-200 group-open:rotate-180">
+                        <ChevronDown size={18} />
+                      </span>
+                    </summary>
+                    <div className="mt-3 space-y-2">
+                      {adMetrics.batches.map((batch) => (
+                        <Link 
+                          key={batch.id} 
+                          href={`/admin/ads/${batch.id}`}
+                          className="flex items-center justify-between rounded-[18px] border border-[#31353b] bg-[#14171b] px-4 py-3 text-sm transition hover:border-[#424852] hover:bg-[#1a1d23]"
+                        >
+                          <div>
+                            <p className="font-medium text-[#ede7dc]">{batch.name}</p>
+                            <p className="mt-0.5 text-[#7f858d]">
+                              {formatTimestamp(batch.created_at)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-[#ede7dc]">{formatCurrency(batch.spend)}</p>
+                            <p className="mt-0.5 text-[#7f858d]">{batch.report_count} ads</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </details>
                 </div>
               )}
             </section>
