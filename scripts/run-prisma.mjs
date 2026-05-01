@@ -39,8 +39,20 @@ for (const envFile of envFiles) {
 }
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is required. Add it to .env.local or your shell environment.");
-  process.exit(1);
+  if (process.env.POSTGRES_PRISMA_URL) {
+    process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
+  } else if (process.env.POSTGRES_URL) {
+    process.env.DATABASE_URL = process.env.POSTGRES_URL;
+  } else {
+    console.error("DATABASE_URL is required. Add it to .env.local or your shell environment.");
+    process.exit(1);
+  }
+}
+
+if (!process.env.DIRECT_URL && process.env.POSTGRES_URL_NON_POOLING) {
+  process.env.DIRECT_URL = process.env.POSTGRES_URL_NON_POOLING;
+} else if (!process.env.DIRECT_URL) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
 }
 
 const command =
