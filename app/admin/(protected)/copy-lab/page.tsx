@@ -3,7 +3,12 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import {ArrowRight, PlusCircle} from "lucide-react";
 
-import {formatCopyType, getCopyHeading} from "@/lib/copy";
+import {
+  formatContentType,
+  formatHookType,
+  formatSongSection,
+  getCopyHeading
+} from "@/lib/copy";
 import {readCopySummaries} from "@/lib/server/copies";
 import {readReleaseSummaries} from "@/lib/server/releases";
 
@@ -46,7 +51,7 @@ export default async function AdminCopyLabPage() {
                 Copy Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                Build hook and caption pairs for releases, or keep neutral standalone
+                Build hook and caption pairs for releases, or keep reusable standalone
                 copy ready for later.
               </p>
             </div>
@@ -70,7 +75,7 @@ export default async function AdminCopyLabPage() {
                 href={`/admin/copy-lab/${copy.id}`}
                 key={copy.id}
               >
-                <div className="grid gap-5 lg:grid-cols-[80px_minmax(0,1.15fr)_0.9fr_1fr_120px] lg:items-start">
+                <div className="grid gap-5 lg:grid-cols-[80px_minmax(0,1.1fr)_0.9fr_0.9fr_1fr_120px] lg:items-start">
                   <div className="pill w-fit">{index + 1}</div>
 
                   <div className="min-w-0">
@@ -83,9 +88,19 @@ export default async function AdminCopyLabPage() {
                   </div>
 
                   <div>
-                    <p className="field-label">Type</p>
+                    <p className="field-label">Hook Type</p>
                     <p className="mt-2 text-sm font-semibold text-ink">
-                      {formatCopyType(copy.type)}
+                      {formatHookType(copy.hook_type)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="field-label">Strategy</p>
+                    <p className="mt-2 text-sm font-semibold text-ink">
+                      {formatContentType(copy.content_type)}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted">
+                      {formatSongSection(copy.song_section)}
                     </p>
                   </div>
 
@@ -120,4 +135,3 @@ export default async function AdminCopyLabPage() {
     </main>
   );
 }
-

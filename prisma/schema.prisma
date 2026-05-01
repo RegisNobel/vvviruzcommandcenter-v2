@@ -76,6 +76,9 @@ model Release {
   projects         LyricProject[]
   copies           CopyEntry[]
   categories       ReleaseCategoryAssignment[]
+  adImportBatches  AdImportBatch[]
+  adCreativeReports AdCreativeReport[]
+  adCampaignLearnings AdCampaignLearning[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -172,17 +175,129 @@ model LyricLine {
 }
 
 model CopyEntry {
-  id        String   @id
-  releaseId String?
-  hook      String
-  caption   String
-  type      String
-  createdOn DateTime
-  updatedOn DateTime
-  release   Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  id            String   @id
+  releaseId     String?
+  hook          String
+  caption       String
+  type          String   @default("discovery-shock")
+  hookType      String   @default("discovery-shock")
+  contentType   String   @default("amv-lyric-edit")
+  songSection   String   @default("hook")
+  creativeNotes String   @default("")
+  createdOn     DateTime
+  updatedOn     DateTime
+  release       Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  adLinks       AdCreativeCopyLink[]
 
   @@index([releaseId])
+  @@index([hookType, contentType, songSection])
   @@index([updatedOn])
+}
+
+model AdImportBatch {
+  id                 String               @id
+  source             String               @default("meta")
+  name               String               @default("")
+  releaseId          String?
+  reportingStart     DateTime?
+  reportingEnd       DateTime?
+  exportedAt         DateTime?
+  attributionSetting String               @default("7-day click, 1-day view, 1-day engagement")
+  batchType          String               @default("Rolling Snapshot")
+  fileNames          String               @default("[]")
+  notes              String               @default("")
+  createdAt          DateTime
+  updatedAt          DateTime
+  release            Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  reports            AdCreativeReport[]
+  learnings          AdCampaignLearning[]
+
+  @@index([releaseId])
+  @@index([createdAt])
+  @@index([exportedAt])
+  @@index([batchType])
+}
+
+model AdCreativeReport {
+  id                     String               @id
+  importBatchId          String
+  releaseId              String?
+  campaignName           String?
+  adSetName              String?
+  adName                 String
+  adDelivery             String?
+  reportingStart         DateTime?
+  reportingEnd           DateTime?
+  spend                  Float?
+  impressions            Int?
+  reach                  Int?
+  results                Float?
+  costPerResult          Float?
+  linkClicks             Int?
+  cpc                    Float?
+  ctr                    Float?
+  pageEngagement         Int?
+  postReactions          Int?
+  postComments           Int?
+  postSaves              Int?
+  postShares             Int?
+  instagramFollows       Int?
+  videoPlays             Int?
+  threeSecondPlays       Int?
+  thruPlays              Int?
+  costPerThruPlay        Float?
+  video25                Int?
+  video50                Int?
+  video75                Int?
+  video95                Int?
+  video100               Int?
+  qualityRanking         String?
+  engagementRateRanking  String?
+  conversionRateRanking  String?
+  utmSource              String?
+  utmCampaign            String?
+  utmContent             String?
+  createdAt              DateTime
+  updatedAt              DateTime
+  importBatch            AdImportBatch         @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  release                Release?              @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  copyLinks              AdCreativeCopyLink[]
+
+  @@index([importBatchId])
+  @@index([releaseId])
+  @@index([utmSource, utmCampaign, utmContent])
+  @@index([adName, adSetName, reportingStart, reportingEnd])
+}
+
+model AdCreativeCopyLink {
+  id                 String           @id
+  adCreativeReportId String
+  copyEntryId        String
+  createdAt          DateTime
+  adCreativeReport   AdCreativeReport @relation(fields: [adCreativeReportId], references: [id], onDelete: Cascade)
+  copyEntry          CopyEntry        @relation(fields: [copyEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([adCreativeReportId, copyEntryId])
+  @@index([copyEntryId])
+}
+
+model AdCampaignLearning {
+  id            String        @id
+  importBatchId String
+  releaseId     String?
+  summary       String        @default("")
+  whatWorked    String        @default("")
+  whatFailed    String        @default("")
+  nextTest      String        @default("")
+  decision      String        @default("iterate")
+  createdAt     DateTime
+  updatedAt     DateTime
+  importBatch   AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  release       Release?      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+  @@index([importBatchId])
+  @@index([releaseId])
+  @@index([updatedAt])
 }
 
 model SiteSettings {

@@ -37,10 +37,16 @@ import {
   hasReleaseCoverArt,
   getSuggestedReleaseSlug
 } from "@/lib/releases";
-import {formatCopyType, getCopyHeading} from "@/lib/copy";
+import {
+  formatContentType,
+  formatHookType,
+  formatSongSection,
+  getCopyHeading
+} from "@/lib/copy";
 import type {ReleaseChecklistKey} from "@/lib/releases";
 import type {
   CopySummary,
+  AdCampaignLearningRecord,
   ReleaseCoverUploadResponse,
   ReleaseRecord,
   ReleaseStageLabel,
@@ -346,10 +352,12 @@ function AppleMusicLogo(props: SVGProps<SVGSVGElement>) {
 
 export function ReleaseDetailEditor({
   initialLinkedCopies,
-  initialRelease
+  initialRelease,
+  latestAdLearning
 }: {
   initialLinkedCopies: CopySummary[];
   initialRelease: ReleaseRecord;
+  latestAdLearning: AdCampaignLearningRecord | null;
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -1521,7 +1529,13 @@ export function ReleaseDetailEditor({
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <span className={pagePillClass}>
-                            {formatCopyType(linkedCopy.type)}
+                            {formatHookType(linkedCopy.hook_type)}
+                          </span>
+                          <span className={pagePillClass}>
+                            {formatContentType(linkedCopy.content_type)}
+                          </span>
+                          <span className={pagePillClass}>
+                            {formatSongSection(linkedCopy.song_section)}
                           </span>
                           <span className={pagePillClass}>
                             Created {formatTimestamp(linkedCopy.created_on)}
@@ -1556,6 +1570,48 @@ export function ReleaseDetailEditor({
                   </div>
                 ) : null}
               </div>
+            </section>
+
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className={pageLabelClass}>Ads Analytics</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                    Campaign Learning
+                  </h2>
+                </div>
+                <Link className={pageSecondaryButtonClass} href={`/admin/ads?releaseId=${release.id}`}>
+                  Open Ads
+                </Link>
+              </div>
+
+              {latestAdLearning ? (
+                <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4 text-sm leading-6 text-[#aeb3bb]">
+                  <div className="flex flex-wrap gap-2">
+                    <span className={pagePillClass}>
+                      Decision: {latestAdLearning.decision}
+                    </span>
+                    <span className={pagePillClass}>
+                      Updated {formatTimestamp(latestAdLearning.updated_at)}
+                    </span>
+                  </div>
+                  <p className="mt-4 text-[#ede7dc]">
+                    {latestAdLearning.summary || "No summary written yet."}
+                  </p>
+                  {latestAdLearning.next_test ? (
+                    <p className="mt-3">
+                      <span className={pageLabelClass}>Next Test</span>
+                      <span className="mt-1 block text-[#ede7dc]">
+                        {latestAdLearning.next_test}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
+                  No Ads Analytics learning is saved for this release yet.
+                </div>
+              )}
             </section>
 
           </div>

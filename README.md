@@ -72,9 +72,10 @@ Email capture and outreach workspace with:
 Hook/caption management workspace with:
 
 - simple CRUD
-- copy types
+- hook types: Discovery Shock, Identity Callout, Proof of Skill
+- creative strategy tags for Content Type, Song Section, and optional Creative Notes
 - optional release linking
-- standalone neutral copy support
+- standalone reusable copy support
 
 ### Photo Lab
 
@@ -82,7 +83,13 @@ Placeholder route for future cover art generation workflows.
 
 ### Analytics
 
-Placeholder route for future reporting and performance views.
+Performance workspace with:
+
+- `/links` page views and outbound click tracking
+- country, source, link, and UTM breakdowns
+- CSV-first Meta Ads Analytics under `/admin/ads`
+- ad import batches, campaign dashboards, Copy Lab linking, and strategy breakdowns
+- manual campaign learnings for release readouts
 
 ## Feature Highlights
 
@@ -148,6 +155,7 @@ Database-backed data:
 - email campaigns
 - email send logs
 - copy lab entries
+- Meta ad import batches, creative report rows, Copy Lab ad links, and campaign learnings
 - admin user metadata
 - admin sessions
 - analytics events and backup run records
@@ -383,6 +391,51 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-04-30 20:27 -04:00
+
+- Added snapshot-aware Ads Analytics batch metadata: `exportedAt`, `attributionSetting`, and `batchType`.
+- Defaulted new Meta imports to `Rolling Snapshot` with the current attribution setting of `7-day click, 1-day view, 1-day engagement`.
+- Updated `/admin/ads/import`, `/admin/ads`, and `/admin/ads/[batchId]` to display batch type, export time, attribution setting, and reporting window.
+- Added rolling-snapshot helper copy warning that overlapping Meta snapshots should not be summed together.
+- Added comparison helper logic that labels overlapping ranges as Snapshot Comparison and only permits combined totals for non-overlapping Fixed Period batches.
+
+### 2026-04-30 19:54 -04:00
+
+- Added safe Ads Analytics batch deletion from both `/admin/ads` import history and `/admin/ads/[batchId]`.
+- Batch deletion requires typing `DELETE` and removes only the selected import batch, its creative rows, row-level Copy Lab links, and campaign learnings.
+- Added a route-specific not-found state for deleted/missing ad batches.
+- Added Copy Lab link carryover so new imports for the same release auto-link matching normalized ad names from the most recent previous batch.
+
+### 2026-04-30 19:38 -04:00
+
+- Fixed Ads Analytics Meta CSV merge logic so imported metric-view files merge by normalized `adName + reportingStart + reportingEnd`, no longer by `adSetName`.
+- Treats `adSetName` as an enrichment field, keeping the first non-empty value and logging conflicts instead of creating duplicate ad rows.
+- Added source-aware, non-additive merge behavior so delivery, engagement, and video CSV views fill their trusted metric groups without doubling spend, impressions, reach, results, clicks, or video metrics.
+- Added `npm run smoke:ads-merge` as a regression check for the scenario where only one uploaded Meta CSV contains `Ad set name`.
+
+### 2026-04-30 19:05 -04:00
+
+- Added Ads Analytics v1 under `/admin/ads` with CSV-first Meta report imports, import history, release filtering, and batch dashboards.
+- Added normalized Prisma tables for ad import batches, creative report rows, ad-to-Copy-Lab links, and campaign learnings.
+- Added Meta CSV parsing for common report columns, safe number/date parsing, multi-file row merging, and graceful missing-column handling.
+- Added creative leaderboards, rule-based performance signals, strategy breakdowns by Hook Type, Content Type, Song Section, and combo, plus optional `/links` UTM follow-through matching.
+- Added campaign learning save/reload support and surfaced the latest release-specific ad learning on release detail pages.
+- Updated backups and DB snapshot scripts so Ads Analytics data is included in exports/imports.
+
+### 2026-04-30 15:01 -04:00
+
+- Expanded Copy Lab for future Ads Analytics tagging with `hookType`, `contentType`, `songSection`, and `creativeNotes` fields in Prisma.
+- Kept the legacy Copy Lab `type` column as a compatibility fallback while moving the app UI to the clearer Hook Type label.
+- Added Creative Strategy controls to Copy Lab create/edit flows and a Strategy Summary sidebar on copy detail pages.
+- Updated Copy Lab list and release-linked copy cards to show Hook Type plus lightweight strategy tags.
+- Added and applied the local SQLite migration `20260430143000_copy_strategy_fields`.
+
+### 2026-04-30 14:08 -04:00
+
+- Updated Copy Lab hook types to the focused set: Discovery Shock, Identity Callout, and Proof of Skill.
+- Mapped legacy saved copy type values into the new hook-type set so older copy entries continue to load and edit safely.
+- Updated Copy Lab creation language from copy angle/neutral copy to hook type/reusable standalone copy.
 
 ### 2026-04-30 13:24 -04:00
 

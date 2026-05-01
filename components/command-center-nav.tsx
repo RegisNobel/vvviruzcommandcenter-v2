@@ -10,6 +10,7 @@ const navItems = [
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
   {href: "/admin/analytics", label: "Analytics"},
+  {href: "/admin/ads", label: "Ads"},
   {href: "/admin/copy-lab", label: "Copy Lab"},
   {href: "/admin/photo-lab", label: "Photo Lab"},
   {href: "/admin/releases/roadmap", label: "Roadmap"},

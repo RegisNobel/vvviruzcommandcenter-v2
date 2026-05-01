@@ -393,22 +393,32 @@ export type ExclusiveAssetUploadResponse = {
   mimeType: string;
 };
 
-export type CopyType =
-  | "neutral"
-  | "curiosity"
-  | "contrarian-opinion"
-  | "relatable-pain"
-  | "listicle-numbered"
-  | "direct-actionable"
-  | "mistake-regret"
-  | "before-after-result";
+export type HookType =
+  | "discovery-shock"
+  | "identity-callout"
+  | "proof-of-skill";
+
+export type CopyType = HookType;
+
+export type CopyContentType =
+  | "amv-lyric-edit"
+  | "performance-clip"
+  | "b-roll-stock-clip";
+
+export type CopySongSection =
+  | "hook"
+  | "verse-1"
+  | "verse-2";
 
 export type CopyRecord = {
   id: string;
   release_id: string | null;
   hook: string;
   caption: string;
-  type: CopyType;
+  hook_type: HookType;
+  content_type: CopyContentType;
+  song_section: CopySongSection;
+  creative_notes: string;
   created_on: string;
   updated_on: string;
 };
@@ -418,7 +428,139 @@ export type CopySummary = {
   release_id: string | null;
   hook: string;
   caption: string;
-  type: CopyType;
+  hook_type: HookType;
+  content_type: CopyContentType;
+  song_section: CopySongSection;
+  creative_notes: string;
   created_on: string;
   updated_on: string;
+};
+
+export type AdCampaignDecision = "scale" | "retest" | "iterate" | "pause" | "archive";
+
+export type AdBatchType = "Rolling Snapshot" | "Fixed Period" | "Full Campaign";
+
+export type AdBatchComparisonMode = "Snapshot Comparison" | "Combined Fixed Period";
+
+export type AdImportBatchSummary = {
+  id: string;
+  source: string;
+  name: string;
+  release_id: string | null;
+  release_title: string | null;
+  reporting_start: string | null;
+  reporting_end: string | null;
+  exported_at: string | null;
+  attribution_setting: string;
+  batch_type: AdBatchType;
+  file_names: string[];
+  notes: string;
+  report_count: number;
+  linked_copy_count: number;
+  spend: number;
+  impressions: number;
+  reach: number;
+  results: number;
+  link_clicks: number;
+  ctr: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdCreativeReportRecord = {
+  id: string;
+  import_batch_id: string;
+  release_id: string | null;
+  campaign_name: string;
+  ad_set_name: string;
+  ad_name: string;
+  ad_delivery: string;
+  reporting_start: string | null;
+  reporting_end: string | null;
+  spend: number | null;
+  impressions: number | null;
+  reach: number | null;
+  results: number | null;
+  cost_per_result: number | null;
+  link_clicks: number | null;
+  cpc: number | null;
+  ctr: number | null;
+  page_engagement: number | null;
+  post_reactions: number | null;
+  post_comments: number | null;
+  post_saves: number | null;
+  post_shares: number | null;
+  instagram_follows: number | null;
+  video_plays: number | null;
+  three_second_plays: number | null;
+  thru_plays: number | null;
+  cost_per_thru_play: number | null;
+  video_25: number | null;
+  video_50: number | null;
+  video_75: number | null;
+  video_95: number | null;
+  video_100: number | null;
+  quality_ranking: string;
+  engagement_rate_ranking: string;
+  conversion_rate_ranking: string;
+  utm_source: string;
+  utm_campaign: string;
+  utm_content: string;
+  linked_copy: CopySummary | null;
+  performance_signals: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdStrategyBreakdownRow = {
+  label: string;
+  spend: number;
+  impressions: number;
+  reach: number;
+  results: number;
+  link_clicks: number;
+  cpc: number | null;
+  ctr: number | null;
+  thru_plays: number;
+  video_100: number;
+  report_count: number;
+};
+
+export type AdLinkFollowThroughRecord = {
+  ad_report_id: string;
+  meta_link_clicks: number;
+  links_page_views: number;
+  outbound_streaming_clicks: number;
+  spotify_clicks: number;
+  apple_music_clicks: number;
+  youtube_music_clicks: number;
+  click_to_view_match_percentage: number | null;
+  view_to_stream_intent_percentage: number | null;
+  meta_click_to_stream_intent_percentage: number | null;
+};
+
+export type AdCampaignLearningRecord = {
+  id: string;
+  import_batch_id: string;
+  release_id: string | null;
+  summary: string;
+  what_worked: string;
+  what_failed: string;
+  next_test: string;
+  decision: AdCampaignDecision;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdImportBatchDetail = AdImportBatchSummary & {
+  reports: AdCreativeReportRecord[];
+  available_copies: CopySummary[];
+  strategy_breakdowns: {
+    hook_type: AdStrategyBreakdownRow[];
+    content_type: AdStrategyBreakdownRow[];
+    song_section: AdStrategyBreakdownRow[];
+    combo: AdStrategyBreakdownRow[];
+  };
+  link_follow_through: AdLinkFollowThroughRecord[];
+  learning: AdCampaignLearningRecord | null;
 };

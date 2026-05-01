@@ -5,13 +5,24 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
-import {copyTypeOptions, createEmptyCopy, summarizeCopy, touchCopy} from "@/lib/copy";
+import {
+  contentTypeOptions,
+  createEmptyCopy,
+  hookTypeOptions,
+  songSectionOptions,
+  summarizeCopy,
+  touchCopy
+} from "@/lib/copy";
 import {readCopySummaries, saveCopy} from "@/lib/server/copies";
 
 const createCopySchema = z.object({
   hook: z.string().trim().min(1, "Hook is required."),
   caption: z.string().trim().min(1, "Caption is required."),
-  type: z.enum(copyTypeOptions).default("neutral"),
+  hook_type: z.enum(hookTypeOptions).optional(),
+  type: z.string().optional(),
+  content_type: z.enum(contentTypeOptions).default("amv-lyric-edit"),
+  song_section: z.enum(songSectionOptions).default("hook"),
+  creative_notes: z.string().trim().default(""),
   release_id: z.string().trim().min(1).nullable().default(null)
 });
 

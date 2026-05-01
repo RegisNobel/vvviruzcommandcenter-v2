@@ -26,6 +26,10 @@ type Snapshot = {
   emailSendLogs?: SnapshotRecord[];
   analyticsEvents?: SnapshotRecord[];
   backupRuns?: SnapshotRecord[];
+  adImportBatches?: SnapshotRecord[];
+  adCreativeReports?: SnapshotRecord[];
+  adCreativeCopyLinks?: SnapshotRecord[];
+  adCampaignLearnings?: SnapshotRecord[];
 };
 
 const dateFieldsByModel: Record<string, string[]> = {
@@ -42,7 +46,11 @@ const dateFieldsByModel: Record<string, string[]> = {
   emailCampaign: ["sentAt", "createdAt", "updatedAt"],
   emailSendLog: ["sentAt", "createdAt"],
   analyticsEvent: ["createdAt"],
-  backupRun: ["startedAt", "finishedAt", "createdAt"]
+  backupRun: ["startedAt", "finishedAt", "createdAt"],
+  adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
+  adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
+  adCreativeCopyLink: ["createdAt"],
+  adCampaignLearning: ["createdAt", "updatedAt"]
 };
 
 function hydrateDates(modelName: string, record: SnapshotRecord) {
@@ -111,6 +119,16 @@ async function main() {
   counts.emailSendLogs = await upsertMany("emailSendLog", snapshot.emailSendLogs);
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
   counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
+  counts.adImportBatches = await upsertMany("adImportBatch", snapshot.adImportBatches);
+  counts.adCreativeReports = await upsertMany("adCreativeReport", snapshot.adCreativeReports);
+  counts.adCreativeCopyLinks = await upsertMany(
+    "adCreativeCopyLink",
+    snapshot.adCreativeCopyLinks
+  );
+  counts.adCampaignLearnings = await upsertMany(
+    "adCampaignLearning",
+    snapshot.adCampaignLearnings
+  );
 
   console.log(
     JSON.stringify(

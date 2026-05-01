@@ -6,7 +6,8 @@ import {
   Clapperboard,
   Captions,
   Globe2,
-  MailPlus
+  MailPlus,
+  Megaphone
 } from "lucide-react";
 
 export default function AdminHomePage() {
@@ -142,14 +143,36 @@ export default function AdminHomePage() {
               <div>
                 <div className="pill">
                   <Captions size={12} />
-                  Copy Lab
+                Copy Lab
+              </div>
+              <h2 className="mt-4 text-2xl font-semibold text-ink">
+                Build hook and caption pairs
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+                  Create hook/caption pairs with creative strategy tags for releases
+                  or reusable standalone copy.
+              </p>
+            </div>
+              <ArrowRight className="mt-1 transition group-hover:translate-x-1" size={20} />
+            </div>
+          </Link>
+
+          <Link
+            className="panel group px-6 py-7 transition hover:-translate-y-0.5 hover:border-coral/40 hover:bg-white/80"
+            href="/admin/ads"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="pill">
+                  <Megaphone size={12} />
+                  Ads
                 </div>
                 <h2 className="mt-4 text-2xl font-semibold text-ink">
-                  Build hook and caption pairs
+                  Import Meta CSV reports
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                  Create copy angles for releases or keep neutral standalone copy ready
-                  for later.
+                  Track campaign performance, link ad rows to Copy Lab entries, and
+                  compare creative strategy signals.
                 </p>
               </div>
               <ArrowRight className="mt-1 transition group-hover:translate-x-1" size={20} />

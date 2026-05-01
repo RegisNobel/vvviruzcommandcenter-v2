@@ -5,9 +5,22 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, FolderOpen, Save, Trash2} from "lucide-react";
 
-import {copyTypeOptions, formatCopyType} from "@/lib/copy";
+import {
+  contentTypeOptions,
+  formatContentType,
+  formatHookType,
+  formatSongSection,
+  hookTypeOptions,
+  songSectionOptions
+} from "@/lib/copy";
 import {AUTOSAVE_INTERVAL_MS} from "@/lib/constants";
-import type {CopyRecord, CopyType, ReleaseSummary} from "@/lib/types";
+import type {
+  CopyContentType,
+  CopyRecord,
+  CopySongSection,
+  HookType,
+  ReleaseSummary
+} from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -201,7 +214,7 @@ export function CopyDetailEditor({
               <div className="flex flex-wrap items-center gap-3">
                 <div className="pill">Copy Lab</div>
                 <div className="pill">#{copy.id.slice(0, 8)}</div>
-                <div className="pill">{formatCopyType(copy.type)}</div>
+                <div className="pill">{formatHookType(copy.hook_type)}</div>
                 <div className="pill">
                   {selectedRelease ? selectedRelease.title : "Standalone"}
                 </div>
@@ -218,8 +231,10 @@ export function CopyDetailEditor({
             <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
               <div className="space-y-3 rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="field-label">Type</span>
-                  <span className="font-semibold text-ink">{formatCopyType(copy.type)}</span>
+                  <span className="field-label">Hook Type</span>
+                  <span className="font-semibold text-ink">
+                    {formatHookType(copy.hook_type)}
+                  </span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Release</span>
@@ -300,20 +315,20 @@ export function CopyDetailEditor({
 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="field-label">Type</span>
+                  <span className="field-label">Hook Type</span>
                   <select
                     className="field-input"
                     onChange={(event) =>
                       updateCopy((current) => ({
                         ...current,
-                        type: event.target.value as CopyType
+                        hook_type: event.target.value as HookType
                       }))
                     }
-                    value={copy.type}
+                    value={copy.hook_type}
                   >
-                    {copyTypeOptions.map((type) => (
-                      <option key={type} value={type}>
-                        {formatCopyType(type)}
+                    {hookTypeOptions.map((hookType) => (
+                      <option key={hookType} value={hookType}>
+                        {formatHookType(hookType)}
                       </option>
                     ))}
                   </select>
@@ -342,9 +357,79 @@ export function CopyDetailEditor({
               </div>
             </section>
 
-            <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
+            <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Section 2</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">
+                  Creative Strategy
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Lightweight tags for future Ads Analytics grouping without slowing
+                  down the copy workflow.
+                </p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="field-label">Content Type</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) =>
+                      updateCopy((current) => ({
+                        ...current,
+                        content_type: event.target.value as CopyContentType
+                      }))
+                    }
+                    value={copy.content_type}
+                  >
+                    {contentTypeOptions.map((contentType) => (
+                      <option key={contentType} value={contentType}>
+                        {formatContentType(contentType)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="field-label">Song Section</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) =>
+                      updateCopy((current) => ({
+                        ...current,
+                        song_section: event.target.value as CopySongSection
+                      }))
+                    }
+                    value={copy.song_section}
+                  >
+                    {songSectionOptions.map((songSection) => (
+                      <option key={songSection} value={songSection}>
+                        {formatSongSection(songSection)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className="field-label">Creative Notes</span>
+                  <textarea
+                    className="field-input min-h-[120px]"
+                    onChange={(event) =>
+                      updateCopy((current) => ({
+                        ...current,
+                        creative_notes: event.target.value
+                      }))
+                    }
+                    placeholder="Optional: Monster lock-in angle, AMV scene choice, gym footage, trilingual flex, anime matchup framing..."
+                    value={copy.creative_notes}
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
+              <div>
+                <p className="field-label">Section 3</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Hook</h2>
               </div>
 
@@ -363,7 +448,7 @@ export function CopyDetailEditor({
 
             <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
               <div>
-                <p className="field-label">Section 3</p>
+                <p className="field-label">Section 4</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Caption</h2>
               </div>
 
@@ -384,6 +469,42 @@ export function CopyDetailEditor({
           <aside className="space-y-6">
             <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
               <div>
+                <p className="field-label">Strategy Summary</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">
+                  Strategy Summary
+                </h2>
+              </div>
+
+              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-muted">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="field-label">Hook Type</span>
+                  <span className="font-semibold text-ink">
+                    {formatHookType(copy.hook_type)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="field-label">Content Type</span>
+                  <span className="text-right font-semibold text-ink">
+                    {formatContentType(copy.content_type)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="field-label">Song Section</span>
+                  <span className="font-semibold text-ink">
+                    {formatSongSection(copy.song_section)}
+                  </span>
+                </div>
+                {copy.creative_notes.trim() ? (
+                  <div className="border-t border-[#31353b] pt-3">
+                    <span className="field-label">Creative Notes</span>
+                    <p className="mt-2 leading-6 text-ink">{copy.creative_notes}</p>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+              <div>
                 <p className="field-label">Link Status</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Release Context</h2>
               </div>
@@ -397,8 +518,8 @@ export function CopyDetailEditor({
                   </>
                 ) : (
                   <>
-                    This copy is standalone. Use this for neutral concepts or reusable
-                    captions that should not be attached to a specific release yet.
+                    This copy is standalone. Use this for standalone concepts or
+                    reusable captions that should not be attached to a specific release yet.
                   </>
                 )}
               </div>

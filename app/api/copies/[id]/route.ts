@@ -5,7 +5,14 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
-import {copyTypeOptions, hydrateCopy, summarizeCopy, touchCopy} from "@/lib/copy";
+import {
+  contentTypeOptions,
+  hookTypeOptions,
+  hydrateCopy,
+  songSectionOptions,
+  summarizeCopy,
+  touchCopy
+} from "@/lib/copy";
 import {deleteCopy, readCopy, saveCopy} from "@/lib/server/copies";
 import type {CopyRecord} from "@/lib/types";
 
@@ -18,7 +25,11 @@ const updateCopySchema = z.object({
   release_id: z.string().trim().min(1).nullable(),
   hook: z.string().default(""),
   caption: z.string().default(""),
-  type: z.enum(copyTypeOptions),
+  hook_type: z.enum(hookTypeOptions).optional(),
+  type: z.string().optional(),
+  content_type: z.enum(contentTypeOptions).default("amv-lyric-edit"),
+  song_section: z.enum(songSectionOptions).default("hook"),
+  creative_notes: z.string().default(""),
   created_on: z.string(),
   updated_on: z.string()
 });

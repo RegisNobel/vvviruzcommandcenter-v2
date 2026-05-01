@@ -72,7 +72,11 @@ export async function createDatabaseSnapshotArtifact() {
     emailCampaigns: await prisma.emailCampaign.findMany(),
     emailSendLogs: await prisma.emailSendLog.findMany(),
     analyticsEvents: await prisma.analyticsEvent.findMany(),
-    backupRuns: await prisma.backupRun.findMany()
+    backupRuns: await prisma.backupRun.findMany(),
+    adImportBatches: await prisma.adImportBatch.findMany(),
+    adCreativeReports: await prisma.adCreativeReport.findMany(),
+    adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),
+    adCampaignLearnings: await prisma.adCampaignLearning.findMany()
   };
 
   return toGzipJsonArtifact(snapshot, countSnapshotTables(snapshot));
