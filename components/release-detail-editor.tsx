@@ -676,7 +676,7 @@ export function ReleaseDetailEditor({
         method: "POST",
         body: formData
       });
-      const payload = (await response.json()) as {
+      const payload = (await response.json().catch(() => ({}))) as {
         asset?: ReleaseCoverUploadResponse["asset"];
         message?: string;
       };

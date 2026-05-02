@@ -72,6 +72,10 @@ async function listBlobAssetFiles(
 }
 
 export async function ensureStorageDirs() {
+  if (isDurableObjectStorageEnabled()) {
+    return;
+  }
+
   await Promise.all([
     fs.mkdir(releaseCoversDir, {recursive: true}),
     fs.mkdir(siteIconsDir, {recursive: true}),

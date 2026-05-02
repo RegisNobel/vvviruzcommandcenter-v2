@@ -29,8 +29,6 @@ export async function POST(request: Request) {
     return auth;
   }
 
-  await ensureStorageDirs();
-
   const formData = await request.formData();
   const file = formData.get("file");
   const assetType = String(formData.get("assetType") ?? "").trim();
