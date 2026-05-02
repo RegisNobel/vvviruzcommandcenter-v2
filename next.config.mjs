@@ -9,6 +9,18 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "**.public.blob.vercel-storage.com"
+      },
+      {
+        protocol: "https",
+        hostname: "i.scdn.co"
+      },
+      {
+        protocol: "https",
+        hostname: "is*-ssl.mzstatic.com"
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com"
       }
     ],
     formats: ["image/avif", "image/webp"],

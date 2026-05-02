@@ -38,6 +38,7 @@ export function PublicAppearsOnLibrary({
                   alt={record.title}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"
+                  unoptimized
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#1c2128]">
