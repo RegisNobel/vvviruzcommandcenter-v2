@@ -422,6 +422,149 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-06 09:00 - 10:00
+
+Supabase RLS Security Baseline
+Overview
+
+Supabase flagged several tables with the warning:
+
+RLS Disabled in Public
+
+This means the affected tables are located in the public schema, which is exposed through Supabase’s PostgREST/Data API, but Row Level Security was not enabled.
+
+Row Level Security, or RLS, controls which rows users can access through Supabase client roles like anon and authenticated. Without RLS, public-facing roles may be able to access more data than intended depending on table grants.
+
+Access Model
+
+The project uses three access categories:
+
+Category	Rule	Examples
+Public website data	RLS enabled + public SELECT policy	Releases, streaming links, categories
+Private/admin data	RLS enabled + no public policies	Tasks, lyrics, copy entries, ad imports
+Sensitive data	RLS enabled + no public policies	Subscribers, auth sessions, admin users
+Public Read Tables
+
+These tables are safe to expose as read-only data because the public website needs them:
+
+Release
+ReleaseCategory
+ReleaseCategoryAssignment
+ReleaseStreamingLink
+SiteSettings
+AppearsOn
+
+Each public read table should have:
+
+alter table public."<TableName>" enable row level security;
+
+create policy "Anyone can read <table description>"
+on public."<TableName>"
+for select
+to anon, authenticated
+using (true);
+
+No public INSERT, UPDATE, or DELETE policies should be created for these tables.
+
+Private/Admin Tables
+
+These tables should have RLS enabled but should not have public policies:
+
+LyricProject
+LyricLine
+ReleaseTask
+AdminUser
+EmailCampaign
+EmailSendLog
+Subscriber
+AnalyticsEvent
+AuthSession
+PublicRateLimit
+BackupRun
+CopyEntry
+AdImportBatch
+AdCampaignLearning
+AdCreativeReport
+AdCreativeCopyLink
+
+These tables should only be accessed through protected server-side admin routes using the Supabase service role key.
+
+The service role key must never be exposed in frontend/browser code.
+
+Baseline SQL
+-- Public read tables
+alter table public."Release" enable row level security;
+alter table public."ReleaseCategory" enable row level security;
+alter table public."ReleaseCategoryAssignment" enable row level security;
+alter table public."ReleaseStreamingLink" enable row level security;
+alter table public."SiteSettings" enable row level security;
+alter table public."AppearsOn" enable row level security;
+
+create policy "Anyone can read releases"
+on public."Release"
+for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read release categories"
+on public."ReleaseCategory"
+for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read release category assignments"
+on public."ReleaseCategoryAssignment"
+for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read release streaming links"
+on public."ReleaseStreamingLink"
+for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read site settings"
+on public."SiteSettings"
+for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read appears on releases"
+on public."AppearsOn"
+for select
+to anon, authenticated
+using (true);
+
+-- Private/admin/sensitive tables
+alter table public."LyricProject" enable row level security;
+alter table public."LyricLine" enable row level security;
+alter table public."ReleaseTask" enable row level security;
+alter table public."AdminUser" enable row level security;
+alter table public."EmailCampaign" enable row level security;
+alter table public."EmailSendLog" enable row level security;
+alter table public."Subscriber" enable row level security;
+alter table public."AnalyticsEvent" enable row level security;
+alter table public."AuthSession" enable row level security;
+alter table public."PublicRateLimit" enable row level security;
+alter table public."BackupRun" enable row level security;
+alter table public."CopyEntry" enable row level security;
+alter table public."AdImportBatch" enable row level security;
+alter table public."AdCampaignLearning" enable row level security;
+alter table public."AdCreativeReport" enable row level security;
+alter table public."AdCreativeCopyLink" enable row level security;
+Validation Checklist
+
+After applying RLS changes:
+
+[ ] Supabase Security Advisor no longer reports "RLS Disabled in Public" for these tables
+[ ] Public pages still load releases, categories, site settings, streaming links, and Appears On data
+[ ] Anonymous users cannot insert, update, or delete public website data
+[ ] Anonymous users cannot read admin/private tables
+[ ] Subscriber emails are not readable from the public client
+[ ] Admin dashboard still works through protected server-side routes
+[ ] Supabase service role key is only used server-side
+
 ### 2026-05-06 02:07 -04:00
 
 - Added a visually hidden `bot_test_field` honeypot to the public exclusives capture form.
