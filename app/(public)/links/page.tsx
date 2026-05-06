@@ -23,6 +23,8 @@ const platformAccentStyles = {
 
 export const dynamic = "force-dynamic";
 
+type LinksSearchParams = Record<string, string | string[] | undefined>;
+
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings();
   const selectedRelease = await getLinksPageRelease(siteSettings.site_content.links.selected_release_id);
@@ -37,6 +39,57 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+function shouldPassthroughParam(key: string) {
+  const normalizedKey = key.toLowerCase();
+
+  return (
+    normalizedKey.startsWith("utm_") ||
+    normalizedKey === "fbclid" ||
+    normalizedKey === "gclid" ||
+    normalizedKey === "msclkid"
+  );
+}
+
+function createPassthroughParams(searchParams: LinksSearchParams) {
+  const passthroughParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!shouldPassthroughParam(key)) {
+      continue;
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+
+    for (const item of values) {
+      if (item) {
+        passthroughParams.append(key, item);
+      }
+    }
+  }
+
+  return passthroughParams;
+}
+
+function appendPassthroughParams(href: string, passthroughParams: URLSearchParams) {
+  if (!href || passthroughParams.size === 0) {
+    return href;
+  }
+
+  try {
+    const url = new URL(href);
+
+    passthroughParams.forEach((value, key) => {
+      if (!url.searchParams.has(key)) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    return url.toString();
+  } catch {
+    return href;
+  }
+}
+
 function createPlatformButtons(release: NonNullable<Awaited<ReturnType<typeof getLinksPageRelease>>>) {
   const defaults = {
     listen_on_spotify_label: "Listen on Spotify",
@@ -45,7 +98,7 @@ function createPlatformButtons(release: NonNullable<Awaited<ReturnType<typeof ge
     watch_on_youtube_label: "Watch on YouTube"
   };
 
-  return function buildButtons(labels: Partial<typeof defaults>) {
+  return function buildButtons(labels: Partial<typeof defaults>, passthroughParams: URLSearchParams) {
     const resolvedLabels = {
       ...defaults,
       ...labels
@@ -55,28 +108,28 @@ function createPlatformButtons(release: NonNullable<Awaited<ReturnType<typeof ge
       {
         id: "spotify",
         label: resolvedLabels.listen_on_spotify_label,
-        href: normalizeExternalUrl(release.spotify_url),
+        href: appendPassthroughParams(normalizeExternalUrl(release.spotify_url), passthroughParams),
         icon: Disc3,
         style: platformAccentStyles.spotify
       },
       {
         id: "apple",
         label: resolvedLabels.listen_on_apple_music_label,
-        href: normalizeExternalUrl(release.apple_music_url),
+        href: appendPassthroughParams(normalizeExternalUrl(release.apple_music_url), passthroughParams),
         icon: Music2,
         style: platformAccentStyles.apple
       },
       {
         id: "youtube-music",
         label: resolvedLabels.listen_on_youtube_music_label,
-        href: normalizeExternalUrl(release.youtube_url),
+        href: appendPassthroughParams(normalizeExternalUrl(release.youtube_url), passthroughParams),
         icon: Disc3,
         style: platformAccentStyles.youtubeMusic
       },
       {
         id: "youtube-video",
         label: resolvedLabels.watch_on_youtube_label,
-        href: normalizeExternalUrl(release.featured_video_url),
+        href: appendPassthroughParams(normalizeExternalUrl(release.featured_video_url), passthroughParams),
         icon: PlaySquare,
         style: platformAccentStyles.youtubeVideo
       }
@@ -84,10 +137,15 @@ function createPlatformButtons(release: NonNullable<Awaited<ReturnType<typeof ge
   };
 }
 
-export default async function PublicLinksPage() {
-  const siteSettings = await getSiteSettings();
+export default async function PublicLinksPage({
+  searchParams
+}: {
+  searchParams: Promise<LinksSearchParams>;
+}) {
+  const [siteSettings, rawSearchParams] = await Promise.all([getSiteSettings(), searchParams]);
   const content = siteSettings.site_content.links;
   const platformContent = siteSettings.site_content.platforms;
+  const passthroughParams = createPassthroughParams(rawSearchParams);
   const [selectedRelease, exclusiveOfferState] = await Promise.all([
     getLinksPageRelease(content.selected_release_id),
     readPublicExclusiveOffer()
@@ -114,7 +172,7 @@ export default async function PublicLinksPage() {
     listen_on_apple_music_label: platformContent.listen_on_apple_music_label,
     listen_on_youtube_music_label: platformContent.listen_on_youtube_music_label,
     watch_on_youtube_label: platformContent.watch_on_youtube_label
-  });
+  }, passthroughParams);
   const hasCoverArt = Boolean(selectedRelease.cover_art_path.trim());
 
   return (

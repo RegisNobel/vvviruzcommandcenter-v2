@@ -36,6 +36,9 @@ export function ExclusiveSignupForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const botTestField = String(formData.get("bot_test_field") ?? "");
+
     setSaveState("submitting");
     setMessage(null);
 
@@ -48,7 +51,8 @@ export function ExclusiveSignupForm({
         body: JSON.stringify({
           name,
           email,
-          consent_given: consentGiven
+          consent_given: consentGiven,
+          bot_test_field: botTestField
         })
       });
       const payload = (await response.json()) as {
@@ -118,6 +122,22 @@ export function ExclusiveSignupForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      <div
+        aria-hidden="true"
+        className="absolute -left-[100vw] top-auto h-px w-px overflow-hidden opacity-0"
+      >
+        <label>
+          Leave this field blank
+          <input
+            autoComplete="off"
+            className="h-px w-px"
+            name="bot_test_field"
+            tabIndex={-1}
+            type="text"
+          />
+        </label>
+      </div>
+
       <label className="block space-y-2">
         <span className="field-label">{nameLabel}</span>
         <input

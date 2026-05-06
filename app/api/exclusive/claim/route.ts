@@ -22,7 +22,8 @@ import type {ExclusiveClaimResponse} from "@/lib/types";
 const claimSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: emailField("Enter a valid email address."),
-  consent_given: z.boolean().default(false)
+  consent_given: z.boolean().default(false),
+  bot_test_field: z.string().optional().default("")
 });
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
@@ -40,22 +41,54 @@ function rateLimitResponse(state: RateLimitState) {
   );
 }
 
-export async function POST(request: Request) {
-  const clientIp = getClientIpAddress(request);
-  const ipThrottleState = await consumeRateLimit({
-    bucket: "exclusive-claim-ip",
-    key: clientIp,
-    maxAttempts: 8,
-    windowMs: TEN_MINUTES_MS,
-    blockMs: FIFTEEN_MINUTES_MS
-  });
-
-  if (!ipThrottleState.allowed) {
-    return rateLimitResponse(ipThrottleState);
+function getBotTestFieldValue(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("bot_test_field" in payload)) {
+    return "";
   }
 
+  const value = (payload as {bot_test_field?: unknown}).bot_test_field;
+
+  return typeof value === "string" ? value.trim() : String(value ?? "").trim();
+}
+
+function createFakeClaimSuccess(): ExclusiveClaimResponse {
+  return {
+    unlockExperience: "email_only",
+    instantUnlockButtonLabel: "Listen Now",
+    isDuplicate: false,
+    message: "Your exclusive is unlocked. Check your inbox for the link.",
+    subscriber: {
+      id: "pending",
+      name: "Subscriber",
+      email: "subscriber@example.com",
+      status: "active",
+      consent_given: true
+    }
+  };
+}
+
+export async function POST(request: Request) {
   try {
-    const payload = claimSchema.parse(await request.json());
+    const rawPayload = await request.json();
+
+    if (getBotTestFieldValue(rawPayload)) {
+      return NextResponse.json(createFakeClaimSuccess());
+    }
+
+    const clientIp = getClientIpAddress(request);
+    const ipThrottleState = await consumeRateLimit({
+      bucket: "exclusive-claim-ip",
+      key: clientIp,
+      maxAttempts: 8,
+      windowMs: TEN_MINUTES_MS,
+      blockMs: FIFTEEN_MINUTES_MS
+    });
+
+    if (!ipThrottleState.allowed) {
+      return rateLimitResponse(ipThrottleState);
+    }
+
+    const payload = claimSchema.parse(rawPayload);
     const emailThrottleState = await consumeRateLimit({
       bucket: "exclusive-claim-email",
       key: payload.email,

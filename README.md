@@ -422,6 +422,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-06 02:07 -04:00
+
+- Added a visually hidden `bot_test_field` honeypot to the public exclusives capture form.
+- Updated `/api/exclusive/claim` to silently return a fake success response when the honeypot is filled, without creating a subscriber, sending email, or consuming rate-limit buckets.
+- Added UTM/click-id passthrough on `/links` outbound streaming buttons so `utm_*`, `fbclid`, `gclid`, and `msclkid` values remain attached when visitors leave for Spotify, Apple Music, YouTube Music, or YouTube.
+
 ### 2026-05-01 17:48 -04:00
 
 - Prepared a public-site performance patch for the image-heavy pages.
