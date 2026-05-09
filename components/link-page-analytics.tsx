@@ -4,7 +4,20 @@ import {useEffect} from "react";
 
 type LinkPageAnalyticsProps = {
   releaseId: string;
+  releaseTitle: string;
 };
+
+type MetaPixelValue = number | string | string[];
+
+declare global {
+  interface Window {
+    fbq?: (
+      method: "track" | "trackCustom",
+      eventName: string,
+      params?: Record<string, MetaPixelValue>
+    ) => void;
+  }
+}
 
 function getUtmParams() {
   const params = new URLSearchParams(window.location.search);
@@ -16,6 +29,33 @@ function getUtmParams() {
     utmContent: params.get("utm_content") || "",
     utmTerm: params.get("utm_term") || ""
   };
+}
+
+function toMetaUtmParams(utmParams: ReturnType<typeof getUtmParams>) {
+  return {
+    utm_source: utmParams.utmSource,
+    utm_medium: utmParams.utmMedium,
+    utm_campaign: utmParams.utmCampaign,
+    utm_content: utmParams.utmContent,
+    utm_term: utmParams.utmTerm
+  };
+}
+
+function trackMetaPixel(
+  method: "track" | "trackCustom",
+  eventName: string,
+  params: Record<string, MetaPixelValue>,
+  attempt = 0
+) {
+  if (typeof window.fbq !== "function") {
+    if (attempt < 10) {
+      window.setTimeout(() => trackMetaPixel(method, eventName, params, attempt + 1), 250);
+    }
+
+    return;
+  }
+
+  window.fbq(method, eventName, params);
 }
 
 function track(payload: Record<string, string>) {
@@ -41,11 +81,21 @@ function track(payload: Record<string, string>) {
   });
 }
 
-export function LinkPageAnalytics({releaseId}: LinkPageAnalyticsProps) {
+export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsProps) {
   useEffect(() => {
+    const utmParams = getUtmParams();
+
     track({
       eventType: "links_page_view",
       releaseId
+    });
+
+    trackMetaPixel("track", "ViewContent", {
+      content_ids: [releaseId],
+      content_name: releaseTitle,
+      content_type: "music_release",
+      page: "links",
+      ...toMetaUtmParams(utmParams)
     });
 
     function handleClick(event: MouseEvent) {
@@ -57,19 +107,34 @@ export function LinkPageAnalytics({releaseId}: LinkPageAnalyticsProps) {
         return;
       }
 
+      const linkType = target.dataset.analyticsLinkType || "";
+      const linkLabel = target.dataset.analyticsLinkLabel || target.textContent?.trim() || "";
+      const targetUrl = target.dataset.analyticsTargetUrl || "";
+
       track({
         eventType: target.dataset.analyticsEvent || "links_link_click",
         releaseId,
-        linkType: target.dataset.analyticsLinkType || "",
-        linkLabel: target.dataset.analyticsLinkLabel || target.textContent?.trim() || "",
-        targetUrl: target.dataset.analyticsTargetUrl || ""
+        linkType,
+        linkLabel,
+        targetUrl
+      });
+
+      trackMetaPixel("trackCustom", "StreamingOutboundClick", {
+        content_ids: [releaseId],
+        content_name: releaseTitle,
+        content_type: "music_release",
+        link_label: linkLabel,
+        page: "links",
+        platform: linkType,
+        target_url: targetUrl,
+        ...toMetaUtmParams(getUtmParams())
       });
     }
 
     document.addEventListener("click", handleClick);
 
     return () => document.removeEventListener("click", handleClick);
-  }, [releaseId]);
+  }, [releaseId, releaseTitle]);
 
   return null;
 }

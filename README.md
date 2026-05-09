@@ -422,6 +422,12 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-09 17:43 -04:00
+
+- Updated the public `/links` analytics bridge so Meta Pixel fires the standard `ViewContent` event when the selected release link hub loads.
+- Added a `StreamingOutboundClick` custom Meta Pixel event for Spotify, Apple Music, YouTube Music, YouTube video, and other tracked `/links` CTA clicks.
+- Passed release id/title and UTM context into Meta Pixel event parameters so Meta Events Manager can attribute link-hub visits and outbound streaming intent more cleanly.
+
 ### 2026-05-06 09:55 -04:00
 
 Supabase RLS Security Baseline

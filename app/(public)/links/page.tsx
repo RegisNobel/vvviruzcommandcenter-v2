@@ -199,7 +199,7 @@ export default async function PublicLinksPage({
       )}
 
       <div className="relative mx-auto flex max-w-[560px] justify-center">
-        <LinkPageAnalytics releaseId={selectedRelease.id} />
+        <LinkPageAnalytics releaseId={selectedRelease.id} releaseTitle={selectedRelease.title} />
         <section className="w-full rounded-[38px] border border-white/10 bg-[#0b0f14]/70 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:p-6">
           <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(8,11,15,0.4))] px-5 py-7 text-center sm:px-6 sm:py-8">
             <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
