@@ -129,6 +129,18 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
         target_url: targetUrl,
         ...toMetaUtmParams(getUtmParams())
       });
+
+      trackMetaPixel("track", "Lead", {
+        content_category: "streaming_outbound_click",
+        content_ids: [releaseId],
+        content_name: releaseTitle,
+        content_type: "music_release",
+        link_label: linkLabel,
+        page: "links",
+        platform: linkType,
+        target_url: targetUrl,
+        ...toMetaUtmParams(getUtmParams())
+      });
     }
 
     document.addEventListener("click", handleClick);

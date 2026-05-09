@@ -422,6 +422,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-09 18:32 -04:00
+
+- Added a Meta standard `Lead` event alongside the existing `StreamingOutboundClick` custom event for `/links` outbound platform taps.
+- Scoped the `Lead` event parameters to `content_category: streaming_outbound_click` with release, platform, target URL, and UTM context so Meta custom conversions can use a reliable standard event while preserving the custom event signal.
+
 ### 2026-05-09 17:43 -04:00
 
 - Updated the public `/links` analytics bridge so Meta Pixel fires the standard `ViewContent` event when the selected release link hub loads.
