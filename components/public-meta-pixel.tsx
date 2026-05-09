@@ -1,7 +1,3 @@
-"use client";
-
-import Script from "next/script";
-
 type PublicMetaPixelProps = {
   enabled: boolean;
   pixelId: string;
@@ -33,9 +29,7 @@ export function PublicMetaPixel({enabled, pixelId}: PublicMetaPixelProps) {
 
   return (
     <>
-      <Script id="meta-pixel-base" strategy="afterInteractive">
-        {initCode}
-      </Script>
+      <script id="meta-pixel-base" dangerouslySetInnerHTML={{__html: initCode}} />
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

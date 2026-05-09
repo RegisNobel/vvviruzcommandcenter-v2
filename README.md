@@ -422,6 +422,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-09 18:48 -04:00
+
+- Changed the public Meta Pixel base snippet from a client-only `next/script` injection to server-rendered script markup so Meta's event setup and diagnostics tools can detect the Pixel earlier on public pages.
+- Kept Meta Pixel limited to the public layout while preserving the existing `ViewContent`, `StreamingOutboundClick`, and `Lead` event flow on `/links`.
+
 ### 2026-05-09 18:32 -04:00
 
 - Added a Meta standard `Lead` event alongside the existing `StreamingOutboundClick` custom event for `/links` outbound platform taps.
