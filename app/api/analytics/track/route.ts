@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {recordPublicAnalyticsEvent} from "@/lib/repositories/analytics";
+import {sendMetaConversionsApiEvent} from "@/lib/server/meta-conversions-api";
 import {createId} from "@/lib/utils";
 
 const analyticsEventSchema = z.object({
@@ -19,7 +20,10 @@ const analyticsEventSchema = z.object({
   utmMedium: z.string().default(""),
   utmCampaign: z.string().default(""),
   utmContent: z.string().default(""),
-  utmTerm: z.string().default("")
+  utmTerm: z.string().default(""),
+  metaEventId: z.string().max(200).default(""),
+  metaEventName: z.enum(["ViewContent", "Lead"]).optional(),
+  releaseTitle: z.string().default("")
 });
 
 function readCookieValue(cookieHeader: string | null, name: string) {
@@ -40,6 +44,31 @@ function createTrackingCookie(name: string, value: string, maxAge: number) {
   return `${name}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
 }
 
+function getClientIpAddress(request: Request) {
+  const forwardedFor = request.headers.get("x-forwarded-for") || "";
+  const firstForwardedIp = forwardedFor.split(",")[0]?.trim();
+
+  return (
+    firstForwardedIp ||
+    request.headers.get("x-real-ip") ||
+    request.headers.get("x-vercel-forwarded-for") ||
+    ""
+  );
+}
+
+function toEventSourceUrl(request: Request, path: string) {
+  const siteOrigin =
+    process.env.PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    new URL(request.url).origin;
+
+  try {
+    return new URL(path || request.url, siteOrigin).toString();
+  } catch {
+    return request.url;
+  }
+}
+
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get("cookie");
   const visitorId = readCookieValue(cookieHeader, "vcc_visitor_id") || createId();
@@ -57,6 +86,29 @@ export async function POST(request: Request) {
       sessionId,
       country: request.headers.get("x-vercel-ip-country") || ""
     });
+
+    if (parsed.metaEventName && parsed.metaEventId) {
+      await sendMetaConversionsApiEvent({
+        eventId: parsed.metaEventId,
+        eventName: parsed.metaEventName,
+        eventSourceUrl: toEventSourceUrl(request, parsed.path),
+        clientIpAddress: getClientIpAddress(request),
+        clientUserAgent: request.headers.get("user-agent") || "",
+        fbc: readCookieValue(cookieHeader, "_fbc"),
+        fbp: readCookieValue(cookieHeader, "_fbp"),
+        linkLabel: parsed.linkLabel,
+        linkType: parsed.linkType,
+        releaseId: parsed.releaseId ?? null,
+        releaseTitle: parsed.releaseTitle,
+        targetUrl: parsed.targetUrl,
+        utmCampaign: parsed.utmCampaign,
+        utmContent: parsed.utmContent,
+        utmMedium: parsed.utmMedium,
+        utmSource: parsed.utmSource,
+        utmTerm: parsed.utmTerm,
+        visitorId
+      });
+    }
 
     const response = NextResponse.json({ok: true});
 

@@ -8,16 +8,27 @@ type LinkPageAnalyticsProps = {
 };
 
 type MetaPixelValue = number | string | string[];
+type MetaPixelOptions = {
+  eventID?: string;
+};
 
 declare global {
   interface Window {
     fbq?: (
       method: "track" | "trackCustom",
       eventName: string,
-      params?: Record<string, MetaPixelValue>
+      params?: Record<string, MetaPixelValue>,
+      options?: MetaPixelOptions
     ) => void;
   }
 }
+
+const streamingPlatformLinkTypes = new Set([
+  "apple-music",
+  "spotify",
+  "youtube-music",
+  "youtube-video"
+]);
 
 function getUtmParams() {
   const params = new URLSearchParams(window.location.search);
@@ -45,20 +56,31 @@ function trackMetaPixel(
   method: "track" | "trackCustom",
   eventName: string,
   params: Record<string, MetaPixelValue>,
+  eventId?: string,
   attempt = 0
 ) {
   if (typeof window.fbq !== "function") {
     if (attempt < 10) {
-      window.setTimeout(() => trackMetaPixel(method, eventName, params, attempt + 1), 250);
+      window.setTimeout(() => trackMetaPixel(method, eventName, params, eventId, attempt + 1), 250);
     }
 
     return;
   }
 
-  window.fbq(method, eventName, params);
+  window.fbq(method, eventName, params, eventId ? {eventID: eventId} : undefined);
 }
 
-function track(payload: Record<string, string>) {
+function createMetaEventId(prefix: string) {
+  const randomId = window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+
+  return `${prefix}.${Date.now()}.${randomId}`;
+}
+
+function isStreamingPlatformLink(linkType: string) {
+  return streamingPlatformLinkTypes.has(linkType);
+}
+
+function track(payload: Record<string, string | undefined>) {
   const body = JSON.stringify({
     page: "links",
     path: `${window.location.pathname}${window.location.search}`,
@@ -84,10 +106,14 @@ function track(payload: Record<string, string>) {
 export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsProps) {
   useEffect(() => {
     const utmParams = getUtmParams();
+    const viewContentEventId = createMetaEventId("links-view-content");
 
     track({
       eventType: "links_page_view",
-      releaseId
+      metaEventId: viewContentEventId,
+      metaEventName: "ViewContent",
+      releaseId,
+      releaseTitle
     });
 
     trackMetaPixel("track", "ViewContent", {
@@ -96,7 +122,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       content_type: "music_release",
       page: "links",
       ...toMetaUtmParams(utmParams)
-    });
+    }, viewContentEventId);
 
     function handleClick(event: MouseEvent) {
       const target = event.target instanceof Element
@@ -110,16 +136,27 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       const linkType = target.dataset.analyticsLinkType || "";
       const linkLabel = target.dataset.analyticsLinkLabel || target.textContent?.trim() || "";
       const targetUrl = target.dataset.analyticsTargetUrl || "";
+      const shouldTrackMetaConversion = isStreamingPlatformLink(linkType);
+      const leadEventId = shouldTrackMetaConversion
+        ? createMetaEventId("links-streaming-click")
+        : undefined;
 
       track({
         eventType: target.dataset.analyticsEvent || "links_link_click",
         releaseId,
         linkType,
         linkLabel,
+        metaEventId: leadEventId,
+        metaEventName: shouldTrackMetaConversion ? "Lead" : undefined,
+        releaseTitle,
         targetUrl
       });
 
-      trackMetaPixel("trackCustom", "StreamingOutboundClick", {
+      if (!shouldTrackMetaConversion || !leadEventId) {
+        return;
+      }
+
+      const metaClickParams = {
         content_ids: [releaseId],
         content_name: releaseTitle,
         content_type: "music_release",
@@ -128,19 +165,19 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
         platform: linkType,
         target_url: targetUrl,
         ...toMetaUtmParams(getUtmParams())
-      });
+      };
+
+      trackMetaPixel(
+        "trackCustom",
+        "StreamingOutboundClick",
+        metaClickParams,
+        leadEventId
+      );
 
       trackMetaPixel("track", "Lead", {
+        ...metaClickParams,
         content_category: "streaming_outbound_click",
-        content_ids: [releaseId],
-        content_name: releaseTitle,
-        content_type: "music_release",
-        link_label: linkLabel,
-        page: "links",
-        platform: linkType,
-        target_url: targetUrl,
-        ...toMetaUtmParams(getUtmParams())
-      });
+      }, leadEventId);
     }
 
     document.addEventListener("click", handleClick);

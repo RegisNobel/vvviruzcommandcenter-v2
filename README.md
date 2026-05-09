@@ -239,6 +239,10 @@ EMAIL_FROM=vvviruz <updates@example.com>
 ADMIN_TEST_EMAIL=you@example.com
 PUBLIC_SITE_URL=http://localhost:3000
 EMAIL_POSTAL_ADDRESS=Optional mailing footer line
+META_CAPI_ACCESS_TOKEN=your-meta-conversions-api-token
+META_DATASET_ID=your-meta-dataset-or-pixel-id
+META_GRAPH_API_VERSION=v22.0
+META_TEST_EVENT_CODE=optional-test-events-code
 ```
 
 3. Generate the Prisma client and apply the tracked schema
@@ -331,6 +335,10 @@ Required Vercel environment variables match `.env.example`:
 - `EMAIL_FROM`
 - `ADMIN_TEST_EMAIL`
 - `EMAIL_POSTAL_ADDRESS`
+- `META_CAPI_ACCESS_TOKEN`
+- `META_DATASET_ID` (optional when the public-site Pixel ID is already configured in Site Settings)
+- `META_GRAPH_API_VERSION` (optional, defaults to `v22.0`)
+- `META_TEST_EVENT_CODE` (optional, only while testing in Meta Events Manager)
 - `CRON_SECRET`
 - `BACKUP_ENCRYPTION_SECRET`
 - `GOOGLE_DRIVE_BACKUP_ENABLED`
@@ -421,6 +429,13 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-09 19:08 -04:00
+
+- Added server-side Meta Conversions API forwarding from `/api/analytics/track` for `/links` `ViewContent` and streaming-platform `Lead` events.
+- Added browser/server Meta `eventID` deduplication so Pixel and Conversions API events can be matched instead of double-counted.
+- Limited Meta streaming conversion events to Spotify, Apple Music, YouTube Music, and YouTube video buttons while keeping first-party `/links` analytics on all tracked CTA clicks.
+- Documented the Meta CAPI environment variables without committing any secret token values.
 
 ### 2026-05-09 18:48 -04:00
 
