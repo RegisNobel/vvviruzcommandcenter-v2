@@ -430,6 +430,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-09 19:28 -04:00
+
+- Moved the Meta Pixel base snippet into the root document `<head>` so Meta's event setup scanner can detect it on `/links`.
+- Removed the duplicate public-layout body placement and kept a runtime guard so the Pixel does not execute on `/admin` routes.
+
 ### 2026-05-09 19:08 -04:00
 
 - Added server-side Meta Conversions API forwarding from `/api/analytics/track` for `/links` `ViewContent` and streaming-platform `Lead` events.

@@ -15,6 +15,7 @@ export function PublicMetaPixel({enabled, pixelId}: PublicMetaPixelProps) {
   }
 
   const initCode = `
+    if (!window.location.pathname.startsWith('/admin')) {
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
     n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -25,6 +26,7 @@ export function PublicMetaPixel({enabled, pixelId}: PublicMetaPixelProps) {
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', ${escapeScriptValue(normalizedPixelId)});
     fbq('track', 'PageView');
+    }
   `;
 
   return (

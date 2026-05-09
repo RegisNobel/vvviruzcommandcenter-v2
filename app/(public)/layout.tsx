@@ -4,7 +4,6 @@ import type {Metadata} from "next";
 
 import {getSiteSettings} from "@/lib/repositories/public-site";
 
-import {PublicMetaPixel} from "@/components/public-meta-pixel";
 import {PublicSiteChrome} from "@/components/public-site-chrome";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,12 +27,6 @@ export default async function PublicLayout({
   const siteSettings = await getSiteSettings();
 
   return (
-    <>
-      <PublicMetaPixel
-        enabled={siteSettings.site_content.analytics.meta_pixel_enabled}
-        pixelId={siteSettings.site_content.analytics.meta_pixel_id}
-      />
-      <PublicSiteChrome siteSettings={siteSettings}>{children}</PublicSiteChrome>
-    </>
+    <PublicSiteChrome siteSettings={siteSettings}>{children}</PublicSiteChrome>
   );
 }
