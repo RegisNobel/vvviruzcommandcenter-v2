@@ -157,6 +157,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       }
 
       const metaClickParams = {
+        content_category: "streaming_outbound_click",
         content_ids: [releaseId],
         content_name: releaseTitle,
         content_type: "music_release",
@@ -175,8 +176,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       );
 
       trackMetaPixel("track", "Lead", {
-        ...metaClickParams,
-        content_category: "streaming_outbound_click",
+        ...metaClickParams
       }, leadEventId);
     }
 

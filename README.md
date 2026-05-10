@@ -431,6 +431,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-09 22:39 -04:00
+
+- Updated `/links` Meta Pixel outbound streaming tracking so both the custom `StreamingOutboundClick` event and the standard `Lead` event include `content_category: streaming_outbound_click`.
+- This makes Meta custom-conversion rules based on either event name or event parameter match the same streaming-intent action.
+
 ### 2026-05-09 21:31 -04:00
 
 - Added an Admin Campaign Command Dashboard to `/admin/analytics` so a selected release can be evaluated from one view across Meta CSV spend/clicks, first-party `/links` views, and tracked streaming outbound clicks.
