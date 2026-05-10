@@ -98,6 +98,7 @@ Placeholder route for future cover art and visual asset generation workflows.
 
 Performance workspace with:
 
+- Admin Campaign Command Dashboard that combines Meta CSV performance, `/links` page views, streaming outbound clicks, funnel rates, winners, risks, and next-move guidance by selected release
 - `/links` page views and outbound click tracking
 - country, source, link, and UTM breakdowns
 - CSV-first Meta Ads Analytics under `/admin/ads`
@@ -429,6 +430,12 @@ docker compose up --build -d
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-09 21:31 -04:00
+
+- Added an Admin Campaign Command Dashboard to `/admin/analytics` so a selected release can be evaluated from one view across Meta CSV spend/clicks, first-party `/links` views, and tracked streaming outbound clicks.
+- Added release-level funnel cards, campaign winner cards, problem-signal watchlist, recommended next-move guidance, and a recent 14-day link-hub trend table.
+- Preserved the original detailed `/links` analytics tables underneath the command dashboard for country, source, link, and UTM drill-downs.
 
 ### 2026-05-09 19:28 -04:00
 
