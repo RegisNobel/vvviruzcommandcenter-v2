@@ -101,14 +101,6 @@ function getCompletedStageCount(release: ReleasePlanItem) {
   return release.stage_steps.filter((step) => step.complete).length;
 }
 
-function getReleaseSummaryText(releases: ReleasePlanItem[]) {
-  if (releases.length === 0) {
-    return "???";
-  }
-
-  return releases.map((release) => release.title).join(" x ");
-}
-
 export function ReleaseRoadmap({
   releases,
   year
@@ -217,7 +209,6 @@ export function ReleaseRoadmap({
 
           <div className="mt-4 divide-y divide-[#252a31]">
             {monthSlots.map((slot, index) => {
-              const releaseText = getReleaseSummaryText(slot.releases);
               const monthDateText = slot.releases.length
                 ? slot.releases.map((release) => formatShortDate(release.release_date)).join(" / ")
                 : "TBD";
@@ -242,14 +233,11 @@ export function ReleaseRoadmap({
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-xl font-semibold leading-tight text-ink sm:text-2xl lg:text-3xl">
-                      {releaseText}
-                    </p>
                     {slot.releases.length > 0 ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {slot.releases.map((release) => (
                           <Link
-                            className="rounded-full border border-[#3a3f46] bg-[#15181c] px-3 py-1 text-xs font-semibold text-[#d5d9df] transition hover:border-[#c9a347]/60 hover:text-[#d7b45e]"
+                            className="rounded-full border border-[#3a3f46] bg-[#15181c] px-4 py-2 text-sm font-semibold text-[#d5d9df] transition hover:border-[#c9a347]/60 hover:bg-[#191b20] hover:text-[#d7b45e]"
                             href={`/admin/releases/${release.id}`}
                             key={release.id}
                           >
@@ -257,7 +245,11 @@ export function ReleaseRoadmap({
                           </Link>
                         ))}
                       </div>
-                    ) : null}
+                    ) : (
+                      <span className="inline-flex rounded-full border border-dashed border-[#3a3f46] bg-[#101215] px-4 py-2 text-sm font-semibold text-muted">
+                        Open slot
+                      </span>
+                    )}
                   </div>
 
                   <div>

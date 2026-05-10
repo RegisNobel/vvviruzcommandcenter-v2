@@ -431,6 +431,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-10 00:29 -04:00
+
+- Simplified the admin release roadmap list view by removing the generated `title x title` monthly headline.
+- Made each month's clickable release pills the primary release display while preserving monthly dates, progress, and stage status pills.
+
 ### 2026-05-09 22:39 -04:00
 
 - Updated `/links` Meta Pixel outbound streaming tracking so both the custom `StreamingOutboundClick` event and the standard `Lead` event include `content_category: streaming_outbound_click`.
