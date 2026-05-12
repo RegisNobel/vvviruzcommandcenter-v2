@@ -395,6 +395,12 @@ export default async function AdminAnalyticsPage({
                 value={formatNumber(commandDashboard.overview.meta_link_clicks)}
               />
               <MetricCard
+                icon={Target}
+                label="Meta LPV"
+                note="Meta landing page views from Ads v2 imports."
+                value={formatNumber(commandDashboard.overview.meta_landing_page_views)}
+              />
+              <MetricCard
                 icon={Radio}
                 label="/links Views"
                 note="First-party link hub page views for this release."
@@ -408,9 +414,33 @@ export default async function AdminAnalyticsPage({
               />
               <MetricCard
                 icon={Gauge}
-                label="View -> Stream"
+                label="Click to LPV"
+                note="Meta landing page views divided by Meta link clicks."
+                value={formatOptionalPercent(commandDashboard.overview.click_to_lpv_rate)}
+              />
+              <MetricCard
+                icon={Activity}
+                label="LPV Tracked"
+                note="First-party /links views divided by Meta landing page views."
+                value={formatOptionalPercent(commandDashboard.overview.tracked_view_coverage_rate)}
+              />
+              <MetricCard
+                icon={Link2}
+                label="UTM Coverage"
+                note="Tracked /links views with campaign or content UTM values."
+                value={formatOptionalPercent(commandDashboard.overview.utm_coverage_rate)}
+              />
+              <MetricCard
+                icon={Gauge}
+                label="View to Stream"
                 note="How often link-page visitors click through to streaming."
                 value={formatOptionalPercent(commandDashboard.overview.view_to_stream_rate)}
+              />
+              <MetricCard
+                icon={TrendingUp}
+                label="LPV to Stream"
+                note="Tracked streaming clicks divided by Meta landing page views."
+                value={formatOptionalPercent(commandDashboard.overview.lpv_to_stream_rate)}
               />
               <MetricCard
                 icon={TrendingUp}
@@ -433,7 +463,7 @@ export default async function AdminAnalyticsPage({
                     {commandDashboard.days} days
                   </div>
                 </div>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                   <FunnelStage
                     helper="Top-of-funnel delivery from Meta import."
                     label="Meta impressions"
@@ -445,14 +475,19 @@ export default async function AdminAnalyticsPage({
                     value={formatNumber(commandDashboard.funnel[1]?.value ?? 0)}
                   />
                   <FunnelStage
-                    helper={`${formatOptionalPercent(commandDashboard.overview.click_to_view_rate)} click-to-view match.`}
-                    label="/links views"
+                    helper={`${formatOptionalPercent(commandDashboard.overview.click_to_lpv_rate)} click-to-LPV rate from Meta.`}
+                    label="Meta landing views"
                     value={formatNumber(commandDashboard.funnel[2]?.value ?? 0)}
+                  />
+                  <FunnelStage
+                    helper={`${formatOptionalPercent(commandDashboard.overview.tracked_view_coverage_rate)} of Meta LPV tracked first-party.`}
+                    label="/links views"
+                    value={formatNumber(commandDashboard.funnel[3]?.value ?? 0)}
                   />
                   <FunnelStage
                     helper={`${formatOptionalPercent(commandDashboard.overview.meta_click_to_stream_rate)} Meta click-to-stream intent.`}
                     label="Streaming clicks"
-                    value={formatNumber(commandDashboard.funnel[3]?.value ?? 0)}
+                    value={formatNumber(commandDashboard.funnel[4]?.value ?? 0)}
                   />
                 </div>
                 <div className="mt-5 rounded-[20px] border border-[#30343b] bg-[#0f1114] p-4">
@@ -469,6 +504,46 @@ export default async function AdminAnalyticsPage({
                 <div className="mt-5">
                   <SignalList signals={commandDashboard.problem_signals} />
                 </div>
+              </div>
+            </section>
+
+            <section className="panel p-4 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="field-label">Tracking health</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">
+                    Meta LPV vs first-party tracking
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                    This checks whether Meta landing-page activity, first-party page views,
+                    and UTM tagging are lining up well enough to trust ad-level decisions.
+                  </p>
+                </div>
+                <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  Attribution v2
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <FunnelStage
+                  helper="First-party /links views divided by Meta landing page views."
+                  label="Tracked LPV coverage"
+                  value={formatOptionalPercent(commandDashboard.tracking_health.tracked_view_coverage_rate)}
+                />
+                <FunnelStage
+                  helper="Meta LPV minus first-party /links views. Privacy tools can create some gap."
+                  label="Estimated untracked views"
+                  value={formatNumber(commandDashboard.tracking_health.estimated_untracked_views)}
+                />
+                <FunnelStage
+                  helper="Tracked page views carrying campaign or content UTM data."
+                  label="UTM coverage"
+                  value={formatOptionalPercent(commandDashboard.tracking_health.utm_coverage_rate)}
+                />
+                <FunnelStage
+                  helper="Tracked /links views without campaign/content attribution."
+                  label="Views without UTM"
+                  value={formatNumber(commandDashboard.tracking_health.views_without_utm)}
+                />
               </div>
             </section>
 
@@ -547,6 +622,84 @@ export default async function AdminAnalyticsPage({
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </section>
+
+            <section className="panel overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <div>
+                  <p className="field-label">UTM creative matrix</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">
+                    Meta to /links attribution by ad content
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                    Matches imported Meta rows to first-party `/links` behavior when
+                    `utm_campaign` and `utm_content` line up. Use this to decide which
+                    creative deserves more budget, a retest, or a landing-page fix.
+                  </p>
+                </div>
+                <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  {commandDashboard.attribution.source_batch_type || "No batch"}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1400px] text-left text-sm">
+                  <thead className="bg-[#171a1f] text-[#b8bec6]">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Creative / UTM</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold">Spend</th>
+                      <th className="px-4 py-3 font-semibold">Results</th>
+                      <th className="px-4 py-3 font-semibold">Meta Clicks</th>
+                      <th className="px-4 py-3 font-semibold">Meta LPV</th>
+                      <th className="px-4 py-3 font-semibold">/links Views</th>
+                      <th className="px-4 py-3 font-semibold">Stream Clicks</th>
+                      <th className="px-4 py-3 font-semibold">Click to LPV</th>
+                      <th className="px-4 py-3 font-semibold">LPV Tracked</th>
+                      <th className="px-4 py-3 font-semibold">View to Stream</th>
+                      <th className="px-4 py-3 font-semibold">Cost / Stream</th>
+                      <th className="px-4 py-3 font-semibold">Platform Split</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#252a31]">
+                    {commandDashboard.attribution.rows.length > 0 ? (
+                      commandDashboard.attribution.rows.map((row) => (
+                        <tr className="align-top text-[#d9dee5]" key={`${row.utm_campaign}-${row.utm_content}-${row.ad_name}`}>
+                          <td className="max-w-[300px] px-4 py-4">
+                            <p className="font-semibold text-ink">{row.label}</p>
+                            {row.ad_name ? (
+                              <p className="mt-1 text-xs text-muted">{row.ad_name}</p>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="pill">{row.tracking_status.replace(/_/g, " ")}</span>
+                          </td>
+                          <td className="px-4 py-4">{formatMoney(row.spend)}</td>
+                          <td className="px-4 py-4">{formatNumber(row.results)}</td>
+                          <td className="px-4 py-4">{formatNumber(row.meta_link_clicks)}</td>
+                          <td className="px-4 py-4">{formatNumber(row.meta_landing_page_views)}</td>
+                          <td className="px-4 py-4">{formatNumber(row.links_page_views)}</td>
+                          <td className="px-4 py-4">{formatNumber(row.streaming_clicks)}</td>
+                          <td className="px-4 py-4">{formatOptionalPercent(row.click_to_lpv_rate)}</td>
+                          <td className="px-4 py-4">{formatOptionalPercent(row.lpv_to_tracked_view_rate)}</td>
+                          <td className="px-4 py-4">{formatOptionalPercent(row.view_to_stream_rate)}</td>
+                          <td className="px-4 py-4">{formatOptionalMoney(row.cost_per_streaming_click)}</td>
+                          <td className="px-4 py-4 text-xs leading-5 text-muted">
+                            Spotify {formatNumber(row.spotify_clicks)} / Apple {formatNumber(row.apple_music_clicks)} / YouTube {formatNumber(row.youtube_clicks)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-4 py-7 text-center text-muted" colSpan={13}>
+                          No UTM attribution rows yet. Import a Meta export with URL parameters
+                          and send campaign traffic to `/links` with matching `utm_campaign`
+                          and `utm_content` values.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </section>
 

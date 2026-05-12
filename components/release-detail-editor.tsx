@@ -1777,7 +1777,7 @@ export function ReleaseDetailEditor({
                         <span className={pagePillClass}>{adMetrics.source_context.batch_type}</span>
                         {adMetrics.source_context.reporting_start && adMetrics.source_context.reporting_end ? (
                           <span className={pagePillClass}>
-                            {formatTimestamp(adMetrics.source_context.reporting_start)} – {formatTimestamp(adMetrics.source_context.reporting_end)}
+                            {formatTimestamp(adMetrics.source_context.reporting_start)} to {formatTimestamp(adMetrics.source_context.reporting_end)}
                           </span>
                         ) : null}
                         {adMetrics.source_context.exported_at ? (
@@ -1890,7 +1890,7 @@ export function ReleaseDetailEditor({
                     <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
                       <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
                         <TrendingUp size={14} className="text-[#aeb3bb]" />
-                        Click â†’ LPV
+                        Click to LPV
                       </p>
                       <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
                         {adMetrics.click_to_landing_rate !== null ? formatPercentage(adMetrics.click_to_landing_rate) : "N/A"}

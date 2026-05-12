@@ -72,7 +72,7 @@ const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
 
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined) {
-    return "—";
+    return "N/A";
   }
 
   return new Intl.NumberFormat("en-US").format(value);
@@ -80,7 +80,7 @@ function formatNumber(value: number | null | undefined) {
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined) {
-    return "—";
+    return "N/A";
   }
 
   return new Intl.NumberFormat("en-US", {
@@ -91,7 +91,7 @@ function formatMoney(value: number | null | undefined) {
 
 function formatPercent(value: number | null | undefined) {
   if (value === null || value === undefined) {
-    return "—";
+    return "N/A";
   }
 
   return `${Math.round(value * 100) / 100}%`;
@@ -220,7 +220,7 @@ function StrategyTable({
               <th className="px-3 py-3 font-semibold">Results</th>
               <th className="px-3 py-3 font-semibold">Clicks</th>
               <th className="px-3 py-3 font-semibold">Landing Views</th>
-              <th className="px-3 py-3 font-semibold">Click â†’ LPV</th>
+              <th className="px-3 py-3 font-semibold">Click to LPV</th>
               <th className="px-3 py-3 font-semibold">Cost / LPV</th>
               <th className="px-3 py-3 font-semibold">CTR</th>
               <th className="px-3 py-3 font-semibold">Rows</th>
@@ -486,7 +486,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <MetricCard label="Cost / Result" note="Spend divided by results." value={formatMoney(detail.results > 0 ? detail.spend / detail.results : null)} />
           <MetricCard label="Link Clicks" note="Meta link click count." value={formatNumber(detail.link_clicks)} />
           <MetricCard label="Landing Views" note="Landing page views from Meta." value={formatNumber(detail.landing_page_views)} />
-          <MetricCard label="Click â†’ LPV" note="Landing views divided by link clicks." value={formatPercent(detail.click_to_landing_rate)} />
+          <MetricCard label="Click to LPV" note="Landing views divided by link clicks." value={formatPercent(detail.click_to_landing_rate)} />
           <MetricCard label="Cost / LPV" note="Spend divided by landing views." value={formatMoney(detail.cost_per_landing_page_view)} />
           <MetricCard label="CPC" note="Spend divided by link clicks." value={formatMoney(detail.link_clicks > 0 ? detail.spend / detail.link_clicks : null)} />
           <MetricCard label="CTR" note="Clicks divided by impressions." value={formatPercent(detail.ctr)} />
@@ -575,7 +575,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   <th className="px-3 py-3 font-semibold">Result Type</th>
                   <th className="px-3 py-3 font-semibold">Link Clicks</th>
                   <th className="px-3 py-3 font-semibold">Landing Views</th>
-                  <th className="px-3 py-3 font-semibold">Click â†’ LPV</th>
+                  <th className="px-3 py-3 font-semibold">Click to LPV</th>
                   <th className="px-3 py-3 font-semibold">Cost / LPV</th>
                   <th className="px-3 py-3 font-semibold">CPC</th>
                   <th className="px-3 py-3 font-semibold">CTR</th>
@@ -640,12 +640,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                         <p className="mt-2 text-xs text-muted">Unlinked copy row.</p>
                       )}
                     </td>
-                    <td className="px-3 py-4">{report.ad_delivery || "—"}</td>
+                    <td className="px-3 py-4">{report.ad_delivery || "N/A"}</td>
                     <td className="px-3 py-4">{formatMoney(report.spend)}</td>
                     <td className="px-3 py-4">{formatNumber(report.results)}</td>
                     <td className="px-3 py-4">{formatMoney(report.cost_per_result)}</td>
                     <td className="max-w-[180px] px-3 py-4 text-xs text-muted">
-                      {report.result_indicator || "â€”"}
+                      {report.result_indicator || "N/A"}
                     </td>
                     <td className="px-3 py-4">{formatNumber(report.link_clicks)}</td>
                     <td className="px-3 py-4">{formatNumber(report.landing_page_views)}</td>
@@ -745,9 +745,9 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                     <th className="px-3 py-3 font-semibold">Spotify</th>
                     <th className="px-3 py-3 font-semibold">Apple</th>
                     <th className="px-3 py-3 font-semibold">YouTube</th>
-                    <th className="px-3 py-3 font-semibold">Click → View</th>
-                    <th className="px-3 py-3 font-semibold">View → Stream</th>
-                    <th className="px-3 py-3 font-semibold">Meta → Stream</th>
+                    <th className="px-3 py-3 font-semibold">Click to View</th>
+                    <th className="px-3 py-3 font-semibold">View to Stream</th>
+                    <th className="px-3 py-3 font-semibold">Meta to Stream</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#252a31]">
@@ -920,11 +920,11 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <tbody className="divide-y divide-[#252a31]">
                 {detail.reports.map((report) => (
                   <tr className="text-[#d9dee5]" key={report.id}>
-                    <td className="px-3 py-4">{report.campaign_name || "—"}</td>
-                    <td className="px-3 py-4">{report.ad_set_name || "—"}</td>
+                    <td className="px-3 py-4">{report.campaign_name || "N/A"}</td>
+                    <td className="px-3 py-4">{report.ad_set_name || "N/A"}</td>
                     <td className="px-3 py-4 font-semibold">{report.ad_name}</td>
                     <td className="px-3 py-4">
-                      {formatDate(report.reporting_start)} → {formatDate(report.reporting_end)}
+                      {formatDate(report.reporting_start)} to {formatDate(report.reporting_end)}
                     </td>
                     <td className="px-3 py-4">{formatMoney(report.spend)}</td>
                     <td className="px-3 py-4">{formatNumber(report.impressions)}</td>
@@ -932,7 +932,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                     <td className="px-3 py-4">
                       {report.utm_source || report.utm_campaign || report.utm_content
                         ? `${report.utm_source || "no source"} / ${report.utm_campaign || "no campaign"} / ${report.utm_content || "no content"}`
-                        : "—"}
+                        : "N/A"}
                     </td>
                   </tr>
                 ))}

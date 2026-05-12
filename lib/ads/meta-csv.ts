@@ -23,7 +23,7 @@ export type ParsedMetaCsvFile = {
   warnings: string[];
 };
 
-const nullTokens = new Set(["", "-", "—", "–", "n/a", "na", "not available"]);
+const nullTokens = new Set(["", "-", "\u2014", "\u2013", "n/a", "na", "not available"]);
 
 const fieldAliases: Record<string, keyof ParsedMetaAdRow> = {
   ad_name: "ad_name",

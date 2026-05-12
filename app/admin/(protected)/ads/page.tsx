@@ -19,11 +19,11 @@ function formatMoney(value: number) {
 }
 
 function formatOptionalMoney(value: number | null) {
-  return value === null ? "â€”" : formatMoney(value);
+  return value === null ? "N/A" : formatMoney(value);
 }
 
 function formatOptionalPercent(value: number | null) {
-  return value === null ? "â€”" : `${Math.round(value * 100) / 100}%`;
+  return value === null ? "N/A" : `${Math.round(value * 100) / 100}%`;
 }
 
 function formatDate(value: string | null) {
@@ -129,7 +129,7 @@ export default async function AdminAdsPage({
           <MetricCard label="Results" note={overview.metric_scope} value={formatNumber(overview.results)} />
           <MetricCard label="Link Clicks" note={overview.metric_scope} value={formatNumber(overview.link_clicks)} />
           <MetricCard label="Landing Views" note={overview.metric_scope} value={formatNumber(overview.landing_page_views)} />
-          <MetricCard label="Click â†’ LPV" note="Landing views divided by Meta link clicks." value={formatOptionalPercent(overview.click_to_landing_rate)} />
+          <MetricCard label="Click to LPV" note="Landing views divided by Meta link clicks." value={formatOptionalPercent(overview.click_to_landing_rate)} />
           <MetricCard label="Cost / LPV" note="Spend divided by landing page views." value={formatOptionalMoney(overview.cost_per_landing_page_view)} />
         </section>
 

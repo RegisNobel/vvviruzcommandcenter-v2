@@ -431,6 +431,18 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 16:37 -04:00
+
+- Upgraded the existing `/admin/analytics` page into Links Analytics v2 / Campaign Attribution Dashboard instead of adding another analytics route.
+- Added Meta landing page view handoff metrics, first-party tracking coverage, UTM coverage, LPV-to-stream intent, and a UTM creative matrix that compares Meta rows against `/links` views and streaming outbound clicks.
+- Hardened attribution grouping so ads without UTM values stay separated by ad name instead of collapsing into one missing-UTM row.
+
+### 2026-05-12 16:24 -04:00
+
+- Cleaned up Ads Analytics v2 labels and empty-value fallbacks that displayed mojibake arrow and dash characters.
+- Replaced the LPV labels with plain `Click to LPV` wording and normalized empty metric values to `N/A` for cleaner dashboard readability.
+- Kept Meta CSV parsing compatible with real em dash/en dash empty tokens by using escaped Unicode values instead of raw non-ASCII characters in code.
+
 ### 2026-05-12 13:52 -04:00
 
 - Added Ads Analytics v2 fields for the newer Meta export set: frequency, CPM, result indicator, all-click metrics, landing page views, cost per landing page view, Facebook likes, 2-second plays, cost per 3-second play, and related video cost fields.
