@@ -18,6 +18,14 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function formatOptionalMoney(value: number | null) {
+  return value === null ? "â€”" : formatMoney(value);
+}
+
+function formatOptionalPercent(value: number | null) {
+  return value === null ? "â€”" : `${Math.round(value * 100) / 100}%`;
+}
+
 function formatDate(value: string | null) {
   if (!value) {
     return "No date range";
@@ -95,14 +103,14 @@ export default async function AdminAdsPage({
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Ads Analytics v1
+                Ads Analytics v2
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 Meta Ads Analytics
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                CSV-first ad reporting for campaign readouts, creative strategy
-                breakdowns, Copy Lab links, and future Meta performance analysis.
+                CSV-first ad reporting for campaign readouts, landing-page handoff,
+                creative strategy breakdowns, Copy Lab links, and Meta decision metrics.
               </p>
             </div>
 
@@ -120,6 +128,9 @@ export default async function AdminAdsPage({
           <MetricCard label="Impressions" note={overview.metric_scope} value={formatNumber(overview.impressions)} />
           <MetricCard label="Results" note={overview.metric_scope} value={formatNumber(overview.results)} />
           <MetricCard label="Link Clicks" note={overview.metric_scope} value={formatNumber(overview.link_clicks)} />
+          <MetricCard label="Landing Views" note={overview.metric_scope} value={formatNumber(overview.landing_page_views)} />
+          <MetricCard label="Click â†’ LPV" note="Landing views divided by Meta link clicks." value={formatOptionalPercent(overview.click_to_landing_rate)} />
+          <MetricCard label="Cost / LPV" note="Spend divided by landing page views." value={formatOptionalMoney(overview.cost_per_landing_page_view)} />
         </section>
 
         {!overview.can_combine_totals && batches.length > 0 ? (

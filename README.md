@@ -431,6 +431,31 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 13:52 -04:00
+
+- Added Ads Analytics v2 fields for the newer Meta export set: frequency, CPM, result indicator, all-click metrics, landing page views, cost per landing page view, Facebook likes, 2-second plays, cost per 3-second play, and related video cost fields.
+- Upgraded the Meta CSV importer to map the delivery, engagement, performance/clicks, and video engagement export labels into the new decision metrics.
+- Expanded the Ads batch dashboard with landing-page handoff, cost-per-landing-view, effective frequency, CPM, 100% hold rate, result type, and a compact decision-read section.
+- Updated release-level Ads summaries so saved campaign learning drafts can include landing-page view quality alongside spend, clicks, results, CPR, CTR, and CPC.
+
+### 2026-05-12 13:23 -04:00
+
+- Reviewed the latest Meta CSV export set: delivery, engagement, performance/clicks, and video engagement.
+- Confirmed the performance/clicks export now includes populated `StreamingOutboundClick` results and `Cost per results`, which the importer maps into Ads Analytics campaign results/CPR.
+- Hardened the Meta CSV importer for Meta's newer normalized column names: `CPC (cost per link click) (USD)` now maps to CPC, and `Cost per ThruPlay (USD)` now maps to Cost per ThruPlay.
+- Updated the Ads CSV smoke fixture to cover the exact newer Meta export labels so future parser changes do not regress these fields.
+- Deferred deeper schema expansion for fields like frequency, CPM, landing page views, all-click metrics, and result indicator because those require a database migration and should be handled as a focused Ads Analytics v2 pass.
+
+### 2026-05-12 13:00 -04:00
+
+- Hardened the Vercel install step after the May 2026 npm supply-chain incident by switching from `npm install` to `npm ci --ignore-scripts`.
+- This keeps production installs lockfile-enforced and blocks dependency lifecycle scripts during install while leaving the explicit Prisma/Next build steps intact.
+
+### 2026-05-10 15:52 -04:00
+
+- Confirmed Meta Ads exports can contain genuinely blank `Results` and `Cost per results` values even when spend, reach, impressions, link clicks, and landing page views are populated.
+- Hardened the Meta CSV importer so the plural `Cost per results` header maps to the internal `cost_per_result` field when future exports include a value.
+
 ### 2026-05-10 00:29 -04:00
 
 - Simplified the admin release roadmap list view by removing the generated `title x title` monthly headline.

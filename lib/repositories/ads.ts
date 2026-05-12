@@ -157,6 +157,10 @@ function calculateReportSignals(
     report.ctr ?? ratio(report.linkClicks ?? 0, report.impressions ?? 0) ?? 0;
   const costPerResult =
     report.costPerResult ?? cost(report.spend ?? 0, report.results ?? 0);
+  const landingPageViews = report.landingPageViews ?? 0;
+  const linkClicks = report.linkClicks ?? 0;
+  const clickToLandingRate = ratio(landingPageViews, linkClicks) ?? 0;
+  const videoHoldRate = ratio(report.video100 ?? 0, report.threeSecondPlays ?? 0) ?? 0;
   const engagement =
     (report.postSaves ?? 0) +
     (report.postShares ?? 0) +
@@ -187,8 +191,24 @@ function calculateReportSignals(
     signals.push("Click Winner");
   }
 
+  if (linkClicks >= 10 && clickToLandingRate >= 75) {
+    signals.push("Landing Intent Winner");
+  }
+
+  if (linkClicks >= 10 && clickToLandingRate > 0 && clickToLandingRate < 50) {
+    signals.push("Landing Drop-off Risk");
+  }
+
   if (impressions >= 500 && ((report.thruPlays ?? 0) >= 50 || (report.video100 ?? 0) >= 10)) {
     signals.push("Attention Winner");
+  }
+
+  if ((report.threeSecondPlays ?? 0) >= 100 && videoHoldRate >= 10) {
+    signals.push("Retention Winner");
+  }
+
+  if ((report.frequency ?? 0) >= 2.5 && ctrValue < 0.75) {
+    signals.push("Frequency Watch");
   }
 
   if (engagement >= 5) {
@@ -241,19 +261,33 @@ function toReportRecord(
     spend: report.spend,
     impressions: report.impressions,
     reach: report.reach,
+    frequency: report.frequency,
+    cost_per_thousand_accounts_reached: report.costPerThousandAccountsReached,
+    cpm: report.cpm,
     results: report.results,
+    result_indicator: normalizeString(report.resultIndicator),
     cost_per_result: report.costPerResult,
     link_clicks: report.linkClicks,
     cpc: report.cpc,
     ctr: report.ctr,
+    clicks_all: report.clicksAll,
+    ctr_all: report.ctrAll,
+    cpc_all: report.cpcAll,
+    landing_page_views: report.landingPageViews,
+    cost_per_landing_page_view: report.costPerLandingPageView,
+    shop_clicks: report.shopClicks,
     page_engagement: report.pageEngagement,
     post_reactions: report.postReactions,
     post_comments: report.postComments,
     post_saves: report.postSaves,
     post_shares: report.postShares,
+    facebook_likes: report.facebookLikes,
     instagram_follows: report.instagramFollows,
     video_plays: report.videoPlays,
+    two_second_continuous_plays: report.twoSecondContinuousPlays,
+    cost_per_two_second_continuous_play: report.costPerTwoSecondContinuousPlay,
     three_second_plays: report.threeSecondPlays,
+    cost_per_three_second_play: report.costPerThreeSecondPlay,
     thru_plays: report.thruPlays,
     cost_per_thru_play: report.costPerThruPlay,
     video_25: report.video25,
@@ -298,6 +332,8 @@ function summarizeBatch(batch: BatchWithReports): AdImportBatchSummary {
   const reach = sum(reports.map((report) => report.reach));
   const results = sum(reports.map((report) => report.results));
   const linkClicks = sum(reports.map((report) => report.linkClicks));
+  const clicksAll = sum(reports.map((report) => report.clicksAll));
+  const landingPageViews = sum(reports.map((report) => report.landingPageViews));
 
   return {
     id: batch.id,
@@ -317,9 +353,13 @@ function summarizeBatch(batch: BatchWithReports): AdImportBatchSummary {
     spend,
     impressions,
     reach,
+    landing_page_views: landingPageViews,
     results,
     link_clicks: linkClicks,
+    clicks_all: clicksAll,
     ctr: ratio(linkClicks, impressions),
+    click_to_landing_rate: ratio(landingPageViews, linkClicks),
+    cost_per_landing_page_view: cost(spend, landingPageViews),
     created_at: batch.createdAt.toISOString(),
     updated_at: batch.updatedAt.toISOString()
   };
@@ -343,10 +383,14 @@ function createStrategyBreakdowns(reports: AdCreativeReportRecord[]) {
         reach: 0,
         results: 0,
         link_clicks: 0,
+        landing_page_views: 0,
         cpc: null,
         ctr: null,
+        click_to_landing_rate: null,
+        cost_per_landing_page_view: null,
         thru_plays: 0,
         video_100: 0,
+        video_hold_rate: null,
         report_count: 0
       };
 
@@ -355,11 +399,15 @@ function createStrategyBreakdowns(reports: AdCreativeReportRecord[]) {
     current.reach += report.reach ?? 0;
     current.results += report.results ?? 0;
     current.link_clicks += report.link_clicks ?? 0;
+    current.landing_page_views += report.landing_page_views ?? 0;
     current.thru_plays += report.thru_plays ?? 0;
     current.video_100 += report.video_100 ?? 0;
     current.report_count += 1;
     current.cpc = cost(current.spend, current.link_clicks);
     current.ctr = ratio(current.link_clicks, current.impressions);
+    current.click_to_landing_rate = ratio(current.landing_page_views, current.link_clicks);
+    current.cost_per_landing_page_view = cost(current.spend, current.landing_page_views);
+    current.video_hold_rate = ratio(current.video_100, current.thru_plays);
 
     map.set(label, current);
   }
@@ -594,19 +642,33 @@ export async function importMetaAdReports(input: ImportAdsInput) {
     spend: row.spend,
     impressions: row.impressions,
     reach: row.reach,
+    frequency: row.frequency,
+    costPerThousandAccountsReached: row.cost_per_thousand_accounts_reached,
+    cpm: row.cpm,
     results: row.results,
+    resultIndicator: normalizeNullableString(row.result_indicator),
     costPerResult: row.cost_per_result,
     linkClicks: row.link_clicks,
     cpc: row.cpc,
     ctr: row.ctr,
+    clicksAll: row.clicks_all,
+    ctrAll: row.ctr_all,
+    cpcAll: row.cpc_all,
+    landingPageViews: row.landing_page_views,
+    costPerLandingPageView: row.cost_per_landing_page_view,
+    shopClicks: row.shop_clicks,
     pageEngagement: row.page_engagement,
     postReactions: row.post_reactions,
     postComments: row.post_comments,
     postSaves: row.post_saves,
     postShares: row.post_shares,
+    facebookLikes: row.facebook_likes,
     instagramFollows: row.instagram_follows,
     videoPlays: row.video_plays,
+    twoSecondContinuousPlays: row.two_second_continuous_plays,
+    costPerTwoSecondContinuousPlay: row.cost_per_two_second_continuous_play,
     threeSecondPlays: row.three_second_plays,
+    costPerThreeSecondPlay: row.cost_per_three_second_play,
     thruPlays: row.thru_plays,
     costPerThruPlay: row.cost_per_thru_play,
     video25: row.video_25,
@@ -781,6 +843,15 @@ export async function readAdsHomeStats(releaseId?: string | null) {
       impressions: sum(metricSource.map((batch) => batch.impressions)),
       results: sum(metricSource.map((batch) => batch.results)),
       link_clicks: sum(metricSource.map((batch) => batch.link_clicks)),
+      landing_page_views: sum(metricSource.map((batch) => batch.landing_page_views)),
+      click_to_landing_rate: ratio(
+        sum(metricSource.map((batch) => batch.landing_page_views)),
+        sum(metricSource.map((batch) => batch.link_clicks))
+      ),
+      cost_per_landing_page_view: cost(
+        sum(metricSource.map((batch) => batch.spend)),
+        sum(metricSource.map((batch) => batch.landing_page_views))
+      ),
       comparison_mode: getAdBatchComparisonMode(summaries),
       can_combine_totals: canCombineTotals,
       metric_scope: canCombineTotals ? "Combined fixed-period totals" : "Latest snapshot only"
@@ -942,11 +1013,14 @@ const emptyReleaseAdMetrics: ReleaseAdMetricsOverview = {
   total_reach: 0,
   total_results: 0,
   total_link_clicks: 0,
+  total_landing_page_views: 0,
   total_thru_plays: null,
   total_video_100: null,
   ctr: null,
   cpc: null,
   cpr: null,
+  click_to_landing_rate: null,
+  cost_per_landing_page_view: null,
   batch_count: 0,
   report_count: 0,
   best_ad: null,
@@ -1041,6 +1115,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
   const totalReach = sum(allReports.map((r) => r.reach));
   const totalResults = sum(allReports.map((r) => r.results));
   const totalLinkClicks = sum(allReports.map((r) => r.linkClicks));
+  const totalLandingPageViews = sum(allReports.map((r) => r.landingPageViews));
   const totalThruPlays = sum(allReports.map((r) => r.thruPlays));
   const totalVideo100 = sum(allReports.map((r) => r.video100));
 
@@ -1126,11 +1201,14 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
     total_reach: totalReach,
     total_results: totalResults,
     total_link_clicks: totalLinkClicks,
+    total_landing_page_views: totalLandingPageViews,
     total_thru_plays: totalThruPlays > 0 ? totalThruPlays : null,
     total_video_100: totalVideo100 > 0 ? totalVideo100 : null,
     ctr: ratio(totalLinkClicks, totalImpressions),
     cpc: cost(totalSpend, totalLinkClicks),
     cpr: cost(totalSpend, totalResults),
+    click_to_landing_rate: ratio(totalLandingPageViews, totalLinkClicks),
+    cost_per_landing_page_view: cost(totalSpend, totalLandingPageViews),
     batch_count: batches.length,
     report_count: allReports.length,
     best_ad: bestAdReport

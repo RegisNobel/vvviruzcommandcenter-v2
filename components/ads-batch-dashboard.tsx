@@ -30,8 +30,12 @@ type SortKey =
   | "results"
   | "cost_per_result"
   | "link_clicks"
+  | "landing_page_views"
+  | "cost_per_landing_page_view"
   | "cpc"
   | "ctr"
+  | "frequency"
+  | "cpm"
   | "thru_plays"
   | "video_100"
   | "post_saves"
@@ -45,8 +49,12 @@ const sortOptions: Array<{value: SortKey; label: string}> = [
   {value: "results", label: "Results"},
   {value: "cost_per_result", label: "Cost / Result"},
   {value: "link_clicks", label: "Link Clicks"},
+  {value: "landing_page_views", label: "Landing Views"},
+  {value: "cost_per_landing_page_view", label: "Cost / LPV"},
   {value: "cpc", label: "CPC"},
   {value: "ctr", label: "CTR"},
+  {value: "frequency", label: "Frequency"},
+  {value: "cpm", label: "CPM"},
   {value: "thru_plays", label: "ThruPlays"},
   {value: "video_100", label: "100% Plays"},
   {value: "post_saves", label: "Saves"},
@@ -86,7 +94,23 @@ function formatPercent(value: number | null | undefined) {
     return "—";
   }
 
-  return `${value}%`;
+  return `${Math.round(value * 100) / 100}%`;
+}
+
+function calculateRatio(numerator: number | null | undefined, denominator: number | null | undefined) {
+  if (!denominator || denominator <= 0) {
+    return null;
+  }
+
+  return Math.round(((numerator ?? 0) / denominator) * 10000) / 100;
+}
+
+function calculateCost(numerator: number | null | undefined, denominator: number | null | undefined) {
+  if (!denominator || denominator <= 0) {
+    return null;
+  }
+
+  return Math.round(((numerator ?? 0) / denominator) * 100) / 100;
 }
 
 function formatDate(value: string | null | undefined) {
@@ -144,6 +168,18 @@ function formatStrategyValue(value: string, kind: "hook" | "content" | "section"
 }
 
 function getSortValue(report: AdCreativeReportRecord, sortKey: SortKey) {
+  if (sortKey === "cost_per_landing_page_view") {
+    return report.cost_per_landing_page_view ?? calculateCost(report.spend, report.landing_page_views) ?? -1;
+  }
+
+  if (sortKey === "frequency") {
+    return report.frequency ?? (report.reach ? (report.impressions ?? 0) / report.reach : -1);
+  }
+
+  if (sortKey === "cpm") {
+    return report.cpm ?? (report.impressions ? ((report.spend ?? 0) / report.impressions) * 1000 : -1);
+  }
+
   return report[sortKey] ?? -1;
 }
 
@@ -176,13 +212,16 @@ function StrategyTable({
     <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
       <h3 className="text-lg font-semibold text-ink">{title}</h3>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="bg-[#171a1f] text-[#b8bec6]">
             <tr>
               <th className="px-3 py-3 font-semibold">Segment</th>
               <th className="px-3 py-3 font-semibold">Spend</th>
               <th className="px-3 py-3 font-semibold">Results</th>
               <th className="px-3 py-3 font-semibold">Clicks</th>
+              <th className="px-3 py-3 font-semibold">Landing Views</th>
+              <th className="px-3 py-3 font-semibold">Click â†’ LPV</th>
+              <th className="px-3 py-3 font-semibold">Cost / LPV</th>
               <th className="px-3 py-3 font-semibold">CTR</th>
               <th className="px-3 py-3 font-semibold">Rows</th>
             </tr>
@@ -195,13 +234,16 @@ function StrategyTable({
                   <td className="px-3 py-3">{formatMoney(row.spend)}</td>
                   <td className="px-3 py-3">{formatNumber(row.results)}</td>
                   <td className="px-3 py-3">{formatNumber(row.link_clicks)}</td>
+                  <td className="px-3 py-3">{formatNumber(row.landing_page_views)}</td>
+                  <td className="px-3 py-3">{formatPercent(row.click_to_landing_rate)}</td>
+                  <td className="px-3 py-3">{formatMoney(row.cost_per_landing_page_view)}</td>
                   <td className="px-3 py-3">{formatPercent(row.ctr)}</td>
                   <td className="px-3 py-3">{formatNumber(row.report_count)}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td className="px-3 py-5 text-center text-muted" colSpan={6}>
+                <td className="px-3 py-5 text-center text-muted" colSpan={9}>
                   No strategy data yet. Link ad rows to Copy Lab entries to populate this.
                 </td>
               </tr>
@@ -258,6 +300,37 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
       })
       .sort((left, right) => getSortValue(right, sortKey) - getSortValue(left, sortKey));
   }, [contentFilter, detail.reports, hookFilter, linkFilter, sectionFilter, sortKey]);
+  const totalThreeSecondPlays = detail.reports.reduce(
+    (total, report) => total + (report.three_second_plays ?? 0),
+    0
+  );
+  const totalThruPlays = detail.reports.reduce(
+    (total, report) => total + (report.thru_plays ?? 0),
+    0
+  );
+  const totalVideo100 = detail.reports.reduce(
+    (total, report) => total + (report.video_100 ?? 0),
+    0
+  );
+  const effectiveFrequency = detail.reach > 0
+    ? Math.round((detail.impressions / detail.reach) * 100) / 100
+    : null;
+  const effectiveCpm = calculateCost(detail.spend * 1000, detail.impressions);
+  const videoHoldRate = calculateRatio(totalVideo100, totalThreeSecondPlays);
+  const decisionNotes = [
+    detail.results > 0
+      ? `Meta is returning ${formatNumber(detail.results)} result${detail.results === 1 ? "" : "s"} for this batch.`
+      : "No Meta results imported yet; judge this batch by clicks, landing views, and attention until results populate.",
+    detail.landing_page_views > 0
+      ? `${formatPercent(detail.click_to_landing_rate)} of Meta link clicks became landing-page views.`
+      : "Landing-page views are not present in this import; include the Performance and Clicks export for handoff quality.",
+    totalThreeSecondPlays > 0
+      ? `${formatPercent(videoHoldRate)} of 3-second plays reached 100% completion.`
+      : "Video retention is not present in this import; include the Video Engagement export for attention quality.",
+    effectiveFrequency !== null
+      ? `Effective frequency is ${formatNumber(effectiveFrequency)}, useful for spotting saturation before CTR drops.`
+      : "Frequency is not available yet; include the Delivery export for saturation readouts."
+  ];
 
   async function handleCopyLink(reportId: string, copyEntryId: string | null) {
     setPendingReportId(reportId);
@@ -407,13 +480,33 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <MetricCard label="Spend" note="Total imported Meta spend." value={formatMoney(detail.spend)} />
           <MetricCard label="Impressions" note="Imported ad impressions." value={formatNumber(detail.impressions)} />
           <MetricCard label="Reach" note="Imported Meta reach." value={formatNumber(detail.reach)} />
+          <MetricCard label="Frequency" note="Impressions divided by reach." value={formatNumber(effectiveFrequency)} />
+          <MetricCard label="CPM" note="Spend per 1,000 impressions." value={formatMoney(effectiveCpm)} />
           <MetricCard label="Results" note="Meta results from CSV." value={formatNumber(detail.results)} />
           <MetricCard label="Cost / Result" note="Spend divided by results." value={formatMoney(detail.results > 0 ? detail.spend / detail.results : null)} />
           <MetricCard label="Link Clicks" note="Meta link click count." value={formatNumber(detail.link_clicks)} />
+          <MetricCard label="Landing Views" note="Landing page views from Meta." value={formatNumber(detail.landing_page_views)} />
+          <MetricCard label="Click â†’ LPV" note="Landing views divided by link clicks." value={formatPercent(detail.click_to_landing_rate)} />
+          <MetricCard label="Cost / LPV" note="Spend divided by landing views." value={formatMoney(detail.cost_per_landing_page_view)} />
           <MetricCard label="CPC" note="Spend divided by link clicks." value={formatMoney(detail.link_clicks > 0 ? detail.spend / detail.link_clicks : null)} />
           <MetricCard label="CTR" note="Clicks divided by impressions." value={formatPercent(detail.ctr)} />
-          <MetricCard label="ThruPlays" note="Completed video attention signal." value={formatNumber(detail.reports.reduce((total, report) => total + (report.thru_plays ?? 0), 0))} />
-          <MetricCard label="100% Plays" note="Full video play count." value={formatNumber(detail.reports.reduce((total, report) => total + (report.video_100 ?? 0), 0))} />
+          <MetricCard label="ThruPlays" note="Completed video attention signal." value={formatNumber(totalThruPlays)} />
+          <MetricCard label="100% Plays" note="Full video play count." value={formatNumber(totalVideo100)} />
+          <MetricCard label="100% Hold" note="100% plays divided by 3-second plays." value={formatPercent(videoHoldRate)} />
+        </section>
+
+        <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+          <p className="field-label">Decision Read</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {decisionNotes.map((note) => (
+              <div
+                className="rounded-[18px] border border-[#252a31] bg-[#171a1f] px-4 py-3 text-sm leading-6 text-muted"
+                key={note}
+              >
+                {note}
+              </div>
+            ))}
+          </div>
         </section>
 
         {message ? (
@@ -470,7 +563,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1500px] text-left text-sm">
+            <table className="w-full min-w-[1900px] text-left text-sm">
               <thead className="bg-[#171a1f] text-[#b8bec6]">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Ad Name</th>
@@ -479,11 +572,19 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   <th className="px-3 py-3 font-semibold">Spend</th>
                   <th className="px-3 py-3 font-semibold">Results</th>
                   <th className="px-3 py-3 font-semibold">Cost / Result</th>
+                  <th className="px-3 py-3 font-semibold">Result Type</th>
                   <th className="px-3 py-3 font-semibold">Link Clicks</th>
+                  <th className="px-3 py-3 font-semibold">Landing Views</th>
+                  <th className="px-3 py-3 font-semibold">Click â†’ LPV</th>
+                  <th className="px-3 py-3 font-semibold">Cost / LPV</th>
                   <th className="px-3 py-3 font-semibold">CPC</th>
                   <th className="px-3 py-3 font-semibold">CTR</th>
+                  <th className="px-3 py-3 font-semibold">Freq</th>
+                  <th className="px-3 py-3 font-semibold">CPM</th>
+                  <th className="px-3 py-3 font-semibold">3s Plays</th>
                   <th className="px-3 py-3 font-semibold">ThruPlays</th>
                   <th className="px-3 py-3 font-semibold">100% Plays</th>
+                  <th className="px-3 py-3 font-semibold">Hold</th>
                   <th className="px-3 py-3 font-semibold">Saves</th>
                   <th className="px-3 py-3 font-semibold">Shares</th>
                   <th className="px-3 py-3 font-semibold">IG Follows</th>
@@ -543,11 +644,31 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                     <td className="px-3 py-4">{formatMoney(report.spend)}</td>
                     <td className="px-3 py-4">{formatNumber(report.results)}</td>
                     <td className="px-3 py-4">{formatMoney(report.cost_per_result)}</td>
+                    <td className="max-w-[180px] px-3 py-4 text-xs text-muted">
+                      {report.result_indicator || "â€”"}
+                    </td>
                     <td className="px-3 py-4">{formatNumber(report.link_clicks)}</td>
+                    <td className="px-3 py-4">{formatNumber(report.landing_page_views)}</td>
+                    <td className="px-3 py-4">
+                      {formatPercent(calculateRatio(report.landing_page_views, report.link_clicks))}
+                    </td>
+                    <td className="px-3 py-4">
+                      {formatMoney(report.cost_per_landing_page_view ?? calculateCost(report.spend, report.landing_page_views))}
+                    </td>
                     <td className="px-3 py-4">{formatMoney(report.cpc)}</td>
                     <td className="px-3 py-4">{formatPercent(report.ctr)}</td>
+                    <td className="px-3 py-4">
+                      {formatNumber(report.frequency ?? (report.reach ? Math.round(((report.impressions ?? 0) / report.reach) * 100) / 100 : null))}
+                    </td>
+                    <td className="px-3 py-4">
+                      {formatMoney(report.cpm ?? calculateCost((report.spend ?? 0) * 1000, report.impressions))}
+                    </td>
+                    <td className="px-3 py-4">{formatNumber(report.three_second_plays)}</td>
                     <td className="px-3 py-4">{formatNumber(report.thru_plays)}</td>
                     <td className="px-3 py-4">{formatNumber(report.video_100)}</td>
+                    <td className="px-3 py-4">
+                      {formatPercent(calculateRatio(report.video_100, report.three_second_plays))}
+                    </td>
                     <td className="px-3 py-4">{formatNumber(report.post_saves)}</td>
                     <td className="px-3 py-4">{formatNumber(report.post_shares)}</td>
                     <td className="px-3 py-4">{formatNumber(report.instagram_follows)}</td>

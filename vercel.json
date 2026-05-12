@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build:vercel",
-  "installCommand": "npm install",
+  "installCommand": "npm ci --ignore-scripts",
   "crons": [
     {
       "path": "/api/cron/backups",

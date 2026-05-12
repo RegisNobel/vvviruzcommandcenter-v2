@@ -231,19 +231,33 @@ model AdCreativeReport {
   spend                  Float?
   impressions            Int?
   reach                  Int?
+  frequency              Float?
+  costPerThousandAccountsReached Float?
+  cpm                    Float?
   results                Float?
+  resultIndicator        String?
   costPerResult          Float?
   linkClicks             Int?
   cpc                    Float?
   ctr                    Float?
+  clicksAll              Int?
+  ctrAll                 Float?
+  cpcAll                 Float?
+  landingPageViews       Int?
+  costPerLandingPageView Float?
+  shopClicks             Int?
   pageEngagement         Int?
   postReactions          Int?
   postComments           Int?
   postSaves              Int?
   postShares             Int?
+  facebookLikes          Int?
   instagramFollows       Int?
   videoPlays             Int?
+  twoSecondContinuousPlays Int?
+  costPerTwoSecondContinuousPlay Float?
   threeSecondPlays       Int?
+  costPerThreeSecondPlay Float?
   thruPlays              Int?
   costPerThruPlay        Float?
   video25                Int?

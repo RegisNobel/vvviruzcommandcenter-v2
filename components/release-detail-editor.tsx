@@ -779,17 +779,20 @@ export function ReleaseDetailEditor({
       source_context,
       total_spend,
       total_link_clicks,
+      total_landing_page_views,
       total_results,
       cpr,
       ctr,
       cpc,
+      click_to_landing_rate,
+      cost_per_landing_page_view,
       best_ad,
       worst_ad,
       best_hook,
       worst_hook
     } = adMetrics;
 
-    const summaryStr = `This report is based on ${source_label} for ${source_context?.reporting_start ? formatTimestamp(source_context.reporting_start) : "unknown date"} to ${source_context?.reporting_end ? formatTimestamp(source_context.reporting_end) : "unknown date"} using ${source_context?.attribution_setting || "default attribution"}. The campaign spent ${formatCurrency(total_spend)}, generated ${formatNumber(total_link_clicks)} clicks, ${formatNumber(total_results)} results, ${cpr !== null ? formatCurrency(cpr) : "N/A"} CPR, ${ctr !== null ? formatPercentage(ctr * 100) : "N/A"} CTR, and ${cpc !== null ? formatCurrency(cpc) : "N/A"} CPC.`;
+    const summaryStr = `This report is based on ${source_label} for ${source_context?.reporting_start ? formatTimestamp(source_context.reporting_start) : "unknown date"} to ${source_context?.reporting_end ? formatTimestamp(source_context.reporting_end) : "unknown date"} using ${source_context?.attribution_setting || "default attribution"}. The campaign spent ${formatCurrency(total_spend)}, generated ${formatNumber(total_link_clicks)} clicks, ${formatNumber(total_landing_page_views)} landing views, ${formatNumber(total_results)} results, ${cpr !== null ? formatCurrency(cpr) : "N/A"} CPR, ${ctr !== null ? formatPercentage(ctr) : "N/A"} CTR, ${cpc !== null ? formatCurrency(cpc) : "N/A"} CPC, ${click_to_landing_rate !== null ? formatPercentage(click_to_landing_rate) : "N/A"} click-to-landing rate, and ${cost_per_landing_page_view !== null ? formatCurrency(cost_per_landing_page_view) : "N/A"} cost per landing view.`;
 
     let workedStr = "";
     if (best_ad || best_hook) {
@@ -1828,6 +1831,15 @@ export function ReleaseDetailEditor({
                     </div>
                     <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
                       <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <MousePointerClick size={14} className="text-[#aeb3bb]" />
+                        Landing Views
+                      </p>
+                      <p className="mt-2 text-xl font-semibold text-[#ede7dc]">
+                        {formatNumber(adMetrics.total_landing_page_views)}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
                         <Check size={14} className="text-[#aeb3bb]" />
                         Results
                       </p>
@@ -1864,6 +1876,24 @@ export function ReleaseDetailEditor({
                       </p>
                       <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
                         {adMetrics.ctr !== null ? formatPercentage(adMetrics.ctr) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <BarChart3 size={14} className="text-[#aeb3bb]" />
+                        Cost / LPV
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {adMetrics.cost_per_landing_page_view !== null ? formatCurrency(adMetrics.cost_per_landing_page_view) : "N/A"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+                        <TrendingUp size={14} className="text-[#aeb3bb]" />
+                        Click â†’ LPV
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#ede7dc]">
+                        {adMetrics.click_to_landing_rate !== null ? formatPercentage(adMetrics.click_to_landing_rate) : "N/A"}
                       </p>
                     </div>
                     <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-4">
