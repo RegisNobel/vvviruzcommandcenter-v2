@@ -9,11 +9,10 @@ const navItems = [
   {href: "/admin", label: "Overview"},
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
-  {href: "/admin/analytics", label: "Analytics"},
-  {href: "/admin/ads", label: "Ads"},
+  {href: "/admin/attribution", label: "Attribution"},
+  {href: "/admin/ad-lab", label: "Ad Lab"},
   {href: "/admin/copy-lab", label: "Copy Lab"},
   {href: "/admin/photo-lab", label: "Photo Lab"},
-  {href: "/admin/releases/roadmap", label: "Roadmap"},
   {href: "/admin/releases", label: "Releases"}
 ];
 
@@ -32,20 +31,17 @@ export function CommandCenterNav() {
               vvviruz&apos; command center
             </p>
             <p className="hidden truncate text-sm text-[#8f959d] sm:block">
-              Local projects, analytics, copy, releases, and creative ops
+              Local projects, attribution, copy, releases, and creative ops
             </p>
           </div>
         </Link>
 
         <nav aria-label="Admin navigation" className="mobile-scroll-x flex items-center gap-2 lg:mx-0 lg:px-0">
           {navItems.map((item) => {
-            const isRoadmapRoute = pathname.startsWith("/admin/releases/roadmap");
             const isActive =
               item.href === "/admin"
                 ? pathname === item.href
-                : item.href === "/admin/releases" && isRoadmapRoute
-                  ? false
-                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <Link

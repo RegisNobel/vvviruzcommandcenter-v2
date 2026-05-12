@@ -36,6 +36,28 @@ const nextConfig = {
         }
       ]
     }
+  ],
+  redirects: async () => [
+    {
+      source: "/admin/analytics",
+      destination: "/admin/attribution",
+      permanent: true
+    },
+    {
+      source: "/admin/analytics/:path*",
+      destination: "/admin/attribution/:path*",
+      permanent: true
+    },
+    {
+      source: "/admin/ads",
+      destination: "/admin/ad-lab",
+      permanent: true
+    },
+    {
+      source: "/admin/ads/:path*",
+      destination: "/admin/ad-lab/:path*",
+      permanent: true
+    }
   ]
 };
 

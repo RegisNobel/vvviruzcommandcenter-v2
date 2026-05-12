@@ -400,12 +400,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         <section className="panel px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="pill">Meta Ads Analytics</div>
+              <div className="pill">Ad Lab</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 {detail.name || "Imported Meta Report"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                {detail.release_title ? `${detail.release_title} · ` : ""}
+                {detail.release_title ? `${detail.release_title} / ` : ""}
                 {formatDate(detail.reporting_start)} to {formatDate(detail.reporting_end)}
               </p>
               <p className="mt-2 max-w-3xl text-xs uppercase tracking-[0.14em] text-muted">
@@ -414,11 +414,11 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link className="action-button-secondary" href="/admin/ads">
+              <Link className="action-button-secondary" href="/admin/ad-lab">
                 <ArrowLeft size={16} />
-                Ads Home
+                Ad Lab Home
               </Link>
-              <Link className="action-button-primary" href="/admin/ads/import">
+              <Link className="action-button-primary" href="/admin/ad-lab/import">
                 Import CSV
               </Link>
               <AdsDeleteBatchButton
@@ -897,8 +897,8 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <p className="field-label">Raw Imported Rows</p>
               <h2 className="mt-2 text-2xl font-semibold text-ink">Debug table</h2>
             </div>
-            <Link className="action-button-tertiary" href="/admin/analytics">
-              Link-page analytics
+            <Link className="action-button-tertiary" href="/admin/attribution">
+              Link-page attribution
               <ExternalLink size={16} />
             </Link>
           </div>

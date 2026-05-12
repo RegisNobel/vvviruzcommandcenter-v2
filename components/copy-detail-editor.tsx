@@ -364,7 +364,7 @@ export function CopyDetailEditor({
                   Creative Strategy
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Lightweight tags for future Ads Analytics grouping without slowing
+                  Lightweight tags for future Ad Lab grouping without slowing
                   down the copy workflow.
                 </p>
               </div>

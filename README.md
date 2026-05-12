@@ -94,18 +94,18 @@ Hook/caption management workspace with:
 
 Placeholder route for future cover art and visual asset generation workflows.
 
-### Analytics
+### Attribution
 
 Performance workspace with:
 
-- Admin Campaign Command Dashboard that combines Meta CSV performance, `/links` page views, streaming outbound clicks, funnel rates, winners, risks, and next-move guidance by selected release
+- Attribution Dashboard that combines Meta CSV performance, `/links` page views, streaming outbound clicks, funnel rates, winners, risks, and next-move guidance by selected release
 - `/links` page views and outbound click tracking
 - country, source, link, and UTM breakdowns
-- CSV-first Meta Ads Analytics under `/admin/ads`
+- CSV-first Meta Ad Lab under `/admin/ad-lab`
 - ad import batches, campaign dashboards, Copy Lab linking, and strategy breakdowns
 - smart batch selection: Release-to-Date priority, non-overlapping combination, and snapshot fallback
 - release-level Best/Worst Ad and Best/Worst Hook identification by CPR
-- semi-automated Campaign Learning draft generation from current Ads Performance data
+- semi-automated Campaign Learning draft generation from current Ad Lab Performance data
 - manual campaign learnings for release readouts
 
 ## Feature Highlights
@@ -431,32 +431,44 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 19:41 -04:00
+
+- Removed the standalone Roadmap link from the main admin navigation and admin overview page.
+- Left the protected `/admin/releases/roadmap` route intact and kept nested roadmap pages under the Releases nav state so the roadmap remains accessible through the Releases workflow.
+
+### 2026-05-12 19:32 -04:00
+
+- Renamed the protected admin performance page to `/admin/attribution` and updated the admin navigation, overview cards, and internal links to use Attribution.
+- Renamed the protected admin Meta CSV workspace to `/admin/ad-lab` and updated user-facing labels, import/detail links, and release detail cross-links to use Ad Lab.
+- Added protected-admin route redirects so older saved admin URLs land on the new Attribution and Ad Lab routes instead of dead-ending.
+- Kept Prisma models and backend API routes unchanged, including `AnalyticsEvent`, `AdImportBatch`, and `/api/analytics/track`, so the public `/links` tracking pipeline remains stable.
+
 ### 2026-05-12 16:37 -04:00
 
-- Upgraded the existing `/admin/analytics` page into Links Analytics v2 / Campaign Attribution Dashboard instead of adding another analytics route.
+- Upgraded the existing `/admin/attribution` page into Links Attribution v2 / Attribution Dashboard instead of adding another attribution route.
 - Added Meta landing page view handoff metrics, first-party tracking coverage, UTM coverage, LPV-to-stream intent, and a UTM creative matrix that compares Meta rows against `/links` views and streaming outbound clicks.
 - Hardened attribution grouping so ads without UTM values stay separated by ad name instead of collapsing into one missing-UTM row.
 
 ### 2026-05-12 16:24 -04:00
 
-- Cleaned up Ads Analytics v2 labels and empty-value fallbacks that displayed mojibake arrow and dash characters.
+- Cleaned up Ad Lab v2 labels and empty-value fallbacks that displayed mojibake arrow and dash characters.
 - Replaced the LPV labels with plain `Click to LPV` wording and normalized empty metric values to `N/A` for cleaner dashboard readability.
 - Kept Meta CSV parsing compatible with real em dash/en dash empty tokens by using escaped Unicode values instead of raw non-ASCII characters in code.
 
 ### 2026-05-12 13:52 -04:00
 
-- Added Ads Analytics v2 fields for the newer Meta export set: frequency, CPM, result indicator, all-click metrics, landing page views, cost per landing page view, Facebook likes, 2-second plays, cost per 3-second play, and related video cost fields.
+- Added Ad Lab v2 fields for the newer Meta export set: frequency, CPM, result indicator, all-click metrics, landing page views, cost per landing page view, Facebook likes, 2-second plays, cost per 3-second play, and related video cost fields.
 - Upgraded the Meta CSV importer to map the delivery, engagement, performance/clicks, and video engagement export labels into the new decision metrics.
-- Expanded the Ads batch dashboard with landing-page handoff, cost-per-landing-view, effective frequency, CPM, 100% hold rate, result type, and a compact decision-read section.
-- Updated release-level Ads summaries so saved campaign learning drafts can include landing-page view quality alongside spend, clicks, results, CPR, CTR, and CPC.
+- Expanded the Ad Lab batch dashboard with landing-page handoff, cost-per-landing-view, effective frequency, CPM, 100% hold rate, result type, and a compact decision-read section.
+- Updated release-level Ad Lab summaries so saved campaign learning drafts can include landing-page view quality alongside spend, clicks, results, CPR, CTR, and CPC.
 
 ### 2026-05-12 13:23 -04:00
 
 - Reviewed the latest Meta CSV export set: delivery, engagement, performance/clicks, and video engagement.
-- Confirmed the performance/clicks export now includes populated `StreamingOutboundClick` results and `Cost per results`, which the importer maps into Ads Analytics campaign results/CPR.
+- Confirmed the performance/clicks export now includes populated `StreamingOutboundClick` results and `Cost per results`, which the importer maps into Ad Lab campaign results/CPR.
 - Hardened the Meta CSV importer for Meta's newer normalized column names: `CPC (cost per link click) (USD)` now maps to CPC, and `Cost per ThruPlay (USD)` now maps to Cost per ThruPlay.
-- Updated the Ads CSV smoke fixture to cover the exact newer Meta export labels so future parser changes do not regress these fields.
-- Deferred deeper schema expansion for fields like frequency, CPM, landing page views, all-click metrics, and result indicator because those require a database migration and should be handled as a focused Ads Analytics v2 pass.
+- Updated the Ad Lab CSV smoke fixture to cover the exact newer Meta export labels so future parser changes do not regress these fields.
+- Deferred deeper schema expansion for fields like frequency, CPM, landing page views, all-click metrics, and result indicator because those require a database migration and should be handled as a focused Ad Lab v2 pass.
 
 ### 2026-05-12 13:00 -04:00
 
@@ -480,7 +492,7 @@ docker compose up --build -d
 
 ### 2026-05-09 21:31 -04:00
 
-- Added an Admin Campaign Command Dashboard to `/admin/analytics` so a selected release can be evaluated from one view across Meta CSV spend/clicks, first-party `/links` views, and tracked streaming outbound clicks.
+- Added an Attribution Dashboard to `/admin/attribution` so a selected release can be evaluated from one view across Meta CSV spend/clicks, first-party `/links` views, and tracked streaming outbound clicks.
 - Added release-level funnel cards, campaign winner cards, problem-signal watchlist, recommended next-move guidance, and a recent 14-day link-hub trend table.
 - Preserved the original detailed `/links` analytics tables underneath the command dashboard for country, source, link, and UTM drill-downs.
 
@@ -671,10 +683,10 @@ After applying RLS changes:
 
 ### 2026-05-01 16:50 -04:00
 
-- Updated release-level Ads Analytics to correctly handle summarized Meta CSV exports without double-counting overlapping batches.
+- Updated release-level Ad Lab summaries to correctly handle summarized Meta CSV exports without double-counting overlapping batches.
 - Added smart batch selection logic: prefers Release-to-Date or Full Campaign exports, combines non-overlapping fixed-period batches, and falls back to the most recent snapshot when ranges overlap.
-- Added Best Ad, Worst Ad, Best Hook, and Worst Hook identification to the release-level Ads Performance summary using CPR-based ranking with minimum spend and result thresholds.
-- Added a "Generate Draft Learning" button to the Campaign Learning section that pre-fills Campaign Summary, What Worked, What Failed, Next Test, and Decision fields from the current Ads Performance snapshot.
+- Added Best Ad, Worst Ad, Best Hook, and Worst Hook identification to the release-level Ad Lab Performance summary using CPR-based ranking with minimum spend and result thresholds.
+- Added a "Generate Draft Learning" button to the Campaign Learning section that pre-fills Campaign Summary, What Worked, What Failed, Next Test, and Decision fields from the current Ad Lab Performance snapshot.
 - Draft learnings include source label, reporting date range, attribution setting, and key metrics; they do not autosave and require manual review.
 - Added an Instant Unlock experience to the public `/exclusives` capture flow so visitors can access an external private link immediately after submitting their name and email.
 - Added admin Unlock Experience controls with two modes: Instant Unlock (default) and Email Only, plus an "Also send link by email" checkbox for hybrid delivery.
@@ -702,38 +714,38 @@ After applying RLS changes:
 
 ### 2026-04-30 20:27 -04:00
 
-- Added snapshot-aware Ads Analytics batch metadata: `exportedAt`, `attributionSetting`, and `batchType`.
+- Added snapshot-aware Ad Lab batch metadata: `exportedAt`, `attributionSetting`, and `batchType`.
 - Defaulted new Meta imports to `Rolling Snapshot` with the current attribution setting of `7-day click, 1-day view, 1-day engagement`.
-- Updated `/admin/ads/import`, `/admin/ads`, and `/admin/ads/[batchId]` to display batch type, export time, attribution setting, and reporting window.
+- Updated `/admin/ad-lab/import`, `/admin/ad-lab`, and `/admin/ad-lab/[batchId]` to display batch type, export time, attribution setting, and reporting window.
 - Added rolling-snapshot helper copy warning that overlapping Meta snapshots should not be summed together.
 - Added comparison helper logic that labels overlapping ranges as Snapshot Comparison and only permits combined totals for non-overlapping Fixed Period batches.
 
 ### 2026-04-30 19:54 -04:00
 
-- Added safe Ads Analytics batch deletion from both `/admin/ads` import history and `/admin/ads/[batchId]`.
+- Added safe Ad Lab batch deletion from both `/admin/ad-lab` import history and `/admin/ad-lab/[batchId]`.
 - Batch deletion requires typing `DELETE` and removes only the selected import batch, its creative rows, row-level Copy Lab links, and campaign learnings.
 - Added a route-specific not-found state for deleted/missing ad batches.
 - Added Copy Lab link carryover so new imports for the same release auto-link matching normalized ad names from the most recent previous batch.
 
 ### 2026-04-30 19:38 -04:00
 
-- Fixed Ads Analytics Meta CSV merge logic so imported metric-view files merge by normalized `adName + reportingStart + reportingEnd`, no longer by `adSetName`.
+- Fixed Ad Lab Meta CSV merge logic so imported metric-view files merge by normalized `adName + reportingStart + reportingEnd`, no longer by `adSetName`.
 - Treats `adSetName` as an enrichment field, keeping the first non-empty value and logging conflicts instead of creating duplicate ad rows.
 - Added source-aware, non-additive merge behavior so delivery, engagement, and video CSV views fill their trusted metric groups without doubling spend, impressions, reach, results, clicks, or video metrics.
 - Added `npm run smoke:ads-merge` as a regression check for the scenario where only one uploaded Meta CSV contains `Ad set name`.
 
 ### 2026-04-30 19:05 -04:00
 
-- Added Ads Analytics v1 under `/admin/ads` with CSV-first Meta report imports, import history, release filtering, and batch dashboards.
+- Added Ad Lab v1 under `/admin/ad-lab` with CSV-first Meta report imports, import history, release filtering, and batch dashboards.
 - Added normalized Prisma tables for ad import batches, creative report rows, ad-to-Copy-Lab links, and campaign learnings.
 - Added Meta CSV parsing for common report columns, safe number/date parsing, multi-file row merging, and graceful missing-column handling.
 - Added creative leaderboards, rule-based performance signals, strategy breakdowns by Hook Type, Content Type, Song Section, and combo, plus optional `/links` UTM follow-through matching.
 - Added campaign learning save/reload support and surfaced the latest release-specific ad learning on release detail pages.
-- Updated backups and DB snapshot scripts so Ads Analytics data is included in exports/imports.
+- Updated backups and DB snapshot scripts so Ad Lab data is included in exports/imports.
 
 ### 2026-04-30 15:01 -04:00
 
-- Expanded Copy Lab for future Ads Analytics tagging with `hookType`, `contentType`, `songSection`, and `creativeNotes` fields in Prisma.
+- Expanded Copy Lab for future Ad Lab tagging with `hookType`, `contentType`, `songSection`, and `creativeNotes` fields in Prisma.
 - Kept the legacy Copy Lab `type` column as a compatibility fallback while moving the app UI to the clearer Hook Type label.
 - Added Creative Strategy controls to Copy Lab create/edit flows and a Strategy Summary sidebar on copy detail pages.
 - Updated Copy Lab list and release-linked copy cards to show Hook Type plus lightweight strategy tags.
@@ -871,7 +883,7 @@ After applying RLS changes:
 - Added Postgres deployment support with `prisma/schema.postgres.prisma`, Postgres generate/push scripts, and a Vercel build command that generates Prisma from the Postgres schema.
 - Added durable object-storage support through `ASSET_STORAGE_DRIVER=vercel-blob` and `@vercel/blob`, while preserving local disk storage for local/Docker runs.
 - Added first-party `/links` analytics tracking for page views, outbound link conversions, CTR, unique visitors, platform breakdowns, referrers, and UTM/source data.
-- Built the protected `/admin/analytics` dashboard and added an admin Site Settings control-map panel confirming public copy, images, links, and tracking are editable without code.
+- Built the protected `/admin/attribution` dashboard and added an admin Site Settings control-map panel confirming public copy, images, links, and tracking are editable without code.
 
 ### 2026-04-24 22:25 -04:00
 

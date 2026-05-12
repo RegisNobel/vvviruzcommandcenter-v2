@@ -100,7 +100,7 @@ function getBreakdownHref({
     params.set("releaseId", releaseId);
   }
 
-  return `/admin/analytics?${params.toString()}#daily-breakdown`;
+  return `/admin/attribution?${params.toString()}#daily-breakdown`;
 }
 
 function MetricCard({
@@ -222,7 +222,7 @@ function CampaignSelector({
 }) {
   return (
     <form
-      action="/admin/analytics"
+      action="/admin/attribution"
       className="grid gap-3 rounded-[22px] border border-[#30343b] bg-[#101216] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
     >
       <label className="block">
@@ -322,7 +322,7 @@ function SignalList({
   );
 }
 
-export default async function AdminAnalyticsPage({
+export default async function AdminAttributionPage({
   searchParams
 }: {
   searchParams: Promise<{breakdown?: string; date?: string; releaseId?: string}>;
@@ -355,7 +355,7 @@ export default async function AdminAnalyticsPage({
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Campaign Command Dashboard
+                Attribution Dashboard
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 One view for spend, traffic, and stream intent
@@ -397,7 +397,7 @@ export default async function AdminAnalyticsPage({
               <MetricCard
                 icon={Target}
                 label="Meta LPV"
-                note="Meta landing page views from Ads v2 imports."
+                note="Meta landing page views from Ad Lab v2 imports."
                 value={formatNumber(commandDashboard.overview.meta_landing_page_views)}
               />
               <MetricCard
@@ -767,8 +767,8 @@ export default async function AdminAnalyticsPage({
                 source, link, and UTM inspection across the full link hub.
               </p>
             </div>
-            <Link className="btn-secondary" href="/admin/ads">
-              Open Ads Analytics
+            <Link className="btn-secondary" href="/admin/ad-lab">
+              Open Ad Lab
               <ArrowRight size={16} />
             </Link>
           </div>

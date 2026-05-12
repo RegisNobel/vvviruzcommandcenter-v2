@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
-  CalendarClock,
   Clapperboard,
   Captions,
   Globe2,
@@ -22,7 +21,7 @@ export default function AdminHomePage() {
                 vvviruz&apos; command center
               </h1>
               <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-                Keep releases, Copy Lab, Audience, Analytics, and public site
+                Keep releases, Copy Lab, Audience, Attribution, and public site
                 planning in one protected workspace. Pair hooks with captions,
                 track rollout progress, capture subscribers, and stay inside a
                 clean single-user setup.
@@ -58,9 +57,9 @@ export default function AdminHomePage() {
                     </p>
                   </div>
                   <div className="rounded-[22px] bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-slate-900">Analytics</p>
+                    <p className="text-sm font-semibold text-slate-900">Attribution</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Reserved for performance tracking and future reporting views.
+                      Read campaign attribution, link-hub behavior, and performance signals.
                     </p>
                   </div>
                 </div>
@@ -116,19 +115,19 @@ export default function AdminHomePage() {
 
           <Link
             className="panel group px-6 py-7 transition hover:-translate-y-0.5 hover:border-coral/40 hover:bg-white/80"
-            href="/admin/analytics"
+            href="/admin/attribution"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="pill">
                   <BarChart3 size={12} />
-                  Analytics
+                  Attribution
                 </div>
                 <h2 className="mt-4 text-2xl font-semibold text-ink">
-                  Open the analytics workspace
+                  Open the attribution workspace
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                  Keep a dedicated place ready for performance tracking and reporting.
+                  Compare Meta traffic, link-hub views, and streaming intent.
                 </p>
               </div>
               <ArrowRight className="mt-1 transition group-hover:translate-x-1" size={20} />
@@ -159,13 +158,13 @@ export default function AdminHomePage() {
 
           <Link
             className="panel group px-6 py-7 transition hover:-translate-y-0.5 hover:border-coral/40 hover:bg-white/80"
-            href="/admin/ads"
+            href="/admin/ad-lab"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="pill">
                   <Megaphone size={12} />
-                  Ads
+                  Ad Lab
                 </div>
                 <h2 className="mt-4 text-2xl font-semibold text-ink">
                   Import Meta CSV reports
@@ -179,28 +178,6 @@ export default function AdminHomePage() {
             </div>
           </Link>
 
-
-          <Link
-            className="panel group px-6 py-7 transition hover:-translate-y-0.5 hover:border-coral/40 hover:bg-white/80"
-            href="/admin/releases/roadmap"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="pill">
-                  <CalendarClock size={12} />
-                  Roadmap
-                </div>
-                <h2 className="mt-4 text-2xl font-semibold text-ink">
-                  Open the 2026 roadmap
-                </h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                  Scan the 2026 first-Wednesday release plan, stage progress, blockers,
-                  copy, and tasks without digging through the full catalog.
-                </p>
-              </div>
-              <ArrowRight className="mt-1 transition group-hover:translate-x-1" size={20} />
-            </div>
-          </Link>
           <Link
             className="panel group px-6 py-7 transition hover:-translate-y-0.5 hover:border-coral/40 hover:bg-white/80"
             href="/admin/releases"

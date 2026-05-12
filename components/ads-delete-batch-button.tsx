@@ -5,7 +5,7 @@ import {useRouter} from "next/navigation";
 import {Trash2, X} from "lucide-react";
 
 export function AdsDeleteBatchButton({
-  afterDeleteHref = "/admin/ads?deleted=1",
+  afterDeleteHref = "/admin/ad-lab?deleted=1",
   batchId,
   batchName,
   compact = false
@@ -89,7 +89,7 @@ export function AdsDeleteBatchButton({
             <div className="mt-5 space-y-4 text-sm leading-6 text-muted">
               <p>
                 This will permanently delete{" "}
-                <span className="font-semibold text-ink">{batchName}</span> from Ads Analytics.
+                <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
               </p>
               <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
                 <p className="font-semibold text-[#f0d7d2]">This will delete:</p>

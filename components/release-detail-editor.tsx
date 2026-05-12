@@ -1752,13 +1752,13 @@ export function ReleaseDetailEditor({
             <section className={`${pagePanelClass} space-y-6 px-4 py-5 sm:px-6 sm:py-6`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className={pageLabelClass}>Ads Analytics</p>
+                  <p className={pageLabelClass}>Ad Lab</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                    Ads Performance
+                    Ad Lab Performance
                   </h2>
                 </div>
-                <Link className={pageSecondaryButtonClass} href={`/admin/ads?releaseId=${release.id}`}>
-                  Open Ads
+                <Link className={pageSecondaryButtonClass} href={`/admin/ad-lab?releaseId=${release.id}`}>
+                  Open Ad Lab
                 </Link>
               </div>
 
@@ -2028,7 +2028,7 @@ export function ReleaseDetailEditor({
                     
                     <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-5">
                       <div className="mb-5 rounded-[16px] border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-xs leading-5 text-blue-200">
-                        Draft is based on current Ads Analytics data. Review before saving.
+                        Draft is based on current Ad Lab data. Review before saving.
                       </div>
                       
                       <div className="space-y-4">
@@ -2119,7 +2119,7 @@ export function ReleaseDetailEditor({
                       {adMetrics.batches.map((batch) => (
                         <Link 
                           key={batch.id} 
-                          href={`/admin/ads/${batch.id}`}
+                          href={`/admin/ad-lab/${batch.id}`}
                           className="flex items-center justify-between rounded-[18px] border border-[#31353b] bg-[#14171b] px-4 py-3 text-sm transition hover:border-[#424852] hover:bg-[#1a1d23]"
                         >
                           <div>

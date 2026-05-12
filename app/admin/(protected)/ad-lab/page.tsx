@@ -82,7 +82,7 @@ function MetricCard({
   );
 }
 
-export default async function AdminAdsPage({
+export default async function AdminAdLabPage({
   searchParams
 }: {
   searchParams: Promise<{deleted?: string; releaseId?: string}>;
@@ -92,8 +92,8 @@ export default async function AdminAdsPage({
     releases.some((release) => release.id === releaseId) && releaseId ? releaseId : null;
   const {batches, overview} = await readAdsHomeStats(activeReleaseId);
   const deletedHref = activeReleaseId
-    ? `/admin/ads?releaseId=${encodeURIComponent(activeReleaseId)}&deleted=1`
-    : "/admin/ads?deleted=1";
+    ? `/admin/ad-lab?releaseId=${encodeURIComponent(activeReleaseId)}&deleted=1`
+    : "/admin/ad-lab?deleted=1";
 
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
@@ -103,10 +103,10 @@ export default async function AdminAdsPage({
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Ads Analytics v2
+                Ad Lab v2
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Meta Ads Analytics
+                Ad Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 CSV-first ad reporting for campaign readouts, landing-page handoff,
@@ -114,7 +114,7 @@ export default async function AdminAdsPage({
               </p>
             </div>
 
-            <Link className="action-button-primary" href="/admin/ads/import">
+            <Link className="action-button-primary" href="/admin/ad-lab/import">
               <UploadCloud size={16} />
               Import Meta CSV
             </Link>
@@ -159,7 +159,7 @@ export default async function AdminAdsPage({
                   ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
                   : "border-[#30343b] bg-[#15181c] text-[#d5d9df]"
               }`}
-              href="/admin/ads"
+              href="/admin/ad-lab"
             >
               All Releases
             </Link>
@@ -170,7 +170,7 @@ export default async function AdminAdsPage({
                     ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
                     : "border-[#30343b] bg-[#15181c] text-[#d5d9df]"
                 }`}
-                href={`/admin/ads?releaseId=${release.id}`}
+                href={`/admin/ad-lab?releaseId=${release.id}`}
                 key={release.id}
               >
                 {release.title}
@@ -191,7 +191,7 @@ export default async function AdminAdsPage({
                     {batch.name || "Imported Meta Report"}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    {batch.release_title ?? "No linked release"} ·{" "}
+                    {batch.release_title ?? "No linked release"} /{" "}
                     {formatDate(batch.reporting_start)} to {formatDate(batch.reporting_end)}
                   </p>
                   <p className="mt-2 text-xs leading-5 text-muted">
@@ -248,7 +248,7 @@ export default async function AdminAdsPage({
                   />
                   <Link
                     className="action-button-secondary !w-auto"
-                    href={`/admin/ads/${batch.id}`}
+                    href={`/admin/ad-lab/${batch.id}`}
                   >
                     Open
                     <ArrowRight size={16} />

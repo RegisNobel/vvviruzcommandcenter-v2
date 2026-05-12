@@ -59,7 +59,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
         throw new Error(payload.message ?? "Import failed.");
       }
 
-      router.push(`/admin/ads/${payload.batchId}`);
+      router.push(`/admin/ad-lab/${payload.batchId}`);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Import failed unexpectedly.");
@@ -75,7 +75,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
             <div>
               <div className="pill">Meta CSV import</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Import Ads Report
+                Import Ad Lab Report
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Upload one or more Meta report CSV exports. The importer normalizes
@@ -84,9 +84,9 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
               </p>
             </div>
 
-            <Link className="action-button-secondary" href="/admin/ads">
+            <Link className="action-button-secondary" href="/admin/ad-lab">
               <ArrowLeft size={16} />
-              Back to Ads
+              Back to Ad Lab
             </Link>
           </div>
         </section>
