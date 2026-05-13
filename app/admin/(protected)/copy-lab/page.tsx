@@ -22,6 +22,12 @@ type CopyGroup = {
   copies: CopySummary[];
 };
 
+type CopyVariantSet = {
+  key: string;
+  copies: CopySummary[];
+  representative: CopySummary;
+};
+
 const copyGroupOptions: Array<{
   key: CopyGroupBy;
   label: string;
@@ -90,6 +96,47 @@ function getGroupHref(groupBy: CopyGroupBy) {
 
 function formatCopyCount(count: number) {
   return `${count} cop${count === 1 ? "y" : "ies"}`;
+}
+
+function normalizeIdeaText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getCopyVariantKey(copy: CopySummary) {
+  return [
+    copy.release_id ?? "standalone",
+    normalizeIdeaText(copy.hook),
+    normalizeIdeaText(copy.caption),
+    copy.hook_type,
+    copy.song_section,
+    normalizeIdeaText(copy.creative_notes)
+  ].join("|");
+}
+
+function hasContentVariants(variantSet: CopyVariantSet) {
+  return new Set(variantSet.copies.map((copy) => copy.content_type)).size > 1;
+}
+
+function groupCopyVariants(copies: CopySummary[]) {
+  const variantSets = new Map<string, CopyVariantSet>();
+
+  for (const copy of copies) {
+    const key = getCopyVariantKey(copy);
+    const existingSet = variantSets.get(key);
+
+    if (existingSet) {
+      existingSet.copies.push(copy);
+      continue;
+    }
+
+    variantSets.set(key, {
+      key,
+      copies: [copy],
+      representative: copy
+    });
+  }
+
+  return Array.from(variantSets.values());
 }
 
 function getCopyGroup(
@@ -229,6 +276,80 @@ function CopyRow({
   );
 }
 
+function CopyVariantRow({
+  copyNumberById,
+  releaseTitle,
+  variantSet
+}: {
+  copyNumberById: Map<string, number>;
+  releaseTitle: string;
+  variantSet: CopyVariantSet;
+}) {
+  const {representative} = variantSet;
+
+  return (
+    <div className="bg-[#101319]/60 px-4 py-5 sm:px-6 sm:py-6">
+      <div className="grid gap-5 lg:grid-cols-[120px_minmax(0,1.05fr)_0.8fr_1.25fr_1fr_120px] lg:items-start">
+        <div className="pill w-fit">{variantSet.copies.length} variants</div>
+
+        <div className="min-w-0">
+          <p className="truncate text-lg font-semibold text-ink">
+            {getCopyHeading(representative)}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {truncate(representative.caption, "No caption written yet.")}
+          </p>
+          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-[#d7b45e]">
+            Same copy idea, different content executions
+          </p>
+        </div>
+
+        <div>
+          <p className="field-label">Hook Type</p>
+          <p className="mt-2 text-sm font-semibold text-ink">
+            {formatHookType(representative.hook_type)}
+          </p>
+        </div>
+
+        <div>
+          <p className="field-label">Content Variants</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {variantSet.copies.map((copy) => (
+              <Link
+                className="rounded-full border border-[#30343b] bg-[#151820] px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#d9dee5] transition hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
+                href={`/admin/copy-lab/${copy.id}`}
+                key={copy.id}
+                title={`Open copy #${copyNumberById.get(copy.id) ?? "?"}`}
+              >
+                {formatContentType(copy.content_type)}
+              </Link>
+            ))}
+          </div>
+          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted">
+            {formatSongSection(representative.song_section)}
+          </p>
+        </div>
+
+        <div>
+          <p className="field-label">Release</p>
+          <p className="mt-2 text-sm font-semibold text-ink">{releaseTitle}</p>
+          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-muted">
+            Updated {formatTimestamp(representative.updated_on)}
+          </p>
+        </div>
+
+        <Link
+          className="flex items-center justify-end gap-2 text-sm font-semibold text-ink transition hover:text-[#d7b45e]"
+          href={`/admin/copy-lab/${representative.id}`}
+        >
+          Open latest
+          <ArrowRight size={16} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default async function AdminCopyLabPage({
   searchParams
 }: {
@@ -328,19 +449,37 @@ export default async function AdminCopyLabPage({
               </summary>
 
               <div className="divide-y divide-[#252a31] border-t border-[#252a31]">
-                {group.copies.map((copy) => {
-                  const releaseTitle = copy.release_id
-                    ? (releaseTitleById.get(copy.release_id) ?? "Linked Release")
+                {(selectedGroupBy === "content-type"
+                  ? group.copies.map((copy) => ({
+                      key: copy.id,
+                      copies: [copy],
+                      representative: copy
+                    }))
+                  : groupCopyVariants(group.copies)
+                ).map((variantSet) => {
+                  const releaseTitle = variantSet.representative.release_id
+                    ? (releaseTitleById.get(variantSet.representative.release_id) ?? "Linked Release")
                     : "Standalone";
 
-                  return (
+                  if (hasContentVariants(variantSet)) {
+                    return (
+                      <CopyVariantRow
+                        copyNumberById={copyNumberById}
+                        key={variantSet.key}
+                        releaseTitle={releaseTitle}
+                        variantSet={variantSet}
+                      />
+                    );
+                  }
+
+                  return variantSet.copies.map((copy) => (
                     <CopyRow
                       copy={copy}
                       copyNumber={copyNumberById.get(copy.id) ?? 0}
                       key={copy.id}
                       releaseTitle={releaseTitle}
                     />
-                  );
+                  ));
                 })}
               </div>
             </details>

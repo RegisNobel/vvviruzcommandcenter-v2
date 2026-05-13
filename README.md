@@ -431,6 +431,11 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-13 00:33 -04:00
+
+- Enhanced Copy Lab grouping with automatic content-variant detection: duplicate copy ideas that only differ by content type now render as one variant row with clickable content-type pills.
+- Kept Content Type view separated by design while collapsing variants in Release, Hook Type, Song Section, and Flat views.
+
 ### 2026-05-12 23:53 -04:00
 
 - Improved Copy Lab library view readability with higher-contrast active grouping controls, clearer inactive pill states, and more scannable grouped-view helper text.
