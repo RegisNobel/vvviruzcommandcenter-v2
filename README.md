@@ -431,6 +431,10 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 20:20 -04:00
+
+- Tightened the Attribution Dashboard status badges so first-party tracking rows render as one compact, non-wrapping pill instead of splitting into stacked half-buttons.
+
 ### 2026-05-12 20:04 -04:00
 
 - Updated the Attribution Dashboard UTM Creative Matrix status badges so first-party-only rows now read as active first-party tracking instead of looking disabled.

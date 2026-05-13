@@ -55,7 +55,7 @@ function formatOptionalPercent(value: number | null | undefined) {
 
 function getTrackingStatusLabel(status: string) {
   if (status === "first_party_only") {
-    return "FIRST PARTY TRACKING";
+    return "1P TRACKING";
   }
 
   if (status === "meta_only") {
@@ -75,19 +75,19 @@ function getTrackingStatusLabel(status: string) {
 
 function getTrackingStatusClass(status: string) {
   if (status === "first_party_only") {
-    return "bg-indigo-950/40 text-indigo-300 border border-indigo-800/50 px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide";
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-indigo-800/50 bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-indigo-300";
   }
 
   if (status === "matched") {
-    return "rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-emerald-300";
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-emerald-300";
   }
 
   if (status === "meta_only") {
-    return "rounded-full border border-amber-800/50 bg-amber-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-amber-300";
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-amber-800/50 bg-amber-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-amber-300";
   }
 
   if (status === "missing_utm") {
-    return "rounded-full border border-red-800/50 bg-red-950/30 px-2.5 py-0.5 text-xs font-medium tracking-wide text-red-300";
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-red-800/50 bg-red-950/30 px-2.5 py-0.5 text-xs font-medium tracking-wide text-red-300";
   }
 
   return "pill";
@@ -730,7 +730,7 @@ export default async function AdminAttributionPage({
                               <p className="mt-1 text-xs text-muted">{row.ad_name}</p>
                             ) : null}
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="whitespace-nowrap px-4 py-4">
                             <span className={getTrackingStatusClass(row.tracking_status)}>
                               {getTrackingStatusLabel(row.tracking_status)}
                             </span>
