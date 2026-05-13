@@ -431,6 +431,17 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 23:07 -04:00
+
+- Upgraded Ad Lab batch pages with a computed Campaign Readout that derives release, campaign, date range, spend, top/worst creative, best/worst hook, best content type, quality ratings, main lesson, next test, and decision from imported Meta data plus Copy Lab and `/links` follow-through.
+- Added an Attribution Confidence Score with high, medium, and low confidence warnings so weak spend/click/view samples are treated as directional instead of decisive.
+- Reframed saved campaign learning fields as optional human context instead of the primary decision layer.
+
+### 2026-05-12 22:27 -04:00
+
+- Added grouped Copy Lab library views so copy entries can be organized by release, hook type, content type, song section, or a flat recently-updated list.
+- Made release grouping the default Copy Lab view and rendered groups as collapsible panels to reduce endless scrolling as the copy bank grows.
+
 ### 2026-05-12 20:20 -04:00
 
 - Tightened the Attribution Dashboard status badges so first-party tracking rows render as one compact, non-wrapping pill instead of splitting into stacked half-buttons.

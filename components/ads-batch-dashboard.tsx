@@ -255,6 +255,437 @@ function StrategyTable({
   );
 }
 
+type ReadoutQuality = {
+  detail: string;
+  label: string;
+  tone: "good" | "ok" | "bad" | "neutral";
+};
+
+type ConfidenceReadout = {
+  detail: string;
+  level: "High confidence" | "Medium confidence" | "Low confidence";
+  reasons: string[];
+  warnings: string[];
+};
+
+type CampaignReadout = {
+  attributionConfidence: ConfidenceReadout;
+  bestContentType: string;
+  bestHook: string;
+  campaign: string;
+  dateRange: string;
+  decision: string;
+  landingPageViewQuality: ReadoutQuality;
+  mainLesson: string;
+  nextTest: string;
+  release: string;
+  spend: string;
+  streamingOutboundClickQuality: ReadoutQuality;
+  topCreative: string;
+  worstCreative: string;
+  worstHook: string;
+};
+
+function getMostCommonValue(values: string[]) {
+  const counts = new Map<string, number>();
+
+  for (const value of values) {
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue) {
+      continue;
+    }
+
+    counts.set(normalizedValue, (counts.get(normalizedValue) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries()).sort((left, right) => right[1] - left[1])[0]?.[0] ?? "";
+}
+
+function getFollowThroughMap(detail: AdImportBatchDetail) {
+  return new Map(detail.link_follow_through.map((row) => [row.ad_report_id, row]));
+}
+
+function getOutboundClickTotal(detail: AdImportBatchDetail) {
+  return detail.link_follow_through.reduce(
+    (total, row) => total + row.outbound_streaming_clicks,
+    0
+  );
+}
+
+function getCreativeScore(
+  report: AdCreativeReportRecord,
+  followThroughByReportId: Map<string, AdImportBatchDetail["link_follow_through"][number]>
+) {
+  const followThrough = followThroughByReportId.get(report.id);
+
+  return (
+    (report.results ?? 0) * 20 +
+    (followThrough?.outbound_streaming_clicks ?? 0) * 14 +
+    (report.landing_page_views ?? 0) * 5 +
+    (report.link_clicks ?? 0) * 2 +
+    (report.post_saves ?? 0) * 3 +
+    (report.post_shares ?? 0) * 2 +
+    (report.instagram_follows ?? 0) * 3 +
+    (report.video_100 ?? 0) * 0.1 -
+    (report.spend ?? 0) * 0.25
+  );
+}
+
+function getTopCreative(
+  reports: AdCreativeReportRecord[],
+  followThroughByReportId: Map<string, AdImportBatchDetail["link_follow_through"][number]>
+) {
+  return [...reports].sort(
+    (left, right) =>
+      getCreativeScore(right, followThroughByReportId) -
+      getCreativeScore(left, followThroughByReportId)
+  )[0] ?? null;
+}
+
+function getWorstCreative(
+  detail: AdImportBatchDetail,
+  followThroughByReportId: Map<string, AdImportBatchDetail["link_follow_through"][number]>
+) {
+  const averageSpend = detail.report_count > 0 ? detail.spend / detail.report_count : 0;
+  const minimumSpend = Math.max(1, averageSpend * 0.4);
+  const eligibleReports = detail.reports.filter((report) => (report.spend ?? 0) >= minimumSpend);
+  const reports = eligibleReports.length > 0 ? eligibleReports : detail.reports;
+
+  return [...reports].sort(
+    (left, right) =>
+      getCreativeScore(left, followThroughByReportId) -
+      getCreativeScore(right, followThroughByReportId)
+  )[0] ?? null;
+}
+
+function getStrategyScore(row: AdStrategyBreakdownRow) {
+  return (
+    row.results * 20 +
+    row.landing_page_views * 5 +
+    row.link_clicks * 2 +
+    row.thru_plays * 0.5 +
+    row.video_100 * 0.25 -
+    (row.cost_per_landing_page_view ?? 0)
+  );
+}
+
+function getBestStrategy(rows: AdStrategyBreakdownRow[]) {
+  return rows
+    .filter((row) => row.label !== "Unlinked")
+    .sort((left, right) => getStrategyScore(right) - getStrategyScore(left))[0] ?? null;
+}
+
+function getWorstStrategy(rows: AdStrategyBreakdownRow[]) {
+  return rows
+    .filter((row) => row.label !== "Unlinked" && row.spend >= 1)
+    .sort((left, right) => getStrategyScore(left) - getStrategyScore(right))[0] ?? null;
+}
+
+function getLandingPageViewQuality(detail: AdImportBatchDetail): ReadoutQuality {
+  if (detail.link_clicks <= 0) {
+    return {
+      detail: "No Meta link clicks are present, so landing-page handoff cannot be judged yet.",
+      label: "No signal",
+      tone: "neutral"
+    };
+  }
+
+  if (detail.landing_page_views <= 0) {
+    return {
+      detail: "Link clicks are present, but landing-page views are missing. Import the Performance and Clicks export or audit landing-page load quality.",
+      label: "Weak",
+      tone: "bad"
+    };
+  }
+
+  const rate = detail.click_to_landing_rate ?? calculateRatio(detail.landing_page_views, detail.link_clicks);
+
+  if ((rate ?? 0) >= 60) {
+    return {
+      detail: `${formatPercent(rate)} of link clicks became landing-page views. The click-to-page handoff looks strong.`,
+      label: "Strong",
+      tone: "good"
+    };
+  }
+
+  if ((rate ?? 0) >= 35) {
+    return {
+      detail: `${formatPercent(rate)} of link clicks became landing-page views. The handoff is usable, but worth watching.`,
+      label: "Usable",
+      tone: "ok"
+    };
+  }
+
+  return {
+    detail: `${formatPercent(rate)} of link clicks became landing-page views. This points to traffic quality, page-load, or message-match friction.`,
+    label: "Weak",
+    tone: "bad"
+  };
+}
+
+function getStreamingOutboundClickQuality(detail: AdImportBatchDetail): ReadoutQuality {
+  const outboundClicks = getOutboundClickTotal(detail);
+  const firstPartyViews = detail.link_follow_through.reduce((total, row) => total + row.links_page_views, 0);
+
+  if (firstPartyViews <= 0) {
+    return {
+      detail: "No matching first-party /links views are available for this batch yet.",
+      label: "No signal",
+      tone: "neutral"
+    };
+  }
+
+  const rate = calculateRatio(outboundClicks, firstPartyViews);
+
+  if (outboundClicks <= 0) {
+    return {
+      detail: "Matched /links views exist, but no streaming outbound clicks are tied to those UTMs yet.",
+      label: "Weak",
+      tone: "bad"
+    };
+  }
+
+  if ((rate ?? 0) >= 30) {
+    return {
+      detail: `${formatPercent(rate)} of matched /links views clicked out to a streaming platform. Intent quality is strong.`,
+      label: "Strong",
+      tone: "good"
+    };
+  }
+
+  if ((rate ?? 0) >= 12) {
+    return {
+      detail: `${formatPercent(rate)} of matched /links views clicked out to streaming. Intent quality is usable.`,
+      label: "Usable",
+      tone: "ok"
+    };
+  }
+
+  return {
+    detail: `${formatPercent(rate)} of matched /links views clicked out to streaming. The page or offer may need a stronger push.`,
+    label: "Weak",
+    tone: "bad"
+  };
+}
+
+function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadout {
+  const warnings: string[] = [];
+  const reasons: string[] = [];
+  const outboundClicks = getOutboundClickTotal(detail);
+  const reportsWithUtm = detail.reports.filter((report) => report.utm_campaign || report.utm_content).length;
+  const utmCoverage = calculateRatio(reportsWithUtm, detail.reports.length);
+  let score = 0;
+
+  if (detail.spend >= 30) {
+    score += 1;
+    reasons.push("Spend is high enough to read beyond noise.");
+  } else {
+    warnings.push("Spend is still light; do not let a tiny test overrule stronger future data.");
+  }
+
+  if (detail.link_clicks >= 100) {
+    score += 1;
+    reasons.push("Meta link-click volume is meaningful.");
+  } else {
+    warnings.push("Link-click volume is thin.");
+  }
+
+  if (detail.landing_page_views >= 50) {
+    score += 1;
+    reasons.push("Landing-page view volume is usable.");
+  } else {
+    warnings.push("Landing-page view volume is low.");
+  }
+
+  if (outboundClicks >= 15) {
+    score += 1;
+    reasons.push("Streaming outbound click volume is usable.");
+  } else {
+    warnings.push("Streaming outbound click volume is low.");
+  }
+
+  if ((utmCoverage ?? 0) >= 85) {
+    score += 1;
+    reasons.push("Most imported ads have campaign/content UTM values.");
+  } else {
+    warnings.push("UTM coverage is incomplete, so ad-level attribution may be blurry.");
+  }
+
+  if (detail.batch_type === "Release-to-Date" || detail.batch_type === "Full Campaign" || detail.batch_type === "Fixed Period") {
+    score += 1;
+    reasons.push(`${detail.batch_type} exports are cleaner for campaign decisions than overlapping snapshots.`);
+  } else {
+    warnings.push("Rolling snapshots can overlap; treat comparisons as directional.");
+  }
+
+  if (score >= 5) {
+    return {
+      detail: "Strong enough to make a campaign decision, assuming the CSV export covers the intended window.",
+      level: "High confidence",
+      reasons,
+      warnings
+    };
+  }
+
+  if (score >= 3) {
+    return {
+      detail: "Useful directional signal, but keep the next test conservative.",
+      level: "Medium confidence",
+      reasons,
+      warnings
+    };
+  }
+
+  return {
+    detail: "Weak signal. Use this readout to choose what to test next, not to declare a winner.",
+    level: "Low confidence",
+    reasons,
+    warnings
+  };
+}
+
+function getComputedDecision({
+  confidence,
+  detail,
+  landingQuality,
+  streamingQuality,
+  topCreative
+}: {
+  confidence: ConfidenceReadout;
+  detail: AdImportBatchDetail;
+  landingQuality: ReadoutQuality;
+  streamingQuality: ReadoutQuality;
+  topCreative: AdCreativeReportRecord | null;
+}) {
+  const outboundClicks = getOutboundClickTotal(detail);
+
+  if (confidence.level === "Low confidence") {
+    return "Iterate";
+  }
+
+  if (detail.spend >= 40 && detail.link_clicks <= 5 && outboundClicks <= 1) {
+    return "Retire";
+  }
+
+  if (landingQuality.tone === "bad" && detail.link_clicks >= 50) {
+    return "Retest with new hook";
+  }
+
+  if (streamingQuality.tone === "bad" && detail.landing_page_views >= 25) {
+    return "Retest with new visual";
+  }
+
+  if (
+    topCreative &&
+    (topCreative.results ?? 0) > 0 &&
+    landingQuality.tone === "good" &&
+    streamingQuality.tone !== "bad"
+  ) {
+    return "Scale";
+  }
+
+  if (detail.spend >= 50 && outboundClicks <= 2) {
+    return "Pause";
+  }
+
+  return "Iterate";
+}
+
+function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
+  const followThroughByReportId = getFollowThroughMap(detail);
+  const topCreative = getTopCreative(detail.reports, followThroughByReportId);
+  const worstCreative = getWorstCreative(detail, followThroughByReportId);
+  const bestHook = getBestStrategy(detail.strategy_breakdowns.hook_type);
+  const worstHook = getWorstStrategy(detail.strategy_breakdowns.hook_type);
+  const bestContentType = getBestStrategy(detail.strategy_breakdowns.content_type);
+  const landingPageViewQuality = getLandingPageViewQuality(detail);
+  const streamingOutboundClickQuality = getStreamingOutboundClickQuality(detail);
+  const attributionConfidence = getAttributionConfidence(detail);
+  const campaign =
+    detail.name ||
+    getMostCommonValue(detail.reports.map((report) => report.campaign_name)) ||
+    "Imported Meta campaign";
+  const decision = getComputedDecision({
+    confidence: attributionConfidence,
+    detail,
+    landingQuality: landingPageViewQuality,
+    streamingQuality: streamingOutboundClickQuality,
+    topCreative
+  });
+  const topCreativeName = topCreative?.ad_name || "No creative signal yet";
+  const bestHookLabel = bestHook ? formatStrategyValue(bestHook.label, "hook") : "No linked hook signal yet";
+
+  return {
+    attributionConfidence,
+    bestContentType: bestContentType
+      ? formatStrategyValue(bestContentType.label, "content")
+      : "No linked content signal yet",
+    bestHook: bestHookLabel,
+    campaign,
+    dateRange: `${formatDate(detail.reporting_start)} to ${formatDate(detail.reporting_end)}`,
+    decision,
+    landingPageViewQuality,
+    mainLesson:
+      topCreative && bestHook
+        ? `${topCreativeName} is leading the current read. ${bestHookLabel} is the strongest linked hook angle so far.`
+        : "The campaign needs more linked Copy Lab and/or Meta signal before a durable lesson is available.",
+    nextTest:
+      decision === "Scale"
+        ? `Increase budget carefully around ${topCreativeName} and keep the same UTM discipline.`
+        : decision === "Retest with new hook"
+          ? "Keep the strongest visual direction, but test a sharper hook and clearer promise."
+          : decision === "Retest with new visual"
+            ? "Keep the strongest hook, but test a new visual direction or stronger first-frame pattern."
+            : decision === "Retire"
+              ? "Stop spending on this direction and rebuild the creative from a different angle."
+              : "Run the next test with one controlled change and wait for stronger confidence before scaling.",
+    release: detail.release_title || "Standalone / no release linked",
+    spend: formatMoney(detail.spend),
+    streamingOutboundClickQuality,
+    topCreative: topCreativeName,
+    worstCreative: worstCreative?.ad_name || "No weak creative isolated yet",
+    worstHook: worstHook ? formatStrategyValue(worstHook.label, "hook") : "No weak hook isolated yet"
+  };
+}
+
+function getQualityClass(tone: ReadoutQuality["tone"]) {
+  if (tone === "good") {
+    return "border-emerald-800/50 bg-emerald-950/30 text-emerald-200";
+  }
+
+  if (tone === "ok") {
+    return "border-amber-800/50 bg-amber-950/30 text-amber-200";
+  }
+
+  if (tone === "bad") {
+    return "border-red-800/50 bg-red-950/30 text-red-200";
+  }
+
+  return "border-[#30343b] bg-[#121418] text-muted";
+}
+
+function getConfidenceClass(level: ConfidenceReadout["level"]) {
+  if (level === "High confidence") {
+    return "border-emerald-800/50 bg-emerald-950/30 text-emerald-200";
+  }
+
+  if (level === "Medium confidence") {
+    return "border-amber-800/50 bg-amber-950/30 text-amber-200";
+  }
+
+  return "border-red-800/50 bg-red-950/30 text-red-200";
+}
+
+function ReadoutItem({label, value}: {label: string; value: string}) {
+  return (
+    <div className="rounded-[18px] border border-[#252a31] bg-[#171a1f] px-4 py-3">
+      <p className="field-label">{label}</p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-ink">{value}</p>
+    </div>
+  );
+}
+
 export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
   const router = useRouter();
   const [hookFilter, setHookFilter] = useState<FilterValue>("all");
@@ -317,20 +748,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
     : null;
   const effectiveCpm = calculateCost(detail.spend * 1000, detail.impressions);
   const videoHoldRate = calculateRatio(totalVideo100, totalThreeSecondPlays);
-  const decisionNotes = [
-    detail.results > 0
-      ? `Meta is returning ${formatNumber(detail.results)} result${detail.results === 1 ? "" : "s"} for this batch.`
-      : "No Meta results imported yet; judge this batch by clicks, landing views, and attention until results populate.",
-    detail.landing_page_views > 0
-      ? `${formatPercent(detail.click_to_landing_rate)} of Meta link clicks became landing-page views.`
-      : "Landing-page views are not present in this import; include the Performance and Clicks export for handoff quality.",
-    totalThreeSecondPlays > 0
-      ? `${formatPercent(videoHoldRate)} of 3-second plays reached 100% completion.`
-      : "Video retention is not present in this import; include the Video Engagement export for attention quality.",
-    effectiveFrequency !== null
-      ? `Effective frequency is ${formatNumber(effectiveFrequency)}, useful for spotting saturation before CTR drops.`
-      : "Frequency is not available yet; include the Delivery export for saturation readouts."
-  ];
+  const campaignReadout = useMemo(() => createCampaignReadout(detail), [detail]);
 
   async function handleCopyLink(reportId: string, copyEntryId: string | null) {
     setPendingReportId(reportId);
@@ -495,18 +913,101 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <MetricCard label="100% Hold" note="100% plays divided by 3-second plays." value={formatPercent(videoHoldRate)} />
         </section>
 
-        <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
-          <p className="field-label">Decision Read</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {decisionNotes.map((note) => (
-              <div
-                className="rounded-[18px] border border-[#252a31] bg-[#171a1f] px-4 py-3 text-sm leading-6 text-muted"
-                key={note}
-              >
-                {note}
-              </div>
-            ))}
+        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="field-label">Computed Campaign Readout</p>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">
+                Decision: {campaignReadout.decision}
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                Auto-generated from Meta CSV metrics, Copy Lab links, and first-party
+                `/links` follow-through. Manual notes are optional context only.
+              </p>
+            </div>
+
+            <div
+              className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getConfidenceClass(
+                campaignReadout.attributionConfidence.level
+              )}`}
+            >
+              {campaignReadout.attributionConfidence.level}
+            </div>
           </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <ReadoutItem label="Release" value={campaignReadout.release} />
+            <ReadoutItem label="Campaign" value={campaignReadout.campaign} />
+            <ReadoutItem label="Date Range" value={campaignReadout.dateRange} />
+            <ReadoutItem label="Spend" value={campaignReadout.spend} />
+            <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
+            <ReadoutItem label="Worst Creative" value={campaignReadout.worstCreative} />
+            <ReadoutItem label="Best Hook" value={campaignReadout.bestHook} />
+            <ReadoutItem label="Worst Hook" value={campaignReadout.worstHook} />
+            <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div
+              className={`rounded-[22px] border px-4 py-4 ${getQualityClass(
+                campaignReadout.landingPageViewQuality.tone
+              )}`}
+            >
+              <p className="field-label">Landing Page View Quality</p>
+              <p className="mt-2 text-xl font-semibold">{campaignReadout.landingPageViewQuality.label}</p>
+              <p className="mt-2 text-sm leading-6">{campaignReadout.landingPageViewQuality.detail}</p>
+            </div>
+
+            <div
+              className={`rounded-[22px] border px-4 py-4 ${getQualityClass(
+                campaignReadout.streamingOutboundClickQuality.tone
+              )}`}
+            >
+              <p className="field-label">Streaming Outbound Click Quality</p>
+              <p className="mt-2 text-xl font-semibold">
+                {campaignReadout.streamingOutboundClickQuality.label}
+              </p>
+              <p className="mt-2 text-sm leading-6">
+                {campaignReadout.streamingOutboundClickQuality.detail}
+              </p>
+            </div>
+
+            <div
+              className={`rounded-[22px] border px-4 py-4 ${getConfidenceClass(
+                campaignReadout.attributionConfidence.level
+              )}`}
+            >
+              <p className="field-label">Attribution Confidence</p>
+              <p className="mt-2 text-xl font-semibold">
+                {campaignReadout.attributionConfidence.level}
+              </p>
+              <p className="mt-2 text-sm leading-6">
+                {campaignReadout.attributionConfidence.detail}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[22px] border border-[#252a31] bg-[#171a1f] px-4 py-4">
+              <p className="field-label">Main Lesson</p>
+              <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.mainLesson}</p>
+            </div>
+            <div className="rounded-[22px] border border-[#252a31] bg-[#171a1f] px-4 py-4">
+              <p className="field-label">Next Test</p>
+              <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.nextTest}</p>
+            </div>
+          </div>
+
+          {campaignReadout.attributionConfidence.warnings.length > 0 ? (
+            <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-4">
+              <p className="field-label text-[#d7b45e]">Read Before Trusting This</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-[#d7b45e]">
+                {campaignReadout.attributionConfidence.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
 
         {message ? (
@@ -784,12 +1285,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <form className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6" onSubmit={handleLearningSave}>
             <div>
-              <p className="field-label">Campaign Learnings</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Manual readout</h2>
+              <p className="field-label">Optional Human Context</p>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">Notes and overrides</h2>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                The campaign decision above is computed. Use this only for context the
+                data cannot know, like why a creative was paused or what you want to try next.
+              </p>
             </div>
 
             <label className="space-y-2">
-              <span className="field-label">Campaign Summary</span>
+              <span className="field-label">Human Summary</span>
               <textarea
                 className="field-input min-h-[100px]"
                 onChange={(event) =>
@@ -863,9 +1368,9 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
           <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
             <div>
-              <p className="field-label">Saved Learning</p>
+              <p className="field-label">Saved Human Context</p>
               <h2 className="mt-2 text-2xl font-semibold text-ink">
-                {detail.learning ? "Latest readout" : "No learning saved"}
+                {detail.learning ? "Latest note" : "No note saved"}
               </h2>
             </div>
             {detail.learning ? (
