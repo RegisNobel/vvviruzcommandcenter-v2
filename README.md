@@ -431,6 +431,16 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 20:04 -04:00
+
+- Updated the Attribution Dashboard UTM Creative Matrix status badges so first-party-only rows now read as active first-party tracking instead of looking disabled.
+- Adjusted the Campaign UTM breakdown card so long UTM strings wrap over multiple lines with the count pill aligned at the top-right of each item.
+
+### 2026-05-12 19:53 -04:00
+
+- Updated the public Appears On music cards so each filled platform URL renders as its own rounded button beside the track title.
+- Removed the single-card primary-link behavior that made the Appears On item only open the first available platform link.
+
 ### 2026-05-12 19:41 -04:00
 
 - Removed the standalone Roadmap link from the main admin navigation and admin overview page.

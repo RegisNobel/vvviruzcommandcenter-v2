@@ -53,6 +53,46 @@ function formatOptionalPercent(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? `${value}%` : "No signal yet";
 }
 
+function getTrackingStatusLabel(status: string) {
+  if (status === "first_party_only") {
+    return "FIRST PARTY TRACKING";
+  }
+
+  if (status === "meta_only") {
+    return "META CSV ONLY";
+  }
+
+  if (status === "missing_utm") {
+    return "MISSING UTM";
+  }
+
+  if (status === "matched") {
+    return "MATCHED";
+  }
+
+  return status.replace(/_/g, " ").toUpperCase();
+}
+
+function getTrackingStatusClass(status: string) {
+  if (status === "first_party_only") {
+    return "bg-indigo-950/40 text-indigo-300 border border-indigo-800/50 px-2.5 py-0.5 rounded-full text-xs font-medium tracking-wide";
+  }
+
+  if (status === "matched") {
+    return "rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-emerald-300";
+  }
+
+  if (status === "meta_only") {
+    return "rounded-full border border-amber-800/50 bg-amber-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-amber-300";
+  }
+
+  if (status === "missing_utm") {
+    return "rounded-full border border-red-800/50 bg-red-950/30 px-2.5 py-0.5 text-xs font-medium tracking-wide text-red-300";
+  }
+
+  return "pill";
+}
+
 function formatDate(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`);
 
@@ -131,11 +171,13 @@ function MetricCard({
 function BreakdownList({
   emptyText,
   items,
-  title
+  title,
+  wrapLabels = false
 }: {
   emptyText: string;
   items: AnalyticsBreakdownItem[];
   title: string;
+  wrapLabels?: boolean;
 }) {
   return (
     <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
@@ -144,13 +186,30 @@ function BreakdownList({
         {items.length > 0 ? (
           items.map((item) => (
             <div
-              className="flex items-center justify-between gap-4 rounded-[18px] border border-[#252a31] bg-[#0f1114] px-4 py-3"
+              className={
+                wrapLabels
+                  ? "rounded-[18px] border border-[#252a31] bg-[#0f1114] px-4 py-3"
+                  : "flex items-center justify-between gap-4 rounded-[18px] border border-[#252a31] bg-[#0f1114] px-4 py-3"
+              }
               key={item.label}
             >
-              <span className="min-w-0 truncate text-sm text-[#d9dee5]">{item.label}</span>
-              <span className="pill">
-                {formatNumber(item.conversions)} / {formatNumber(item.views)}
-              </span>
+              {wrapLabels ? (
+                <>
+                  <div className="flex items-start justify-end">
+                    <span className="pill shrink-0">
+                      {formatNumber(item.conversions)} / {formatNumber(item.views)}
+                    </span>
+                  </div>
+                  <p className="mt-2 break-all text-sm leading-6 text-[#d9dee5]">{item.label}</p>
+                </>
+              ) : (
+                <>
+                  <span className="min-w-0 truncate text-sm text-[#d9dee5]">{item.label}</span>
+                  <span className="pill shrink-0">
+                    {formatNumber(item.conversions)} / {formatNumber(item.views)}
+                  </span>
+                </>
+              )}
             </div>
           ))
         ) : (
@@ -672,7 +731,9 @@ export default async function AdminAttributionPage({
                             ) : null}
                           </td>
                           <td className="px-4 py-4">
-                            <span className="pill">{row.tracking_status.replace(/_/g, " ")}</span>
+                            <span className={getTrackingStatusClass(row.tracking_status)}>
+                              {getTrackingStatusLabel(row.tracking_status)}
+                            </span>
                           </td>
                           <td className="px-4 py-4">{formatMoney(row.spend)}</td>
                           <td className="px-4 py-4">{formatNumber(row.results)}</td>
@@ -743,6 +804,7 @@ export default async function AdminAttributionPage({
                   views: commandDashboard.overview.links_page_views
                 }))}
                 title="Campaign UTM"
+                wrapLabels
               />
             </section>
           </>
