@@ -431,6 +431,10 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-12 23:53 -04:00
+
+- Improved Copy Lab library view readability with higher-contrast active grouping controls, clearer inactive pill states, and more scannable grouped-view helper text.
+
 ### 2026-05-12 23:07 -04:00
 
 - Upgraded Ad Lab batch pages with a computed Campaign Readout that derives release, campaign, date range, spend, top/worst creative, best/worst hook, best content type, quality ratings, main lesson, next test, and decision from imported Meta data plus Copy Lab and `/links` follow-through.

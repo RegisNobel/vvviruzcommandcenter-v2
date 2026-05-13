@@ -269,26 +269,28 @@ export default async function AdminCopyLabPage({
         </section>
 
         <section className="panel px-4 py-5 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div className="max-w-3xl">
               <p className="field-label">Library view</p>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Grouped by{" "}
-                <span className="font-semibold text-ink">{selectedGroupOption?.label}</span>.
-                {selectedGroupOption ? ` ${selectedGroupOption.description}` : ""}
+                <span className="font-semibold text-ink">Grouped by {selectedGroupOption?.label}.</span>{" "}
+                <span className="text-[#aab2bd]">
+                  {selectedGroupOption?.description}
+                </span>
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 rounded-full border border-[#252a31] bg-[#0e1116] p-1.5">
               {copyGroupOptions.map((option) => {
                 const isActive = option.key === selectedGroupBy;
 
                 return (
                   <Link
+                    aria-current={isActive ? "page" : undefined}
                     className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
                       isActive
-                        ? "border-accent bg-accent text-[#16120a]"
-                        : "border-[#30343b] bg-[#111419] text-muted hover:border-accent/50 hover:text-ink"
+                        ? "border-[#d7b45e] bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
+                        : "border-[#30343b] bg-[#151820] text-[#d9dee5] hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
                     }`}
                     href={getGroupHref(option.key)}
                     key={option.key}
