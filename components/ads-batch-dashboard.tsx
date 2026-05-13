@@ -473,8 +473,16 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
   const warnings: string[] = [];
   const reasons: string[] = [];
   const outboundClicks = getOutboundClickTotal(detail);
-  const reportsWithUtm = detail.reports.filter((report) => report.utm_campaign || report.utm_content).length;
-  const utmCoverage = calculateRatio(reportsWithUtm, detail.reports.length);
+  const reportsWithFirstPartyMatches = new Set(
+    detail.link_follow_through
+      .filter((row) => row.links_page_views > 0 || row.outbound_streaming_clicks > 0)
+      .map((row) => row.ad_report_id)
+  );
+  const reportsWithAttributionSignal = detail.reports.filter(
+    (report) =>
+      (report.utm_campaign && report.utm_content) || reportsWithFirstPartyMatches.has(report.id)
+  ).length;
+  const attributionCoverage = calculateRatio(reportsWithAttributionSignal, detail.reports.length);
   let score = 0;
 
   if (detail.spend >= 30) {
@@ -505,11 +513,13 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
     warnings.push("Streaming outbound click volume is low.");
   }
 
-  if ((utmCoverage ?? 0) >= 85) {
+  if ((attributionCoverage ?? 0) >= 85) {
     score += 1;
-    reasons.push("Most imported ads have campaign/content UTM values.");
+    reasons.push("Most imported ads have explicit UTMs or matched first-party content values.");
   } else {
-    warnings.push("UTM coverage is incomplete, so ad-level attribution may be blurry.");
+    warnings.push(
+      "Some Meta rows lack exported URL parameters and do not match first-party content values, so ad-level attribution may be blurry."
+    );
   }
 
   if (detail.batch_type === "Release-to-Date" || detail.batch_type === "Full Campaign" || detail.batch_type === "Fixed Period") {
@@ -1073,7 +1083,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   <th className="px-3 py-3 font-semibold">Spend</th>
                   <th className="px-3 py-3 font-semibold">Results</th>
                   <th className="px-3 py-3 font-semibold">Cost / Result</th>
-                  <th className="px-3 py-3 font-semibold">Result Type</th>
+                  <th className="w-[220px] px-3 py-3 font-semibold">Result Type</th>
                   <th className="px-3 py-3 font-semibold">Link Clicks</th>
                   <th className="px-3 py-3 font-semibold">Landing Views</th>
                   <th className="px-3 py-3 font-semibold">Click to LPV</th>
@@ -1145,8 +1155,13 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                     <td className="px-3 py-4">{formatMoney(report.spend)}</td>
                     <td className="px-3 py-4">{formatNumber(report.results)}</td>
                     <td className="px-3 py-4">{formatMoney(report.cost_per_result)}</td>
-                    <td className="max-w-[180px] px-3 py-4 text-xs text-muted">
-                      {report.result_indicator || "N/A"}
+                    <td className="w-[220px] max-w-[220px] px-3 py-4 text-xs leading-5 text-muted">
+                      <span
+                        className="block max-w-[200px] break-all rounded-[14px] border border-[#252a31] bg-[#101216] px-2 py-1"
+                        title={report.result_indicator || "N/A"}
+                      >
+                        {report.result_indicator || "N/A"}
+                      </span>
                     </td>
                     <td className="px-3 py-4">{formatNumber(report.link_clicks)}</td>
                     <td className="px-3 py-4">{formatNumber(report.landing_page_views)}</td>

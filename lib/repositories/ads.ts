@@ -432,12 +432,14 @@ function createStrategyBreakdowns(reports: AdCreativeReportRecord[]) {
 }
 
 async function createLinkFollowThrough(reports: AdCreativeReportRecord[]) {
-  const matchableReports = reports.filter(
-    (report) =>
-      report.utm_source.toLowerCase() === "meta" &&
+  const matchableReports = reports.filter((report) => {
+    const hasExplicitMetaUtm =
+      (!report.utm_source || report.utm_source.toLowerCase() === "meta") &&
       report.utm_campaign &&
-      report.utm_content
-  );
+      report.utm_content;
+
+    return Boolean(hasExplicitMetaUtm || report.ad_name.trim());
+  });
 
   if (matchableReports.length === 0) {
     return [];
@@ -446,19 +448,23 @@ async function createLinkFollowThrough(reports: AdCreativeReportRecord[]) {
   const events = await prisma.analyticsEvent.findMany({
     where: {
       page: "links",
-      utmSource: "meta",
-      OR: matchableReports.map((report) => ({
-        utmCampaign: report.utm_campaign,
-        utmContent: report.utm_content
-      }))
+      utmSource: "meta"
     }
   });
 
   return matchableReports.map((report): AdLinkFollowThroughRecord => {
-    const matchingEvents = events.filter(
-      (event) =>
-        event.utmCampaign === report.utm_campaign && event.utmContent === report.utm_content
-    );
+    const hasExplicitMetaUtm =
+      (!report.utm_source || report.utm_source.toLowerCase() === "meta") &&
+      report.utm_campaign &&
+      report.utm_content;
+    const normalizedAdName = normalizeMetaAdName(report.ad_name);
+    const matchingEvents = events.filter((event) => {
+      if (hasExplicitMetaUtm) {
+        return event.utmCampaign === report.utm_campaign && event.utmContent === report.utm_content;
+      }
+
+      return Boolean(normalizedAdName && normalizeMetaAdName(event.utmContent) === normalizedAdName);
+    });
     const views = matchingEvents.filter((event) => event.eventType === "links_page_view").length;
     const clicks = matchingEvents.filter((event) => event.eventType === "links_link_click");
     const spotify = clicks.filter((event) =>

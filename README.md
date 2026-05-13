@@ -431,6 +431,20 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-13 13:56 -04:00
+
+- Fixed Copy Lab variant grouping so same hook/caption/release/hook-type/song-section ideas collapse consistently even when content type and hidden creative notes differ.
+- Strengthened Copy Lab idea matching by normalizing punctuation, invisible characters, casing, and emoji-like separators before grouping variants.
+
+### 2026-05-13 13:43 -04:00
+
+- Improved Ad Lab `/links` follow-through matching for Meta exports that omit URL parameter columns by falling back from explicit CSV UTMs to normalized `Ad name` versus first-party `utm_content`.
+- Updated Ad Lab attribution confidence logic so it counts explicit UTMs or matched first-party content values, avoiding misleading incomplete-UTM warnings when live Attribution data already contains matching `/links` traffic.
+
+### 2026-05-13 13:17 -04:00
+
+- Fixed the Ad Lab Creative Leaderboard `Result Type` column so long Meta conversion identifiers wrap inside a constrained cell instead of overlapping Link Clicks, Landing Views, and LPV columns.
+
 ### 2026-05-13 00:47 -04:00
 
 - Fixed Attribution UTM displays so long `source`, `campaign`, and `content` strings wrap in both the Breakdown by UTM card and daily UTM detail table instead of being cut off.

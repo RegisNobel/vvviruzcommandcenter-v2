@@ -99,7 +99,14 @@ function formatCopyCount(count: number) {
 }
 
 function normalizeIdeaText(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return value
+    .normalize("NFKD")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function getCopyVariantKey(copy: CopySummary) {
@@ -108,8 +115,7 @@ function getCopyVariantKey(copy: CopySummary) {
     normalizeIdeaText(copy.hook),
     normalizeIdeaText(copy.caption),
     copy.hook_type,
-    copy.song_section,
-    normalizeIdeaText(copy.creative_notes)
+    copy.song_section
   ].join("|");
 }
 
