@@ -431,6 +431,22 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-13 14:45 -04:00
+
+- Reworked Attribution matrix statuses so Meta CSV rows without exported URL parameters show as normal `META SNAPSHOT` records instead of alarming `MISSING UTM` badges.
+- Added Attribution matrix ad-name fallback matching so Meta snapshots can connect to first-party `/links` rows when the Meta export omits URL params but ad names align with `utm_content`.
+- Updated Attribution guidance copy to explain Meta CSV limitations and first-party matching without implying the tracking setup is broken.
+
+### 2026-05-13 14:31 -04:00
+
+- Improved the Ad Lab Creative Leaderboard `Result Type` column by replacing long raw Meta conversion identifiers with compact readable badges such as `SOC`, `LPV`, `LINK`, and `CONV`.
+- Preserved full Meta result details in hover tooltips while keeping the leaderboard scannable.
+
+### 2026-05-13 14:23 -04:00
+
+- Fixed Copy Lab variant grouping consistency by replacing exact hook/caption matching with scoped copy-idea matching inside release, hook type, and song section groups.
+- Copy Lab now collapses content execution variants even when tiny typo, punctuation, or caption drift exists, while still keeping unrelated hook ideas separate.
+
 ### 2026-05-13 13:56 -04:00
 
 - Fixed Copy Lab variant grouping so same hook/caption/release/hook-type/song-section ideas collapse consistently even when content type and hidden creative notes differ.

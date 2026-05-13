@@ -55,15 +55,19 @@ function formatOptionalPercent(value: number | null | undefined) {
 
 function getTrackingStatusLabel(status: string) {
   if (status === "first_party_only") {
-    return "1P TRACKING";
+    return "FIRST-PARTY ONLY";
   }
 
   if (status === "meta_only") {
     return "META CSV ONLY";
   }
 
-  if (status === "missing_utm") {
-    return "MISSING UTM";
+  if (status === "meta_snapshot" || status === "missing_utm") {
+    return "META SNAPSHOT";
+  }
+
+  if (status === "name_matched") {
+    return "AD NAME MATCH";
   }
 
   if (status === "matched") {
@@ -86,8 +90,12 @@ function getTrackingStatusClass(status: string) {
     return "inline-flex items-center whitespace-nowrap rounded-full border border-amber-800/50 bg-amber-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-amber-300";
   }
 
-  if (status === "missing_utm") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-red-800/50 bg-red-950/30 px-2.5 py-0.5 text-xs font-medium tracking-wide text-red-300";
+  if (status === "name_matched") {
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-sky-800/50 bg-sky-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-sky-300";
+  }
+
+  if (status === "meta_snapshot" || status === "missing_utm") {
+    return "inline-flex items-center whitespace-nowrap rounded-full border border-slate-700/70 bg-slate-900/50 px-2.5 py-0.5 text-xs font-medium tracking-wide text-slate-300";
   }
 
   return "pill";
@@ -699,8 +707,9 @@ export default async function AdminAttributionPage({
                   </h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
                     Matches imported Meta rows to first-party `/links` behavior when
-                    `utm_campaign` and `utm_content` line up. Use this to decide which
-                    creative deserves more budget, a retest, or a landing-page fix.
+                    exported UTMs line up, or when Meta omits URL params and the ad name
+                    matches first-party `utm_content`. Use this to decide which creative
+                    deserves more budget, a retest, or a landing-page fix.
                   </p>
                 </div>
                 <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
@@ -759,9 +768,9 @@ export default async function AdminAttributionPage({
                     ) : (
                       <tr>
                         <td className="px-4 py-7 text-center text-muted" colSpan={13}>
-                          No UTM attribution rows yet. Import a Meta export with URL parameters
-                          and send campaign traffic to `/links` with matching `utm_campaign`
-                          and `utm_content` values.
+                          No attribution rows yet. Import a Meta export and send campaign
+                          traffic to `/links` with `utm_campaign` and `utm_content`; if Meta
+                          omits URL params, matching ad names can still connect first-party data.
                         </td>
                       </tr>
                     )}

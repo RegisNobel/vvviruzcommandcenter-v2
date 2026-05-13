@@ -1,3 +1,4 @@
+import {normalizeMetaAdName} from "@/lib/ads/meta-csv";
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
 import {readReleaseAdMetrics} from "@/lib/repositories/ads";
@@ -93,7 +94,7 @@ function createAttributionLabel({
       : utmContent.trim();
   }
 
-  return adName.trim() || "No UTM content";
+  return adName.trim() || "Meta CSV row";
 }
 
 function getSourceLabel(event: {referrer: string; utmMedium: string; utmSource: string}) {
@@ -197,14 +198,14 @@ function createProblemSignals(input: {
   if (input.linksViews >= 20 && (input.utmCoverageRate ?? 0) < 80) {
     signals.push({
       severity: "risk",
-      text: "A meaningful share of /links views are missing campaign/content UTM data, which weakens ad-level attribution."
+      text: "A meaningful share of /links views are not carrying campaign/content UTM data, so ad-level attribution is more directional."
     });
   }
 
   if (input.metaClicks >= 20 && input.linksViews > 0 && (ratio(input.linksViews, input.metaClicks) ?? 0) < 50) {
     signals.push({
       severity: "risk",
-      text: "Click-to-view match is weak. Check UTMs, load speed, and landing URL consistency."
+      text: "Click-to-view match is weak. Check landing URL consistency, load speed, and whether the Meta export includes URL parameters."
     });
   }
 
@@ -247,7 +248,7 @@ function createRecommendedMove(input: {
   }
 
   if (input.linksViews === 0) {
-    return "Verify the campaign URL points to /links with UTMs before judging ad quality.";
+    return "Verify the campaign URL points to /links and keep ad names aligned with utm_content before judging ad quality.";
   }
 
   if (
@@ -480,7 +481,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       spend: number;
       spotify_clicks: number;
       streaming_clicks: number;
-      tracking_status: "matched" | "meta_only" | "first_party_only" | "missing_utm";
+      tracking_status: "matched" | "meta_only" | "first_party_only" | "meta_snapshot" | "name_matched";
       utm_campaign: string;
       utm_content: string;
       view_to_stream_rate: number | null;
@@ -488,11 +489,24 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     }
   >();
 
+  const attributionKeyByContent = new Map<string, string>();
+
+  for (const [key, counts] of attributionEventCounts) {
+    const normalizedContent = normalizeMetaAdName(counts.utmContent);
+
+    if (normalizedContent && !attributionKeyByContent.has(normalizedContent)) {
+      attributionKeyByContent.set(normalizedContent, key);
+    }
+  }
+
   for (const report of preferredAttributionBatch?.reports ?? []) {
     const hasUtm = Boolean(report.utmCampaign || report.utmContent);
+    const fallbackAttributionKey = hasUtm
+      ? null
+      : (attributionKeyByContent.get(normalizeMetaAdName(report.adName)) ?? null);
     const key = hasUtm
       ? createAttributionKey(report.utmCampaign ?? "", report.utmContent ?? "")
-      : `missing-utm|${report.adName.trim().toLowerCase()}`;
+      : (fallbackAttributionKey ?? `meta-snapshot|${normalizeMetaAdName(report.adName)}`);
     const current =
       attributionRowsByKey.get(key) ?? {
         ad_name: report.adName,
@@ -515,7 +529,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         spend: 0,
         spotify_clicks: 0,
         streaming_clicks: 0,
-        tracking_status: hasUtm ? "meta_only" : "missing_utm",
+        tracking_status: hasUtm ? "meta_only" : fallbackAttributionKey ? "name_matched" : "meta_snapshot",
         utm_campaign: report.utmCampaign ?? "",
         utm_content: report.utmContent ?? "",
         view_to_stream_rate: null,

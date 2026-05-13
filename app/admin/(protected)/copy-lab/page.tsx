@@ -109,14 +109,108 @@ function normalizeIdeaText(value: string) {
     .trim();
 }
 
-function getCopyVariantKey(copy: CopySummary) {
+function getCopyVariantScopeKey(copy: CopySummary) {
   return [
     copy.release_id ?? "standalone",
-    normalizeIdeaText(copy.hook),
-    normalizeIdeaText(copy.caption),
     copy.hook_type,
     copy.song_section
   ].join("|");
+}
+
+const ideaStopWords = new Set([
+  "about",
+  "after",
+  "again",
+  "ahead",
+  "and",
+  "are",
+  "from",
+  "for",
+  "into",
+  "just",
+  "lowkey",
+  "may",
+  "new",
+  "not",
+  "off",
+  "still",
+  "that",
+  "the",
+  "this",
+  "was",
+  "went",
+  "when",
+  "while",
+  "with",
+  "would",
+  "you",
+  "your"
+]);
+
+function getIdeaTokens(value: string) {
+  return normalizeIdeaText(value)
+    .split(" ")
+    .filter(
+      (token) =>
+        token.length > 2 &&
+        !ideaStopWords.has(token) &&
+        !/^\d+(st|nd|rd|th)?$/.test(token)
+    );
+}
+
+function getTokenOverlap(left: string[], right: string[]) {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  const smallestSet = leftSet.size <= rightSet.size ? leftSet : rightSet;
+  const largestSet = leftSet.size <= rightSet.size ? rightSet : leftSet;
+
+  if (smallestSet.size === 0) {
+    return {
+      count: 0,
+      ratio: 0
+    };
+  }
+
+  let count = 0;
+
+  for (const token of smallestSet) {
+    if (largestSet.has(token)) {
+      count += 1;
+    }
+  }
+
+  return {
+    count,
+    ratio: count / smallestSet.size
+  };
+}
+
+function isSameCopyIdea(left: CopySummary, right: CopySummary) {
+  if (getCopyVariantScopeKey(left) !== getCopyVariantScopeKey(right)) {
+    return false;
+  }
+
+  const leftHook = normalizeIdeaText(left.hook);
+  const rightHook = normalizeIdeaText(right.hook);
+  const leftCaption = normalizeIdeaText(left.caption);
+  const rightCaption = normalizeIdeaText(right.caption);
+
+  if (leftHook && leftHook === rightHook && leftCaption === rightCaption) {
+    return true;
+  }
+
+  const hookOverlap = getTokenOverlap(getIdeaTokens(left.hook), getIdeaTokens(right.hook));
+  const captionOverlap = getTokenOverlap(getIdeaTokens(left.caption), getIdeaTokens(right.caption));
+  const combinedOverlap = getTokenOverlap(
+    getIdeaTokens(`${left.hook} ${left.caption}`),
+    getIdeaTokens(`${right.hook} ${right.caption}`)
+  );
+
+  return (
+    (hookOverlap.count >= 4 && hookOverlap.ratio >= 0.8 && captionOverlap.ratio >= 0.6) ||
+    (captionOverlap.count >= 5 && captionOverlap.ratio >= 0.85 && hookOverlap.ratio >= 0.45) ||
+    (combinedOverlap.count >= 7 && combinedOverlap.ratio >= 0.82)
+  );
 }
 
 function hasContentVariants(variantSet: CopyVariantSet) {
@@ -124,25 +218,26 @@ function hasContentVariants(variantSet: CopyVariantSet) {
 }
 
 function groupCopyVariants(copies: CopySummary[]) {
-  const variantSets = new Map<string, CopyVariantSet>();
+  const variantSets: CopyVariantSet[] = [];
 
   for (const copy of copies) {
-    const key = getCopyVariantKey(copy);
-    const existingSet = variantSets.get(key);
+    const existingSet = variantSets.find((variantSet) =>
+      isSameCopyIdea(copy, variantSet.representative)
+    );
 
     if (existingSet) {
       existingSet.copies.push(copy);
       continue;
     }
 
-    variantSets.set(key, {
-      key,
+    variantSets.push({
+      key: `${getCopyVariantScopeKey(copy)}:${copy.id}`,
       copies: [copy],
       representative: copy
     });
   }
 
-  return Array.from(variantSets.values());
+  return variantSets;
 }
 
 function getCopyGroup(

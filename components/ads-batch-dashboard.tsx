@@ -167,6 +167,80 @@ function formatStrategyValue(value: string, kind: "hook" | "content" | "section"
   return formatSongSection(value as CopySongSection);
 }
 
+function getResultTypeSummary(value: string) {
+  const rawValue = value.trim();
+
+  if (!rawValue) {
+    return {
+      code: "N/A",
+      detail: "Meta did not report a result type for this row.",
+      label: "Not reported"
+    };
+  }
+
+  const normalizedValue = rawValue.toLowerCase();
+
+  if (
+    normalizedValue.includes("streamingoutboundclick") ||
+    normalizedValue.includes("streaming_outbound_click")
+  ) {
+    return {
+      code: "SOC",
+      detail: rawValue,
+      label: "Streaming click"
+    };
+  }
+
+  if (
+    normalizedValue.includes("landing_page_view") ||
+    normalizedValue.includes("landing page view")
+  ) {
+    return {
+      code: "LPV",
+      detail: rawValue,
+      label: "Landing view"
+    };
+  }
+
+  if (normalizedValue.includes("link_click") || normalizedValue.includes("link click")) {
+    return {
+      code: "LINK",
+      detail: rawValue,
+      label: "Link click"
+    };
+  }
+
+  if (normalizedValue.includes("lead")) {
+    return {
+      code: "LEAD",
+      detail: rawValue,
+      label: "Lead"
+    };
+  }
+
+  if (normalizedValue.includes("viewcontent") || normalizedValue.includes("view_content")) {
+    return {
+      code: "VIEW",
+      detail: rawValue,
+      label: "View content"
+    };
+  }
+
+  if (normalizedValue.includes("conversion")) {
+    return {
+      code: "CONV",
+      detail: rawValue,
+      label: "Conversion"
+    };
+  }
+
+  return {
+    code: "RESULT",
+    detail: rawValue,
+    label: rawValue.length > 26 ? `${rawValue.slice(0, 23)}...` : rawValue
+  };
+}
+
 function getSortValue(report: AdCreativeReportRecord, sortKey: SortKey) {
   if (sortKey === "cost_per_landing_page_view") {
     return report.cost_per_landing_page_view ?? calculateCost(report.spend, report.landing_page_views) ?? -1;
@@ -1083,7 +1157,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   <th className="px-3 py-3 font-semibold">Spend</th>
                   <th className="px-3 py-3 font-semibold">Results</th>
                   <th className="px-3 py-3 font-semibold">Cost / Result</th>
-                  <th className="w-[220px] px-3 py-3 font-semibold">Result Type</th>
+                  <th className="w-[120px] px-3 py-3 font-semibold">Result Type</th>
                   <th className="px-3 py-3 font-semibold">Link Clicks</th>
                   <th className="px-3 py-3 font-semibold">Landing Views</th>
                   <th className="px-3 py-3 font-semibold">Click to LPV</th>
@@ -1103,7 +1177,10 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#252a31]">
-                {filteredReports.map((report) => (
+                {filteredReports.map((report) => {
+                  const resultType = getResultTypeSummary(report.result_indicator);
+
+                  return (
                   <tr className="align-top text-[#d9dee5]" key={report.id}>
                     <td className="max-w-[260px] px-3 py-4">
                       <p className="font-semibold text-ink">{report.ad_name}</p>
@@ -1155,12 +1232,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                     <td className="px-3 py-4">{formatMoney(report.spend)}</td>
                     <td className="px-3 py-4">{formatNumber(report.results)}</td>
                     <td className="px-3 py-4">{formatMoney(report.cost_per_result)}</td>
-                    <td className="w-[220px] max-w-[220px] px-3 py-4 text-xs leading-5 text-muted">
+                    <td className="w-[120px] max-w-[120px] px-3 py-4 text-xs leading-5 text-muted">
                       <span
-                        className="block max-w-[200px] break-all rounded-[14px] border border-[#252a31] bg-[#101216] px-2 py-1"
-                        title={report.result_indicator || "N/A"}
+                        aria-label={resultType.detail}
+                        className="inline-flex min-w-[54px] justify-center rounded-full border border-[#3b4350] bg-[#101216] px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#f1dfad]"
+                        title={resultType.detail}
                       >
-                        {report.result_indicator || "N/A"}
+                        {resultType.code}
+                      </span>
+                      <span className="mt-1 block max-w-[100px] text-[11px] leading-4 text-muted">
+                        {resultType.label}
                       </span>
                     </td>
                     <td className="px-3 py-4">{formatNumber(report.link_clicks)}</td>
@@ -1202,7 +1283,8 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
