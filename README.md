@@ -431,6 +431,10 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-13 00:47 -04:00
+
+- Fixed Attribution UTM displays so long `source`, `campaign`, and `content` strings wrap in both the Breakdown by UTM card and daily UTM detail table instead of being cut off.
+
 ### 2026-05-13 00:33 -04:00
 
 - Enhanced Copy Lab grouping with automatic content-variant detection: duplicate copy ideas that only differ by content type now render as one variant row with clickable content-type pills.

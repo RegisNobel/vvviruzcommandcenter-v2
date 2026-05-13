@@ -246,7 +246,13 @@ function BreakdownDetailTable({
           {items.length > 0 ? (
             items.map((item) => (
               <tr className="text-[#d9dee5]" key={item.label}>
-                <td className="px-4 py-4 font-semibold">{item.label}</td>
+                <td
+                  className={`px-4 py-4 font-semibold ${
+                    kind === "utm" ? "max-w-[520px] break-all leading-6" : ""
+                  }`}
+                >
+                  {item.label}
+                </td>
                 <td className="px-4 py-4">{formatNumber(item.views)}</td>
                 <td className="px-4 py-4">{formatNumber(item.conversions)}</td>
                 <td className="px-4 py-4">{item.ctr}%</td>
@@ -970,6 +976,7 @@ export default async function AdminAttributionPage({
             emptyText="No UTM/source data recorded yet."
             items={analytics.breakdowns.utm}
             title="Breakdown by UTM"
+            wrapLabels
           />
         </section>
       </div>
