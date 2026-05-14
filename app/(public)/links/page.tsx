@@ -6,7 +6,7 @@ import type {Metadata} from "next";
 
 import {getLinksPageRelease, getSiteSettings} from "@/lib/repositories/public-site";
 import {normalizeExternalUrl} from "@/lib/public-utils";
-import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
+
 
 import {LinkPageAnalytics} from "@/components/link-page-analytics";
 
@@ -146,10 +146,7 @@ export default async function PublicLinksPage({
   const content = siteSettings.site_content.links;
   const platformContent = siteSettings.site_content.platforms;
   const passthroughParams = createPassthroughParams(rawSearchParams);
-  const [selectedRelease, exclusiveOfferState] = await Promise.all([
-    getLinksPageRelease(content.selected_release_id),
-    readPublicExclusiveOffer()
-  ]);
+  const selectedRelease = await getLinksPageRelease(content.selected_release_id);
 
   if (!selectedRelease) {
     return (
@@ -262,18 +259,7 @@ export default async function PublicLinksPage({
                   );
                   })}
 
-                  {exclusiveOfferState.isAvailable ? (
-                    <Link
-                      className="flex w-full items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-sm font-semibold text-[#f2ead8] transition duration-200 hover:scale-[1.01] hover:border-[#c9a347]/35 hover:bg-[#c9a347]/10 hover:text-[#f7f1e6]"
-                      data-analytics-event="links_link_click"
-                      data-analytics-link-label={content.exclusive_cta_label}
-                      data-analytics-link-type="exclusive"
-                      data-analytics-target-url="/exclusives"
-                      href="/exclusives"
-                    >
-                      {content.exclusive_cta_label}
-                    </Link>
-                  ) : null}
+
                 </>
               ) : (
                 <div className="rounded-[22px] border border-dashed border-white/12 bg-white/[0.03] px-5 py-5 text-sm leading-7 text-[#a9b1bb]">

@@ -475,3 +475,37 @@ model AppearsOn {
 
   @@index([isPublished, sortOrder])
 }
+
+model CommissionRequest {
+  id               String   @id
+  name             String
+  email            String
+  requestType      String
+  budgetRange      String
+  deadline         String
+  specificDeadline String   @default("")
+  topic            String
+  beatLink         String   @default("")
+  referenceLink    String   @default("")
+  usageIntent      String
+  additionalNotes  String   @default("")
+  status           String   @default("New")
+  quotedPrice      String   @default("")
+  paypalLink       String   @default("")
+  adminNotes       String   @default("")
+  deliveryLink     String   @default("")
+  
+  // Attribution
+  utmSource        String   @default("")
+  utmMedium        String   @default("")
+  utmCampaign      String   @default("")
+  utmContent       String   @default("")
+  utmTerm          String   @default("")
+  referrer         String   @default("")
+  landingPage      String   @default("")
+
+  createdAt        DateTime
+  updatedAt        DateTime
+
+  @@index([status, createdAt])
+}

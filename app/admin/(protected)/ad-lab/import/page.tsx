@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import {AdsImportForm} from "@/components/ads-import-form";
 import {readReleaseSummaries} from "@/lib/server/releases";
 

@@ -22,7 +22,7 @@ export default async function AdminLoginPage({
   const [{error, message}, access] = await Promise.all([searchParams, getAdminAccessState()]);
 
   if (access.stage === "authenticated") {
-    redirect("/admin");
+    redirect("/admin/releases");
   }
 
   if (access.stage === "pending-totp") {

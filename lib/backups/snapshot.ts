@@ -76,7 +76,8 @@ export async function createDatabaseSnapshotArtifact() {
     adImportBatches: await prisma.adImportBatch.findMany(),
     adCreativeReports: await prisma.adCreativeReport.findMany(),
     adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),
-    adCampaignLearnings: await prisma.adCampaignLearning.findMany()
+    adCampaignLearnings: await prisma.adCampaignLearning.findMany(),
+    commissionRequests: await prisma.commissionRequest.findMany()
   };
 
   return toGzipJsonArtifact(snapshot, countSnapshotTables(snapshot));

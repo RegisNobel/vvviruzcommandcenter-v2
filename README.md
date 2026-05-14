@@ -471,6 +471,20 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-14 16:55 -04:00
+
+- **Commission Management System**: Launched a comprehensive fan request workflow for hooks, verses, custom songs, and features.
+- **Public Commissions Hub**: Created a high-fidelity `/commissions` page with service descriptions, starter pricing, and a secure request form.
+- **Attribution & Metadata**: Integrated standard UTM/attribution capture into commission requests, ensuring every lead tracks its source, landing page, and referrer.
+- **Protected Admin Dashboard**: Built a centralized management view at `/admin/commissions` for reviewing, quoting, and tracking the status of each request.
+- **Admin Workflow Improvements**:
+    - Replaced the generic "Overview" landing page with a direct redirect to the Releases dashboard.
+    - Simplified the admin navigation by removing the Overview link and updating the brand logo to point to the primary workspace.
+- **System Compatibility**:
+    - Expanded the Database Snapshot and Restore engines to include the new `CommissionRequest` model.
+    - Updated all core authentication and middleware redirects to ensure a seamless landing on the new primary dashboard.
+- **Build & Prerender Stability**: Hardened several admin and public pages with `force-dynamic` markers to prevent build-time database connection errors during static generation.
+
 ### 2026-05-14 01:09 -04:00
 
 - **One-Click Restore Engine**: Built a production-to-production restoration pipeline that allows the owner to restore the entire database from a Google Drive snapshot with one click.

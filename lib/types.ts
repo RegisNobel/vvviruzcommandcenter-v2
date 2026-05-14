@@ -718,3 +718,32 @@ export type ReleasePromoVerdict =
   | "Needs New Creative"
   | "Paused"
   | "Retired";
+
+export type CommissionRequestRecord = {
+  id: string;
+  name: string;
+  email: string;
+  requestType: string;
+  budgetRange: string;
+  deadline: string;
+  specificDeadline: string;
+  topic: string;
+  beatLink: string;
+  referenceLink: string;
+  usageIntent: string;
+  additionalNotes: string;
+  status: string;
+  quotedPrice: string;
+  paypalLink: string;
+  adminNotes: string;
+  deliveryLink: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  utmContent: string;
+  utmTerm: string;
+  referrer: string;
+  landingPage: string;
+  createdAt: string;
+  updatedAt: string;
+};

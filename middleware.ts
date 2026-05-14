@@ -190,7 +190,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === "/admin/login") {
     if (stage === "authenticated") {
-      return redirectTo(request, "/admin");
+      return redirectTo(request, "/admin/releases");
     }
 
     if (stage === "pending-totp") {
@@ -206,7 +206,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === "/admin/2fa") {
     if (stage === "authenticated") {
-      return redirectTo(request, "/admin");
+      return redirectTo(request, "/admin/releases");
     }
 
     if (stage === "setup-totp") {
@@ -222,7 +222,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === "/admin/setup-2fa") {
     if (stage === "authenticated") {
-      return redirectTo(request, "/admin");
+      return redirectTo(request, "/admin/releases");
     }
 
     if (stage === "pending-totp") {

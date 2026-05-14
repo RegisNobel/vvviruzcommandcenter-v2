@@ -8,14 +8,14 @@ datasource db {
 }
 
 model AdminUser {
-  id                 String        @id
-  username           String        @unique
-  totpMethod         String?
+  id                  String        @id
+  username            String        @unique
+  totpMethod          String?
   totpEncryptedSecret String?
-  totpEnrolledAt     DateTime?
-  createdAt          DateTime
-  updatedAt          DateTime
-  sessions           AuthSession[]
+  totpEnrolledAt      DateTime?
+  createdAt           DateTime
+  updatedAt           DateTime
+  sessions            AuthSession[]
 
   @@index([username])
 }
@@ -37,48 +37,48 @@ model AuthSession {
 }
 
 model Release {
-  id               String                 @id
-  title            String
-  slug             String                 @unique
-  pinned           Boolean                @default(false)
-  collaborator     Boolean                @default(false)
-  collaboratorName String                 @default("")
-  upc              String                 @default("")
-  isrc             String                 @default("")
-  coverArtId       String?
-  coverArtFileName String?
-  coverArtUrl      String?
-  coverArtPath     String                 @default("")
-  coverArtMimeType String?
-  lyrics           String                 @default("")
-  type             String                 @default("nerdcore")
-  releaseDate      DateTime?
-  conceptDetails   String                 @default("")
-  publicDescription String                @default("")
-  publicLongDescription String            @default("")
-  spotifyUrl       String                 @default("")
-  appleMusicUrl    String                 @default("")
-  youtubeUrl       String                 @default("")
-  isPublished      Boolean                @default(false)
-  isFeatured       Boolean                @default(false)
-  featuredVideoUrl String                 @default("")
-  publicLyricsEnabled Boolean             @default(false)
-  conceptComplete  Boolean                @default(false)
-  beatMade         Boolean                @default(false)
-  lyricsFinished   Boolean                @default(false)
-  recorded         Boolean                @default(false)
-  mixMastered      Boolean                @default(false)
-  published        Boolean                @default(false)
-  createdOn        DateTime
-  updatedOn        DateTime
-  tasks            ReleaseTask[]
-  streamingLinks   ReleaseStreamingLink[]
-  projects         LyricProject[]
-  copies           CopyEntry[]
-  categories       ReleaseCategoryAssignment[]
-  adImportBatches  AdImportBatch[]
-  adCreativeReports AdCreativeReport[]
-  adCampaignLearnings AdCampaignLearning[]
+  id                    String                      @id
+  title                 String
+  slug                  String                      @unique
+  pinned                Boolean                     @default(false)
+  collaborator          Boolean                     @default(false)
+  collaboratorName      String                      @default("")
+  upc                   String                      @default("")
+  isrc                  String                      @default("")
+  coverArtId            String?
+  coverArtFileName      String?
+  coverArtUrl           String?
+  coverArtPath          String                      @default("")
+  coverArtMimeType      String?
+  lyrics                String                      @default("")
+  type                  String                      @default("nerdcore")
+  releaseDate           DateTime?
+  conceptDetails        String                      @default("")
+  publicDescription     String                      @default("")
+  publicLongDescription String                      @default("")
+  spotifyUrl            String                      @default("")
+  appleMusicUrl         String                      @default("")
+  youtubeUrl            String                      @default("")
+  isPublished           Boolean                     @default(false)
+  isFeatured            Boolean                     @default(false)
+  featuredVideoUrl      String                      @default("")
+  publicLyricsEnabled   Boolean                     @default(false)
+  conceptComplete       Boolean                     @default(false)
+  beatMade              Boolean                     @default(false)
+  lyricsFinished        Boolean                     @default(false)
+  recorded              Boolean                     @default(false)
+  mixMastered           Boolean                     @default(false)
+  published             Boolean                     @default(false)
+  createdOn             DateTime
+  updatedOn             DateTime
+  tasks                 ReleaseTask[]
+  streamingLinks        ReleaseStreamingLink[]
+  projects              LyricProject[]
+  copies                CopyEntry[]
+  categories            ReleaseCategoryAssignment[]
+  adImportBatches       AdImportBatch[]
+  adCreativeReports     AdCreativeReport[]
+  adCampaignLearnings   AdCampaignLearning[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -175,18 +175,18 @@ model LyricLine {
 }
 
 model CopyEntry {
-  id            String   @id
+  id            String               @id
   releaseId     String?
   hook          String
   caption       String
-  type          String   @default("discovery-shock")
-  hookType      String   @default("discovery-shock")
-  contentType   String   @default("amv-lyric-edit")
-  songSection   String   @default("hook")
-  creativeNotes String   @default("")
+  type          String               @default("discovery-shock")
+  hookType      String               @default("discovery-shock")
+  contentType   String               @default("amv-lyric-edit")
+  songSection   String               @default("hook")
+  creativeNotes String               @default("")
   createdOn     DateTime
   updatedOn     DateTime
-  release       Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  release       Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
   adLinks       AdCreativeCopyLink[]
 
   @@index([releaseId])
@@ -219,63 +219,63 @@ model AdImportBatch {
 }
 
 model AdCreativeReport {
-  id                     String               @id
-  importBatchId          String
-  releaseId              String?
-  campaignName           String?
-  adSetName              String?
-  adName                 String
-  adDelivery             String?
-  reportingStart         DateTime?
-  reportingEnd           DateTime?
-  spend                  Float?
-  impressions            Int?
-  reach                  Int?
-  frequency              Float?
+  id                             String               @id
+  importBatchId                  String
+  releaseId                      String?
+  campaignName                   String?
+  adSetName                      String?
+  adName                         String
+  adDelivery                     String?
+  reportingStart                 DateTime?
+  reportingEnd                   DateTime?
+  spend                          Float?
+  impressions                    Int?
+  reach                          Int?
+  frequency                      Float?
   costPerThousandAccountsReached Float?
-  cpm                    Float?
-  results                Float?
-  resultIndicator        String?
-  costPerResult          Float?
-  linkClicks             Int?
-  cpc                    Float?
-  ctr                    Float?
-  clicksAll              Int?
-  ctrAll                 Float?
-  cpcAll                 Float?
-  landingPageViews       Int?
-  costPerLandingPageView Float?
-  shopClicks             Int?
-  pageEngagement         Int?
-  postReactions          Int?
-  postComments           Int?
-  postSaves              Int?
-  postShares             Int?
-  facebookLikes          Int?
-  instagramFollows       Int?
-  videoPlays             Int?
-  twoSecondContinuousPlays Int?
+  cpm                            Float?
+  results                        Float?
+  resultIndicator                String?
+  costPerResult                  Float?
+  linkClicks                     Int?
+  cpc                            Float?
+  ctr                            Float?
+  clicksAll                      Int?
+  ctrAll                         Float?
+  cpcAll                         Float?
+  landingPageViews               Int?
+  costPerLandingPageView         Float?
+  shopClicks                     Int?
+  pageEngagement                 Int?
+  postReactions                  Int?
+  postComments                   Int?
+  postSaves                      Int?
+  postShares                     Int?
+  facebookLikes                  Int?
+  instagramFollows               Int?
+  videoPlays                     Int?
+  twoSecondContinuousPlays       Int?
   costPerTwoSecondContinuousPlay Float?
-  threeSecondPlays       Int?
-  costPerThreeSecondPlay Float?
-  thruPlays              Int?
-  costPerThruPlay        Float?
-  video25                Int?
-  video50                Int?
-  video75                Int?
-  video95                Int?
-  video100               Int?
-  qualityRanking         String?
-  engagementRateRanking  String?
-  conversionRateRanking  String?
-  utmSource              String?
-  utmCampaign            String?
-  utmContent             String?
-  createdAt              DateTime
-  updatedAt              DateTime
-  importBatch            AdImportBatch         @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
-  release                Release?              @relation(fields: [releaseId], references: [id], onDelete: SetNull)
-  copyLinks              AdCreativeCopyLink[]
+  threeSecondPlays               Int?
+  costPerThreeSecondPlay         Float?
+  thruPlays                      Int?
+  costPerThruPlay                Float?
+  video25                        Int?
+  video50                        Int?
+  video75                        Int?
+  video95                        Int?
+  video100                       Int?
+  qualityRanking                 String?
+  engagementRateRanking          String?
+  conversionRateRanking          String?
+  utmSource                      String?
+  utmCampaign                    String?
+  utmContent                     String?
+  createdAt                      DateTime
+  updatedAt                      DateTime
+  importBatch                    AdImportBatch        @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  release                        Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  copyLinks                      AdCreativeCopyLink[]
 
   @@index([importBatchId])
   @@index([releaseId])
@@ -296,25 +296,25 @@ model AdCreativeCopyLink {
 }
 
 model AdCampaignLearning {
-  id            String        @id
-  importBatchId String
-  releaseId     String?
-  summary       String        @default("")
-  whatWorked    String        @default("")
-  whatFailed    String        @default("")
-  nextTest      String        @default("")
-  decision      String        @default("iterate")
+  id                 String        @id
+  importBatchId      String
+  releaseId          String?
+  summary            String        @default("")
+  whatWorked         String        @default("")
+  whatFailed         String        @default("")
+  nextTest           String        @default("")
+  decision           String        @default("iterate")
   // V1.2 Level 4: Reviewed readout archive fields.
   // When a readout is reviewed, these fields lock the decision as permanent
   // historical truth, even if new imports change the computed readout.
-  reviewedAt       DateTime?
-  reviewedBy       String        @default("")
-  finalDecision    String        @default("")
-  humanOverrideNotes String      @default("")
-  createdAt     DateTime
-  updatedAt     DateTime
-  importBatch   AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
-  release       Release?      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  reviewedAt         DateTime?
+  reviewedBy         String        @default("")
+  finalDecision      String        @default("")
+  humanOverrideNotes String        @default("")
+  createdAt          DateTime
+  updatedAt          DateTime
+  importBatch        AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  release            Release?      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([importBatchId])
   @@index([releaseId])
@@ -339,29 +339,29 @@ model SiteSettings {
 }
 
 model Subscriber {
-  id               String         @id
-  name             String         @default("")
-  email            String         @unique
-  source           String         @default("exclusive")
-  status           String         @default("active")
-  consentGiven     Boolean        @default(false)
-  downloadToken    String         @unique
-  unsubscribeToken String         @unique
-  createdAt        DateTime
-  updatedAt        DateTime
-  unsubscribedAt   DateTime?
+  id                  String         @id
+  name                String         @default("")
+  email               String         @unique
+  source              String         @default("exclusive")
+  status              String         @default("active")
+  consentGiven        Boolean        @default(false)
+  downloadToken       String         @unique
+  unsubscribeToken    String         @unique
+  createdAt           DateTime
+  updatedAt           DateTime
+  unsubscribedAt      DateTime?
   // Source attribution (V1 — first-source preserved on upsert)
-  sourceUtmSource     String      @default("")
-  sourceUtmMedium     String      @default("")
-  sourceUtmCampaign   String      @default("")
-  sourceUtmContent    String      @default("")
-  sourceUtmTerm       String      @default("")
-  sourceReferrer      String      @default("")
-  sourceLandingPage   String      @default("")
-  sourceOfferMode     String      @default("")
-  sourceOfferName     String      @default("")
-  sourceSignupContext String      @default("")
-  sendLogs         EmailSendLog[]
+  sourceUtmSource     String         @default("")
+  sourceUtmMedium     String         @default("")
+  sourceUtmCampaign   String         @default("")
+  sourceUtmContent    String         @default("")
+  sourceUtmTerm       String         @default("")
+  sourceReferrer      String         @default("")
+  sourceLandingPage   String         @default("")
+  sourceOfferMode     String         @default("")
+  sourceOfferName     String         @default("")
+  sourceSignupContext String         @default("")
+  sendLogs            EmailSendLog[]
 
   @@index([status, createdAt])
   @@index([source, status])
@@ -404,6 +404,7 @@ model EmailSendLog {
   @@index([subscriberId])
   @@index([status, createdAt])
 }
+
 model AnalyticsEvent {
   id          String   @id
   eventType   String
@@ -466,18 +467,52 @@ model BackupRun {
 }
 
 model AppearsOn {
-  id            String   @id
-  title         String
-  artists       String
-  coverArtUrl   String
-  spotifyUrl    String
-  appleMusicUrl String   @default("")
-  youtubeMusicUrl String @default("")
-  youtubeUrl    String   @default("")
-  isPublished   Boolean  @default(false)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime
-  updatedAt     DateTime
+  id              String   @id
+  title           String
+  artists         String
+  coverArtUrl     String
+  spotifyUrl      String
+  appleMusicUrl   String   @default("")
+  youtubeMusicUrl String   @default("")
+  youtubeUrl      String   @default("")
+  isPublished     Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
 
   @@index([isPublished, sortOrder])
+}
+
+model CommissionRequest {
+  id               String @id
+  name             String
+  email            String
+  requestType      String
+  budgetRange      String
+  deadline         String
+  specificDeadline String @default("")
+  topic            String
+  beatLink         String @default("")
+  referenceLink    String @default("")
+  usageIntent      String
+  additionalNotes  String @default("")
+  status           String @default("New")
+  quotedPrice      String @default("")
+  paypalLink       String @default("")
+  adminNotes       String @default("")
+  deliveryLink     String @default("")
+
+  // Attribution
+  utmSource   String @default("")
+  utmMedium   String @default("")
+  utmCampaign String @default("")
+  utmContent  String @default("")
+  utmTerm     String @default("")
+  referrer    String @default("")
+  landingPage String @default("")
+
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([status, createdAt])
 }

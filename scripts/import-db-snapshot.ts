@@ -30,6 +30,7 @@ type Snapshot = {
   adCreativeReports?: SnapshotRecord[];
   adCreativeCopyLinks?: SnapshotRecord[];
   adCampaignLearnings?: SnapshotRecord[];
+  commissionRequests?: SnapshotRecord[];
 };
 
 const dateFieldsByModel: Record<string, string[]> = {
@@ -50,7 +51,8 @@ const dateFieldsByModel: Record<string, string[]> = {
   adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
   adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
   adCreativeCopyLink: ["createdAt"],
-  adCampaignLearning: ["createdAt", "updatedAt"]
+  adCampaignLearning: ["createdAt", "updatedAt"],
+  commissionRequest: ["createdAt", "updatedAt"]
 };
 
 function hydrateDates(modelName: string, record: SnapshotRecord) {
@@ -151,6 +153,10 @@ async function main() {
   counts.adCampaignLearnings = await upsertMany(
     "adCampaignLearning",
     snapshot.adCampaignLearnings
+  );
+  counts.commissionRequests = await upsertMany(
+    "commissionRequest",
+    snapshot.commissionRequests
   );
 
   console.log(

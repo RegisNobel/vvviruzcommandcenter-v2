@@ -89,7 +89,7 @@ export async function requirePendingAdminSession(expectedStage: AuthSessionStage
 
   if (session.stage !== expectedStage) {
     if (session.stage === "authenticated") {
-      redirect("/admin");
+      redirect("/admin/releases");
     }
 
     redirect("/admin/login?error=session-expired");
@@ -220,7 +220,7 @@ export async function handleTotpChallenge(request: Request, formData: FormData) 
     factorMethod: "totp"
   });
 
-  return buildCookieRedirect(request, "/admin", cookieValue, cookieOptions.expires);
+  return buildCookieRedirect(request, "/admin/releases", cookieValue, cookieOptions.expires);
 }
 
 export async function handleTotpSetup(request: Request, formData: FormData) {
@@ -261,7 +261,7 @@ export async function handleTotpSetup(request: Request, formData: FormData) {
     factorMethod: "totp"
   });
 
-  return buildCookieRedirect(request, "/admin", cookieValue, cookieOptions.expires);
+  return buildCookieRedirect(request, "/admin/releases", cookieValue, cookieOptions.expires);
 }
 
 export async function handleLogout(request: Request) {

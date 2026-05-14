@@ -78,6 +78,13 @@ export default async function PublicHomePage() {
                         {content.exclusive_cta_label}
                       </Link>
                     ) : null}
+
+                    <Link
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-[#f4eedf] transition hover:border-[#c9a347]/40 hover:bg-[#c9a347]/10"
+                      href="/commissions"
+                    >
+                      Commissions
+                    </Link>
                   </div>
                 </div>
               </div>

@@ -6,7 +6,6 @@ import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
 
 const navItems = [
-  {href: "/admin", label: "Overview"},
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
   {href: "/admin/attribution", label: "Attribution"},
@@ -14,6 +13,7 @@ const navItems = [
   {href: "/admin/copy-lab", label: "Copy Lab"},
   {href: "/admin/photo-lab", label: "Photo Lab"},
   {href: "/admin/releases", label: "Releases"},
+  {href: "/admin/commissions", label: "Commissions"},
   {href: "/admin/backups", label: "Backups"}
 ];
 
@@ -23,7 +23,7 @@ export function CommandCenterNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-[#272b31] bg-[#101215]/92 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <Link className="flex min-w-0 items-center gap-3" href="/admin">
+        <Link className="flex min-w-0 items-center gap-3" href="/admin/releases">
           <span className="shrink-0 rounded-full bg-[#c9a347] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#13161a]">
             Admin
           </span>
@@ -39,10 +39,7 @@ export function CommandCenterNav() {
 
         <nav aria-label="Admin navigation" className="mobile-scroll-x flex items-center gap-2 lg:mx-0 lg:px-0">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/admin"
-                ? pathname === item.href
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <Link

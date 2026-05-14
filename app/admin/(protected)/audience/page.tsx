@@ -39,9 +39,9 @@ export default async function AdminAudiencePageRoute() {
               </p>
             </div>
 
-            <Link className="action-button-secondary" href="/admin">
+            <Link className="action-button-secondary" href="/admin/releases">
               <ArrowLeft size={16} />
-              Back to Overview
+              Back to Dashboard
             </Link>
           </div>
         </section>
