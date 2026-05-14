@@ -154,10 +154,10 @@ export function ExclusiveOfferSettingsPanel({
             <p className="field-label">Section 9</p>
             <h3 className="mt-3 flex items-center gap-2 text-2xl font-semibold text-ink">
               <Sparkles size={20} />
-              Exclusive Track Offer
+              Early Access Preview Offer
             </h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Control the public `/exclusives` capture page, gated track, artwork,
+              Control the public `/exclusives` capture page, preview track, artwork,
               success copy, and availability from Public Site management.
             </p>
           </div>
@@ -240,7 +240,7 @@ export function ExclusiveOfferSettingsPanel({
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="field-label">Track Title</span>
+            <span className="field-label">Preview Title</span>
             <input
               className="field-input"
               onChange={(event) =>
@@ -260,7 +260,7 @@ export function ExclusiveOfferSettingsPanel({
           </label>
 
           <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Track Description</span>
+            <span className="field-label">Preview Description</span>
             <textarea
               className="field-input min-h-[110px]"
               onChange={(event) =>
@@ -324,9 +324,9 @@ export function ExclusiveOfferSettingsPanel({
               <span>
                 {exclusiveOffer.exclusive_track_enabled
                   ? exclusiveOffer.unlock_experience === "signup_notify"
-                    ? "The exclusive page is live in Notify Me mode."
-                    : "The exclusive page is live if a track asset/URL and Track Title are present."
-                  : "The exclusive page will show an unavailable state."}
+                    ? "The preview page is live in Notify Me mode."
+                    : "The preview page is live if a preview asset/URL and Preview Title are present."
+                  : "The preview page will show an unavailable state."}
               </span>
               <span className="pill">
                 {exclusiveOffer.exclusive_track_enabled ? "Enabled" : "Disabled"}
@@ -391,7 +391,7 @@ export function ExclusiveOfferSettingsPanel({
                   value={exclusiveOffer.private_external_url}
                 />
                 <p className="text-xs text-muted">
-                  Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Track Asset.
+                  Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Preview Asset.
                 </p>
               </label>
             ) : null}
@@ -457,10 +457,10 @@ export function ExclusiveOfferSettingsPanel({
         {exclusiveOffer.unlock_experience !== "signup_notify" ? (
           <div className="mt-8 grid gap-5 xl:grid-cols-2">
             <div className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
-              <p className="field-label">Track Asset</p>
+              <p className="field-label">Preview Asset</p>
               <div className="mt-4 space-y-4">
                 <label className="space-y-2">
-                  <span className="field-label">Select Existing Track</span>
+                  <span className="field-label">Select Existing Preview</span>
                   <select
                     className="field-input"
                     onChange={(event) =>
@@ -478,7 +478,7 @@ export function ExclusiveOfferSettingsPanel({
                 </label>
 
                 <label className="space-y-2">
-                  <span className="field-label">Upload New Track</span>
+                  <span className="field-label">Upload New Preview</span>
                   <input
                     accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
                     className="field-input file:mr-3 file:rounded-full file:border-0 file:bg-[#c9a347] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#13161a]"
@@ -494,7 +494,7 @@ export function ExclusiveOfferSettingsPanel({
                   type="button"
                 >
                   <UploadCloud size={16} />
-                  {trackUploadState === "uploading" ? "Uploading..." : "Upload Track"}
+                  {trackUploadState === "uploading" ? "Uploading..." : "Upload Preview"}
                 </button>
               </div>
             </div>
@@ -582,7 +582,7 @@ export function ExclusiveOfferSettingsPanel({
           </h3>
           <p className="mt-2 text-sm leading-6 text-muted">
             These fields control the community section that appears under the
-            exclusive-track signup area on `/exclusives`.
+            preview signup area on `/exclusives`.
           </p>
         </div>
 

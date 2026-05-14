@@ -102,7 +102,7 @@ export function ExclusiveSignupForm({
         {unlockExperience === "signup_notify" ? null : unlockExperience === "instant_unlock" ? (
           <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 px-5 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
-              Unlocked Track
+              Unlocked Preview
             </p>
             <p className="mt-3 text-xl font-semibold text-[#f7f1e6]">{trackTitle}</p>
             {privateExternalUrl ? (

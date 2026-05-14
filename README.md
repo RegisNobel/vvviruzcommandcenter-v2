@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-14 19:30 -04:00
+
+- **Early Access Preview Repositioning**: Shifted the strategy for the public `/exclusives` page.
+    - Rebranded "Exclusive Track" and "Vault" language to **Early Access Preview** and **Private Preview**.
+    - Reserved "The Vault" terminology for future paid digital products.
+    - Updated administrative UI labels, site-settings defaults, and API response messages to reflect the new positioning.
+    - Updated subscriber source tracking contexts to align with early access previews.
+
 ### 2026-05-14 17:40 -04:00
 
 - **Admin UI Reorganization**: Decoupled the Community Section from the Exclusive Offer settings on the Public Site settings page. 

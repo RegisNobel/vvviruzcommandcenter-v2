@@ -63,7 +63,7 @@ function createFakeClaimSuccess(): ExclusiveClaimResponse {
     unlockExperience: "email_only",
     instantUnlockButtonLabel: "Listen Now",
     isDuplicate: false,
-    message: "Your exclusive is unlocked. Check your inbox for the link.",
+    message: "Your preview is unlocked. Check your inbox for the link.",
     subscriber: {
       id: "pending",
       name: "Subscriber",
@@ -130,8 +130,8 @@ export async function POST(request: Request) {
         sourceReferrer: payload.source_referrer || request.headers.get("referer") || "",
         sourceLandingPage: payload.source_landing_page,
         sourceOfferMode: offer.unlock_experience === "signup_notify" ? "signup_notify_me" : offer.unlock_experience,
-        sourceOfferName: offer.exclusive_track_title || "Vault Preview List",
-        sourceSignupContext: offer.unlock_experience === "signup_notify" ? "vault_preview_list" : "exclusives_page"
+        sourceOfferName: offer.exclusive_track_title || "Early Access Preview List",
+        sourceSignupContext: offer.unlock_experience === "signup_notify" ? "early_access_preview_list" : "exclusives_page"
       }
     });
 
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
             subject: offer.email_subject,
             previewText: "",
             body: offer.email_body,
-            ctaLabel: offer.instant_unlock_button_label || "Access Exclusive",
+            ctaLabel: offer.instant_unlock_button_label || "Access Preview",
             ctaUrl: targetLink || undefined,
             unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
           });
@@ -175,8 +175,8 @@ export async function POST(request: Request) {
       message: isDuplicate
         ? offer.duplicate_message
         : offer.unlock_experience === "signup_notify"
-          ? offer.success_message || "You’re on the Vault list. Watch your inbox for the first preview drop."
-          : offer.success_message || "Your exclusive is unlocked.",
+          ? offer.success_message || "You’re on the early access list. Watch your inbox for the next preview drop."
+          : offer.success_message || "Your preview is unlocked.",
       subscriber: {
         id: subscriber.id,
         name: subscriber.name,

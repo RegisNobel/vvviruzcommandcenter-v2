@@ -95,7 +95,7 @@ export default async function PublicExclusivesPage() {
           {offer.exclusive_track_title.trim() ? (
             <div className="mx-auto mt-8 max-w-[560px] rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
-                {offer.unlock_experience === "signup_notify" ? "Preview Drop" : "Exclusive Track"}
+                {offer.unlock_experience === "signup_notify" ? "Preview Drop" : "Early Access Preview"}
               </p>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-[#f7f1e6]">
                 {offer.exclusive_track_title}
@@ -148,10 +148,10 @@ export default async function PublicExclusivesPage() {
           
           <div className="relative">
             <h2 className="text-2xl font-bold tracking-tight text-[#f7f1e6] sm:text-4xl">
-              The Full Vault Experience
+              The Future of The Vault
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-[#a7b0ba] sm:text-lg">
-              The full Vault EP will include five off-platform tracks, high-quality WAV files, digital lyric booklets, and exclusive cyberpunk/glitch covers. This is a direct-to-fan release only.
+              The Vault EP will be a premium digital-only release featuring tracks that will never be released on Spotify or Apple Music. By joining the early access list, you&apos;ll be first in line for the full bundle when it drops.
             </p>
             <div className="mt-10 grid gap-4 text-left md:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
@@ -160,7 +160,7 @@ export default async function PublicExclusivesPage() {
               </div>
               <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
                 <h3 className="font-semibold text-[#d7b663]">02. Off-Platform</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Music that won&apos;t be on Spotify or Apple Music.</p>
+                <p className="mt-2 text-sm text-[#8f98a3]">Private previews of music before the official DSP release.</p>
               </div>
               <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
                 <h3 className="font-semibold text-[#d7b663]">03. High Quality</h3>
