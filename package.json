@@ -23,6 +23,7 @@
     "db:studio:postgres": "node scripts/run-prisma.mjs studio --schema prisma/schema.postgres.prisma",
     "db:export:snapshot": "tsx scripts/export-db-snapshot.ts",
     "db:import:snapshot": "tsx scripts/import-db-snapshot.ts",
+    "db:sync:prod": "tsx scripts/sync-from-prod-backup.ts",
     "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
     "build:vercel": "npm run db:push:postgres && npm run db:generate:postgres && next build",

@@ -1,6 +1,6 @@
 import "server-only";
 
-import {createCipheriv, createHash, randomBytes} from "node:crypto";
+import {createCipheriv, createDecipheriv, createHash, randomBytes} from "node:crypto";
 
 type EncryptedBackupPayload = {
   algorithm: "aes-256-gcm";
@@ -37,4 +37,25 @@ export function encryptBackupArtifact(buffer: Buffer) {
   };
 
   return Buffer.from(JSON.stringify(payload), "utf8");
+}
+
+export function decryptBackupArtifact(buffer: Buffer) {
+  const payload = JSON.parse(buffer.toString("utf8")) as EncryptedBackupPayload;
+
+  if (payload.version !== 1 || payload.algorithm !== "aes-256-gcm") {
+    throw new Error("Unsupported backup encryption format.");
+  }
+
+  const decipher = createDecipheriv(
+    "aes-256-gcm",
+    getBackupEncryptionKey(),
+    Buffer.from(payload.iv, "base64url")
+  );
+
+  decipher.setAuthTag(Buffer.from(payload.tag, "base64url"));
+
+  return Buffer.concat([
+    decipher.update(Buffer.from(payload.ciphertext, "base64url")),
+    decipher.final()
+  ]);
 }
