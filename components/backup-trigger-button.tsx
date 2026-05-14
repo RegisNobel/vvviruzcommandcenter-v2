@@ -3,7 +3,7 @@
 import {useTransition, useState} from "react";
 import {PlayCircle, Loader2} from "lucide-react";
 
-import {triggerManualBackupAction} from "@/app/admin/(protected)/backups/actions";
+import {triggerManualBackupAction} from "@/lib/actions/backups";
 
 export function BackupTriggerButton() {
   const [isPending, startTransition] = useTransition();
