@@ -6,6 +6,7 @@ import {ensureDatabaseUrl} from "../lib/db/load-env";
 import {decryptBackupArtifact} from "../lib/backups/encryption";
 
 ensureDatabaseUrl();
+console.log("Environment variables loaded from .env.local");
 
 async function getAccessToken() {
   const clientId = process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID;
@@ -13,8 +14,10 @@ async function getAccessToken() {
   const refreshToken = process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN;
 
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Google Drive OAuth credentials missing in environment.");
+    throw new Error(`Google Drive OAuth credentials missing in environment. Found: ClientId=${!!clientId}, Secret=${!!clientSecret}, Token=${!!refreshToken}`);
   }
+
+  console.log(`Attempting to refresh token for Client ID: ${clientId.slice(0, 10)}...`);
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -29,6 +32,7 @@ async function getAccessToken() {
 
   const data = await response.json();
   if (!response.ok) {
+    console.error("Google Token Refresh Error Details:", JSON.stringify(data, null, 2));
     throw new Error(`Failed to refresh Google token: ${data.error_description || data.error}`);
   }
 
