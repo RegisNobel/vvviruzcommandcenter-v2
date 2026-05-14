@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-14 01:09 -04:00
+
+- **One-Click Restore Engine**: Built a production-to-production restoration pipeline that allows the owner to restore the entire database from a Google Drive snapshot with one click.
+- **In-Memory Decryption**: The restore process downloads, decrypts (AES-256-GCM), and decompresses (Gzip) snapshots entirely in memory to bypass Vercel's read-only filesystem constraints.
+- **Smart Record Merging**: Implemented composite-key aware upserts for all tables, ensuring that relationships (like release-category assignments) are correctly updated without unique constraint violations.
+- **Restore UI & Security**: Added a `BackupRestoreButton` with a backup selector dropdown and a modal confirmation. The engine explicitly skips `AdminUser` records to prevent overwriting current credentials during a restore.
+- **Concurrency Guards**: Integrated checks to prevent restore operations from starting while a backup is already in progress.
+
 ### 2026-05-13 18:00 -04:00
 
 - **Release Intelligence Layer V1.3**: Implemented a release-level rollup of campaign data.
