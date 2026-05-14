@@ -445,7 +445,20 @@ export type CopySummary = {
   updated_on: string;
 };
 
-export type AdCampaignDecision = "scale" | "retest" | "iterate" | "pause" | "archive";
+/**
+ * V1.2 controlled decision set.
+ * Each label tells the user what to do next, not how the campaign "felt."
+ * Do not add vague labels like "good", "promising", "winner", or "loser."
+ */
+export type AdCampaignDecision =
+  | "scale"
+  | "iterate"
+  | "pause"
+  | "retire"
+  | "retest-hook"
+  | "retest-visual"
+  | "retest-audience"
+  | "needs-more-data";
 
 export type AdBatchType = "Rolling Snapshot" | "Fixed Period" | "Release-to-Date" | "Full Campaign";
 
@@ -668,3 +681,16 @@ export type ReleaseAdMetricsOverview = {
   worst_hook: ReleaseAdHighlightHook | null;
   batches: ReleaseAdBatchRef[];
 };
+/**
+ * V1.3 Release Intelligence Layer — controlled promo verdict label set.
+ * Each label describes the promotional status of the release, not a feeling.
+ * Do not add vague or emotional labels.
+ */
+export type ReleasePromoVerdict =
+  | "Untested"
+  | "Testing"
+  | "Winner"
+  | "Promising"
+  | "Needs New Creative"
+  | "Paused"
+  | "Retired";

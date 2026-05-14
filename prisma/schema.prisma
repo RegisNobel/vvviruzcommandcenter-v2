@@ -304,6 +304,13 @@ model AdCampaignLearning {
   whatFailed    String        @default("")
   nextTest      String        @default("")
   decision      String        @default("iterate")
+  // V1.2 Level 4: Reviewed readout archive fields.
+  // When a readout is reviewed, these fields lock the decision as permanent
+  // historical truth, even if new imports change the computed readout.
+  reviewedAt       DateTime?
+  reviewedBy       String        @default("")
+  finalDecision    String        @default("")
+  humanOverrideNotes String      @default("")
   createdAt     DateTime
   updatedAt     DateTime
   importBatch   AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)

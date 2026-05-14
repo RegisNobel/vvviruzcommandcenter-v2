@@ -13,7 +13,7 @@ const learningSchema = z.object({
   what_worked: z.string().default(""),
   what_failed: z.string().default(""),
   next_test: z.string().default(""),
-  decision: z.enum(["scale", "retest", "iterate", "pause", "archive"]).default("iterate")
+  decision: z.enum(["scale", "iterate", "pause", "retire", "retest-hook", "retest-visual", "retest-audience", "needs-more-data"]).default("iterate")
 });
 
 export async function PUT(

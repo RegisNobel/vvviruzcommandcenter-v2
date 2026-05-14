@@ -64,10 +64,13 @@ const sortOptions: Array<{value: SortKey; label: string}> = [
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
   {value: "scale", label: "Scale"},
-  {value: "retest", label: "Retest"},
   {value: "iterate", label: "Iterate"},
   {value: "pause", label: "Pause"},
-  {value: "archive", label: "Archive"}
+  {value: "retire", label: "Retire"},
+  {value: "retest-hook", label: "Retest Hook"},
+  {value: "retest-visual", label: "Retest Visual"},
+  {value: "retest-audience", label: "Retest Audience"},
+  {value: "needs-more-data", label: "Needs More Data"}
 ];
 
 function formatNumber(value: number | null | undefined) {
@@ -500,6 +503,7 @@ function getLandingPageViewQuality(detail: AdImportBatchDetail): ReadoutQuality 
 
 function getStreamingOutboundClickQuality(detail: AdImportBatchDetail): ReadoutQuality {
   const outboundClicks = getOutboundClickTotal(detail);
+  const activeAdCount = detail.reports.filter(r => (r.spend ?? 0) >= 1.0).length || 1;
   const firstPartyViews = detail.link_follow_through.reduce((total, row) => total + row.links_page_views, 0);
 
   if (firstPartyViews <= 0) {
@@ -547,6 +551,7 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
   const warnings: string[] = [];
   const reasons: string[] = [];
   const outboundClicks = getOutboundClickTotal(detail);
+  const activeAdCount = detail.reports.filter(r => (r.spend ?? 0) >= 1.0).length || 1;
   const reportsWithFirstPartyMatches = new Set(
     detail.link_follow_through
       .filter((row) => row.links_page_views > 0 || row.outbound_streaming_clicks > 0)
@@ -559,18 +564,23 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
   const attributionCoverage = calculateRatio(reportsWithAttributionSignal, detail.reports.length);
   let score = 0;
 
-  if (detail.spend >= 30) {
+  // V1.2 confidence thresholds — tuned conservatively to prevent overreaction.
+  // Spend threshold raised to $50 for High confidence. Meta will happily
+  // let you make a life decision off 3 clicks and a dream. This should not.
+  if (detail.spend / activeAdCount >= 5) {
     score += 1;
-    reasons.push("Spend is high enough to read beyond noise.");
+    reasons.push("Average spend per ad is high enough ($5+) to see early Pull.");
+  } else if (detail.spend / activeAdCount >= 2) {
+    warnings.push("Spend per ad is thin; directional signal only.");
   } else {
-    warnings.push("Spend is still light; do not let a tiny test overrule stronger future data.");
+    warnings.push("Micro-spend per ad; signal is likely noise.");
   }
 
-  if (detail.link_clicks >= 100) {
+  if (detail.link_clicks / activeAdCount >= 15) {
     score += 1;
-    reasons.push("Meta link-click volume is meaningful.");
+    reasons.push("Link-click volume per ad is meaningful (15+ avg).");
   } else {
-    warnings.push("Link-click volume is thin.");
+    warnings.push("Link-click volume per ad is low.");
   }
 
   if (detail.landing_page_views >= 50) {
@@ -580,19 +590,23 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
     warnings.push("Landing-page view volume is low.");
   }
 
-  if (outboundClicks >= 15) {
+  if (outboundClicks / activeAdCount >= 3) {
     score += 1;
-    reasons.push("Streaming outbound click volume is usable.");
+    reasons.push("Outbound intent per ad is usable (3+ avg).");
   } else {
-    warnings.push("Streaming outbound click volume is low.");
+    warnings.push("Streaming outbound intent is low per ad.");
   }
 
   if ((attributionCoverage ?? 0) >= 85) {
     score += 1;
     reasons.push("Most imported ads have explicit UTMs or matched first-party content values.");
+  } else if ((attributionCoverage ?? 0) >= 50) {
+    warnings.push(
+      "Some Meta rows lack exported URL parameters. Ad-level attribution is partial."
+    );
   } else {
     warnings.push(
-      "Some Meta rows lack exported URL parameters and do not match first-party content values, so ad-level attribution may be blurry."
+      "Most Meta rows lack UTMs and do not match first-party data. Ad-level attribution is unreliable."
     );
   }
 
@@ -600,12 +614,12 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
     score += 1;
     reasons.push(`${detail.batch_type} exports are cleaner for campaign decisions than overlapping snapshots.`);
   } else {
-    warnings.push("Rolling snapshots can overlap; treat comparisons as directional.");
+    warnings.push("Rolling snapshots can overlap; treat comparisons as directional, not final.");
   }
 
   if (score >= 5) {
     return {
-      detail: "Strong enough to make a campaign decision, assuming the CSV export covers the intended window.",
+      detail: "Meaningful spend for a 3-day optimization window. Reliable for directional budget moves.",
       level: "High confidence",
       reasons,
       warnings
@@ -614,7 +628,7 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
 
   if (score >= 3) {
     return {
-      detail: "Useful directional signal, but keep the next test conservative.",
+      detail: "Useful directional signal, but keep the next test conservative. Do not scale from Medium confidence alone.",
       level: "Medium confidence",
       reasons,
       warnings
@@ -622,13 +636,18 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
   }
 
   return {
-    detail: "Weak signal. Use this readout to choose what to test next, not to declare a winner.",
+    detail: "Weak signal. Use this readout to choose what to test next, not to declare a winner or make a budget decision.",
     level: "Low confidence",
     reasons,
     warnings
   };
 }
 
+/**
+ * V1.2 computed decision.
+ * Returns exactly one label from the controlled decision set.
+ * Low confidence always returns "Needs More Data" to prevent premature budget moves.
+ */
 function getComputedDecision({
   confidence,
   detail,
@@ -644,22 +663,30 @@ function getComputedDecision({
 }) {
   const outboundClicks = getOutboundClickTotal(detail);
 
+  const activeAdCount = detail.reports.filter(r => (r.spend ?? 0) >= 1.0).length || 1;
+
+  // V1.2: Low confidence must force "Needs More Data" — never let the user
+  // act on data the system itself does not trust.
   if (confidence.level === "Low confidence") {
-    return "Iterate";
+    return "Needs More Data";
   }
 
-  if (detail.spend >= 40 && detail.link_clicks <= 5 && outboundClicks <= 1) {
+  // High spend with near-zero engagement = dead creative
+  if (detail.spend / activeAdCount >= 5 && detail.link_clicks / activeAdCount <= 1 && outboundClicks / activeAdCount < 0.5) {
     return "Retire";
   }
 
+  // Clicks exist but drop off at the landing page = hook/message mismatch
   if (landingQuality.tone === "bad" && detail.link_clicks >= 50) {
-    return "Retest with new hook";
+    return "Retest Hook";
   }
 
+  // Landing works but streaming intent is missing = visual/CTA problem
   if (streamingQuality.tone === "bad" && detail.landing_page_views >= 25) {
-    return "Retest with new visual";
+    return "Retest Visual";
   }
 
+  // Strong top creative with good funnel = scale candidate
   if (
     topCreative &&
     (topCreative.results ?? 0) > 0 &&
@@ -669,11 +696,40 @@ function getComputedDecision({
     return "Scale";
   }
 
-  if (detail.spend >= 50 && outboundClicks <= 2) {
+  // Meaningful spend but no outbound intent = stop bleeding
+  if (detail.spend / activeAdCount >= 6 && outboundClicks / activeAdCount < 0.5) {
     return "Pause";
   }
 
   return "Iterate";
+}
+
+/**
+ * V1.2 next-test recommendation generator.
+ * Each decision label produces a specific, actionable recommendation.
+ * The recommendation should tell the user exactly what to change and what to keep.
+ */
+function getNextTestRecommendation(decision: string, topCreativeName: string, bestHookLabel: string) {
+  switch (decision) {
+    case "Scale":
+      return `Increase budget carefully around ${topCreativeName}. Keep the same UTM discipline and monitor frequency.`;
+    case "Iterate":
+      return "Run the next test with one controlled change (hook, visual, or audience) and wait for stronger confidence before scaling.";
+    case "Pause":
+      return "Stop spending on this batch. Review whether the audience, offer, or creative concept needs to change before restarting.";
+    case "Retire":
+      return "Stop spending on this direction entirely. Rebuild the creative from a different angle, hook, or content type.";
+    case "Retest Hook":
+      return `Keep the strongest visual direction, but test a sharper hook and clearer promise. ${bestHookLabel !== "No linked hook signal yet" ? `Current best hook angle: ${bestHookLabel}.` : ""}`;
+    case "Retest Visual":
+      return "Keep the strongest hook, but test a new visual direction or stronger first-frame pattern to improve streaming intent.";
+    case "Retest Audience":
+      return "Keep the current creative and hook, but test a different audience segment or interest targeting.";
+    case "Needs More Data":
+      return "The current data is too thin for a reliable recommendation. Keep running and wait for more spend, clicks, and outbound signal before deciding.";
+    default:
+      return "Run the next test with one controlled change and wait for stronger confidence before scaling.";
+  }
 }
 
 function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
@@ -714,16 +770,7 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
       topCreative && bestHook
         ? `${topCreativeName} is leading the current read. ${bestHookLabel} is the strongest linked hook angle so far.`
         : "The campaign needs more linked Copy Lab and/or Meta signal before a durable lesson is available.",
-    nextTest:
-      decision === "Scale"
-        ? `Increase budget carefully around ${topCreativeName} and keep the same UTM discipline.`
-        : decision === "Retest with new hook"
-          ? "Keep the strongest visual direction, but test a sharper hook and clearer promise."
-          : decision === "Retest with new visual"
-            ? "Keep the strongest hook, but test a new visual direction or stronger first-frame pattern."
-            : decision === "Retire"
-              ? "Stop spending on this direction and rebuild the creative from a different angle."
-              : "Run the next test with one controlled change and wait for stronger confidence before scaling.",
+    nextTest: getNextTestRecommendation(decision, topCreativeName, bestHookLabel),
     release: detail.release_title || "Standalone / no release linked",
     spend: formatMoney(detail.spend),
     streamingOutboundClickQuality,

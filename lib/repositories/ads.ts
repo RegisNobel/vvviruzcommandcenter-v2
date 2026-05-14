@@ -64,10 +64,13 @@ type BatchWithReports = AdImportBatch & {
 
 const decisionOptions = new Set<AdCampaignDecision>([
   "scale",
-  "retest",
   "iterate",
   "pause",
-  "archive"
+  "retire",
+  "retest-hook",
+  "retest-visual",
+  "retest-audience",
+  "needs-more-data"
 ]);
 
 function sum(values: Array<number | null | undefined>) {
@@ -171,11 +174,11 @@ function calculateReportSignals(
     spend >= 20 &&
     results >= 5 &&
     costPerResult !== null &&
-    averages.costPerResult !== null &&
-    costPerResult <= averages.costPerResult
+    costPerResult <= 0.50
   ) {
     signals.push("Scale Winner");
   }
+
 
   if (
     spend >= 10 &&
@@ -1129,7 +1132,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
 
   // Best ad: lowest CPR among reports with meaningful spend and results
   const qualifyingForBest = reportRecords.filter(
-    (r) => (r.spend ?? 0) >= 10 && (r.results ?? 0) >= 3 && getCpr(r) !== null
+    (r) => (r.spend ?? 0) >= 5 && (r.results ?? 0) >= 1 && getCpr(r) !== null
   );
   const bestAdReport = qualifyingForBest.length > 0
     ? qualifyingForBest.reduce((best, current) =>
@@ -1139,7 +1142,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
 
   // Worst ad: highest CPR among reports with meaningful spend, or zero results with high spend
   const qualifyingForWorst = reportRecords.filter(
-    (r) => (r.spend ?? 0) >= 10
+    (r) => (r.spend ?? 0) >= 5
   );
   const worstAdReport = qualifyingForWorst.length > 0
     ? qualifyingForWorst.reduce((worst, current) => {
@@ -1191,7 +1194,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
       }
     }
 
-    if (data.spend >= 10) {
+    if (data.spend >= 5) {
       if (!worstHook || (hookCpr === null && worstHook.cpr !== null) || (hookCpr !== null && worstHook.cpr !== null && hookCpr > worstHook.cpr)) {
         worstHook = hookSummary;
       }

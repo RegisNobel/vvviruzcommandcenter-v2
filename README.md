@@ -431,6 +431,24 @@ docker compose up --build -d
 
 ## Recent Updates
 
+### 2026-05-13 18:00 -04:00
+
+- **Release Intelligence Layer V1.3**: Implemented a release-level rollup of campaign data.
+- **Promo Verdicts**: Added a new `ReleasePromoVerdict` controlled label set (`Untested`, `Testing`, `Winner`, `Promising`, `Needs New Creative`, `Paused`, `Retired`) to give a definitive promotional status for each release based on aggregated ad metrics and human-saved campaign learnings.
+- **Next Move Logic**: Added dynamic "Next Move" recommendations based on the release's verdict and best hooks/creatives (e.g., "Scale carefully around [best ad]", "Keep testing. [best hook] is showing the strongest signal").
+- **Release Detail Panel**: Injected a new `ReleaseIntelligencePanel` directly into the release detail editor (`components/release-detail-editor.tsx`), surfacing the verdict, key stats, top signals, and next move without requiring a separate dashboard or breaking existing flows.
+- **Bug Fix**: Cleaned up duplicate `activeAdCount` block-scoped variable declarations in `components/ads-batch-dashboard.tsx` that were introduced during the V1.2 CBO patch.
+
+### 2026-05-13 17:50 -04:00
+
+- **Campaign Intelligence Layer V1.2**: Major upgrade to ad-set decision making and confidence scoring.
+- Replaced vague decision labels with a controlled, action-oriented set: `Scale`, `Iterate`, `Pause`, `Retire`, `Retest Hook`, `Retest Visual`, `Retest Audience`, and `Needs More Data`.
+- **Micro-Budget Scaling**: Transitioned from static spend thresholds to "Per-Ad Average" logic. The system now correctly identifies winners and losers for $10/day ad sets running 5-6 creatives.
+- **CBO-Aware Scoring**: Confidence scoring now scales based on "Active Ads" (spend >= $1). This prevents ads ignored by Meta's budget optimization from diluting the batch's confidence score.
+- **Dynamic Recommendations**: Each decision now generates a specific, context-aware "Next Test" recommendation (e.g., "Keep visual, test sharper hook").
+- **Confidence Calibration**: Spend threshold for High Confidence tuned to $30 (matching a 3-day optimization window at $10/day), with graduated warnings for "too thin" or "directional" data.
+- **Archive Preparation**: Added database schema support for "Reviewed Readouts" to lock historical decisions as permanent source-of-truth.
+
 ### 2026-05-13 14:45 -04:00
 
 - Reworked Attribution matrix statuses so Meta CSV rows without exported URL parameters show as normal `META SNAPSHOT` records instead of alarming `MISSING UTM` badges.

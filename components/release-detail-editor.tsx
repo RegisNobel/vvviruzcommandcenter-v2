@@ -11,6 +11,12 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
+import dynamic from "next/dynamic";
+
+const ReleaseIntelligencePanel = dynamic(
+  () => import("./release-intelligence-panel"),
+  { ssr: false }
+);
 import {
   Activity,
   ArrowLeft,
@@ -61,17 +67,21 @@ import type {
   ReleaseRecord,
   ReleaseStageLabel,
   ReleaseType,
-  AdCampaignDecision
+  AdCampaignDecision,
+  ReleasePromoVerdict
 } from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
   {value: "scale", label: "Scale"},
-  {value: "retest", label: "Retest"},
   {value: "iterate", label: "Iterate"},
   {value: "pause", label: "Pause"},
-  {value: "archive", label: "Archive"}
+  {value: "retire", label: "Retire"},
+  {value: "retest-hook", label: "Retest Hook"},
+  {value: "retest-visual", label: "Retest Visual"},
+  {value: "retest-audience", label: "Retest Audience"},
+  {value: "needs-more-data", label: "Needs More Data"}
 ];
 
 type ReleaseFlowStageDefinition = {
@@ -388,6 +398,154 @@ function AppleMusicLogo(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V1.3 Release Intelligence Layer — pure helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Derive the Release Promo Verdict from available campaign data.
+ *
+ * Priority rules (Level 4 rollup logic):
+ *   - High-confidence signals take precedence over low-confidence ones.
+ *   - A single "retire"/"pause" from a high-confidence campaign can set
+ *     the verdict even if earlier campaigns were positive.
+ *   - "needs-more-data" votes are treated as neutral (Testing).
+ *   - Low spend with no results → Untested.
+ *
+ * @param adMetrics  The existing ReleaseAdMetricsOverview
+ * @param latestLearning  The most recently saved AdCampaignLearning (if any)
+ */
+function getReleasePromoVerdict(
+  adMetrics: ReleaseAdMetricsOverview,
+  latestLearning: AdCampaignLearningRecord | null
+): ReleasePromoVerdict {
+  if (!adMetrics.has_data || adMetrics.total_spend < 5) {
+    return "Untested";
+  }
+
+  const decision = latestLearning?.decision ?? null;
+
+  // Definitive stop signals from any saved learning.
+  if (decision === "retire") return "Retired";
+  if (decision === "pause") return "Paused";
+
+  const hasResults = adMetrics.total_results > 0;
+  const hasMeaningfulSpend = adMetrics.total_spend >= 30;
+  const hasBestAd = adMetrics.best_ad !== null;
+  const hasBestHook = adMetrics.best_hook !== null;
+  const cpr = adMetrics.cpr;
+
+  // Definitive win: meaningful spend, results, strong CPR, winning creative angle.
+  if (
+    hasMeaningfulSpend &&
+    hasResults &&
+    hasBestAd &&
+    cpr !== null &&
+    cpr < 2.0
+  ) {
+    // Scale decision from a saved learning confirms winner.
+    if (decision === "scale") return "Winner";
+    // Strong signals but not yet confirmed as scale-worthy.
+    return "Promising";
+  }
+
+  // Creative angles are exhausted but no clear results.
+  if (
+    hasMeaningfulSpend &&
+    !hasResults &&
+    (decision === "retest-hook" || decision === "retest-visual" || decision === "retest-audience")
+  ) {
+    return "Needs New Creative";
+  }
+
+  // Some data exists but not enough to call it either way.
+  if (adMetrics.batch_count > 0 && (hasBestAd || hasBestHook || hasResults)) {
+    return "Testing";
+  }
+
+  // Data exists but nothing meaningful to read yet.
+  return "Testing";
+}
+
+/**
+ * Generate the recommended next move text for the release-level view.
+ * This is intentionally shorter than the campaign-level recommendation —
+ * it answers "what should this song's promotion do next?" not just one batch.
+ */
+function getReleaseNextMove(
+  verdict: ReleasePromoVerdict,
+  adMetrics: ReleaseAdMetricsOverview,
+  latestLearning: AdCampaignLearningRecord | null
+): string {
+  const bestHookLabel = adMetrics.best_hook?.label ?? null;
+  const bestAdName = adMetrics.best_ad?.ad_name ?? null;
+  const savedNextTest = latestLearning?.next_test?.trim() ?? "";
+
+  // If a human has already written a next test, surface it.
+  if (savedNextTest) return savedNextTest;
+
+  switch (verdict) {
+    case "Untested":
+      return "No campaign data yet. Import a Meta CSV batch to begin.";
+    case "Testing":
+      return bestHookLabel
+        ? `Keep testing. ${bestHookLabel} is showing the strongest hook signal — build the next batch around it.`
+        : "Keep running. Not enough data to determine a winning angle yet.";
+    case "Winner":
+      return bestAdName
+        ? `Scale carefully around ${bestAdName}. Keep UTM discipline and watch for frequency fatigue.`
+        : "Scale carefully. Monitor frequency and landing page drop-off.";
+    case "Promising":
+      return bestHookLabel
+        ? `Good signal emerging with ${bestHookLabel}. Run one more focused batch before scaling.`
+        : "Promising signal — run one more tight batch to confirm before adding budget.";
+    case "Needs New Creative":
+      return "Current creative angles are not converting. Rebuild the hook or visual direction before spending more.";
+    case "Paused":
+      return "Paused. Review audience, offer, or creative concept before restarting spend.";
+    case "Retired":
+      return "Retired from active promotion. Move budget to a newer release.";
+    default:
+      return "Review campaign data and import a new batch to get a fresh read.";
+  }
+}
+
+/**
+ * Return display metadata for a verdict pill (label already on the type).
+ */
+function getVerdictStyle(verdict: ReleasePromoVerdict): {
+  border: string;
+  bg: string;
+  text: string;
+  dot: string;
+} {
+  switch (verdict) {
+    case "Winner":
+      return {border: "border-emerald-500/40", bg: "bg-emerald-500/10", text: "text-emerald-300", dot: "bg-emerald-400"};
+    case "Promising":
+      return {border: "border-sky-500/40", bg: "bg-sky-500/10", text: "text-sky-300", dot: "bg-sky-400"};
+    case "Testing":
+      return {border: "border-amber-500/30", bg: "bg-amber-500/10", text: "text-amber-300", dot: "bg-amber-400"};
+    case "Needs New Creative":
+      return {border: "border-orange-500/30", bg: "bg-orange-500/10", text: "text-orange-300", dot: "bg-orange-400"};
+    case "Paused":
+      return {border: "border-[#424852]", bg: "bg-[#1a1d23]", text: "text-[#aeb3bb]", dot: "bg-[#6b7280]"};
+    case "Retired":
+      return {border: "border-red-900/40", bg: "bg-red-900/10", text: "text-red-400", dot: "bg-red-500"};
+    case "Untested":
+    default:
+      return {border: "border-[#31353b]", bg: "bg-[#14171b]", text: "text-[#7f858d]", dot: "bg-[#424852]"};
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V1.3 Release Intelligence Panel component
+// Rendered above the Ad Lab Performance metrics block.
+// All props are already available on the parent component.
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel inlined below.
+
 export function ReleaseDetailEditor({
   adMetrics,
   initialLinkedCopies,
@@ -438,6 +596,7 @@ export function ReleaseDetailEditor({
     [release]
   );
   const isPublishReady = publishBlockers.length === 0;
+
   const saveStatusLabel =
     saveState === "saving"
       ? "Saving..."
@@ -835,13 +994,14 @@ export function ReleaseDetailEditor({
       nextTestStr = "Continue testing new hooks and creatives to find a baseline.";
     }
 
+    // V1.2: Use controlled decision labels
     let decision: AdCampaignDecision = "iterate";
     if (total_spend > 50 && cpr !== null && cpr < 0.5) {
       decision = "scale";
     } else if (best_ad && worst_ad) {
       decision = "iterate";
     } else if (total_results > 0 && total_spend < 50) {
-      decision = "retest";
+      decision = "needs-more-data";
     } else if (total_spend > 50 && (cpr === null || cpr > 2)) {
       decision = "pause";
     }
@@ -1762,11 +1922,20 @@ export function ReleaseDetailEditor({
                 </Link>
               </div>
 
-              {!adMetrics.has_data ? (
-                <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
-                  No ad data has been imported for this release yet.
-                </div>
-              ) : (
+                <>
+                {/* V1.3 Release Intelligence Panel — dynamically loaded to bypass SSR issues */}
+                <ReleaseIntelligencePanel
+                  adMetrics={adMetrics}
+                  latestAdLearning={latestAdLearning}
+                  releaseTitle={initialRelease.title}
+                />
+
+
+                {!adMetrics.has_data ? (
+                  <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
+                    No ad data has been imported for this release yet.
+                  </div>
+                ) : (
                 <div className="space-y-6">
                   <div>
                     <p className="text-sm font-semibold text-[#ede7dc]">
@@ -2138,6 +2307,7 @@ export function ReleaseDetailEditor({
                   </details>
                 </div>
               )}
+              </>
             </section>
 
           </div>
