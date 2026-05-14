@@ -162,7 +162,7 @@ Performance workspace with:
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- SQLite for local development and Docker
+- SQLite for local development
 - Postgres for Vercel production
 - Prisma
 - local filesystem storage for media assets in local mode
@@ -170,7 +170,7 @@ Performance workspace with:
 
 ## Persistence Model
 
-Structured app data lives behind Prisma. Local development and Docker can use SQLite, while Vercel deployment uses the Postgres schema at `prisma/schema.postgres.prisma`.
+Structured app data lives behind Prisma. Local development can use SQLite, while Vercel deployment uses the Postgres schema at `prisma/schema.postgres.prisma`.
 
 Database-backed data:
 
@@ -272,34 +272,34 @@ npm run dev
 - [http://localhost:3000/exclusives](http://localhost:3000/exclusives)
 - [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
-## Docker v1
 
-The repo includes a Dockerized `v1` setup for the secured app.
 
-### Build and Run
 
-1. Copy `.env.docker.example` to `.env.docker`
-2. Fill in the Docker runtime env vars
-3. Start the app
 
-```bash
-docker compose up --build -d
-```
 
-4. The container entrypoint applies Prisma migrations automatically on boot.
 
-5. If you are migrating an existing local JSON workspace mounted under `storage/`, import it once:
 
-```bash
-docker compose exec app npm run db:import
-```
 
-6. Open:
 
-- [http://localhost:3000](http://localhost:3000)
-- [http://localhost:3000/music](http://localhost:3000/music)
-- [http://localhost:3000/exclusives](http://localhost:3000/exclusives)
-- [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Vercel Deployment Prep
 
@@ -353,7 +353,7 @@ Required Vercel environment variables match `.env.example`:
 - `GOOGLE_DRIVE_PRIVATE_KEY`
 - `GOOGLE_DRIVE_BACKUP_FOLDER_ID`
 
-Local/Docker still default to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
+Local development still defaults to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
 
 ### Automated Backups
 
@@ -419,7 +419,7 @@ npm run lint
 npm run typecheck
 npm run sync:releases
 npm run normalize:releases
-docker compose up --build -d
+
 ```
 
 ## Repo Notes
@@ -856,7 +856,7 @@ After applying RLS changes:
 - Removed the admin Video Lab feature surface, including the nav link, admin dashboard card, `/admin/video-lab` route, and legacy `/admin/lyric-lab` redirect.
 - Removed Video Lab upload, trim, transcription, project, background, and export API handlers plus Remotion, FFmpeg, Whisper, waveform, and video-rendering runtime code.
 - Removed the release-detail Generated Clips section so release pages now show active release planning and Copy Lab linking only.
-- Pruned Video Lab dependencies and setup commands from package metadata, Docker config, Tailwind scanning, and active README setup docs while leaving legacy Prisma tables intact for a future reversible cleanup migration.
+- Pruned Video Lab dependencies and setup commands from package metadata, Tailwind scanning, and active README setup docs while leaving legacy Prisma tables intact for a future reversible cleanup migration.
 
 ### 2026-04-30 02:09 -04:00
 
@@ -968,7 +968,7 @@ After applying RLS changes:
 ### 2026-04-28 16:07 -04:00
 
 - Added Postgres deployment support with `prisma/schema.postgres.prisma`, Postgres generate/push scripts, and a Vercel build command that generates Prisma from the Postgres schema.
-- Added durable object-storage support through `ASSET_STORAGE_DRIVER=vercel-blob` and `@vercel/blob`, while preserving local disk storage for local/Docker runs.
+- Added durable object-storage support through `ASSET_STORAGE_DRIVER=vercel-blob` and `@vercel/blob`, while preserving local disk storage for local runs.
 - Added first-party `/links` analytics tracking for page views, outbound link conversions, CTR, unique visitors, platform breakdowns, referrers, and UTM/source data.
 - Built the protected `/admin/attribution` dashboard and added an admin Site Settings control-map panel confirming public copy, images, links, and tracking are editable without code.
 
@@ -1232,7 +1232,7 @@ After applying RLS changes:
 - Added a repository layer under `lib/repositories/*` so route handlers and components can keep stable contracts while storage lives behind cleaner adapters.
 - Moved releases, release tasks, release streaming links, lyric project metadata, lyric lines, copy entries, admin user metadata, and admin sessions into the database.
 - Kept large media assets and generated files on disk under `storage/`.
-- Added Prisma scripts, initial migration files, JSON-to-SQLite import tooling, and Docker migration support.
+- Added Prisma scripts, initial migration files, and JSON-to-SQLite import tooling.
 - Imported the current local JSON workspace into SQLite and verified the migration counts.
 
 ### 2026-04-21 15:26 -04:00
@@ -1243,7 +1243,7 @@ After applying RLS changes:
 
 ### 2026-04-21 14:46 -04:00
 
-- Updated WSL and verified the Dockerized `v1` app runs successfully on port `3000`.
+- Updated WSL and verified the app runs successfully on port `3000`.
 
 ### 2026-04-21 01:55 -04:00
 
