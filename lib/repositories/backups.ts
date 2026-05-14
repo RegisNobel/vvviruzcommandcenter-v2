@@ -62,3 +62,24 @@ export async function markBackupRunFailed(id: string, error: unknown) {
     }
   });
 }
+
+export async function getRecentBackupRuns(limit = 10) {
+  return prisma.backupRun.findMany({
+    orderBy: {
+      startedAt: "desc"
+    },
+    take: limit
+  });
+}
+
+export async function getLatestSuccessfulDatabaseBackupRun() {
+  return prisma.backupRun.findFirst({
+    where: {
+      type: "database_snapshot",
+      status: "success"
+    },
+    orderBy: {
+      startedAt: "desc"
+    }
+  });
+}

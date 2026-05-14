@@ -13,7 +13,8 @@ const navItems = [
   {href: "/admin/ad-lab", label: "Ad Lab"},
   {href: "/admin/copy-lab", label: "Copy Lab"},
   {href: "/admin/photo-lab", label: "Photo Lab"},
-  {href: "/admin/releases", label: "Releases"}
+  {href: "/admin/releases", label: "Releases"},
+  {href: "/admin/backups", label: "Backups"}
 ];
 
 export function CommandCenterNav() {
