@@ -405,19 +405,33 @@ export type ExclusiveAssetUploadResponse = {
 export type HookType =
   | "discovery-shock"
   | "identity-callout"
-  | "proof-of-skill";
+  | "proof-of-skill"
+  | "emotional-pull"
+  | "curiosity-gap"
+  | "hype-challenge"
+  | (string & {});
 
 export type CopyType = HookType;
 
 export type CopyContentType =
   | "amv-lyric-edit"
-  | "performance-clip"
-  | "b-roll-stock-clip";
+  | "studio-performance"
+  | "gym-clip"
+  | "talking-head"
+  | "meme-skit"
+  | "b-roll-stock"
+  | "text-only"
+  | "cover-art-static"
+  | (string & {});
 
 export type CopySongSection =
+  | "intro"
   | "hook"
-  | "verse-1"
-  | "verse-2";
+  | "verse"
+  | "bridge"
+  | "outro"
+  | "full-song"
+  | (string & {});
 
 export type CopyRecord = {
   id: string;

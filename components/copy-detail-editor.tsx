@@ -364,8 +364,7 @@ export function CopyDetailEditor({
                   Creative Strategy
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Lightweight tags for future Ad Lab grouping without slowing
-                  down the copy workflow.
+                  Content Type describes the format. Song Section describes the musical moment. Hook Type describes the marketing angle. Creative Notes describe the execution.
                 </p>
               </div>
 

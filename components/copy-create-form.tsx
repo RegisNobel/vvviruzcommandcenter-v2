@@ -155,8 +155,7 @@ export function CopyCreateForm({
             <div className="md:col-span-2">
               <p className="field-label">Creative Strategy</p>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Keep the tags simple so Ad Lab can group performance by
-                creative format and song moment later.
+                Content Type describes the format. Song Section describes the musical moment. Hook Type describes the marketing angle. Creative Notes describe the execution.
               </p>
             </div>
 

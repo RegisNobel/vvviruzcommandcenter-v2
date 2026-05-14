@@ -18,10 +18,10 @@ import {readCopySummaries, saveCopy} from "@/lib/server/copies";
 const createCopySchema = z.object({
   hook: z.string().trim().min(1, "Hook is required."),
   caption: z.string().trim().min(1, "Caption is required."),
-  hook_type: z.enum(hookTypeOptions).optional(),
+  hook_type: z.string().optional(),
   type: z.string().optional(),
-  content_type: z.enum(contentTypeOptions).default("amv-lyric-edit"),
-  song_section: z.enum(songSectionOptions).default("hook"),
+  content_type: z.string().default("amv-lyric-edit"),
+  song_section: z.string().default("hook"),
   creative_notes: z.string().trim().default(""),
   release_id: z.string().trim().min(1).nullable().default(null)
 });

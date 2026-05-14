@@ -25,10 +25,10 @@ const updateCopySchema = z.object({
   release_id: z.string().trim().min(1).nullable(),
   hook: z.string().default(""),
   caption: z.string().default(""),
-  hook_type: z.enum(hookTypeOptions).optional(),
+  hook_type: z.string().optional(),
   type: z.string().optional(),
-  content_type: z.enum(contentTypeOptions).default("amv-lyric-edit"),
-  song_section: z.enum(songSectionOptions).default("hook"),
+  content_type: z.string().default("amv-lyric-edit"),
+  song_section: z.string().default("hook"),
   creative_notes: z.string().default(""),
   created_on: z.string(),
   updated_on: z.string()

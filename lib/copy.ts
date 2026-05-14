@@ -10,19 +10,30 @@ import {createId} from "@/lib/utils";
 export const hookTypeOptions = [
   "discovery-shock",
   "identity-callout",
-  "proof-of-skill"
+  "proof-of-skill",
+  "emotional-pull",
+  "curiosity-gap",
+  "hype-challenge"
 ] as const satisfies ReadonlyArray<HookType>;
 
 export const contentTypeOptions = [
   "amv-lyric-edit",
-  "performance-clip",
-  "b-roll-stock-clip"
+  "studio-performance",
+  "gym-clip",
+  "talking-head",
+  "meme-skit",
+  "b-roll-stock",
+  "text-only",
+  "cover-art-static"
 ] as const satisfies ReadonlyArray<CopyContentType>;
 
 export const songSectionOptions = [
+  "intro",
   "hook",
-  "verse-1",
-  "verse-2"
+  "verse",
+  "bridge",
+  "outro",
+  "full-song"
 ] as const satisfies ReadonlyArray<CopySongSection>;
 
 type LegacyCopyShape = Partial<CopyRecord> & {
@@ -45,34 +56,28 @@ export function normalizeHookType(value: string | undefined): HookType {
 
   const normalizedValue = value.trim().toLowerCase();
 
-  if (hookTypeOptions.includes(normalizedValue as HookType)) {
+  if ((hookTypeOptions as readonly string[]).includes(normalizedValue)) {
     return normalizedValue as HookType;
   }
 
   switch (normalizedValue) {
     case "discovery shock":
-    case "curiosity":
     case "clickbait":
-    case "listicle-numbered":
-    case "mistake-regret":
-    case "before-after-result":
-    case "storytelling":
-    case "aspirational":
       return "discovery-shock";
     case "identity callout":
     case "relatable":
-    case "relatable-pain":
-    case "emotional":
-    case "negative":
-    case "ragebait":
-    case "contrarian-opinion":
-    case "neutral":
       return "identity-callout";
     case "proof of skill":
-    case "direct-actionable":
       return "proof-of-skill";
+    case "emotional":
+      return "emotional-pull";
+    case "curiosity":
+      return "curiosity-gap";
+    case "hype":
+    case "challenge":
+      return "hype-challenge";
     default:
-      return "discovery-shock";
+      return value as HookType;
   }
 }
 
@@ -84,8 +89,14 @@ export function formatHookType(value: HookType) {
       return "Identity Callout";
     case "proof-of-skill":
       return "Proof of Skill";
+    case "emotional-pull":
+      return "Emotional Pull";
+    case "curiosity-gap":
+      return "Curiosity Gap";
+    case "hype-challenge":
+      return "Hype / Challenge";
     default:
-      return "Discovery Shock";
+      return value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }
 
@@ -96,7 +107,7 @@ export function normalizeContentType(value: string | undefined): CopyContentType
 
   const normalizedValue = value.trim().toLowerCase();
 
-  if (contentTypeOptions.includes(normalizedValue as CopyContentType)) {
+  if ((contentTypeOptions as readonly string[]).includes(normalizedValue)) {
     return normalizedValue as CopyContentType;
   }
 
@@ -108,14 +119,15 @@ export function normalizeContentType(value: string | undefined): CopyContentType
       return "amv-lyric-edit";
     case "performance clip":
     case "performance":
-      return "performance-clip";
+      return "studio-performance";
     case "b-roll / stock clip":
     case "b-roll stock clip":
     case "b-roll":
     case "stock clip":
-      return "b-roll-stock-clip";
+    case "b-roll-stock-clip":
+      return "b-roll-stock";
     default:
-      return "amv-lyric-edit";
+      return value as CopyContentType;
   }
 }
 
@@ -123,12 +135,22 @@ export function formatContentType(value: CopyContentType) {
   switch (value) {
     case "amv-lyric-edit":
       return "AMV / Lyric Edit";
-    case "performance-clip":
-      return "Performance Clip";
-    case "b-roll-stock-clip":
-      return "B-Roll / Stock Clip";
+    case "studio-performance":
+      return "Studio Performance";
+    case "gym-clip":
+      return "Gym Clip";
+    case "talking-head":
+      return "Talking Head";
+    case "meme-skit":
+      return "Meme / Skit";
+    case "b-roll-stock":
+      return "B-roll / Stock";
+    case "text-only":
+      return "Text-only";
+    case "cover-art-static":
+      return "Cover Art / Static";
     default:
-      return "AMV / Lyric Edit";
+      return value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }
 
@@ -139,32 +161,41 @@ export function normalizeSongSection(value: string | undefined): CopySongSection
 
   const normalizedValue = value.trim().toLowerCase();
 
-  if (songSectionOptions.includes(normalizedValue as CopySongSection)) {
+  if ((songSectionOptions as readonly string[]).includes(normalizedValue)) {
     return normalizedValue as CopySongSection;
   }
 
   switch (normalizedValue) {
     case "verse 1":
     case "verse one":
-      return "verse-1";
+    case "verse-1":
     case "verse 2":
     case "verse two":
-      return "verse-2";
-    default:
+    case "verse-2":
+      return "verse";
+    case "chorus":
       return "hook";
+    default:
+      return value as CopySongSection;
   }
 }
 
 export function formatSongSection(value: CopySongSection) {
   switch (value) {
+    case "intro":
+      return "Intro";
     case "hook":
       return "Hook";
-    case "verse-1":
-      return "Verse 1";
-    case "verse-2":
-      return "Verse 2";
+    case "verse":
+      return "Verse";
+    case "bridge":
+      return "Bridge";
+    case "outro":
+      return "Outro";
+    case "full-song":
+      return "Full Song / General";
     default:
-      return "Hook";
+      return value.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }
 
