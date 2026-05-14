@@ -379,8 +379,6 @@ Optional offsite destination:
 - Run `npm run setup:drive-oauth` locally after creating a Google OAuth client with `http://127.0.0.1:53682/oauth2callback` as an authorized redirect URI. The helper opens a local callback server and prints the refresh token for Vercel.
 - Service-account mode is still available with `GOOGLE_DRIVE_AUTH_MODE=service_account`, `GOOGLE_DRIVE_CLIENT_EMAIL`, and `GOOGLE_DRIVE_PRIVATE_KEY`, but normal My Drive uploads fail because service accounts do not have personal Drive storage quota. Use that mode only with a Google Workspace Shared Drive or delegated setup.
 
-Recovery posture:
-
 - Supabase/Postgres provider backups remain the first line of defense for database restore.
 - App-level snapshots provide portable logical exports and an extra recovery path.
 - Vercel Blob remains the primary durable media store; the asset manifest gives us a restore/audit inventory. Full binary asset mirroring to Drive should be added later only if storage size and cron duration stay manageable.
@@ -399,21 +397,29 @@ Before deploying:
 - [ ] Public URLs verified
 - [ ] Backup strategy confirmed, including `CRON_SECRET`, `BACKUP_ENCRYPTION_SECRET`, and provider backup retention
 
-## Restoring Production Data to Local
+### Restoring Production Data to Local
 
-If you need to sync your local development environment with the latest production data, follow these steps.
+If you need to sync your local development environment (or a new production environment) with the latest production data, you have two options:
 
-### 1. Download Backup Artifacts
-Go to your **Google Drive** backup folder (or Vercel Blob) and download the latest encrypted artifacts:
+### Option 1: One-Click Restore (UI)
+The easiest way to restore data is through the **Admin Command Center**:
+1. Log in to `/admin/backups`.
+2. Click the **"Restore from Backup"** button.
+3. Select a snapshot from the dropdown list (fetched from Google Drive).
+4. Confirm the restore. The app will download, decrypt, and import the data in-memory.
+   - *Note: Admin credentials are never overwritten.*
+
+### Option 2: Manual Restore (CLI Fallback)
+If you cannot access the UI or need to restore from a specific local file:
+
+#### 1. Download Backup Artifacts
+Go to your **Google Drive** backup folder and download the encrypted artifacts:
 - `vcc-db-snapshot-[timestamp].json.gz.enc`
 - `vcc-asset-manifest-[timestamp].json.gz.enc`
 
 Place these files in your local `storage/` directory.
 
-### 2. Decrypt the Artifacts
-Use the local decryption script. It will automatically detect the content type and save it to the correct local file.
-*Requires `BACKUP_ENCRYPTION_SECRET` to be set in `.env.local`.*
-
+#### 2. Decrypt the Artifacts
 ```bash
 # Decrypt Database Snapshot
 npm run db:decrypt:backup -- storage/vcc-db-snapshot-[...].json.gz.enc
@@ -422,14 +428,13 @@ npm run db:decrypt:backup -- storage/vcc-db-snapshot-[...].json.gz.enc
 npm run db:decrypt:backup -- storage/vcc-asset-manifest-[...].json.gz.enc
 ```
 
-### 3. Import Database
-Import the decrypted JSON into your local SQLite database:
+#### 3. Import Database
 ```bash
 npm run db:import:snapshot
 ```
 
-### 4. Sync Assets
-Download any missing binary files (covers, tracks, etc.) from production URLs to your local storage:
+#### 4. Sync Assets
+Download missing binary files from production URLs to local storage:
 ```bash
 npm run db:sync:assets
 ```
@@ -445,6 +450,10 @@ npm run db:generate:postgres
 npm run db:push:postgres
 npm run db:export:snapshot
 npm run db:import:snapshot
+npm run db:decrypt:backup
+npm run db:sync:assets
+npm run db:sync:prod
+npm run db:sync:drive
 npm run assets:upload:blob
 npm run setup:drive-oauth
 npm run db:import
@@ -454,12 +463,8 @@ npm run lint
 npm run typecheck
 npm run sync:releases
 npm run normalize:releases
-
 ```
 
-## Repo Notes
-
-- This repository intentionally excludes local auth secrets, local media, local exports, and local storage records.
 - The SQLite database file under `storage/` is intentionally excluded from source control.
 - The GitHub version is source-focused and safe to review publicly.
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
