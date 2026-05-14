@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import {BackupRestoreButton} from "@/components/backup-restore-button";
 import {BackupTriggerButton} from "@/components/backup-trigger-button";
 import {getRecentBackupRuns} from "@/lib/repositories/backups";
 
@@ -98,7 +97,10 @@ export default async function AdminBackupsPage() {
                 Confirm that Command Center backups are running securely and without errors.
               </p>
             </div>
-            <BackupTriggerButton />
+            <div className="flex items-start gap-3">
+              <BackupRestoreButton />
+              <BackupTriggerButton />
+            </div>
           </div>
         </section>
 
@@ -205,22 +207,25 @@ export default async function AdminBackupsPage() {
         </section>
 
         <section className="panel px-4 py-5 sm:px-6">
-          <h2 className="text-lg font-semibold text-ink">Restore Instructions</h2>
+          <h2 className="text-lg font-semibold text-ink">Restore &amp; Recovery</h2>
           <div className="mt-4 space-y-4 text-sm leading-6 text-muted">
             <p>
-              <strong className="text-ink">1. Provider Backups are Primary:</strong> Your first line of defense for database restore is the automated backup system of your Postgres hosting provider (e.g., Supabase, Neon, Vercel Postgres).
+              <strong className="text-ink">One-Click Restore:</strong> Use the &ldquo;Restore from Backup&rdquo; button above to download, decrypt, and import the latest database snapshot from Google Drive directly into this environment.
             </p>
             <p>
-              <strong className="text-ink">2. App-Level Snapshots:</strong> The backups displayed here are portable encrypted JSON snapshots of your database and media manifests. They provide an extra recovery path if you need to migrate hosts or rebuild from scratch.
+              <strong className="text-ink">Provider Backups are Primary:</strong> Your first line of defense for database restore is the automated backup system of your Postgres hosting provider (e.g., Supabase, Neon, Vercel Postgres).
             </p>
             <p>
-              <strong className="text-ink">3. Encryption:</strong> Backup artifacts are encrypted <em>before</em> leaving this server. <strong>Never expose your BACKUP_ENCRYPTION_SECRET.</strong>
+              <strong className="text-ink">App-Level Snapshots:</strong> The backups displayed here are portable encrypted JSON snapshots of your database and media manifests. They provide an extra recovery path if you need to migrate hosts or rebuild from scratch.
             </p>
             <p>
-              <strong className="text-ink">4. Manual Restore:</strong> Do not build one-click restore into the UI. If you need to restore from a snapshot, pull the repository locally, decrypt the snapshot using your secret, and run the <code>npm run db:import:snapshot</code> CLI script from a trusted machine.
+              <strong className="text-ink">Admin Credentials:</strong> Restore operations <em>never</em> overwrite admin users or auth sessions. Your login credentials remain intact after any restore.
             </p>
             <p>
-              <strong className="text-ink">5. Security Warning:</strong> Do not upload raw unencrypted snapshots to public Blob storage.
+              <strong className="text-ink">Encryption:</strong> Backup artifacts are encrypted <em>before</em> leaving this server. <strong>Never expose your BACKUP_ENCRYPTION_SECRET.</strong>
+            </p>
+            <p>
+              <strong className="text-ink">Manual Restore (CLI):</strong> You can also restore locally by downloading a backup from Google Drive, decrypting it with <code>npm run db:decrypt:backup</code>, and running <code>npm run db:import:snapshot</code>.
             </p>
           </div>
         </section>
