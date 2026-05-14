@@ -2,9 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {gunzipSync} from "node:zlib";
 
-import {list, get} from "@vercel/blob";
+import {list} from "@vercel/blob";
 
+import {ensureDatabaseUrl} from "../lib/db/load-env";
 import {decryptBackupArtifact} from "../lib/backups/encryption";
+
+ensureDatabaseUrl();
 
 async function main() {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
