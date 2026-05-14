@@ -49,6 +49,7 @@ function StatusBadge({status}: {status: string}) {
 export default async function AdminBackupsPage() {
   const recentRuns = await getRecentBackupRuns(10);
   const latestRun = recentRuns[0];
+  const latestFailedRun = recentRuns.find(r => r.status === "failed");
 
   let recordCountsSummary = "No counts available.";
   let blobStatus = "Unknown";
@@ -142,11 +143,16 @@ export default async function AdminBackupsPage() {
           </div>
         )}
 
-        {latestRun?.status === "failed" && latestRun.errorMessage ? (
+        {latestFailedRun && latestFailedRun.errorMessage ? (
           <section className="panel border border-red-500/20 bg-red-500/5 px-4 py-5 sm:px-6">
-            <h2 className="text-sm font-bold text-red-400">Latest Error</h2>
+            <h2 className="text-sm font-bold text-red-400">
+              Latest Error ({latestFailedRun.type === "database_snapshot" ? "Database" : "Assets"})
+            </h2>
             <p className="mt-2 font-mono text-xs text-red-300">
-              {latestRun.errorMessage}
+              {latestFailedRun.errorMessage}
+            </p>
+            <p className="mt-2 text-[10px] text-red-400/50 uppercase tracking-wider">
+              Occurred {formatRelativeTime(new Date(latestFailedRun.startedAt))} ago
             </p>
           </section>
         ) : null}
