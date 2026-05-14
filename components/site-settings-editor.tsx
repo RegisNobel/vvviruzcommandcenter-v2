@@ -1295,7 +1295,7 @@ export function SiteSettingsEditor({
 
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 10</p>
+            <p className="field-label">Section 11</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Tracking</h3>
           </div>
 
@@ -1348,7 +1348,7 @@ export function SiteSettingsEditor({
 
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 11</p>
+            <p className="field-label">Section 12</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Release Page</h3>
           </div>
 
@@ -1468,7 +1468,7 @@ export function SiteSettingsEditor({
 
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
-            <p className="field-label">Section 12</p>
+            <p className="field-label">Section 13</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Social Links</h3>
           </div>
 

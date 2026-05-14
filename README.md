@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-14 17:40 -04:00
+
+- **Admin UI Reorganization**: Decoupled the Community Section from the Exclusive Offer settings on the Public Site settings page. 
+    - **Section 9** is now dedicated to the Exclusive Track Offer (Setup, Delivery, Assets).
+    - **Section 10** is now a standalone Community Section for the Command Center promo.
+    - Renumbered subsequent sections (Tracking, Release Page, Social Links) to maintain a consistent numbered sequence (11-13).
+
 ### 2026-05-14 17:10 -04:00
 
 - **The Vault Preview Strategy**: Repositioned the public `/exclusives` page as a Vault Preview capture page for the upcoming Vault EP bundle.
