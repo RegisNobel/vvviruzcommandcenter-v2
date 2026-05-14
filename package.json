@@ -25,6 +25,8 @@
     "db:import:snapshot": "tsx scripts/import-db-snapshot.ts",
     "db:sync:prod": "tsx scripts/sync-from-prod-backup.ts",
     "db:sync:drive": "tsx scripts/sync-from-drive-backup.ts",
+    "db:decrypt:backup": "tsx scripts/decrypt-local-backup.ts",
+    "db:sync:assets": "tsx scripts/sync-assets-from-manifest.ts",
     "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
     "build:vercel": "npm run db:push:postgres && npm run db:generate:postgres && next build",

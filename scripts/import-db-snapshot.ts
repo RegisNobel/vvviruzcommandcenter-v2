@@ -67,16 +67,39 @@ function hydrateDates(modelName: string, record: SnapshotRecord) {
   return hydrated;
 }
 
+const compositeUniqueKeys: Record<string, string[]> = {
+  releaseCategoryAssignment: ["categoryId", "releaseId"],
+  releaseStreamingLink: ["releaseId", "platform"],
+  adCreativeCopyLink: ["adCreativeReportId", "copyEntryId"]
+};
+
 async function upsertMany(modelName: string, records: SnapshotRecord[] = []) {
   const delegate = (prisma as Record<string, any>)[modelName];
+  const compositeFields = compositeUniqueKeys[modelName];
   let imported = 0;
 
   for (const record of records) {
     const data = hydrateDates(modelName, record);
     const {id, ...updateData} = data;
 
+    // Build the where clause. Prisma upsert requires exactly ONE unique selector.
+    // We prioritize the composite unique key (like categoryId_releaseId) if it exists,
+    // as it is more reliable for syncing relationships than the internal ID.
+    let where: Record<string, any>;
+    
+    if (compositeFields) {
+      const compositeName = compositeFields.join("_");
+      const compositeValue: Record<string, any> = {};
+      for (const field of compositeFields) {
+        compositeValue[field] = data[field];
+      }
+      where = { [compositeName]: compositeValue };
+    } else {
+      where = { id };
+    }
+
     await delegate.upsert({
-      where: {id},
+      where,
       create: data,
       update: updateData
     });
