@@ -129,9 +129,9 @@ export async function POST(request: Request) {
         sourceUtmTerm: payload.source_utm_term,
         sourceReferrer: payload.source_referrer || request.headers.get("referer") || "",
         sourceLandingPage: payload.source_landing_page,
-        sourceOfferMode: offer.unlock_experience,
-        sourceOfferName: offer.exclusive_track_title || "",
-        sourceSignupContext: "exclusive"
+        sourceOfferMode: offer.unlock_experience === "signup_notify" ? "signup_notify_me" : offer.unlock_experience,
+        sourceOfferName: offer.exclusive_track_title || "Vault Preview List",
+        sourceSignupContext: offer.unlock_experience === "signup_notify" ? "vault_preview_list" : "exclusives_page"
       }
     });
 
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
       message: isDuplicate
         ? offer.duplicate_message
         : offer.unlock_experience === "signup_notify"
-          ? "Your exclusive track is on its way."
+          ? offer.success_message || "You’re on the Vault list. Watch your inbox for the first preview drop."
           : offer.success_message || "Your exclusive is unlocked.",
       subscriber: {
         id: subscriber.id,

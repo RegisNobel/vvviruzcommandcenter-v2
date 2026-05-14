@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-14 17:10 -04:00
+
+- **The Vault Preview Strategy**: Repositioned the public `/exclusives` page as a Vault Preview capture page for the upcoming Vault EP bundle.
+- **Copy & Design Overhaul**: Integrated a new "Full Vault Teaser" section highlighting off-platform tracks, WAV files, lyric booklets, and cyberpunk/glitch covers without giving away the full paid product.
+- **Dynamic Configuration**: Updated the admin Site Settings defaults to support "Vault Preview List" language and modified the "Signup / Notify Me" mode to function seamlessly without requiring a hardcoded track file or private link.
+- **Subscriber Attribution Tracking**: Preserved robust UTM and source tracking. Signups captured via the new Vault copy correctly attribute `sourceOfferMode`, `sourceOfferName`, and `sourceSignupContext` to the Vault list.
+
 ### 2026-05-14 17:00 -04:00
 
 - **Final Polish & Type Safety**:
