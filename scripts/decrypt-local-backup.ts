@@ -55,11 +55,15 @@ async function main() {
 
   console.log("Decompressing (Gzip)...");
   const jsonBuffer = gunzipSync(compressedBuffer);
+  const snapshot = JSON.parse(jsonBuffer.toString("utf8"));
 
-  const outputPath = path.join(process.cwd(), "storage", "production-data-snapshot.json");
+  // Detect if this is an asset manifest or a database snapshot
+  const isAssetManifest = !!snapshot.assets && Array.isArray(snapshot.assets);
+  const outputFileName = isAssetManifest ? "asset-manifest.json" : "production-data-snapshot.json";
+  const outputPath = path.join(process.cwd(), "storage", outputFileName);
+
   await fs.writeFile(outputPath, jsonBuffer);
 
-  const snapshot = JSON.parse(jsonBuffer.toString("utf8"));
   const tables = Object.entries(snapshot)
     .filter(([, v]) => Array.isArray(v))
     .map(([k, v]) => `  ${k}: ${(v as unknown[]).length} records`);
