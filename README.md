@@ -802,10 +802,11 @@ After applying RLS changes:
 [ ] Admin dashboard still works through protected server-side routes
 [ ] Supabase service role key is only used server-side
 
-### 2026-05-14 01:43 -04:00
+### 2026-05-14 02:11 -04:00
 
 - Added a "Signup / Notify Me" capture mode to the public `/exclusives` flow.
 - The new mode allows the signup form to appear without requiring a finalized lead magnet (no uploaded file or private external URL).
+- Refined the signup success experience for Notify mode: it now displays "Your exclusive track is on its way." instead of the download-specific message.
 - Added Subscriber Source Tracking to capture `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `referrer`, and `landingPage` upon signup.
 - Updated the Admin Command Center Audience list to display the acquisition campaign and offer context.
 
