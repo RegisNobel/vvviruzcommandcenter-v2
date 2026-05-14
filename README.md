@@ -434,10 +434,11 @@ docker compose up --build -d
 ### 2026-05-13 18:00 -04:00
 
 - **Release Intelligence Layer V1.3**: Implemented a release-level rollup of campaign data.
-- **Promo Verdicts**: Added a new `ReleasePromoVerdict` controlled label set (`Untested`, `Testing`, `Winner`, `Promising`, `Needs New Creative`, `Paused`, `Retired`) to give a definitive promotional status for each release based on aggregated ad metrics and human-saved campaign learnings.
+- **Promo Verdicts**: Added a new `ReleasePromoVerdict` controlled label set (`Untested`, `Testing`, `Winner`, `Promising`, `Needs New Creative`, `Paused`, `Retired`).
+- **Strict Scaling Rule**: Unified the intelligence engine to only recommend **Scaling** (Verdict: Winner / Signal: Scale Winner) if the CPR is below **$0.50**.
 - **Next Move Logic**: Added dynamic "Next Move" recommendations based on the release's verdict and best hooks/creatives (e.g., "Scale carefully around [best ad]", "Keep testing. [best hook] is showing the strongest signal").
-- **Release Detail Panel**: Injected a new `ReleaseIntelligencePanel` directly into the release detail editor (`components/release-detail-editor.tsx`), surfacing the verdict, key stats, top signals, and next move without requiring a separate dashboard or breaking existing flows.
-- **Bug Fix**: Cleaned up duplicate `activeAdCount` block-scoped variable declarations in `components/ads-batch-dashboard.tsx` that were introduced during the V1.2 CBO patch.
+- **Release Detail Panel**: Injected a new `ReleaseIntelligencePanel` via dynamic loading (`ssr: false`) to ensure zero hydration errors while surfacing verdicts and top signals directly in the release editor.
+- **Bug Fix**: Cleaned up duplicate `activeAdCount` block-scoped variable declarations in `components/ads-batch-dashboard.tsx`.
 
 ### 2026-05-13 17:50 -04:00
 
