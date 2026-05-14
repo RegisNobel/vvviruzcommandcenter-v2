@@ -18,6 +18,7 @@ async function getAccessToken() {
   }
 
   console.log(`Attempting to refresh token for Client ID: ${clientId.slice(0, 10)}...`);
+  console.log(`Using Refresh Token (masked): ${refreshToken.slice(0, 5)}...${refreshToken.slice(-5)} (Length: ${refreshToken.length})`);
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
