@@ -160,7 +160,7 @@ export default async function PublicExclusivesPage() {
               </div>
               <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
                 <h3 className="font-semibold text-[#d7b663]">02. Off-Platform</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Music that won't be on Spotify or Apple Music.</p>
+                <p className="mt-2 text-sm text-[#8f98a3]">Music that won&apos;t be on Spotify or Apple Music.</p>
               </div>
               <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
                 <h3 className="font-semibold text-[#d7b663]">03. High Quality</h3>
