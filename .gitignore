@@ -18,6 +18,8 @@ coverage
 storage/auth/*
 storage/auth/sessions/*
 storage/*.db*
+storage/*.json*
+storage/*.enc
 storage/production-data-snapshot.json
 storage/backgrounds/*
 storage/copies/*
