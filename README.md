@@ -399,6 +399,41 @@ Before deploying:
 - [ ] Public URLs verified
 - [ ] Backup strategy confirmed, including `CRON_SECRET`, `BACKUP_ENCRYPTION_SECRET`, and provider backup retention
 
+## Restoring Production Data to Local
+
+If you need to sync your local development environment with the latest production data, follow these steps.
+
+### 1. Download Backup Artifacts
+Go to your **Google Drive** backup folder (or Vercel Blob) and download the latest encrypted artifacts:
+- `vcc-db-snapshot-[timestamp].json.gz.enc`
+- `vcc-asset-manifest-[timestamp].json.gz.enc`
+
+Place these files in your local `storage/` directory.
+
+### 2. Decrypt the Artifacts
+Use the local decryption script. It will automatically detect the content type and save it to the correct local file.
+*Requires `BACKUP_ENCRYPTION_SECRET` to be set in `.env.local`.*
+
+```bash
+# Decrypt Database Snapshot
+npm run db:decrypt:backup -- storage/vcc-db-snapshot-[...].json.gz.enc
+
+# Decrypt Asset Manifest
+npm run db:decrypt:backup -- storage/vcc-asset-manifest-[...].json.gz.enc
+```
+
+### 3. Import Database
+Import the decrypted JSON into your local SQLite database:
+```bash
+npm run db:import:snapshot
+```
+
+### 4. Sync Assets
+Download any missing binary files (covers, tracks, etc.) from production URLs to your local storage:
+```bash
+npm run db:sync:assets
+```
+
 ## Useful Commands
 
 ```bash
