@@ -847,7 +847,19 @@ export function AudienceAdminPage({
                       <td className="px-4 py-4 text-[#ece6da]">{subscriber.name || "Unknown"}</td>
                       <td className="px-4 py-4 text-[#d7dde4]">{subscriber.email}</td>
                       <td className="px-4 py-4 text-muted">
-                        {formatSourceLabel(subscriber.source)}
+                        <div className="flex flex-col">
+                          <span>{formatSourceLabel(subscriber.source)}</span>
+                          {subscriber.source_utm_campaign ? (
+                            <span className="mt-1 text-xs text-[#a1a7b0]">
+                              Campaign: {subscriber.source_utm_campaign}
+                            </span>
+                          ) : null}
+                          {subscriber.source_offer_mode ? (
+                            <span className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-[#81878f]">
+                              Mode: {subscriber.source_offer_mode}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusPillClass(subscriber.status)}`}>

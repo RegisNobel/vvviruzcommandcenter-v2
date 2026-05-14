@@ -321,7 +321,9 @@ export function ExclusiveOfferSettingsPanel({
           >
             <span>
               {exclusiveOffer.exclusive_track_enabled
-                ? "The exclusive page is live if a track asset/URL and Track Title are present."
+                ? exclusiveOffer.unlock_experience === "signup_notify"
+                  ? "The exclusive page is live in Notify Me mode."
+                  : "The exclusive page is live if a track asset/URL and Track Title are present."
                 : "The exclusive page will show an unavailable state."}
             </span>
             <span className="pill">
@@ -509,23 +511,41 @@ export function ExclusiveOfferSettingsPanel({
               >
                 Email Only
               </button>
+              <button
+                className={`flex-1 rounded-[18px] border px-4 py-3 text-center transition ${
+                  exclusiveOffer.unlock_experience === "signup_notify"
+                    ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962]"
+                }`}
+                onClick={() => updateExclusiveOffer({unlock_experience: "signup_notify"})}
+                type="button"
+              >
+                Signup / Notify
+              </button>
             </div>
+            {exclusiveOffer.unlock_experience === "signup_notify" ? (
+              <p className="mt-3 text-xs text-[#a1a7b0]">
+                Collect subscribers before choosing a lead magnet. No track file or private link required.
+              </p>
+            ) : null}
           </div>
 
-          <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Private External URL</span>
-            <input
-              className="field-input"
-              onChange={(event) =>
-                updateExclusiveOffer({private_external_url: event.target.value})
-              }
-              placeholder="https://..."
-              value={exclusiveOffer.private_external_url}
-            />
-            <p className="text-xs text-muted">
-              Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Track Asset.
-            </p>
-          </label>
+          {exclusiveOffer.unlock_experience !== "signup_notify" ? (
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Private External URL</span>
+              <input
+                className="field-input"
+                onChange={(event) =>
+                  updateExclusiveOffer({private_external_url: event.target.value})
+                }
+                placeholder="https://..."
+                value={exclusiveOffer.private_external_url}
+              />
+              <p className="text-xs text-muted">
+                Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Track Asset.
+              </p>
+            </label>
+          ) : null}
 
           {exclusiveOffer.unlock_experience === "instant_unlock" ? (
             <label className="space-y-2">
@@ -584,8 +604,9 @@ export function ExclusiveOfferSettingsPanel({
         </div>
       </section>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <section className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
+      {exclusiveOffer.unlock_experience !== "signup_notify" ? (
+        <div className="mt-5 grid gap-5 xl:grid-cols-2">
+          <section className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
           <p className="field-label">Track Asset</p>
           <div className="mt-4 space-y-4">
             <label className="space-y-2">
@@ -687,6 +708,7 @@ export function ExclusiveOfferSettingsPanel({
           </div>
         </section>
       </div>
+      ) : null}
 
       {message ? (
         <div

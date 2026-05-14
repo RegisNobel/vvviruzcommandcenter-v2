@@ -195,7 +195,7 @@ export type SiteContentSettings = {
     exclusive_track_file_path: string;
     exclusive_track_art_path: string;
     exclusive_track_enabled: boolean;
-    unlock_experience: "instant_unlock" | "email_only";
+    unlock_experience: "instant_unlock" | "email_only" | "signup_notify";
     private_external_url: string;
     instant_unlock_button_label: string;
     also_email_link: boolean;
@@ -343,6 +343,16 @@ export type SubscriberRecord = {
   created_at: string;
   updated_at: string;
   unsubscribed_at: string | null;
+  source_utm_source: string;
+  source_utm_medium: string;
+  source_utm_campaign: string;
+  source_utm_content: string;
+  source_utm_term: string;
+  source_referrer: string;
+  source_landing_page: string;
+  source_offer_mode: string;
+  source_offer_name: string;
+  source_signup_context: string;
 };
 
 export type AudienceOverview = {
@@ -384,7 +394,7 @@ export type EmailSendLogRecord = {
 export type ExclusiveClaimResponse = {
   downloadUrl?: string; // Kept for backwards compatibility/fallback
   privateExternalUrl?: string;
-  unlockExperience: "instant_unlock" | "email_only";
+  unlockExperience: "instant_unlock" | "email_only" | "signup_notify";
   instantUnlockButtonLabel: string;
   isDuplicate: boolean;
   message: string;

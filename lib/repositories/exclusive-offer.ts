@@ -57,7 +57,10 @@ const getCachedPublicExclusiveOffer = unstable_cache(
   const hasTrackFile = Boolean(offer.exclusive_track_file_path.trim());
   const hasExternalLink = Boolean(offer.private_external_url.trim());
   const hasTrackTitle = Boolean(offer.exclusive_track_title.trim());
-  const isAvailable = offer.exclusive_track_enabled && (hasTrackFile || hasExternalLink) && hasTrackTitle;
+  const isSignupNotify = offer.unlock_experience === "signup_notify";
+  const isAvailable = offer.exclusive_track_enabled && (
+    isSignupNotify || ((hasTrackFile || hasExternalLink) && hasTrackTitle)
+  );
 
   return {
     siteSettings,

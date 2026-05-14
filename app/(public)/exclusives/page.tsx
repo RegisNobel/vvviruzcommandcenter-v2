@@ -118,6 +118,7 @@ export default async function PublicExclusivesPage() {
                 nameLabel={offer.name_label}
                 successHeading={offer.success_heading}
                 trackTitle={offer.exclusive_track_title}
+                unlockExperience={offer.unlock_experience}
               />
             ) : (
               <div className="rounded-[28px] border border-white/10 bg-black/16 px-6 py-8 text-center">

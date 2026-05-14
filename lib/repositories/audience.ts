@@ -36,6 +36,16 @@ function toSubscriberRecord(subscriber: {
   createdAt: Date;
   updatedAt: Date;
   unsubscribedAt: Date | null;
+  sourceUtmSource: string;
+  sourceUtmMedium: string;
+  sourceUtmCampaign: string;
+  sourceUtmContent: string;
+  sourceUtmTerm: string;
+  sourceReferrer: string;
+  sourceLandingPage: string;
+  sourceOfferMode: string;
+  sourceOfferName: string;
+  sourceSignupContext: string;
 }): SubscriberRecord {
   return {
     id: subscriber.id,
@@ -48,7 +58,17 @@ function toSubscriberRecord(subscriber: {
     unsubscribe_token: subscriber.unsubscribeToken,
     created_at: subscriber.createdAt.toISOString(),
     updated_at: subscriber.updatedAt.toISOString(),
-    unsubscribed_at: subscriber.unsubscribedAt?.toISOString() ?? null
+    unsubscribed_at: subscriber.unsubscribedAt?.toISOString() ?? null,
+    source_utm_source: subscriber.sourceUtmSource,
+    source_utm_medium: subscriber.sourceUtmMedium,
+    source_utm_campaign: subscriber.sourceUtmCampaign,
+    source_utm_content: subscriber.sourceUtmContent,
+    source_utm_term: subscriber.sourceUtmTerm,
+    source_referrer: subscriber.sourceReferrer,
+    source_landing_page: subscriber.sourceLandingPage,
+    source_offer_mode: subscriber.sourceOfferMode,
+    source_offer_name: subscriber.sourceOfferName,
+    source_signup_context: subscriber.sourceSignupContext
   };
 }
 
@@ -303,6 +323,18 @@ export async function upsertExclusiveSubscriber(values: {
   name: string;
   email: string;
   consentGiven: boolean;
+  sourceAttribution?: {
+    sourceUtmSource?: string;
+    sourceUtmMedium?: string;
+    sourceUtmCampaign?: string;
+    sourceUtmContent?: string;
+    sourceUtmTerm?: string;
+    sourceReferrer?: string;
+    sourceLandingPage?: string;
+    sourceOfferMode?: string;
+    sourceOfferName?: string;
+    sourceSignupContext?: string;
+  };
 }) {
   const now = new Date();
   const normalizedEmail = normalizeEmail(values.email);
@@ -323,7 +355,17 @@ export async function upsertExclusiveSubscriber(values: {
         status: "active",
         consentGiven: values.consentGiven,
         updatedAt: now,
-        unsubscribedAt: null
+        unsubscribedAt: null,
+        sourceUtmSource: existing.sourceUtmSource || values.sourceAttribution?.sourceUtmSource,
+        sourceUtmMedium: existing.sourceUtmMedium || values.sourceAttribution?.sourceUtmMedium,
+        sourceUtmCampaign: existing.sourceUtmCampaign || values.sourceAttribution?.sourceUtmCampaign,
+        sourceUtmContent: existing.sourceUtmContent || values.sourceAttribution?.sourceUtmContent,
+        sourceUtmTerm: existing.sourceUtmTerm || values.sourceAttribution?.sourceUtmTerm,
+        sourceReferrer: existing.sourceReferrer || values.sourceAttribution?.sourceReferrer,
+        sourceLandingPage: existing.sourceLandingPage || values.sourceAttribution?.sourceLandingPage,
+        sourceOfferMode: existing.sourceOfferMode || values.sourceAttribution?.sourceOfferMode,
+        sourceOfferName: existing.sourceOfferName || values.sourceAttribution?.sourceOfferName,
+        sourceSignupContext: existing.sourceSignupContext || values.sourceAttribution?.sourceSignupContext
       }
     });
 
@@ -344,7 +386,17 @@ export async function upsertExclusiveSubscriber(values: {
       downloadToken: createToken(),
       unsubscribeToken: createToken(),
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      sourceUtmSource: values.sourceAttribution?.sourceUtmSource ?? "",
+      sourceUtmMedium: values.sourceAttribution?.sourceUtmMedium ?? "",
+      sourceUtmCampaign: values.sourceAttribution?.sourceUtmCampaign ?? "",
+      sourceUtmContent: values.sourceAttribution?.sourceUtmContent ?? "",
+      sourceUtmTerm: values.sourceAttribution?.sourceUtmTerm ?? "",
+      sourceReferrer: values.sourceAttribution?.sourceReferrer ?? "",
+      sourceLandingPage: values.sourceAttribution?.sourceLandingPage ?? "",
+      sourceOfferMode: values.sourceAttribution?.sourceOfferMode ?? "",
+      sourceOfferName: values.sourceAttribution?.sourceOfferName ?? "",
+      sourceSignupContext: values.sourceAttribution?.sourceSignupContext ?? ""
     }
   });
 

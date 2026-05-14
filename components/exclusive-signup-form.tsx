@@ -11,6 +11,7 @@ type ExclusiveSignupFormProps = {
   nameLabel: string;
   successHeading: string;
   trackTitle: string;
+  unlockExperience?: "instant_unlock" | "email_only" | "signup_notify";
 };
 
 type SaveState = "idle" | "submitting" | "success" | "error";
@@ -22,7 +23,8 @@ export function ExclusiveSignupForm({
   emailLabel,
   nameLabel,
   successHeading,
-  trackTitle
+  trackTitle,
+  unlockExperience: initialUnlockExperience = "instant_unlock"
 }: ExclusiveSignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,7 +33,7 @@ export function ExclusiveSignupForm({
   const [message, setMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState("");
   const [privateExternalUrl, setPrivateExternalUrl] = useState("");
-  const [unlockExperience, setUnlockExperience] = useState<"instant_unlock" | "email_only">("instant_unlock");
+  const [unlockExperience, setUnlockExperience] = useState<"instant_unlock" | "email_only" | "signup_notify">(initialUnlockExperience);
   const [instantUnlockButtonLabel, setInstantUnlockButtonLabel] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -52,13 +54,20 @@ export function ExclusiveSignupForm({
           name,
           email,
           consent_given: consentGiven,
-          bot_test_field: botTestField
+          bot_test_field: botTestField,
+          source_utm_source: new URLSearchParams(window.location.search).get("utm_source") || "",
+          source_utm_medium: new URLSearchParams(window.location.search).get("utm_medium") || "",
+          source_utm_campaign: new URLSearchParams(window.location.search).get("utm_campaign") || "",
+          source_utm_content: new URLSearchParams(window.location.search).get("utm_content") || "",
+          source_utm_term: new URLSearchParams(window.location.search).get("utm_term") || "",
+          source_referrer: document.referrer || "",
+          source_landing_page: window.location.pathname || ""
         })
       });
       const payload = (await response.json()) as {
         downloadUrl?: string;
         privateExternalUrl?: string;
-        unlockExperience?: "instant_unlock" | "email_only";
+        unlockExperience?: "instant_unlock" | "email_only" | "signup_notify";
         instantUnlockButtonLabel?: string;
         message?: string;
       };
@@ -90,7 +99,7 @@ export function ExclusiveSignupForm({
         </h2>
         <p className="mt-3 text-sm leading-7 text-[#c3ccd5]">{message}</p>
         
-        {unlockExperience === "instant_unlock" ? (
+        {unlockExperience === "signup_notify" ? null : unlockExperience === "instant_unlock" ? (
           <div className="mt-6 rounded-[22px] border border-white/10 bg-black/20 px-5 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
               Unlocked Track

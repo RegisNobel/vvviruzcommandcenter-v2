@@ -344,10 +344,23 @@ model Subscriber {
   createdAt        DateTime
   updatedAt        DateTime
   unsubscribedAt   DateTime?
+  // Source attribution (V1 - first-source preserved on upsert)
+  sourceUtmSource     String      @default("")
+  sourceUtmMedium     String      @default("")
+  sourceUtmCampaign   String      @default("")
+  sourceUtmContent    String      @default("")
+  sourceUtmTerm       String      @default("")
+  sourceReferrer      String      @default("")
+  sourceLandingPage   String      @default("")
+  sourceOfferMode     String      @default("")
+  sourceOfferName     String      @default("")
+  sourceSignupContext String      @default("")
   sendLogs         EmailSendLog[]
 
   @@index([status, createdAt])
   @@index([source, status])
+  @@index([sourceUtmCampaign])
+  @@index([sourceOfferMode])
 }
 
 model EmailCampaign {

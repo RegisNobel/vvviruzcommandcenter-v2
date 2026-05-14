@@ -195,7 +195,7 @@ const siteSettingsSchema = z.object({
       exclusive_track_file_path: z.string().default(""),
       exclusive_track_art_path: z.string().default(""),
       exclusive_track_enabled: z.boolean().default(false),
-      unlock_experience: z.enum(["instant_unlock", "email_only"]).default("instant_unlock"),
+      unlock_experience: z.enum(["instant_unlock", "email_only", "signup_notify"]).default("instant_unlock"),
       private_external_url: z.string().default(""),
       instant_unlock_button_label: z.string().default("Listen Now"),
       also_email_link: z.boolean().default(true),

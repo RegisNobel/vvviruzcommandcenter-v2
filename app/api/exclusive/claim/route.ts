@@ -23,7 +23,14 @@ const claimSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: emailField("Enter a valid email address."),
   consent_given: z.boolean().default(false),
-  bot_test_field: z.string().optional().default("")
+  bot_test_field: z.string().optional().default(""),
+  source_utm_source: z.string().optional().default(""),
+  source_utm_medium: z.string().optional().default(""),
+  source_utm_campaign: z.string().optional().default(""),
+  source_utm_content: z.string().optional().default(""),
+  source_utm_term: z.string().optional().default(""),
+  source_referrer: z.string().optional().default(""),
+  source_landing_page: z.string().optional().default("")
 });
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
@@ -113,7 +120,19 @@ export async function POST(request: Request) {
     const {subscriber, isDuplicate} = await upsertExclusiveSubscriber({
       name: payload.name,
       email: payload.email,
-      consentGiven: payload.consent_given
+      consentGiven: payload.consent_given,
+      sourceAttribution: {
+        sourceUtmSource: payload.source_utm_source,
+        sourceUtmMedium: payload.source_utm_medium,
+        sourceUtmCampaign: payload.source_utm_campaign,
+        sourceUtmContent: payload.source_utm_content,
+        sourceUtmTerm: payload.source_utm_term,
+        sourceReferrer: payload.source_referrer || request.headers.get("referer") || "",
+        sourceLandingPage: payload.source_landing_page,
+        sourceOfferMode: offer.unlock_experience,
+        sourceOfferName: offer.exclusive_track_title || "",
+        sourceSignupContext: "exclusive"
+      }
     });
 
     let targetLink = "";
@@ -155,7 +174,9 @@ export async function POST(request: Request) {
       isDuplicate,
       message: isDuplicate
         ? offer.duplicate_message
-        : offer.success_message || "Your exclusive is unlocked.",
+        : offer.unlock_experience === "signup_notify"
+          ? "Your exclusive track is on its way."
+          : offer.success_message || "Your exclusive is unlocked.",
       subscriber: {
         id: subscriber.id,
         name: subscriber.name,
@@ -175,7 +196,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      {message: "Unable to unlock the exclusive track right now."},
+      {message: error instanceof Error ? error.message : "Unable to unlock the exclusive track right now."},
       {status: 500}
     );
   }
