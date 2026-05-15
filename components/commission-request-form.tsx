@@ -108,8 +108,7 @@ export function CommissionRequestForm() {
           <span className="field-label text-white/80">Request Type</span>
           <select className="field-input bg-black/40 text-white" name="requestType" required defaultValue="">
             <option disabled value="">Select a service...</option>
-            <option value="Hook">Hook</option>
-            <option value="Verse">Verse</option>
+            <option value="Hook / Verse">Hook / Verse</option>
             <option value="Full Custom Song">Full Custom Song</option>
             <option value="Collab / Feature Inquiry">Collab / Feature Inquiry</option>
             <option value="Other">Other</option>

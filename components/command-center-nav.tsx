@@ -8,9 +8,7 @@ import {cn} from "@/lib/utils";
 const navItems = [
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
-  {href: "/admin/attribution", label: "Attribution"},
-  {href: "/admin/ad-lab", label: "Ad Lab"},
-  {href: "/admin/copy-lab", label: "Copy Lab"},
+  {href: "/admin/ad-lab", label: "Promo Lab"},
   {href: "/admin/photo-lab", label: "Photo Lab"},
   {href: "/admin/releases", label: "Releases"},
   {href: "/admin/commissions", label: "Commissions"},

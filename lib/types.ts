@@ -232,6 +232,17 @@ export type SiteContentSettings = {
     cta_url: string;
     benefits: ExclusiveCommunityBenefit[];
   };
+  commissions: {
+    is_enabled: boolean;
+    page_eyebrow: string;
+    page_title: string;
+    page_subtitle: string;
+    card_title: string;
+    card_price: string;
+    card_description: string;
+    card_button_text: string;
+    closed_message: string;
+  };
 };
 
 export type ReleaseRecord = {

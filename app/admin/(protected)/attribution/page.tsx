@@ -470,7 +470,7 @@ export default async function AdminAttributionPage({
               <MetricCard
                 icon={Target}
                 label="Meta LPV"
-                note="Meta landing page views from Ad Lab v2 imports."
+                note="Meta landing page views from Promo Lab v2 imports."
                 value={formatNumber(commandDashboard.overview.meta_landing_page_views)}
               />
               <MetricCard
@@ -845,7 +845,7 @@ export default async function AdminAttributionPage({
               </p>
             </div>
             <Link className="btn-secondary" href="/admin/ad-lab">
-              Open Ad Lab
+              Open Promo Lab
               <ArrowRight size={16} />
             </Link>
           </div>

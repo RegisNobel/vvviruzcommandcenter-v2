@@ -13,6 +13,7 @@ import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
 import {VaultSettingsPanel} from "@/components/vault-settings-panel";
+import {CommissionsSettingsPanel} from "@/components/commissions-settings-panel";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -1500,6 +1501,19 @@ export function SiteSettingsEditor({
             }));
           }}
           vaultSettings={settings.site_content.vault}
+        />
+
+        <CommissionsSettingsPanel
+          commissionsSettings={settings.site_content.commissions}
+          onChange={(commissions) => {
+            setSettings((current) => ({
+              ...current,
+              site_content: {
+                ...current.site_content,
+                commissions
+              }
+            }));
+          }}
         />
       </div>
 

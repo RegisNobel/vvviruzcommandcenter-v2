@@ -272,8 +272,19 @@ function createDefaultSiteContent(): SiteContentSettings {
         description: "Join the list to get preview drops and launch updates before the public announcement."
       }
     ]
+  },
+  commissions: {
+    is_enabled: true,
+    page_eyebrow: "Work With vvviruz",
+    page_title: "Custom hooks, verses, and songs from vvviruz.",
+    page_subtitle: "Need bilingual bars, anime-level energy, or a custom track built around your idea? Submit a request and I’ll review the fit.",
+    card_title: "Custom Hook / Verse",
+    card_price: "$50",
+    card_description: "Need a catchy hook, a custom verse, or both for your track? Send the beat, topic, and direction. I’ll review the fit, then write and record a part tailored to your song.",
+    card_button_text: "Request Hook / Verse",
+    closed_message: "Commissions are currently closed. Check back soon."
   }
-  };
+};
 }
 
 function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): SiteContentSettings {
@@ -408,6 +419,10 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
             };
           })
         : defaults.vault.benefits
+    },
+    commissions: {
+      ...defaults.commissions,
+      ...input?.commissions
     }
   };
 }

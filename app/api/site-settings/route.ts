@@ -231,6 +231,17 @@ const siteSettingsSchema = z.object({
       cta_label: z.string().default(""),
       cta_url: z.string().default(""),
       benefits: z.array(exclusiveCommunityBenefitSchema).default([])
+    }),
+    commissions: z.object({
+      is_enabled: z.boolean().default(true),
+      page_eyebrow: z.string().default(""),
+      page_title: z.string().default(""),
+      page_subtitle: z.string().default(""),
+      card_title: z.string().default(""),
+      card_price: z.string().default(""),
+      card_description: z.string().default(""),
+      card_button_text: z.string().default(""),
+      closed_message: z.string().default("")
     })
   }),
   created_on: z.string().default(""),

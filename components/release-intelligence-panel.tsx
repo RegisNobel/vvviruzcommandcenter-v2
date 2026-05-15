@@ -199,7 +199,7 @@ export default function ReleaseIntelligencePanel({
 
       {!adMetrics.has_data && (
         <p className="text-sm text-[#6b7280]">
-          No campaign data imported for this release yet. Import a Meta CSV batch from Ad Lab to generate a promo verdict.
+          No campaign data imported for this release yet. Import a Meta CSV batch from Promo Lab to generate a promo verdict.
         </p>
       )}
     </div>

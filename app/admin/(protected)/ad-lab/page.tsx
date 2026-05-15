@@ -95,6 +95,7 @@ export default async function AdminAdLabPage({
     ? `/admin/ad-lab?releaseId=${encodeURIComponent(activeReleaseId)}&deleted=1`
     : "/admin/ad-lab?deleted=1";
 
+
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
@@ -103,10 +104,10 @@ export default async function AdminAdLabPage({
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Ad Lab v2
+                Promo Lab
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Ad Lab
+                Promo Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 CSV-first ad reporting for campaign readouts, landing-page handoff,
@@ -120,6 +121,42 @@ export default async function AdminAdLabPage({
             </Link>
           </div>
         </section>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-6 sm:px-6">
+            <div className="flex flex-col h-full justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-ink">Copy Lab</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Build hooks, captions, angles, and strategy tags for campaigns before they go live.
+                </p>
+              </div>
+              <div className="flex items-center">
+                <Link className="action-button-secondary w-full justify-center sm:w-auto" href="/admin/copy-lab">
+                  Open Copy Lab
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-6 sm:px-6">
+            <div className="flex flex-col h-full justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-ink">Attribution</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Review UTM coverage, landing page activity, and outbound clicks connected to your campaigns.
+                </p>
+              </div>
+              <div className="flex items-center">
+                <Link className="action-button-secondary w-full justify-center sm:w-auto" href="/admin/attribution">
+                  Open Attribution
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </section>
+        </div>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <MetricCard label="Imports" note="CSV batches in this view." value={formatNumber(overview.import_count)} />

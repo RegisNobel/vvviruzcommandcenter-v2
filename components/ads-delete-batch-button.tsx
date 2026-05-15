@@ -89,7 +89,7 @@ export function AdsDeleteBatchButton({
             <div className="mt-5 space-y-4 text-sm leading-6 text-muted">
               <p>
                 This will permanently delete{" "}
-                <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
+                <span className="font-semibold text-ink">{batchName}</span> from Promo Lab.
               </p>
               <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
                 <p className="font-semibold text-[#f0d7d2]">This will delete:</p>

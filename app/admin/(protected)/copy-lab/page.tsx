@@ -473,6 +473,11 @@ export default async function AdminCopyLabPage({
         <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
+              <div className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-wide text-muted">
+                <Link className="transition hover:text-ink" href="/admin/ad-lab">Promo Lab</Link>
+                <span>/</span>
+                <span className="text-[#d7b45e]">Copy Lab</span>
+              </div>
               <div className="pill">Copy planning</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 Copy Lab

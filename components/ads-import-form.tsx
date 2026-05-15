@@ -75,7 +75,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
             <div>
               <div className="pill">Meta CSV import</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Import Ad Lab Report
+                Import Promo Lab Report
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Upload one or more Meta report CSV exports. The importer normalizes
@@ -86,7 +86,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
 
             <Link className="action-button-secondary" href="/admin/ad-lab">
               <ArrowLeft size={16} />
-              Back to Ad Lab
+              Back to Promo Lab
             </Link>
           </div>
         </section>

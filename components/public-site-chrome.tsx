@@ -17,9 +17,12 @@ export function PublicSiteChrome({
     {href: "/music", label: siteSettings.site_content.chrome.nav_music_label},
     {href: "/about", label: siteSettings.site_content.chrome.nav_about_label},
     {href: "/links", label: siteSettings.site_content.chrome.nav_links_label},
-    {href: "/exclusives", label: siteSettings.site_content.chrome.nav_exclusive_label || "Exclusives"},
-    {href: "/commissions", label: "Commissions"}
+    {href: "/exclusives", label: siteSettings.site_content.chrome.nav_exclusive_label || "Exclusives"}
   ];
+
+  if (siteSettings.site_content.commissions?.is_enabled) {
+    navItems.push({href: "/commissions", label: "Commissions"});
+  }
 
   if (siteSettings.site_content.vault?.is_enabled) {
     navItems.push({href: "/vault", label: "Vault"});
