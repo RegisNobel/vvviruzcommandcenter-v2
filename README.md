@@ -470,6 +470,16 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+ 
+### 2026-05-14 21:20 -04:00
+
+- **Vault Separation & Dedicated Teaser Page**: Decoupled "The Vault" concept from the `/exclusives` Early Access Preview flow to prepare for future paid products.
+    - **Dedicated /vault Route**: Created a standalone public teaser page for "The Vault EP" featuring a future-focused direct-to-fan positioning (Off-Platform, High Quality, Digital Extras).
+    - **Admin Toggle & Control**: Integrated Section 14 into the Public Site settings with a global "Vault Page Enabled" toggle and full copy/benefit card editing.
+    - **Disabled State Redirect**: Configured `/vault` to automatically redirect to `/exclusives` when the page is disabled, ensuring a clean visitor experience.
+    - **Clean Exclusives Flow**: Removed the Vault teaser from the `/exclusives` page to keep it strictly positioned as an "Early Access Preview" for upcoming DSP releases.
+    - **Vault Analytics**: Implemented `VaultPageAnalytics` to track page views and CTA clicks specifically for the new Vault teaser.
+    - **Dynamic Navigation**: Added conditional logic to the public header to show the "Vault" nav link only when enabled in admin.
 
 ### 2026-05-14 19:30 -04:00
 
