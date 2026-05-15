@@ -475,10 +475,10 @@ npm run normalize:releases
 
 - **Promo Lab Consolidation & Navigation Cleanup**: Unified all promotion-related tools under a single hub to streamline the admin experience.
     - **Rebranded Ad Lab to Promo Lab**: Updated all user-facing terminology from "Ad Lab" to "Promo Lab" to better reflect the broader scope of campaign intelligence and creative strategy.
-    - **Collapsed Attribution & Copy Lab**: Removed Attribution and Copy Lab from the top-level navigation, moving them into the Promo Lab hub as primary tool cards.
-    - **Safe Routing**: Preserved existing `/admin/ad-lab`, `/admin/attribution`, and `/admin/copy-lab` routes to ensure backwards compatibility and maintain bookmark stability.
-    - **Contextual Navigation**: Added breadcrumbs and back-links (e.g., "Promo Lab / Copy Lab") to maintain a clear sense of hierarchy within the nested tools.
-    - **Unified Creative Pipeline**: Reorganized the Promo Lab mental model to follow the natural creative-to-validation flow: Copy Lab (Creative) → Campaigns → Attribution (Validation) → Readouts.
+    - **Collapsed Creative Ops**: Removed Attribution, Copy Lab, and Photo Lab from the top-level navigation, moving them into the Promo Lab hub as primary tool cards.
+    - **Safe Routing**: Preserved existing `/admin/ad-lab`, `/admin/attribution`, `/admin/photo-lab`, and `/admin/copy-lab` routes to ensure backwards compatibility and maintain bookmark stability.
+    - **Contextual Navigation**: Added breadcrumbs and back-links (e.g., "Promo Lab / Photo Lab") to maintain a clear sense of hierarchy within the nested tools.
+    - **Unified Creative Pipeline**: Reorganized the Promo Lab mental model to follow the natural creative-to-validation flow: Creative Planning (Copy & Photo Lab) → Campaigns → Attribution (Validation) → Readouts.
 
 ### 2026-05-15 15:30 -04:00
 

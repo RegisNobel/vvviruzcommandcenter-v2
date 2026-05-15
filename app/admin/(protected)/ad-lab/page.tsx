@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, BarChart3, UploadCloud} from "lucide-react";
+import {ArrowRight, BarChart3, UploadCloud, PenTool, Target, Camera} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
@@ -122,52 +122,97 @@ export default async function AdminAdLabPage({
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-6 sm:px-6">
-            <div className="flex flex-col h-full justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-ink">Copy Lab</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Build hooks, captions, angles, and strategy tags for campaigns before they go live.
-                </p>
+        <section className="space-y-4">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
+            Promo Tools
+          </h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                <div>
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                    <PenTool size={24} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-ink">Copy Lab</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">
+                    Build hooks, captions, creative angles, content types, and strategy tags before campaigns go live.
+                  </p>
+                </div>
+                <div>
+                  <Link 
+                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                    href="/admin/copy-lab"
+                  >
+                    Open Copy Lab
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Link className="action-button-secondary w-full justify-center sm:w-auto" href="/admin/copy-lab">
-                  Open Copy Lab
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-6 sm:px-6">
-            <div className="flex flex-col h-full justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-ink">Attribution</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Review UTM coverage, landing page activity, and outbound clicks connected to your campaigns.
-                </p>
+            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                <div>
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                    <Camera size={24} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-ink">Photo Lab</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">
+                    Manage release covers, artist photography, and future image tooling for your campaigns.
+                  </p>
+                </div>
+                <div>
+                  <Link 
+                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                    href="/admin/photo-lab"
+                  >
+                    Open Photo Lab
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Link className="action-button-secondary w-full justify-center sm:w-auto" href="/admin/attribution">
-                  Open Attribution
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </section>
-        </div>
+            </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          <MetricCard label="Imports" note="CSV batches in this view." value={formatNumber(overview.import_count)} />
-          <MetricCard label="Ad Rows" note={overview.metric_scope} value={formatNumber(overview.report_count)} />
-          <MetricCard label="Spend" note={overview.metric_scope} value={formatMoney(overview.spend)} />
-          <MetricCard label="Impressions" note={overview.metric_scope} value={formatNumber(overview.impressions)} />
-          <MetricCard label="Results" note={overview.metric_scope} value={formatNumber(overview.results)} />
-          <MetricCard label="Link Clicks" note={overview.metric_scope} value={formatNumber(overview.link_clicks)} />
-          <MetricCard label="Landing Views" note={overview.metric_scope} value={formatNumber(overview.landing_page_views)} />
-          <MetricCard label="Click to LPV" note="Landing views divided by Meta link clicks." value={formatOptionalPercent(overview.click_to_landing_rate)} />
-          <MetricCard label="Cost / LPV" note="Spend divided by landing page views." value={formatOptionalMoney(overview.cost_per_landing_page_view)} />
+            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                <div>
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                    <Target size={24} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-ink">Attribution</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">
+                    Check UTM coverage, landing page views, outbound clicks, and tracking quality tied to your campaigns.
+                  </p>
+                </div>
+                <div>
+                  <Link 
+                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                    href="/admin/attribution"
+                  >
+                    Open Attribution
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
+            Snapshot Metrics
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <MetricCard label="Imports" note="CSV batches in this view." value={formatNumber(overview.import_count)} />
+            <MetricCard label="Ad Rows" note={overview.metric_scope} value={formatNumber(overview.report_count)} />
+            <MetricCard label="Spend" note={overview.metric_scope} value={formatMoney(overview.spend)} />
+            <MetricCard label="Impressions" note={overview.metric_scope} value={formatNumber(overview.impressions)} />
+            <MetricCard label="Results" note={overview.metric_scope} value={formatNumber(overview.results)} />
+            <MetricCard label="Link Clicks" note={overview.metric_scope} value={formatNumber(overview.link_clicks)} />
+            <MetricCard label="Landing Views" note={overview.metric_scope} value={formatNumber(overview.landing_page_views)} />
+            <MetricCard label="Click to LPV" note="Landing views divided by Meta link clicks." value={formatOptionalPercent(overview.click_to_landing_rate)} />
+            <MetricCard label="Cost / LPV" note="Spend divided by landing page views." value={formatOptionalMoney(overview.cost_per_landing_page_view)} />
+          </div>
         </section>
 
         {!overview.can_combine_totals && batches.length > 0 ? (
