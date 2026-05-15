@@ -141,38 +141,6 @@ export default async function PublicExclusivesPage() {
           </div>
         </section>
 
-        {/* Vault Teaser Section */}
-        <section className="relative mx-auto mt-8 max-w-[1120px] overflow-hidden rounded-[42px] border border-[#c9a347]/20 bg-[linear-gradient(145deg,rgba(11,15,20,0.9),rgba(6,8,11,0.95))] px-5 py-10 text-center shadow-[0_0_40px_rgba(201,163,71,0.06)] backdrop-blur-md sm:px-8 sm:py-14 lg:px-12">
-          <div className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#c9a347]/5 blur-[80px]" />
-          <div className="pointer-events-none absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-[#c9a347]/5 blur-[80px]" />
-          
-          <div className="relative">
-            <h2 className="text-2xl font-bold tracking-tight text-[#f7f1e6] sm:text-4xl">
-              The Future of The Vault
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-[#a7b0ba] sm:text-lg">
-              The Vault EP will be a premium digital-only release featuring tracks that will never be released on Spotify or Apple Music. By joining the early access list, you&apos;ll be first in line for the full bundle when it drops.
-            </p>
-            <div className="mt-10 grid gap-4 text-left md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
-                <h3 className="font-semibold text-[#d7b663]">01. Early Access</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Get the preview drops before the full bundle launches.</p>
-              </div>
-              <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
-                <h3 className="font-semibold text-[#d7b663]">02. Off-Platform</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Private previews of music before the official DSP release.</p>
-              </div>
-              <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
-                <h3 className="font-semibold text-[#d7b663]">03. High Quality</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Lossless WAV files for true audiophile listening.</p>
-              </div>
-              <div className="rounded-[24px] border border-white/5 bg-white/[0.02] p-5">
-                <h3 className="font-semibold text-[#d7b663]">04. Digital Art</h3>
-                <p className="mt-2 text-sm text-[#8f98a3]">Exclusive cyberpunk covers and full lyric booklets.</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section className="relative mx-auto mt-12 max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0b0f14]/70 px-4 py-10 backdrop-blur-xl sm:mt-16 sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,163,71,0.17),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(74,100,190,0.11),transparent_34%)]" />

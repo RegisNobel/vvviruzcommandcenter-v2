@@ -221,6 +221,16 @@ const siteSettingsSchema = z.object({
       related_releases_view_all_label: z.string().default(""),
       not_found_heading: z.string().default(""),
       not_found_body: z.string().default("")
+    }),
+    vault: z.object({
+      is_enabled: z.boolean().default(false),
+      badge_text: z.string().default(""),
+      title: z.string().default(""),
+      subtitle: z.string().default(""),
+      body: z.string().default(""),
+      cta_label: z.string().default(""),
+      cta_url: z.string().default(""),
+      benefits: z.array(exclusiveCommunityBenefitSchema).default([])
     })
   }),
   created_on: z.string().default(""),

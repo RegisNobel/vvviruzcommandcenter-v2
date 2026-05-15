@@ -21,6 +21,10 @@ export function PublicSiteChrome({
     {href: "/commissions", label: "Commissions"}
   ];
 
+  if (siteSettings.site_content.vault?.is_enabled) {
+    navItems.push({href: "/vault", label: "Vault"});
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf]">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090b0f]/86 backdrop-blur-xl">

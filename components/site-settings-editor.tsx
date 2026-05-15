@@ -12,6 +12,7 @@ import type {
 import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
+import {VaultSettingsPanel} from "@/components/vault-settings-panel";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -1487,6 +1488,19 @@ export function SiteSettingsEditor({
             </label>
           </div>
         </section>
+
+        <VaultSettingsPanel
+          onChange={(vault) => {
+            setSettings((current) => ({
+              ...current,
+              site_content: {
+                ...current.site_content,
+                vault
+              }
+            }));
+          }}
+          vaultSettings={settings.site_content.vault}
+        />
       </div>
 
       <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">

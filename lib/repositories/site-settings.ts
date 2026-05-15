@@ -241,6 +241,37 @@ function createDefaultSiteContent(): SiteContentSettings {
     related_releases_view_all_label: "View all music",
     not_found_heading: "Release not found",
     not_found_body: "This release is not available or is not published yet."
+  },
+  vault: {
+    is_enabled: false,
+    badge_text: "DIRECT-TO-FAN DROP",
+    title: "The Vault EP",
+    subtitle: "Five off-platform tracks. No DSP release. Just the files.",
+    body: "The Vault will be a premium digital-only bundle featuring tracks that won't be released on Spotify, Apple Music, or YouTube Music. Join the early access list for preview drops, launch updates, and first access when the bundle opens.",
+    cta_label: "Join the Vault List",
+    cta_url: "/exclusives",
+    benefits: [
+      {
+        id: "vault-benefit-1",
+        title: "Off-Platform",
+        description: "Vault tracks are built for direct fans, not the algorithm."
+      },
+      {
+        id: "vault-benefit-2",
+        title: "High Quality",
+        description: "The full bundle will include high-quality WAV files."
+      },
+      {
+        id: "vault-benefit-3",
+        title: "Digital Extras",
+        description: "Lyric booklets and cyberpunk/glitch covers are planned for the final drop."
+      },
+      {
+        id: "vault-benefit-4",
+        title: "First Access",
+        description: "Join the list to get preview drops and launch updates before the public announcement."
+      }
+    ]
   }
   };
 }
@@ -363,6 +394,20 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     release: {
       ...defaults.release,
       ...input?.release
+    },
+    vault: {
+      ...defaults.vault,
+      ...input?.vault,
+      benefits: input?.vault?.benefits?.length
+        ? input.vault.benefits.map((benefit, index) => {
+            const defaultBenefit = defaults.vault.benefits[index] ?? defaults.vault.benefits[0];
+            return {
+              id: benefit.id || defaultBenefit.id,
+              title: benefit.title || defaultBenefit.title,
+              description: benefit.description || defaultBenefit.description
+            };
+          })
+        : defaults.vault.benefits
     }
   };
 }

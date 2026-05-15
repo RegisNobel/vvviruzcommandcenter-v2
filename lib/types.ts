@@ -222,6 +222,16 @@ export type SiteContentSettings = {
     not_found_heading: string;
     not_found_body: string;
   };
+  vault: {
+    is_enabled: boolean;
+    badge_text: string;
+    title: string;
+    subtitle: string;
+    body: string;
+    cta_label: string;
+    cta_url: string;
+    benefits: ExclusiveCommunityBenefit[];
+  };
 };
 
 export type ReleaseRecord = {
