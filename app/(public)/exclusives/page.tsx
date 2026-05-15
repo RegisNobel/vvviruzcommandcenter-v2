@@ -95,7 +95,7 @@ export default async function PublicExclusivesPage() {
           {offer.exclusive_track_title.trim() ? (
             <div className="mx-auto mt-8 max-w-[560px] rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#d2af5a]">
-                {offer.unlock_experience === "signup_notify" ? "Preview Drop" : "Early Access Preview"}
+                {offer.unlock_experience === "signup_notify" ? "Preview Drop" : "Get a Sneak Peak"}
               </p>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-[#f7f1e6]">
                 {offer.exclusive_track_title}
