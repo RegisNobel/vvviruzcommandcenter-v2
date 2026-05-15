@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, BarChart3, UploadCloud, PenTool, Target, Camera} from "lucide-react";
+import {ArrowRight, BarChart3, UploadCloud, PenTool, Target, Camera, TrendingUp, Database} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
@@ -110,98 +110,159 @@ export default async function AdminAdLabPage({
                 Promo Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                CSV-first ad reporting for campaign readouts, landing-page handoff,
-                creative strategy breakdowns, Copy Lab links, and Meta decision metrics.
+                Plan, test, track, and learn from every release campaign.
               </p>
             </div>
-
+ 
             <Link className="action-button-primary" href="/admin/ad-lab/import">
               <UploadCloud size={16} />
               Import Meta CSV
             </Link>
           </div>
         </section>
+ 
+        <div className="space-y-10">
+          <section className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
+              Creative Tools
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                      <PenTool size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-ink">Copy Lab</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Build hooks, captions, creative angles, content types, and strategy tags before campaigns go live.
+                    </p>
+                  </div>
+                  <div>
+                    <Link 
+                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      href="/admin/copy-lab"
+                    >
+                      Open Copy Lab
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+
+              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                      <Camera size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-ink">Photo Lab</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Create and manage promo visuals, cover assets, and image-based campaign creative.
+                    </p>
+                  </div>
+                  <div>
+                    <Link 
+                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      href="/admin/photo-lab"
+                    >
+                      Open Photo Lab
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
+              Tracking & Validation
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                      <Target size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-ink">Attribution</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Check UTM coverage, landing page views, outbound clicks, and tracking quality tied to your campaigns.
+                    </p>
+                  </div>
+                  <div>
+                    <Link 
+                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      href="/admin/attribution"
+                    >
+                      Open Attribution
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
+              Campaign Decisions
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                      <TrendingUp size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-ink">Campaign Intelligence</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Review campaign readouts, winners, weak spots, confidence scores, and next-test decisions.
+                    </p>
+                  </div>
+                  <div>
+                    <Link 
+                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      href="#campaign-scope"
+                    >
+                      View Campaign Readouts
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+
+              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
+                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
+                  <div>
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
+                      <Database size={24} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-ink">Imports / Ad Data</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted">
+                      Import Meta CSVs and review campaign batch data.
+                    </p>
+                  </div>
+                  <div>
+                    <Link 
+                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      href="#batch-list"
+                    >
+                      Manage Imports
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
 
         <section className="space-y-4">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
-            Promo Tools
-          </h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
-              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
-                <div>
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
-                    <PenTool size={24} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-ink">Copy Lab</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted">
-                    Build hooks, captions, creative angles, content types, and strategy tags before campaigns go live.
-                  </p>
-                </div>
-                <div>
-                  <Link 
-                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
-                    href="/admin/copy-lab"
-                  >
-                    Open Copy Lab
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
-            </section>
-
-            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
-              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
-                <div>
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
-                    <Camera size={24} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-ink">Photo Lab</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted">
-                    Manage release covers, artist photography, and future image tooling for your campaigns.
-                  </p>
-                </div>
-                <div>
-                  <Link 
-                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
-                    href="/admin/photo-lab"
-                  >
-                    Open Photo Lab
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
-            </section>
-
-            <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
-              <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
-                <div>
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
-                    <Target size={24} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-ink">Attribution</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted">
-                    Check UTM coverage, landing page views, outbound clicks, and tracking quality tied to your campaigns.
-                  </p>
-                </div>
-                <div>
-                  <Link 
-                    className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
-                    href="/admin/attribution"
-                  >
-                    Open Attribution
-                    <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
-            Snapshot Metrics
-          </h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
+              Snapshot Metrics
+            </h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             <MetricCard label="Imports" note="CSV batches in this view." value={formatNumber(overview.import_count)} />
             <MetricCard label="Ad Rows" note={overview.metric_scope} value={formatNumber(overview.report_count)} />
@@ -228,7 +289,7 @@ export default async function AdminAdLabPage({
           </div>
         ) : null}
 
-        <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6" id="campaign-scope">
           <div>
             <p className="field-label">Release Filter</p>
             <h2 className="mt-2 text-2xl font-semibold text-ink">Campaign scope</h2>
@@ -261,7 +322,7 @@ export default async function AdminAdLabPage({
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4" id="batch-list">
           {batches.map((batch) => (
             <article
               className="panel block px-4 py-5 transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle sm:px-6 sm:py-6"
