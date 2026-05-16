@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
  
+### 2026-05-15 22:05 -04:00
+
+- **Hybrid Sticky Toolbar for Long Pages**: Implemented a hybrid sticky pattern to improve usability on long admin pages without wasting screen space.
+    - **Sticky Main Nav**: Confirmed the main admin navigation stays sticky at the top.
+    - **Normal Full Headers**: Full header cards on Public Site Management and Releases pages now scroll away naturally instead of being permanently sticky.
+    - **Compact Sticky Toolbars**: Added compact toolbars that appear only after scrolling past the full header cards, containing essential controls like Save, Search, Roadmap, and New Release.
+    - **Synced Search**: The sticky search input on the Releases page stays in sync with the main search input.
+
 ### 2026-05-15 20:40 -04:00
 
 - **UI Cleanup and Sticky Header**: Refined the Site Settings and Promo Lab interfaces.
