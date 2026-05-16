@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {Save, Settings2, Globe2, ArrowLeft} from "lucide-react";
-import {useMemo, useState} from "react";
+import {useMemo, useState, useRef, useEffect} from "react";
 
 import type {
   BrandPillar,
@@ -62,6 +62,24 @@ export function SiteSettingsEditor({
   const [featuredReleaseQuery, setFeaturedReleaseQuery] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState<string | null>(null);
+
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeaderVisible(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const statusLabel = useMemo(() => {
     if (saveState === "saving") {
@@ -228,7 +246,7 @@ export function SiteSettingsEditor({
 
   return (
     <>
-      <section className="panel sticky top-[64px] z-10 px-6 py-7 mb-6 bg-[#101215]">
+      <section ref={headerRef} className="panel px-6 py-7 mb-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="pill">
@@ -259,6 +277,25 @@ export function SiteSettingsEditor({
           </div>
         </div>
       </section>
+
+      <div className={`sticky top-[100px] lg:top-[64px] z-20 transition-all duration-300 ${isHeaderVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'} mb-6`}>
+        <div className="panel flex flex-wrap items-center justify-between gap-4 px-4 py-3 bg-[#101215]/95 backdrop-blur-xl border-[#30343b]">
+          <div className="text-lg font-semibold text-ink">
+            Public Site Management
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="pill">{statusLabel}</span>
+            <button className="action-button-primary" onClick={handleSave} type="button">
+              <Save size={16} />
+              Save Site Settings
+            </button>
+            <Link className="action-button-secondary" href="/admin/releases">
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <section className="panel space-y-6 px-6 py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
