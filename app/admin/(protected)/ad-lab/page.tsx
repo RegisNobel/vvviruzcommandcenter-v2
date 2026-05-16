@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, BarChart3, UploadCloud, PenTool, Target, Camera, TrendingUp, Database} from "lucide-react";
+import {ArrowRight, BarChart3, UploadCloud, PenTool, Target, Camera} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
@@ -205,58 +205,7 @@ export default async function AdminAdLabPage({
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
-              Campaign Decisions
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
-                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
-                  <div>
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
-                      <TrendingUp size={24} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-ink">Campaign Intelligence</h3>
-                    <p className="mt-3 text-sm leading-6 text-muted">
-                      Review campaign readouts, winners, weak spots, confidence scores, and next-test decisions.
-                    </p>
-                  </div>
-                  <div>
-                    <Link 
-                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
-                      href="#campaign-scope"
-                    >
-                      View Campaign Readouts
-                      <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </div>
-              </section>
 
-              <section className="group relative overflow-hidden rounded-[28px] border border-[#30343b] bg-[#121418] p-1 transition-all hover:border-[#d7b45e]/50 hover:shadow-[0_0_20px_rgba(215,180,94,0.1)]">
-                <div className="flex flex-col h-full justify-between gap-6 p-6 sm:p-8">
-                  <div>
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
-                      <Database size={24} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-ink">Imports / Ad Data</h3>
-                    <p className="mt-3 text-sm leading-6 text-muted">
-                      Import Meta CSVs and review campaign batch data.
-                    </p>
-                  </div>
-                  <div>
-                    <Link 
-                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
-                      href="#batch-list"
-                    >
-                      Manage Imports
-                      <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </div>
-              </section>
-            </div>
-          </section>
         </div>
 
         <section className="space-y-4">

@@ -471,6 +471,12 @@ npm run normalize:releases
 
 ## Recent Updates
  
+### 2026-05-15 20:40 -04:00
+
+- **UI Cleanup and Sticky Header**: Refined the Site Settings and Promo Lab interfaces.
+    - **Sticky Site Settings Header**: Moved the "Save Site Settings" button into the "Public site management" card and made it sticky at the top for easier access while scrolling.
+    - **Promo Lab Cleanup**: Removed the "Campaign Decisions" section (Campaign Intelligence and Imports / Ad Data cards) from the Promo Lab hub.
+
 ### 2026-05-15 16:30 -04:00
 
 - **Promo Hub Rebranding & Hierarchy Optimization**: Refined the promotion workflow by simplifying the main navigation and organizing tools into a logical hierarchy.

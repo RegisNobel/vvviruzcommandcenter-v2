@@ -1,6 +1,7 @@
 "use client";
 
-import {Save, Settings2} from "lucide-react";
+import Link from "next/link";
+import {Save, Settings2, Globe2, ArrowLeft} from "lucide-react";
 import {useMemo, useState} from "react";
 
 import type {
@@ -226,33 +227,58 @@ export function SiteSettingsEditor({
   }
 
   return (
-    <section className="panel space-y-6 px-6 py-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="pill">
-            <Settings2 size={12} />
-            Public site settings
+    <>
+      <section className="panel sticky top-[64px] z-10 px-6 py-7 mb-6 bg-[#101215]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="pill">
+              <Globe2 size={12} />
+              Public Site
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-5xl">
+              Public site management
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+              Manage the public vvviruz website separately from daily release
+              operations. This page controls shared profile copy, public imagery,
+              homepage content, the mobile link hub, exclusive track offer, and
+              future-ready tracking settings.
+            </p>
           </div>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-ink">
-            Public profile and website copy
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Everything on the public site that is not release-specific lives here.
-            Releases still own release content, but all global site copy, labels,
-            headings, pills, and fallback text are editable from this page.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="pill">{statusLabel}</span>
+            <button className="action-button-primary" onClick={handleSave} type="button">
+              <Save size={16} />
+              Save Site Settings
+            </button>
+            <Link className="action-button-secondary" href="/admin/releases">
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel space-y-6 px-6 py-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="pill">
+              <Settings2 size={12} />
+              Public site settings
+            </div>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-ink">
+              Public profile and website copy
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Everything on the public site that is not release-specific lives here.
+              Releases still own release content, but all global site copy, labels,
+              headings, pills, and fallback text are editable from this page.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="pill">{statusLabel}</span>
-          <button className="action-button-primary" onClick={handleSave} type="button">
-            <Save size={16} />
-            Save Site Settings
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6">
+        <div className="grid gap-6">
         <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
           <div>
             <p className="field-label">Section 1</p>
@@ -1550,6 +1576,7 @@ export function SiteSettingsEditor({
           {message}
         </div>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 }
