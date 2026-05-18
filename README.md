@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-18 14:00 -04:00
+
+- **Release Page Information Architecture**: Refactored the Release edit page into clearer Overview, Media, Discovery, and Promo Summary areas.
+    - Moved public URL, public summary, extended release story, lyrics visibility, visibility readouts, generated cover alt preview, schema status, and discovery checklist into a dedicated Discovery workflow.
+    - Reframed media fields around cover art, lyrics, streaming links, and featured video while keeping release planning and tasks tied to the release source-of-truth.
+    - Added a sticky action bar and sticky release status dock so save controls, planning status, blockers, and public visibility stay reachable during long release edits.
+
 ### 2026-05-18 13:07 -04:00
 
 - **Short Links V1**: Added a protected `/admin/short-links` admin tool for creating and managing branded short links.

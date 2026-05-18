@@ -329,6 +329,63 @@ function getStageUnlockReason(release: ReleaseRecord, key: ReleaseChecklistKey) 
   return `Mark ${blockingStage.label} complete first.`;
 }
 
+function getGeneratedCoverAltText(release: ReleaseRecord) {
+  return release.title.trim()
+    ? `${release.title.trim()} cover art`
+    : "Release cover art";
+}
+
+function getFallbackMetaDescription(release: ReleaseRecord) {
+  return (
+    release.public_description.trim() ||
+    release.public_long_description.trim() ||
+    release.concept_details.trim() ||
+    "No public summary written yet."
+  );
+}
+
+function getDiscoveryChecklist(release: ReleaseRecord) {
+  const hasStreamingLink =
+    Boolean(release.streaming_links.spotify.trim()) ||
+    Boolean(release.streaming_links.apple_music.trim()) ||
+    Boolean(release.streaming_links.youtube.trim());
+
+  return [
+    {
+      complete: Boolean(release.title.trim()),
+      label: "Search title source"
+    },
+    {
+      complete: Boolean(release.slug.trim()),
+      label: "Public URL"
+    },
+    {
+      complete: Boolean(release.public_description.trim()),
+      label: "Public summary"
+    },
+    {
+      complete: Boolean(release.public_long_description.trim()),
+      label: "Release story"
+    },
+    {
+      complete: hasReleaseCoverArt(release),
+      label: "Cover image"
+    },
+    {
+      complete: hasStreamingLink,
+      label: "Streaming destination"
+    },
+    {
+      complete: !release.public_lyrics_enabled || Boolean(release.lyrics.trim()),
+      label: "Lyrics visibility is intentional"
+    },
+    {
+      complete: release.is_published,
+      label: "Public visibility"
+    }
+  ];
+}
+
 const pageShellClass =
   "min-h-[calc(100vh-81px)] bg-[#0f1114] text-[#e7e2d8]";
 const pagePanelClass =
@@ -596,6 +653,25 @@ export function ReleaseDetailEditor({
     [release]
   );
   const isPublishReady = publishBlockers.length === 0;
+  const generatedCoverAltText = useMemo(
+    () => getGeneratedCoverAltText(release),
+    [release]
+  );
+  const discoveryChecklist = useMemo(
+    () => getDiscoveryChecklist(release),
+    [release]
+  );
+  const completedDiscoveryItems = discoveryChecklist.filter((item) => item.complete).length;
+  const seoTitlePreview = release.title.trim() || "Untitled release";
+  const metaDescriptionPreview = getFallbackMetaDescription(release);
+  const socialShareTitlePreview = seoTitlePreview;
+  const socialShareDescriptionPreview = metaDescriptionPreview;
+  const schemaStatusLabel = release.is_published && isPublishReady
+    ? "Ready"
+    : "Draft";
+  const publicUrlPreview = release.slug.trim()
+    ? `/music/${release.slug.trim()}`
+    : "/music/untitled-release";
 
   const saveStatusLabel =
     saveState === "saving"
@@ -1065,9 +1141,8 @@ export function ReleaseDetailEditor({
                 {release.title}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-[#8e939b]">
-                Keep the release organized with collaborator info, UPC and ISRC
-                metadata, lyrics, cover art, stage completion, and a simple working
-                task list.
+                Source-of-truth workspace for release identity, media, discovery
+                packaging, planning, and lightweight promo readouts.
               </p>
             </div>
 
@@ -1112,48 +1187,7 @@ export function ReleaseDetailEditor({
           </div>
         </section>
 
-        <section className={`${pagePanelClass} px-4 py-5 sm:px-6`}>
-          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-              <p className={pageLabelClass}>Release Snapshot</p>
-              <p className="mt-3 text-sm text-[#8b9199]">Current Stage</p>
-              <div className="mt-3">
-                <span className={pageAccentPillClass}>{snapshotStage}</span>
-              </div>
-            </div>
-
-            <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-              <p className={pageLabelClass}>Next Action</p>
-              <p className="mt-3 text-lg font-semibold text-[#efe8db]">
-                {snapshotNextAction}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#8b9199]">
-                Computed from the current stage checklist and release assets already on
-                this record.
-              </p>
-            </div>
-
-            <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-              <p className={pageLabelClass}>Blockers</p>
-              {snapshotBlockers.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {snapshotBlockers.map((blocker) => (
-                    <span
-                      className="inline-flex items-center rounded-full border border-[#5a312d] bg-[#1c1313] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d4a7a0]"
-                      key={blocker}
-                    >
-                      {blocker}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-lg font-semibold text-[#efe8db]">No blockers</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className={`${pagePanelClass} z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22)] lg:sticky lg:top-[88px]`}>
           <Link className={pageTertiaryButtonClass} href="/admin/releases">
             <ArrowLeft size={16} />
             Back to Releases
@@ -1199,8 +1233,14 @@ export function ReleaseDetailEditor({
             <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className={pageLabelClass}>Section 1</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Basic Info</h2>
+                  <p className={pageLabelClass}>Overview</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                    Basic Info
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[#8a9098]">
+                    Core identity, collaborator credits, dates, and distributor
+                    identifiers stay here.
+                  </p>
                 </div>
               </div>
 
@@ -1215,7 +1255,7 @@ export function ReleaseDetailEditor({
                 </label>
 
                 <label className="space-y-2">
-                  <span className={pageLabelClass}>Type</span>
+                  <span className={pageLabelClass}>Release Type</span>
                   <select
                     className={pageInputClass}
                     onChange={(event) =>
@@ -1247,7 +1287,7 @@ export function ReleaseDetailEditor({
                 </label>
 
                 <label className="space-y-2">
-                  <span className={pageLabelClass}>Collaborator</span>
+                  <span className={pageLabelClass}>Collaborator / Featured Artist</span>
                   <select
                     className={pageInputClass}
                     onChange={(event) =>
@@ -1269,7 +1309,7 @@ export function ReleaseDetailEditor({
 
                 {release.collaborator ? (
                   <label className="space-y-2">
-                    <span className={pageLabelClass}>Collaborator Name</span>
+                    <span className={pageLabelClass}>Collaborator / Featured Artist Name</span>
                     <input
                       className={pageInputClass}
                       onChange={(event) =>
@@ -1318,20 +1358,20 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 2</p>
+                <p className={pageLabelClass}>Discovery</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Public Site
+                  Internet Packaging
                 </h2>
                 <p className="mt-2 text-sm text-[#8a9098]">
-                  These fields drive the public website. Internal stage completion
-                  and public visibility stay separate on purpose.
+                  How this release appears to Google, AI search, social previews,
+                  and public discovery surfaces.
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-3 md:col-span-2">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className={pageLabelClass}>Slug</span>
+                    <span className={pageLabelClass}>Public URL</span>
                     <div className="flex flex-wrap gap-2">
                       <button
                         className={pageSecondaryButtonClass}
@@ -1378,10 +1418,23 @@ export function ReleaseDetailEditor({
                         : "Unlock the slug when you need a custom URL, then use Suggested to snap it back."}
                     </p>
                   </div>
+
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm">
+                      <p className={pageLabelClass}>Live path preview</p>
+                      <p className="mt-2 break-all font-mono text-[#efe7d7]">
+                        {publicUrlPreview}
+                      </p>
+                    </div>
+                    <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm">
+                      <p className={pageLabelClass}>Cover alt preview</p>
+                      <p className="mt-2 text-[#efe7d7]">{generatedCoverAltText}</p>
+                    </div>
+                  </div>
                 </div>
 
                 <label className="space-y-2 md:col-span-2">
-                  <span className={pageLabelClass}>Public Description</span>
+                  <span className={pageLabelClass}>Public Summary</span>
                   <textarea
                     className={`${pageInputClass} min-h-[120px]`}
                     onChange={(event) =>
@@ -1390,13 +1443,13 @@ export function ReleaseDetailEditor({
                         public_description: event.target.value
                       }))
                     }
-                    placeholder="Short public description for cards, hero sections, and metadata."
+                    placeholder="Short public-facing summary for music cards, previews, and search snippets."
                     value={release.public_description}
                   />
                 </label>
 
                 <label className="space-y-2 md:col-span-2">
-                  <span className={pageLabelClass}>Public Long Description</span>
+                  <span className={pageLabelClass}>Release Story / Extended Description</span>
                   <textarea
                     className={`${pageInputClass} min-h-[160px]`}
                     onChange={(event) =>
@@ -1405,26 +1458,74 @@ export function ReleaseDetailEditor({
                         public_long_description: event.target.value
                       }))
                     }
-                    placeholder="Optional longer release-page description."
+                    placeholder="Longer public context for the release page and AI-search style answers."
                     value={release.public_long_description}
                   />
                 </label>
 
-                <label className="space-y-2 md:col-span-2">
-                  <span className={pageLabelClass}>Featured Video URL</span>
-                  <input
-                    className={pageInputClass}
-                    onChange={(event) =>
-                      updateRelease((current) => ({
-                        ...current,
-                        featured_video_url: event.target.value
-                      }))
-                    }
-                    placeholder="Optional YouTube or video URL"
-                    type="url"
-                    value={release.featured_video_url}
-                  />
-                </label>
+                <div className="grid gap-3 md:col-span-2 xl:grid-cols-2">
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className={pageLabelClass}>SEO title</p>
+                      <span className={pagePillClass}>Fallback</span>
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-[#efe7d7]">
+                      {seoTitlePreview}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className={pageLabelClass}>Meta description</p>
+                      <span className={pagePillClass}>Fallback</span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#c8ced6]">
+                      {metaDescriptionPreview}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className={pageLabelClass}>Social share title</p>
+                      <span className={pagePillClass}>Next field</span>
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-[#efe7d7]">
+                      {socialShareTitlePreview}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className={pageLabelClass}>Social share description</p>
+                      <span className={pagePillClass}>Next field</span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#c8ced6]">
+                      {socialShareDescriptionPreview}
+                    </p>
+                  </div>
+                </div>
+
+                <details className="group md:col-span-2 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#ede7dc]">
+                    <span>Future discovery fields</span>
+                    <ChevronDown className="transition group-open:rotate-180" size={17} />
+                  </summary>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {[
+                      "Editable SEO title",
+                      "Editable meta description",
+                      "Cover art alt text",
+                      "FAQ / AI answer blocks",
+                      "Indexing toggle",
+                      "Hide unreleased from search"
+                    ].map((field) => (
+                      <div
+                        className="rounded-[18px] border border-dashed border-[#3a3f46] bg-[#0f1216] px-4 py-3 text-sm text-[#8a9098]"
+                        key={field}
+                      >
+                        <span className={pageLabelClass}>{field}</span>
+                        <p className="mt-2">Planned field. Current release behavior is unchanged.</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
 
                 <label className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
                   <span className="flex items-center gap-3 text-sm font-semibold text-[#ede7dc]">
@@ -1439,11 +1540,10 @@ export function ReleaseDetailEditor({
                       }
                       type="checkbox"
                     />
-                    Show lyrics publicly
+                    Include Lyrics Publicly
                   </span>
                   <span className="mt-2 block text-xs leading-5 text-[#8a9098]">
-                    Turn this on only when you want the full lyrics visible on the
-                    public release page.
+                    Controls whether lyrics are included on the public release page.
                   </span>
                 </label>
 
@@ -1505,12 +1605,11 @@ export function ReleaseDetailEditor({
 
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold text-[#efe7d7]">
-                          Visible on the public site
+                          Publicly Visible
                         </span>
                         <span className="mt-2 block text-xs leading-5 text-[#bda980]">
-                          This controls public visibility under `/`, `/music`,
-                          `/about`, and `/links`. It does not change the internal
-                          release stage checklist.
+                          Controls public visibility under `/`, `/music`, `/about`,
+                          and `/links`. Internal stage completion remains separate.
                         </span>
                       </span>
                     </span>
@@ -1547,15 +1646,66 @@ export function ReleaseDetailEditor({
                     )}
                   </div>
                 </div>
+
+                <div className="grid gap-4 md:col-span-2 lg:grid-cols-[260px_minmax(0,1fr)]">
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <p className={pageLabelClass}>Schema status</p>
+                    <div className="mt-3">
+                      <span
+                        className={
+                          schemaStatusLabel === "Ready"
+                            ? pageAccentPillClass
+                            : pagePillClass
+                        }
+                      >
+                        {schemaStatusLabel}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#8a9098]">
+                      Preview only. Structured data can use existing release fields
+                      when the public page is visible.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className={pageLabelClass}>Discovery quality checklist</p>
+                      <span className={pageAccentPillClass}>
+                        {completedDiscoveryItems}/{discoveryChecklist.length}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {discoveryChecklist.map((item) => (
+                        <div
+                          className="flex items-center gap-2 rounded-[16px] border border-[#2f343b] bg-[#0f1216] px-3 py-2 text-sm"
+                          key={item.label}
+                        >
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${
+                              item.complete ? "bg-[#c9a347]" : "bg-[#444951]"
+                            }`}
+                          />
+                          <span className={item.complete ? "text-[#efe7d7]" : "text-[#8a9098]"}>
+                            {item.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 3</p>
+                <p className={pageLabelClass}>Overview</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Concept Details
+                  Release Concept
                 </h2>
+                <p className="mt-2 text-sm text-[#8a9098]">
+                  Internal creative direction, rollout angle, and notes for the
+                  release itself.
+                </p>
               </div>
 
               <textarea
@@ -1573,8 +1723,12 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 4</p>
+                <p className={pageLabelClass}>Media</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Cover Art</h2>
+                <p className="mt-2 text-sm text-[#8a9098]">
+                  Primary public artwork and visual source for cards, previews,
+                  and share images.
+                </p>
               </div>
 
               {release.cover_art ? (
@@ -1651,8 +1805,12 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 5</p>
+                <p className={pageLabelClass}>Media</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Lyrics</h2>
+                <p className="mt-2 text-sm text-[#8a9098]">
+                  Source lyrics stay here. Discovery controls whether they are
+                  included publicly.
+                </p>
               </div>
 
               <textarea
@@ -1670,7 +1828,7 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 6</p>
+                <p className={pageLabelClass}>Overview</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
                   Stage Completion
                 </h2>
@@ -1759,17 +1917,32 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 7</p>
+                <p className={pageLabelClass}>Media</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Streaming Links
+                  Streaming Links & Video
                 </h2>
                 <p className="mt-2 text-sm text-[#8a9098]">
-                  Leave these blank until the release is live, then drop in the
-                  platform URLs when they are ready.
+                  Public playback destinations and optional video embed source.
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
+                <label className="space-y-2 md:col-span-2">
+                  <span className={pageLabelClass}>Featured Video URL</span>
+                  <input
+                    className={pageInputClass}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        featured_video_url: event.target.value
+                      }))
+                    }
+                    placeholder="Optional YouTube or video URL"
+                    type="url"
+                    value={release.featured_video_url}
+                  />
+                </label>
+
                 <label className="space-y-2 md:col-span-2">
                   <span className={pageLabelClass}>Spotify</span>
                   <input
@@ -1831,12 +2004,13 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 8</p>
+                <p className={pageLabelClass}>Promo Summary</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Copy Pairs
+                  Copy Snapshot
                 </h2>
                 <p className="mt-2 text-sm text-[#8a9098]">
-                  Any Copy Lab entry attached to this release appears here automatically.
+                  Linked Copy Lab entries appear here for context. Creation and
+                  editing still live in Promo.
                 </p>
               </div>
 
@@ -1912,10 +2086,14 @@ export function ReleaseDetailEditor({
             <section className={`${pagePanelClass} space-y-6 px-4 py-5 sm:px-6 sm:py-6`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className={pageLabelClass}>Promo Lab</p>
+                  <p className={pageLabelClass}>Promo Summary</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                    Promo Lab Performance
+                    Campaign Readout
                   </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+                    Lightweight performance context. Deeper campaign execution
+                    stays inside Promo.
+                  </p>
                 </div>
                 <Link className={pageSecondaryButtonClass} href={`/admin/ad-lab?releaseId=${release.id}`}>
                   Open Promo Lab
@@ -2313,6 +2491,69 @@ export function ReleaseDetailEditor({
           </div>
 
           <aside className="space-y-6">
+            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6 xl:sticky xl:top-[150px] xl:z-20`}>
+              <div>
+                <p className={pageLabelClass}>Release Planning</p>
+                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                  Status Dock
+                </h2>
+              </div>
+
+              <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className={pageLabelClass}>Progress</p>
+                  <span className={pageAccentPillClass}>{progress}%</span>
+                </div>
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#23262c]">
+                  <div
+                    className={`h-full rounded-full ${getReleaseProgressTone(progress)}`}
+                    style={{width: `${progress}%`}}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm">
+                <div>
+                  <p className={pageLabelClass}>Current stage</p>
+                  <p className="mt-2 font-semibold text-[#efe8db]">{snapshotStage}</p>
+                </div>
+                <div className="border-t border-[#2d3138] pt-3">
+                  <p className={pageLabelClass}>Next action</p>
+                  <p className="mt-2 leading-6 text-[#efe8db]">{snapshotNextAction}</p>
+                </div>
+                <div className="border-t border-[#2d3138] pt-3">
+                  <p className={pageLabelClass}>Public site</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className={release.is_published ? pageAccentPillClass : pagePillClass}>
+                      {release.is_published ? "Publicly Visible" : "Hidden"}
+                    </span>
+                    <span className={isPublishReady ? pageAccentPillClass : pagePillClass}>
+                      {isPublishReady ? "Publish-ready" : "Blocked"}
+                    </span>
+                  </div>
+                  <p className="mt-3 break-all font-mono text-xs text-[#8a9098]">
+                    {publicUrlPreview}
+                  </p>
+                </div>
+              </div>
+
+              {snapshotBlockers.length > 0 ? (
+                <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
+                  <p className={pageLabelClass}>Blockers</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {snapshotBlockers.map((blocker) => (
+                      <span
+                        className="inline-flex items-center rounded-full border border-[#6c3934] bg-[#251515] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d4a7a0]"
+                        key={blocker}
+                      >
+                        {blocker}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
             <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Record Info</p>
