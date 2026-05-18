@@ -23,6 +23,11 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
     lyrics: true;
     publicDescription: true;
     publicLongDescription: true;
+    seoTitle: true;
+    metaDescription: true;
+    coverArtAltText: true;
+    socialShareTitle: true;
+    socialShareDescription: true;
     spotifyUrl: true;
     appleMusicUrl: true;
     youtubeUrl: true;
@@ -67,6 +72,11 @@ const publicReleaseSelect = {
   lyrics: true,
   publicDescription: true,
   publicLongDescription: true,
+  seoTitle: true,
+  metaDescription: true,
+  coverArtAltText: true,
+  socialShareTitle: true,
+  socialShareDescription: true,
   spotifyUrl: true,
   appleMusicUrl: true,
   youtubeUrl: true,
@@ -103,6 +113,11 @@ function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
     cover_art_path: release.coverArtPath || release.coverArtUrl || "",
     public_description: release.publicDescription || release.title,
     public_long_description: release.publicLongDescription,
+    seo_title: release.seoTitle,
+    meta_description: release.metaDescription,
+    cover_art_alt_text: release.coverArtAltText,
+    social_share_title: release.socialShareTitle,
+    social_share_description: release.socialShareDescription,
     spotify_url: release.spotifyUrl,
     apple_music_url: release.appleMusicUrl,
     youtube_url: release.youtubeUrl,

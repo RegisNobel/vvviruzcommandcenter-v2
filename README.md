@@ -471,6 +471,24 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-18 18:10 -04:00
+
+- **Public Discovery Metadata Verification**: Centralized public release metadata fallbacks so public release pages, home featured cards, music cards, and the `/links` campaign page use the same Discovery metadata rules.
+    - Public release detail and `/links` metadata now prefer dedicated SEO/social fields and include Open Graph plus Twitter metadata where release artwork exists.
+    - Image alt text on public release cards and featured/link surfaces now uses `Cover Art Alt Text` with the generated `{title} cover art` fallback.
+
+### 2026-05-18 18:02 -04:00
+
+- **Discovery Quality Checklist**: Upgraded the Release editor Discovery checklist into a computed readiness readout with `Ready`, `Needs polish`, and `Missing essentials` labels.
+    - Each item now shows `Passed`, `Warning`, or `Missing` based only on existing release fields and fallbacks.
+    - The checklist remains visual guidance only and does not block saving or change public publishing rules.
+
+### 2026-05-18 14:35 -04:00
+
+- **Persistent Discovery Metadata**: Added release-level Discovery fields for SEO titles, meta descriptions, cover art alt text, social share titles, and social share descriptions.
+    - Wired the new fields through Prisma, release hydration, repository save/read flows, the Release editor Discovery section, and public release metadata.
+    - Public release pages now prefer dedicated Discovery metadata when available while preserving existing public summary and release story fallbacks.
+
 ### 2026-05-18 14:00 -04:00
 
 - **Release Page Information Architecture**: Refactored the Release edit page into clearer Overview, Media, Discovery, and Promo Summary areas.

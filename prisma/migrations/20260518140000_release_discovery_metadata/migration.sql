@@ -1,0 +1,5 @@
+ALTER TABLE "Release" ADD COLUMN "seoTitle" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Release" ADD COLUMN "metaDescription" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Release" ADD COLUMN "coverArtAltText" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Release" ADD COLUMN "socialShareTitle" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Release" ADD COLUMN "socialShareDescription" TEXT NOT NULL DEFAULT '';

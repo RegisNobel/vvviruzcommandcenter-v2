@@ -1,5 +1,16 @@
 import type {PublicReleaseRecord} from "@/lib/types";
 
+type PublicReleaseDiscoveryMetadataInput = Pick<
+  PublicReleaseRecord,
+  | "cover_art_alt_text"
+  | "meta_description"
+  | "public_description"
+  | "seo_title"
+  | "social_share_description"
+  | "social_share_title"
+  | "title"
+>;
+
 export function normalizeExternalUrl(url: string) {
   const value = url.trim();
 
@@ -97,4 +108,28 @@ export function getReleaseListenHref(release: PublicReleaseRecord) {
     normalizeExternalUrl(release.youtube_url) ||
     `/music/${release.slug}`
   );
+}
+
+export function getPublicReleaseDiscoveryMetadata(
+  release: PublicReleaseDiscoveryMetadataInput
+) {
+  const seoTitle = release.seo_title.trim() || release.title;
+  const metaDescription =
+    release.meta_description.trim() || release.public_description;
+  const coverArtAltText =
+    release.cover_art_alt_text.trim() || `${release.title} cover art`;
+  const socialShareTitle =
+    release.social_share_title.trim() || seoTitle || release.title;
+  const socialShareDescription =
+    release.social_share_description.trim() ||
+    metaDescription ||
+    release.public_description;
+
+  return {
+    coverArtAltText,
+    metaDescription,
+    seoTitle,
+    socialShareDescription,
+    socialShareTitle
+  };
 }

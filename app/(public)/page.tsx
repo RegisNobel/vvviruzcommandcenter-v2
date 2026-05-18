@@ -9,6 +9,7 @@ import {
   getPublishedReleases,
   getSiteSettings
 } from "@/lib/repositories/public-site";
+import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 
 import {BrandPillarsCarousel} from "@/components/brand-pillars-carousel";
@@ -98,7 +99,10 @@ export default async function PublicHomePage() {
               </div>
               {heroFeaturedReleases.length > 0 ? (
                 <div className="grid flex-1 gap-4">
-                  {heroFeaturedReleases.map((release, index) => (
+                  {heroFeaturedReleases.map((release, index) => {
+                    const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
+
+                    return (
                     <article
                       className="rounded-[28px] border border-white/10 bg-[#0f1217]/92 p-4"
                       key={release.id}
@@ -110,7 +114,7 @@ export default async function PublicHomePage() {
                         >
                           {release.cover_art_path ? (
                             <Image
-                              alt={`${release.title} cover art`}
+                              alt={coverArtAltText}
                               className="object-cover"
                               fill
                               priority={index === 0}
@@ -149,7 +153,8 @@ export default async function PublicHomePage() {
                         </div>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-[28px] border border-white/10 bg-[#0f1217]/92 px-5 py-5 text-sm leading-7 text-[#98a0a8]">

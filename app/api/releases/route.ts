@@ -18,6 +18,11 @@ const createReleaseSchema = z.object({
   collaborator_name: z.string().default(""),
   upc: z.string().default(""),
   isrc: z.string().default(""),
+  seo_title: z.string().default(""),
+  meta_description: z.string().default(""),
+  cover_art_alt_text: z.string().default(""),
+  social_share_title: z.string().default(""),
+  social_share_description: z.string().default(""),
   streaming_links: z
     .object({
       spotify: z.string().default(""),

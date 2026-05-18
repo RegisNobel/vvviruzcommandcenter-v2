@@ -109,6 +109,16 @@ type LegacyReleaseShape = Partial<ReleaseRecord> & {
   cover_art_path?: string;
   public_description?: string;
   public_long_description?: string;
+  seoTitle?: string;
+  seo_title?: string;
+  metaDescription?: string;
+  meta_description?: string;
+  coverArtAltText?: string;
+  cover_art_alt_text?: string;
+  socialShareTitle?: string;
+  social_share_title?: string;
+  socialShareDescription?: string;
+  social_share_description?: string;
   featured_video_url?: string;
   public_lyrics_enabled?: boolean;
   is_published?: boolean;
@@ -207,6 +217,11 @@ export function createEmptyRelease(
       | "streaming_links"
       | "public_description"
       | "public_long_description"
+      | "seo_title"
+      | "meta_description"
+      | "cover_art_alt_text"
+      | "social_share_title"
+      | "social_share_description"
       | "featured_video_url"
       | "public_lyrics_enabled"
       | "is_published"
@@ -240,6 +255,11 @@ export function createEmptyRelease(
     concept_details: "",
     public_description: values?.public_description?.trim() || "",
     public_long_description: values?.public_long_description?.trim() || "",
+    seo_title: values?.seo_title?.trim() || "",
+    meta_description: values?.meta_description?.trim() || "",
+    cover_art_alt_text: values?.cover_art_alt_text?.trim() || "",
+    social_share_title: values?.social_share_title?.trim() || "",
+    social_share_description: values?.social_share_description?.trim() || "",
     featured_video_url: values?.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(values?.public_lyrics_enabled),
     is_published: Boolean(values?.is_published),
@@ -333,6 +353,17 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
       input.concept?.trim() ||
       "",
     public_long_description: input.public_long_description?.trim() || "",
+    seo_title: input.seo_title?.trim() || input.seoTitle?.trim() || "",
+    meta_description:
+      input.meta_description?.trim() || input.metaDescription?.trim() || "",
+    cover_art_alt_text:
+      input.cover_art_alt_text?.trim() || input.coverArtAltText?.trim() || "",
+    social_share_title:
+      input.social_share_title?.trim() || input.socialShareTitle?.trim() || "",
+    social_share_description:
+      input.social_share_description?.trim() ||
+      input.socialShareDescription?.trim() ||
+      "",
     featured_video_url: input.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(input.public_lyrics_enabled),
     is_published: Boolean(input.is_published),

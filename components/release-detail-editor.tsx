@@ -72,6 +72,15 @@ import type {
 } from "@/lib/types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type DiscoveryChecklistStatus = "passed" | "warning" | "missing";
+type DiscoveryChecklistPriority = "essential" | "polish" | "bonus";
+
+type DiscoveryChecklistItem = {
+  detail: string;
+  label: string;
+  priority: DiscoveryChecklistPriority;
+  status: DiscoveryChecklistStatus;
+};
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
   {value: "scale", label: "Scale"},
@@ -335,6 +344,10 @@ function getGeneratedCoverAltText(release: ReleaseRecord) {
     : "Release cover art";
 }
 
+function getReleaseCoverAltText(release: ReleaseRecord) {
+  return release.cover_art_alt_text.trim() || getGeneratedCoverAltText(release);
+}
+
 function getFallbackMetaDescription(release: ReleaseRecord) {
   return (
     release.public_description.trim() ||
@@ -344,46 +357,170 @@ function getFallbackMetaDescription(release: ReleaseRecord) {
   );
 }
 
-function getDiscoveryChecklist(release: ReleaseRecord) {
+function createDiscoveryChecklistItem({
+  detail,
+  hasFallback = false,
+  hasValue,
+  label,
+  priority
+}: {
+  detail: string;
+  hasFallback?: boolean;
+  hasValue: boolean;
+  label: string;
+  priority: DiscoveryChecklistPriority;
+}): DiscoveryChecklistItem {
+  return {
+    detail,
+    label,
+    priority,
+    status: hasValue ? "passed" : hasFallback ? "warning" : "missing"
+  };
+}
+
+function getDiscoveryChecklist(release: ReleaseRecord): DiscoveryChecklistItem[] {
   const hasStreamingLink =
     Boolean(release.streaming_links.spotify.trim()) ||
     Boolean(release.streaming_links.apple_music.trim()) ||
     Boolean(release.streaming_links.youtube.trim());
+  const hasTitle = Boolean(release.title.trim());
+  const hasSeoTitle = Boolean(release.seo_title.trim());
+  const hasPublicSummary = Boolean(release.public_description.trim());
+  const hasMetaDescription = Boolean(release.meta_description.trim());
+  const hasSocialShareTitle = Boolean(release.social_share_title.trim());
+  const hasSocialShareDescription = Boolean(release.social_share_description.trim());
+  const hasCoverArtAltText = Boolean(release.cover_art_alt_text.trim());
+  const hasLyrics = Boolean(release.lyrics.trim());
 
   return [
+    createDiscoveryChecklistItem({
+      detail: hasSeoTitle
+        ? "Dedicated SEO title is saved."
+        : "Using the release title as the search title.",
+      hasFallback: hasTitle,
+      hasValue: hasSeoTitle,
+      label: "SEO Title",
+      priority: "polish"
+    }),
+    createDiscoveryChecklistItem({
+      detail: hasMetaDescription
+        ? "Dedicated search description is saved."
+        : "Using the public summary as the search description.",
+      hasFallback: hasPublicSummary,
+      hasValue: hasMetaDescription,
+      label: "Meta Description",
+      priority: "essential"
+    }),
+    createDiscoveryChecklistItem({
+      detail: hasCoverArtAltText
+        ? "Cover art has a custom image description."
+        : "Using the generated cover art description.",
+      hasFallback: hasTitle,
+      hasValue: hasCoverArtAltText,
+      label: "Cover Art Alt Text",
+      priority: "polish"
+    }),
+    createDiscoveryChecklistItem({
+      detail: hasSocialShareTitle
+        ? "Dedicated social title is saved."
+        : "Using the SEO title or release title for shares.",
+      hasFallback: hasSeoTitle || hasTitle,
+      hasValue: hasSocialShareTitle,
+      label: "Social Share Title",
+      priority: "polish"
+    }),
+    createDiscoveryChecklistItem({
+      detail: hasSocialShareDescription
+        ? "Dedicated social description is saved."
+        : "Using the meta description or public summary for shares.",
+      hasFallback: hasMetaDescription || hasPublicSummary,
+      hasValue: hasSocialShareDescription,
+      label: "Social Share Description",
+      priority: "polish"
+    }),
     {
-      complete: Boolean(release.title.trim()),
-      label: "Search title source"
+      detail: release.slug.trim()
+        ? "Public release URL is ready."
+        : "Add a URL slug so the public page has a stable address.",
+      label: "Public URL",
+      priority: "essential",
+      status: release.slug.trim() ? "passed" : "missing"
     },
     {
-      complete: Boolean(release.slug.trim()),
-      label: "Public URL"
+      detail: hasPublicSummary
+        ? "Short public summary is ready for cards and snippets."
+        : "Add a short summary for music cards, previews, and search snippets.",
+      label: "Public Summary",
+      priority: "essential",
+      status: hasPublicSummary ? "passed" : "missing"
     },
     {
-      complete: Boolean(release.public_description.trim()),
-      label: "Public summary"
+      detail: release.public_long_description.trim()
+        ? "Extended story is ready for the release page."
+        : "Add a deeper release story when this page needs more context.",
+      label: "Release Story",
+      priority: "polish",
+      status: release.public_long_description.trim() ? "passed" : "warning"
     },
     {
-      complete: Boolean(release.public_long_description.trim()),
-      label: "Release story"
+      detail: hasReleaseCoverArt(release)
+        ? "Cover art is available for cards and share previews."
+        : "Upload cover art before relying on public discovery.",
+      label: "Cover Art",
+      priority: "essential",
+      status: hasReleaseCoverArt(release) ? "passed" : "missing"
     },
     {
-      complete: hasReleaseCoverArt(release),
-      label: "Cover image"
+      detail: hasStreamingLink
+        ? "At least one listening destination is available."
+        : "Add at least one streaming link so listeners have somewhere to go.",
+      label: "Streaming Link",
+      priority: "essential",
+      status: hasStreamingLink ? "passed" : "missing"
     },
     {
-      complete: hasStreamingLink,
-      label: "Streaming destination"
+      detail: hasLyrics
+        ? release.public_lyrics_enabled
+          ? "Lyrics exist and are included publicly."
+          : "Lyrics exist but are currently hidden from the public page."
+        : "No lyrics are saved, so public lyric visibility is not needed yet.",
+      label: "Lyrics Visibility",
+      priority: "polish",
+      status: hasLyrics ? (release.public_lyrics_enabled ? "passed" : "warning") : "passed"
     },
     {
-      complete: !release.public_lyrics_enabled || Boolean(release.lyrics.trim()),
-      label: "Lyrics visibility is intentional"
+      detail: release.is_published
+        ? "This release is visible on public surfaces."
+        : "Release is still hidden from public discovery surfaces.",
+      label: "Public Visibility",
+      priority: "essential",
+      status: release.is_published ? "passed" : "warning"
     },
     {
-      complete: release.is_published,
-      label: "Public visibility"
+      detail: release.featured_video_url.trim()
+        ? "Featured video is available as an extra discovery asset."
+        : "Optional bonus: add a featured video when one is ready.",
+      label: "Featured Video",
+      priority: "bonus",
+      status: release.featured_video_url.trim() ? "passed" : "warning"
     }
   ];
+}
+
+function getDiscoveryReadinessLabel(items: DiscoveryChecklistItem[]) {
+  const hasMissingEssential = items.some(
+    (item) => item.priority === "essential" && item.status === "missing"
+  );
+
+  if (hasMissingEssential) {
+    return "Missing essentials";
+  }
+
+  const hasPolishWarning = items.some(
+    (item) => item.priority !== "bonus" && item.status === "warning"
+  );
+
+  return hasPolishWarning ? "Needs polish" : "Ready";
 }
 
 const pageShellClass =
@@ -408,6 +545,42 @@ const pageAccentPillClass =
   "inline-flex items-center gap-2 rounded-full border border-[#5b4920] bg-[#1a1710] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d6b45d]";
 const pageCheckboxClass =
   "h-4 w-4 rounded border border-[#4a4f57] bg-[#0e1115] accent-[#c9a347] focus:ring-2 focus:ring-[#c9a347]/35 focus:ring-offset-0";
+
+function getDiscoveryStatusStyles(status: DiscoveryChecklistStatus) {
+  if (status === "passed") {
+    return {
+      badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+      dot: "bg-emerald-400",
+      text: "text-[#e7f4e9]"
+    };
+  }
+
+  if (status === "warning") {
+    return {
+      badge: "border-amber-500/35 bg-amber-500/10 text-amber-200",
+      dot: "bg-amber-400",
+      text: "text-[#f4e6c3]"
+    };
+  }
+
+  return {
+    badge: "border-red-500/35 bg-red-500/10 text-red-200",
+    dot: "bg-red-400",
+    text: "text-[#f1d2d2]"
+  };
+}
+
+function getDiscoveryStatusLabel(status: DiscoveryChecklistStatus) {
+  if (status === "passed") {
+    return "Passed";
+  }
+
+  if (status === "warning") {
+    return "Warning";
+  }
+
+  return "Missing";
+}
 
 function SpotifyLogo(props: SVGProps<SVGSVGElement>) {
   return (
@@ -653,19 +826,35 @@ export function ReleaseDetailEditor({
     [release]
   );
   const isPublishReady = publishBlockers.length === 0;
-  const generatedCoverAltText = useMemo(
-    () => getGeneratedCoverAltText(release),
+  const coverAltTextPreview = useMemo(
+    () => getReleaseCoverAltText(release),
     [release]
   );
   const discoveryChecklist = useMemo(
     () => getDiscoveryChecklist(release),
     [release]
   );
-  const completedDiscoveryItems = discoveryChecklist.filter((item) => item.complete).length;
-  const seoTitlePreview = release.title.trim() || "Untitled release";
-  const metaDescriptionPreview = getFallbackMetaDescription(release);
-  const socialShareTitlePreview = seoTitlePreview;
-  const socialShareDescriptionPreview = metaDescriptionPreview;
+  const passedDiscoveryItems = discoveryChecklist.filter(
+    (item) => item.status === "passed"
+  ).length;
+  const warningDiscoveryItems = discoveryChecklist.filter(
+    (item) => item.status === "warning"
+  ).length;
+  const missingDiscoveryItems = discoveryChecklist.filter(
+    (item) => item.status === "missing"
+  ).length;
+  const discoveryReadinessLabel = useMemo(
+    () => getDiscoveryReadinessLabel(discoveryChecklist),
+    [discoveryChecklist]
+  );
+  const seoTitlePreview =
+    release.seo_title.trim() || release.title.trim() || "Untitled release";
+  const metaDescriptionPreview =
+    release.meta_description.trim() || getFallbackMetaDescription(release);
+  const socialShareTitlePreview =
+    release.social_share_title.trim() || seoTitlePreview;
+  const socialShareDescriptionPreview =
+    release.social_share_description.trim() || metaDescriptionPreview;
   const schemaStatusLabel = release.is_published && isPublishReady
     ? "Ready"
     : "Draft";
@@ -1428,7 +1617,7 @@ export function ReleaseDetailEditor({
                     </div>
                     <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm">
                       <p className={pageLabelClass}>Cover alt preview</p>
-                      <p className="mt-2 text-[#efe7d7]">{generatedCoverAltText}</p>
+                      <p className="mt-2 text-[#efe7d7]">{coverAltTextPreview}</p>
                     </div>
                   </div>
                 </div>
@@ -1463,42 +1652,111 @@ export function ReleaseDetailEditor({
                   />
                 </label>
 
-                <div className="grid gap-3 md:col-span-2 xl:grid-cols-2">
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <div className="grid gap-4 md:col-span-2 xl:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className={pageLabelClass}>SEO Title</span>
+                    <input
+                      className={pageInputClass}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          seo_title: event.target.value
+                        }))
+                      }
+                      placeholder={`Fallback: ${seoTitlePreview}`}
+                      value={release.seo_title}
+                    />
+                  </label>
+
+                  <label className="space-y-2">
+                    <span className={pageLabelClass}>Social Share Title</span>
+                    <input
+                      className={pageInputClass}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          social_share_title: event.target.value
+                        }))
+                      }
+                      placeholder={`Fallback: ${socialShareTitlePreview}`}
+                      value={release.social_share_title}
+                    />
+                  </label>
+
+                  <label className="space-y-2 xl:col-span-2">
+                    <span className={pageLabelClass}>Meta Description</span>
+                    <textarea
+                      className={`${pageInputClass} min-h-[105px]`}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          meta_description: event.target.value
+                        }))
+                      }
+                      placeholder={`Fallback: ${metaDescriptionPreview}`}
+                      value={release.meta_description}
+                    />
+                  </label>
+
+                  <label className="space-y-2 xl:col-span-2">
+                    <span className={pageLabelClass}>Social Share Description</span>
+                    <textarea
+                      className={`${pageInputClass} min-h-[105px]`}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          social_share_description: event.target.value
+                        }))
+                      }
+                      placeholder={`Fallback: ${socialShareDescriptionPreview}`}
+                      value={release.social_share_description}
+                    />
+                  </label>
+
+                  <label className="space-y-2 xl:col-span-2">
+                    <span className={pageLabelClass}>Cover Art Alt Text</span>
+                    <input
+                      className={pageInputClass}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          cover_art_alt_text: event.target.value
+                        }))
+                      }
+                      placeholder={`Fallback: ${getGeneratedCoverAltText(release)}`}
+                      value={release.cover_art_alt_text}
+                    />
+                  </label>
+
+                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 xl:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className={pageLabelClass}>SEO title</p>
-                      <span className={pagePillClass}>Fallback</span>
+                      <p className={pageLabelClass}>Public metadata preview</p>
+                      <span className={pageAccentPillClass}>Live fallback</span>
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-[#efe7d7]">
-                      {seoTitlePreview}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className={pageLabelClass}>Meta description</p>
-                      <span className={pagePillClass}>Fallback</span>
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#7f858d]">
+                          Search
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-[#efe7d7]">
+                          {seoTitlePreview}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[#c8ced6]">
+                          {metaDescriptionPreview}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.16em] text-[#7f858d]">
+                          Social
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-[#efe7d7]">
+                          {socialShareTitlePreview}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[#c8ced6]">
+                          {socialShareDescriptionPreview}
+                        </p>
+                      </div>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-[#c8ced6]">
-                      {metaDescriptionPreview}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className={pageLabelClass}>Social share title</p>
-                      <span className={pagePillClass}>Next field</span>
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-[#efe7d7]">
-                      {socialShareTitlePreview}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className={pageLabelClass}>Social share description</p>
-                      <span className={pagePillClass}>Next field</span>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-[#c8ced6]">
-                      {socialShareDescriptionPreview}
-                    </p>
                   </div>
                 </div>
 
@@ -1509,9 +1767,6 @@ export function ReleaseDetailEditor({
                   </summary>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {[
-                      "Editable SEO title",
-                      "Editable meta description",
-                      "Cover art alt text",
                       "FAQ / AI answer blocks",
                       "Indexing toggle",
                       "Hide unreleased from search"
@@ -1669,27 +1924,60 @@ export function ReleaseDetailEditor({
 
                   <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className={pageLabelClass}>Discovery quality checklist</p>
-                      <span className={pageAccentPillClass}>
-                        {completedDiscoveryItems}/{discoveryChecklist.length}
-                      </span>
+                      <div>
+                        <p className={pageLabelClass}>Discovery quality checklist</p>
+                        <h3 className="mt-2 text-xl font-semibold text-[#f0eadf]">
+                          {discoveryReadinessLabel}
+                        </h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200">
+                          {passedDiscoveryItems} passed
+                        </span>
+                        <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-amber-200">
+                          {warningDiscoveryItems} warning
+                        </span>
+                        <span className="rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-red-200">
+                          {missingDiscoveryItems} missing
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      {discoveryChecklist.map((item) => (
+                    <p className="mt-3 text-sm leading-6 text-[#8a9098]">
+                      Computed from the release record only. This is a publishing
+                      confidence readout, not a save blocker.
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      {discoveryChecklist.map((item) => {
+                        const statusStyles = getDiscoveryStatusStyles(item.status);
+
+                        return (
                         <div
-                          className="flex items-center gap-2 rounded-[16px] border border-[#2f343b] bg-[#0f1216] px-3 py-2 text-sm"
+                          className="rounded-[18px] border border-[#2f343b] bg-[#0f1216] px-4 py-3"
                           key={item.label}
                         >
-                          <span
-                            className={`h-2.5 w-2.5 rounded-full ${
-                              item.complete ? "bg-[#c9a347]" : "bg-[#444951]"
-                            }`}
-                          />
-                          <span className={item.complete ? "text-[#efe7d7]" : "text-[#8a9098]"}>
-                            {item.label}
-                          </span>
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`h-2.5 w-2.5 rounded-full ${statusStyles.dot}`}
+                                />
+                                <p className={`text-sm font-semibold ${statusStyles.text}`}>
+                                  {item.label}
+                                </p>
+                              </div>
+                              <p className="mt-2 text-xs leading-5 text-[#8a9098]">
+                                {item.detail}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusStyles.badge}`}
+                            >
+                              {getDiscoveryStatusLabel(item.status)}
+                            </span>
+                          </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1735,7 +2023,7 @@ export function ReleaseDetailEditor({
                 <div className="overflow-hidden rounded-[24px] border border-[#30343b] bg-[#111318]">
                   <div className="relative aspect-square w-full max-w-md">
                     <Image
-                      alt={`${release.title} cover art`}
+                      alt={coverAltTextPreview}
                       className="object-cover"
                       fill
                       sizes="(max-width: 768px) 100vw, 420px"

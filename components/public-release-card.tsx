@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import {formatPublicReleaseDate} from "@/lib/public-utils";
+import {
+  formatPublicReleaseDate,
+  getPublicReleaseDiscoveryMetadata
+} from "@/lib/public-utils";
 import type {PublicReleaseRecord} from "@/lib/types";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
@@ -22,6 +25,7 @@ export function PublicReleaseCard({
   release: PublicReleaseRecord;
 }) {
   const collaboratorName = release.collaborator ? release.collaborator_name.trim() : "";
+  const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#111317] transition hover:-translate-y-0.5 hover:border-[#c9a347]/40 hover:bg-[#15181d]">
@@ -29,7 +33,7 @@ export function PublicReleaseCard({
         <div className="relative aspect-square overflow-hidden bg-[#181b20]">
           {release.cover_art_path ? (
             <Image
-              alt={`${release.title} cover art`}
+              alt={coverArtAltText}
               className="object-cover transition duration-500 group-hover:scale-[1.03]"
               fill
               priority={priority}

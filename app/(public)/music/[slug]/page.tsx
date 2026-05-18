@@ -13,6 +13,7 @@ import {
 } from "@/lib/repositories/public-site";
 import {
   formatPublicReleaseDate,
+  getPublicReleaseDiscoveryMetadata,
   getSpotifyEmbedUrl,
   getYouTubeEmbedUrl
 } from "@/lib/public-utils";
@@ -42,21 +43,34 @@ export async function generateMetadata({
       description: metadata.release_not_found_description
     };
   }
+  const {
+    coverArtAltText,
+    metaDescription,
+    seoTitle,
+    socialShareDescription,
+    socialShareTitle
+  } = getPublicReleaseDiscoveryMetadata(release);
 
   return {
-    title: release.title,
-    description: release.public_description,
+    title: seoTitle,
+    description: metaDescription,
     openGraph: {
-      title: release.title,
-      description: release.public_description,
+      title: socialShareTitle,
+      description: socialShareDescription,
       images: release.cover_art_path
         ? [
             {
               url: release.cover_art_path,
-              alt: `${release.title} cover art`
+              alt: coverArtAltText
             }
           ]
         : []
+    },
+    twitter: {
+      card: release.cover_art_path ? "summary_large_image" : "summary",
+      title: socialShareTitle,
+      description: socialShareDescription,
+      images: release.cover_art_path ? [release.cover_art_path] : []
     }
   };
 }
@@ -84,6 +98,7 @@ export default async function PublicReleaseDetailPage({
     release.featured_video_url || release.youtube_url
   );
   const description = release.public_long_description || release.public_description;
+  const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const content = siteSettings.site_content.release;
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
@@ -107,7 +122,7 @@ export default async function PublicReleaseDetailPage({
               <div className="relative aspect-square w-full">
                 {release.cover_art_path ? (
                   <Image
-                    alt={`${release.title} cover art`}
+                    alt={coverArtAltText}
                     className="object-cover"
                     fill
                     priority

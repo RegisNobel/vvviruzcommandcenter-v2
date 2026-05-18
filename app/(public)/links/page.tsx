@@ -5,7 +5,10 @@ import {ArrowUpRight, Disc3, Music2, PlaySquare} from "lucide-react";
 import type {Metadata} from "next";
 
 import {getLinksPageRelease, getSiteSettings} from "@/lib/repositories/public-site";
-import {normalizeExternalUrl} from "@/lib/public-utils";
+import {
+  getPublicReleaseDiscoveryMetadata,
+  normalizeExternalUrl
+} from "@/lib/public-utils";
 
 
 import {LinkPageAnalytics} from "@/components/link-page-analytics";
@@ -28,14 +31,39 @@ type LinksSearchParams = Record<string, string | string[] | undefined>;
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings();
   const selectedRelease = await getLinksPageRelease(siteSettings.site_content.links.selected_release_id);
+  const releaseMetadata = selectedRelease
+    ? getPublicReleaseDiscoveryMetadata(selectedRelease)
+    : null;
 
   return {
     title: selectedRelease
-      ? selectedRelease.title
+      ? releaseMetadata?.seoTitle
       : siteSettings.site_content.metadata.links_page_title,
     description:
-      selectedRelease?.public_description ||
-      siteSettings.site_content.metadata.links_page_description
+      releaseMetadata?.metaDescription ||
+      siteSettings.site_content.metadata.links_page_description,
+    openGraph: selectedRelease
+      ? {
+          title: releaseMetadata?.socialShareTitle,
+          description: releaseMetadata?.socialShareDescription,
+          images: selectedRelease.cover_art_path
+            ? [
+                {
+                  url: selectedRelease.cover_art_path,
+                  alt: releaseMetadata?.coverArtAltText
+                }
+              ]
+            : []
+        }
+      : undefined,
+    twitter: selectedRelease
+      ? {
+          card: selectedRelease.cover_art_path ? "summary_large_image" : "summary",
+          title: releaseMetadata?.socialShareTitle,
+          description: releaseMetadata?.socialShareDescription,
+          images: selectedRelease.cover_art_path ? [selectedRelease.cover_art_path] : []
+        }
+      : undefined
   };
 }
 
@@ -171,6 +199,7 @@ export default async function PublicLinksPage({
     watch_on_youtube_label: platformContent.watch_on_youtube_label
   }, passthroughParams);
   const hasCoverArt = Boolean(selectedRelease.cover_art_path.trim());
+  const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(selectedRelease);
 
   return (
     <main className="relative min-h-[calc(100vh-140px)] overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
@@ -179,7 +208,7 @@ export default async function PublicLinksPage({
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute inset-0 scale-[1.09]">
               <Image
-                alt={`${selectedRelease.title} cover background`}
+                alt=""
                 className="object-cover object-center blur-[36px]"
                 fill
                 priority
@@ -207,7 +236,7 @@ export default async function PublicLinksPage({
               {hasCoverArt ? (
                 <div className="relative h-44 w-44 overflow-hidden rounded-[28px] border border-white/10 bg-[#12161b] shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:h-52 sm:w-52">
                   <Image
-                    alt={`${selectedRelease.title} cover art`}
+                    alt={coverArtAltText}
                     className="object-cover"
                     fill
                     priority

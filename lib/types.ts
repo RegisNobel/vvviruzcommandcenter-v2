@@ -263,6 +263,11 @@ export type ReleaseRecord = {
   concept_details: string;
   public_description: string;
   public_long_description: string;
+  seo_title: string;
+  meta_description: string;
+  cover_art_alt_text: string;
+  social_share_title: string;
+  social_share_description: string;
   featured_video_url: string;
   public_lyrics_enabled: boolean;
   is_published: boolean;
@@ -323,6 +328,11 @@ export type PublicReleaseRecord = {
   cover_art_path: string;
   public_description: string;
   public_long_description: string;
+  seo_title: string;
+  meta_description: string;
+  cover_art_alt_text: string;
+  social_share_title: string;
+  social_share_description: string;
   spotify_url: string;
   apple_music_url: string;
   youtube_url: string;
