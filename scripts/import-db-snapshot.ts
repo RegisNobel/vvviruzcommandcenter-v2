@@ -26,6 +26,7 @@ type Snapshot = {
   emailSendLogs?: SnapshotRecord[];
   analyticsEvents?: SnapshotRecord[];
   backupRuns?: SnapshotRecord[];
+  shortLinks?: SnapshotRecord[];
   adImportBatches?: SnapshotRecord[];
   adCreativeReports?: SnapshotRecord[];
   adCreativeCopyLinks?: SnapshotRecord[];
@@ -48,6 +49,7 @@ const dateFieldsByModel: Record<string, string[]> = {
   emailSendLog: ["sentAt", "createdAt"],
   analyticsEvent: ["createdAt"],
   backupRun: ["startedAt", "finishedAt", "createdAt"],
+  shortLink: ["createdAt", "updatedAt", "deletedAt"],
   adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
   adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
   adCreativeCopyLink: ["createdAt"],
@@ -144,6 +146,7 @@ async function main() {
   counts.emailSendLogs = await upsertMany("emailSendLog", snapshot.emailSendLogs);
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
   counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
+  counts.shortLinks = await upsertMany("shortLink", snapshot.shortLinks);
   counts.adImportBatches = await upsertMany("adImportBatch", snapshot.adImportBatches);
   counts.adCreativeReports = await upsertMany("adCreativeReport", snapshot.adCreativeReports);
   counts.adCreativeCopyLinks = await upsertMany(

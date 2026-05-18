@@ -459,6 +459,20 @@ model BackupRun {
   @@index([status, startedAt])
 }
 
+model ShortLink {
+  id             String    @id
+  slug           String    @unique
+  destinationUrl String    @map("destination_url")
+  clickCount     Int       @default(0) @map("click_count")
+  createdAt      DateTime  @map("created_at")
+  updatedAt      DateTime  @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("short_links")
+}
+
 model AppearsOn {
   id            String   @id
   title         String

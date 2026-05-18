@@ -470,6 +470,13 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-18 13:07 -04:00
+
+- **Short Links V1**: Added a protected `/admin/short-links` admin tool for creating and managing branded short links.
+    - Added destination URL validation, optional lowercase custom slugs, auto-generated unique slugs, copy/open/delete actions, and soft deletes.
+    - Added public `/p/[slug]` redirect handling that increments click counts before redirecting and returns 404 for deleted or unknown slugs.
+    - Added the `short_links` database table to SQLite/Postgres Prisma schemas, local migration, backup snapshots, and snapshot import/export flows.
  
 ### 2026-05-15 22:05 -04:00
 

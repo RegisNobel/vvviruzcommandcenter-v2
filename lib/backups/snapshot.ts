@@ -73,6 +73,7 @@ export async function createDatabaseSnapshotArtifact() {
     emailSendLogs: await prisma.emailSendLog.findMany(),
     analyticsEvents: await prisma.analyticsEvent.findMany(),
     backupRuns: await prisma.backupRun.findMany(),
+    shortLinks: await prisma.shortLink.findMany(),
     adImportBatches: await prisma.adImportBatch.findMany(),
     adCreativeReports: await prisma.adCreativeReport.findMany(),
     adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),

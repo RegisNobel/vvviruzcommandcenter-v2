@@ -669,6 +669,16 @@ export type AppearsOnRecord = {
   updated_at: string;
 };
 
+export type ShortLinkRecord = {
+  id: string;
+  slug: string;
+  destination_url: string;
+  click_count: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+};
+
 export type ReleaseAdHighlightAd = {
   ad_name: string;
   spend: number;
