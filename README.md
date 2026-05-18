@@ -471,6 +471,18 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-18 18:34 -04:00
+
+- **Production Public Homepage Hotfix**: Hardened the shared public release Discovery metadata helper so cached or legacy release objects without the newest Discovery keys cannot crash `/`.
+    - Public metadata fallbacks now tolerate missing, null, or partial release fields and still resolve safe SEO title, description, social copy, and cover alt text values.
+    - Public release serialization now normalizes optional media, streaming, and Discovery fields to strings before they reach public components.
+
+### 2026-05-18 18:24 -04:00
+
+- **Discovery QA Pass**: Verified the v1 Discovery system against real local release records: `Mad Bunny` as published, `Multiversus: Aokiji vs. Esdeath` as draft, and `Multiversus 1 Remake (Meruem vs Beru)` as an incomplete draft.
+    - Temporarily wrote and reloaded Discovery metadata on local records, confirmed fallback behavior, verified draft releases remain hidden from public published-release queries, then restored the temporary QA values.
+    - Confirmed public release surfaces and the Release editor checklist are wired to the shared Discovery metadata and readiness logic.
+
 ### 2026-05-18 18:10 -04:00
 
 - **Public Discovery Metadata Verification**: Centralized public release metadata fallbacks so public release pages, home featured cards, music cards, and the `/links` campaign page use the same Discovery metadata rules.

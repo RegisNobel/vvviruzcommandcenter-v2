@@ -1,7 +1,7 @@
 import type {PublicReleaseRecord} from "@/lib/types";
 
 type PublicReleaseDiscoveryMetadataInput = Pick<
-  PublicReleaseRecord,
+  Partial<PublicReleaseRecord>,
   | "cover_art_alt_text"
   | "meta_description"
   | "public_description"
@@ -11,8 +11,12 @@ type PublicReleaseDiscoveryMetadataInput = Pick<
   | "title"
 >;
 
-export function normalizeExternalUrl(url: string) {
-  const value = url.trim();
+function safeText(value: string | null | undefined) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function normalizeExternalUrl(url: string | null | undefined) {
+  const value = safeText(url);
 
   if (!value) {
     return "";
@@ -48,13 +52,15 @@ export function formatPublicReleaseDate(value: string) {
   }).format(date);
 }
 
-export function getSpotifyEmbedUrl(url: string) {
-  if (!url.trim()) {
+export function getSpotifyEmbedUrl(url: string | null | undefined) {
+  const value = safeText(url);
+
+  if (!value) {
     return null;
   }
 
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(value);
     const [, resourceType, resourceId] = parsed.pathname.split("/");
 
     if (!resourceType || !resourceId) {
@@ -73,13 +79,15 @@ export function getSpotifyEmbedUrl(url: string) {
   }
 }
 
-export function getYouTubeEmbedUrl(url: string) {
-  if (!url.trim()) {
+export function getYouTubeEmbedUrl(url: string | null | undefined) {
+  const value = safeText(url);
+
+  if (!value) {
     return null;
   }
 
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(value);
 
     if (parsed.hostname.includes("youtu.be")) {
       const videoId = parsed.pathname.replace("/", "");
@@ -113,17 +121,16 @@ export function getReleaseListenHref(release: PublicReleaseRecord) {
 export function getPublicReleaseDiscoveryMetadata(
   release: PublicReleaseDiscoveryMetadataInput
 ) {
-  const seoTitle = release.seo_title.trim() || release.title;
-  const metaDescription =
-    release.meta_description.trim() || release.public_description;
+  const title = safeText(release.title) || "Untitled release";
+  const publicDescription = safeText(release.public_description);
+  const seoTitle = safeText(release.seo_title) || title;
+  const metaDescription = safeText(release.meta_description) || publicDescription;
   const coverArtAltText =
-    release.cover_art_alt_text.trim() || `${release.title} cover art`;
+    safeText(release.cover_art_alt_text) || `${title} cover art`;
   const socialShareTitle =
-    release.social_share_title.trim() || seoTitle || release.title;
+    safeText(release.social_share_title) || seoTitle || title;
   const socialShareDescription =
-    release.social_share_description.trim() ||
-    metaDescription ||
-    release.public_description;
+    safeText(release.social_share_description) || metaDescription || publicDescription;
 
   return {
     coverArtAltText,
