@@ -471,6 +471,12 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 01:05 -04:00
+
+- **Short Links UTM Presets**: Added optional UTM fields to `/admin/short-links` so campaign URLs can be built without manually editing query strings.
+    - Added source and medium preset buttons for common campaign values while still allowing custom input.
+    - Added a live final-destination preview and server-side URL merging that preserves existing query parameters while overwriting matching UTM keys when form values are provided.
+
 ### 2026-05-19 00:50 -04:00
 
 - **Backups Restore Drill Verified**: Successfully restored production Command Center data into the local development environment.

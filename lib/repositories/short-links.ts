@@ -3,6 +3,7 @@ import {randomBytes} from "node:crypto";
 import type {ShortLink} from "@prisma/client";
 
 import {prisma} from "@/lib/db/prisma";
+import {buildDestinationUrlWithUtm} from "@/lib/short-link-url";
 import type {ShortLinkRecord} from "@/lib/types";
 import {createId} from "@/lib/utils";
 
@@ -22,19 +23,7 @@ function toShortLinkRecord(link: ShortLink): ShortLinkRecord {
 }
 
 function normalizeDestinationUrl(value: string) {
-  const trimmedValue = value.trim();
-
-  try {
-    const url = new URL(trimmedValue);
-
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      throw new Error("URL must start with http:// or https://.");
-    }
-
-    return url.toString();
-  } catch {
-    throw new Error("Enter a valid destination URL starting with http:// or https://.");
-  }
+  return buildDestinationUrlWithUtm(value);
 }
 
 function normalizeCustomSlug(value: string) {
