@@ -9,13 +9,36 @@ import {createId} from "@/lib/utils";
 
 const autoSlugLength = 7;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const shortLinkInclude = {
+  release: {
+    select: {
+      id: true,
+      title: true
+    }
+  }
+} as const;
 
-function toShortLinkRecord(link: ShortLink): ShortLinkRecord {
+type ShortLinkWithRelease = ShortLink & {
+  release: {
+    id: string;
+    title: string;
+  } | null;
+};
+
+function cleanOptionalString(value: string | null | undefined) {
+  return value?.trim() ?? "";
+}
+
+function toShortLinkRecord(link: ShortLinkWithRelease): ShortLinkRecord {
   return {
     id: link.id,
     slug: link.slug,
     destination_url: link.destinationUrl,
+    release_id: link.releaseId ?? "",
+    release_title: link.release?.title ?? "",
     click_count: link.clickCount,
+    campaign_label: link.campaignLabel,
+    content_label: link.contentLabel,
     created_at: link.createdAt.toISOString(),
     updated_at: link.updatedAt.toISOString(),
     deleted_at: link.deletedAt?.toISOString() ?? null
@@ -85,8 +108,32 @@ async function ensureSlugIsAvailable(slug: string) {
   throw new Error("That slug is already in use.");
 }
 
+async function normalizeReleaseId(value: string | null | undefined) {
+  const releaseId = cleanOptionalString(value);
+
+  if (!releaseId) {
+    return null;
+  }
+
+  const release = await prisma.release.findUnique({
+    select: {
+      id: true
+    },
+    where: {
+      id: releaseId
+    }
+  });
+
+  if (!release) {
+    throw new Error("Select a valid release or leave the release field empty.");
+  }
+
+  return release.id;
+}
+
 export async function readActiveShortLinks() {
   const links = await prisma.shortLink.findMany({
+    include: shortLinkInclude,
     orderBy: {
       createdAt: "desc"
     },
@@ -100,14 +147,21 @@ export async function readActiveShortLinks() {
 
 export async function createShortLink({
   customSlug,
-  destinationUrl
+  destinationUrl,
+  releaseId,
+  campaignLabel,
+  contentLabel
 }: {
   customSlug?: string;
   destinationUrl: string;
+  releaseId?: string | null;
+  campaignLabel?: string | null;
+  contentLabel?: string | null;
 }) {
   const normalizedDestinationUrl = normalizeDestinationUrl(destinationUrl);
   const normalizedCustomSlug = normalizeCustomSlug(customSlug ?? "");
   const slug = normalizedCustomSlug || (await createUniqueAutoSlug());
+  const normalizedReleaseId = await normalizeReleaseId(releaseId);
 
   if (normalizedCustomSlug) {
     await ensureSlugIsAvailable(slug);
@@ -119,9 +173,55 @@ export async function createShortLink({
       id: createId(),
       slug,
       destinationUrl: normalizedDestinationUrl,
+      releaseId: normalizedReleaseId,
+      campaignLabel: cleanOptionalString(campaignLabel),
+      contentLabel: cleanOptionalString(contentLabel),
       clickCount: 0,
       createdAt: now,
       updatedAt: now
+    },
+    include: shortLinkInclude
+  });
+
+  return toShortLinkRecord(link);
+}
+
+export async function updateShortLinkContext({
+  id,
+  releaseId,
+  campaignLabel,
+  contentLabel
+}: {
+  id: string;
+  releaseId?: string | null;
+  campaignLabel?: string | null;
+  contentLabel?: string | null;
+}) {
+  const normalizedReleaseId = await normalizeReleaseId(releaseId);
+  const existing = await prisma.shortLink.findFirst({
+    select: {
+      id: true
+    },
+    where: {
+      deletedAt: null,
+      id
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Short link not found.");
+  }
+
+  const link = await prisma.shortLink.update({
+    data: {
+      releaseId: normalizedReleaseId,
+      campaignLabel: cleanOptionalString(campaignLabel),
+      contentLabel: cleanOptionalString(contentLabel),
+      updatedAt: new Date()
+    },
+    include: shortLinkInclude,
+    where: {
+      id: existing.id
     }
   });
 

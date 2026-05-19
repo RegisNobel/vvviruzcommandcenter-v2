@@ -1,12 +1,13 @@
 "use client";
 
-import {useMemo, useState, useTransition} from "react";
+import {useEffect, useMemo, useState, useTransition} from "react";
 import {useRouter} from "next/navigation";
 import {Check, Copy, ExternalLink, Link2, Trash2} from "lucide-react";
 
 import {
   createShortLinkAction,
-  deleteShortLinkAction
+  deleteShortLinkAction,
+  updateShortLinkContextAction
 } from "@/app/admin/(protected)/short-links/actions";
 import {
   buildDestinationUrlWithUtm,
@@ -14,7 +15,7 @@ import {
   utmSourcePresets,
   type UtmFields
 } from "@/lib/short-link-url";
-import type {ShortLinkRecord} from "@/lib/types";
+import type {ReleaseSummary, ShortLinkRecord} from "@/lib/types";
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -34,17 +35,44 @@ function getShortUrl(baseUrl: string, slug: string) {
   return `${baseUrl.replace(/\/+$/g, "")}/p/${slug}`;
 }
 
+type ShortLinkContextDraft = {
+  releaseId: string;
+  campaignLabel: string;
+  contentLabel: string;
+};
+
+function createContextDrafts(links: ShortLinkRecord[]) {
+  return Object.fromEntries(
+    links.map((link) => [
+      link.id,
+      {
+        campaignLabel: link.campaign_label,
+        contentLabel: link.content_label,
+        releaseId: link.release_id
+      }
+    ])
+  ) as Record<string, ShortLinkContextDraft>;
+}
+
 export function ShortLinksAdminPage({
   baseUrl,
-  initialLinks
+  initialLinks,
+  releaseOptions
 }: {
   baseUrl: string;
   initialLinks: ShortLinkRecord[];
+  releaseOptions: ReleaseSummary[];
 }) {
   const router = useRouter();
   const [destinationUrl, setDestinationUrl] = useState("");
   const [customSlug, setCustomSlug] = useState("");
+  const [releaseId, setReleaseId] = useState("");
+  const [campaignLabel, setCampaignLabel] = useState("");
+  const [contentLabel, setContentLabel] = useState("");
   const [utmFields, setUtmFields] = useState<UtmFields>({});
+  const [contextDrafts, setContextDrafts] = useState(() =>
+    createContextDrafts(initialLinks)
+  );
   const [copiedSlug, setCopiedSlug] = useState("");
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -60,6 +88,10 @@ export function ShortLinksAdminPage({
     }
   }, [destinationUrl, utmFields]);
 
+  useEffect(() => {
+    setContextDrafts(createContextDrafts(initialLinks));
+  }, [initialLinks]);
+
   function updateUtmField(key: keyof UtmFields, value: string) {
     setUtmFields((current) => ({
       ...current,
@@ -71,8 +103,11 @@ export function ShortLinksAdminPage({
     setMessage("");
     startTransition(async () => {
       const result = await createShortLinkAction({
+        campaignLabel,
+        contentLabel,
         customSlug,
         destinationUrl,
+        releaseId,
         utmFields
       });
 
@@ -81,9 +116,54 @@ export function ShortLinksAdminPage({
       if (result.ok && result.link) {
         setDestinationUrl("");
         setCustomSlug("");
+        setReleaseId("");
+        setCampaignLabel("");
+        setContentLabel("");
         setUtmFields({});
         await navigator.clipboard?.writeText(getShortUrl(baseUrl, result.link.slug));
         setCopiedSlug(result.link.slug);
+        router.refresh();
+      }
+    });
+  }
+
+  function updateContextDraft(
+    linkId: string,
+    key: keyof ShortLinkContextDraft,
+    value: string
+  ) {
+    setContextDrafts((current) => ({
+      ...current,
+      [linkId]: {
+        ...(current[linkId] ?? {
+          campaignLabel: "",
+          contentLabel: "",
+          releaseId: ""
+        }),
+        [key]: value
+      }
+    }));
+  }
+
+  function handleSaveContext(link: ShortLinkRecord) {
+    const draft = contextDrafts[link.id] ?? {
+      campaignLabel: link.campaign_label,
+      contentLabel: link.content_label,
+      releaseId: link.release_id
+    };
+
+    setMessage("");
+    startTransition(async () => {
+      const result = await updateShortLinkContextAction({
+        campaignLabel: draft.campaignLabel,
+        contentLabel: draft.contentLabel,
+        id: link.id,
+        releaseId: draft.releaseId
+      });
+
+      setMessage(result.message);
+
+      if (result.ok) {
         router.refresh();
       }
     });
@@ -168,6 +248,53 @@ export function ShortLinksAdminPage({
               <Link2 size={16} />
               {isPending ? "Working..." : "Shorten"}
             </button>
+          </div>
+
+          <div className="rounded-[24px] border border-[#30343b] bg-[#101216] p-4">
+            <p className="field-label">Attribution handoff</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              Optional context lets Attribution connect short-link clicks back to a
+              release, campaign, or creative label without adding another analytics
+              surface here.
+            </p>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              <label className="block">
+                <span className="field-label">Release</span>
+                <select
+                  className="field-input mt-2"
+                  onChange={(event) => setReleaseId(event.target.value)}
+                  value={releaseId}
+                >
+                  <option value="">Standalone / no release</option>
+                  {releaseOptions.map((release) => (
+                    <option key={release.id} value={release.id}>
+                      {release.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="field-label">Campaign Label</span>
+                <input
+                  className="field-input mt-2"
+                  onChange={(event) => setCampaignLabel(event.target.value)}
+                  placeholder="Mad Bunny rollout"
+                  value={campaignLabel}
+                />
+              </label>
+
+              <label className="block">
+                <span className="field-label">Content Label</span>
+                <input
+                  className="field-input mt-2"
+                  onChange={(event) => setContentLabel(event.target.value)}
+                  placeholder="AMV hook test"
+                  value={contentLabel}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="rounded-[24px] border border-[#30343b] bg-[#101216] p-4">
@@ -287,11 +414,12 @@ export function ShortLinksAdminPage({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <table className="w-full min-w-[1200px] text-left text-sm">
               <thead className="bg-[#171a1f] text-[#b8bec6]">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Short URL</th>
                   <th className="px-4 py-3 font-semibold">Destination</th>
+                  <th className="px-4 py-3 font-semibold">Attribution Context</th>
                   <th className="px-4 py-3 font-semibold">Clicks</th>
                   <th className="px-4 py-3 font-semibold">Created</th>
                   <th className="px-4 py-3 font-semibold">Actions</th>
@@ -302,6 +430,11 @@ export function ShortLinksAdminPage({
                   initialLinks.map((link) => {
                     const shortUrl = getShortUrl(baseUrl, link.slug);
                     const isCopied = copiedSlug === link.slug;
+                    const draft = contextDrafts[link.id] ?? {
+                      campaignLabel: link.campaign_label,
+                      contentLabel: link.content_label,
+                      releaseId: link.release_id
+                    };
 
                     return (
                       <tr className="align-top text-[#d9dee5]" key={link.id}>
@@ -317,6 +450,88 @@ export function ShortLinksAdminPage({
                         </td>
                         <td className="max-w-[420px] px-4 py-4">
                           <p className="break-all text-muted">{link.destination_url}</p>
+                        </td>
+                        <td className="min-w-[320px] px-4 py-4">
+                          <div className="space-y-2">
+                            <p className="font-semibold text-ink">
+                              {link.release_title || "Standalone"}
+                            </p>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              {link.campaign_label ? (
+                                <span className="pill">Campaign: {link.campaign_label}</span>
+                              ) : null}
+                              {link.content_label ? (
+                                <span className="pill">Content: {link.content_label}</span>
+                              ) : null}
+                              {!link.campaign_label && !link.content_label ? (
+                                <span className="text-muted">No campaign/content labels</span>
+                              ) : null}
+                            </div>
+                            <details className="rounded-[18px] border border-[#30343b] bg-[#0f1114] p-3">
+                              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-[#f1dfad]">
+                                Edit context
+                              </summary>
+                              <div className="mt-3 grid gap-3">
+                                <label className="block">
+                                  <span className="field-label">Release</span>
+                                  <select
+                                    className="field-input mt-2"
+                                    onChange={(event) =>
+                                      updateContextDraft(
+                                        link.id,
+                                        "releaseId",
+                                        event.target.value
+                                      )
+                                    }
+                                    value={draft.releaseId}
+                                  >
+                                    <option value="">Standalone / no release</option>
+                                    {releaseOptions.map((release) => (
+                                      <option key={release.id} value={release.id}>
+                                        {release.title}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="block">
+                                  <span className="field-label">Campaign Label</span>
+                                  <input
+                                    className="field-input mt-2"
+                                    onChange={(event) =>
+                                      updateContextDraft(
+                                        link.id,
+                                        "campaignLabel",
+                                        event.target.value
+                                      )
+                                    }
+                                    value={draft.campaignLabel}
+                                  />
+                                </label>
+                                <label className="block">
+                                  <span className="field-label">Content Label</span>
+                                  <input
+                                    className="field-input mt-2"
+                                    onChange={(event) =>
+                                      updateContextDraft(
+                                        link.id,
+                                        "contentLabel",
+                                        event.target.value
+                                      )
+                                    }
+                                    value={draft.contentLabel}
+                                  />
+                                </label>
+                                <button
+                                  className="action-button-secondary justify-center px-3 py-2"
+                                  disabled={isPending}
+                                  onClick={() => handleSaveContext(link)}
+                                  type="button"
+                                >
+                                  Save Context
+                                </button>
+                              </div>
+                            </details>
+                          </div>
                         </td>
                         <td className="px-4 py-4 font-semibold text-ink">{link.click_count}</td>
                         <td className="px-4 py-4 text-muted">{formatDate(link.created_at)}</td>
@@ -354,7 +569,7 @@ export function ShortLinksAdminPage({
                   })
                 ) : (
                   <tr>
-                    <td className="px-4 py-8 text-center text-muted" colSpan={5}>
+                    <td className="px-4 py-8 text-center text-muted" colSpan={6}>
                       No active short links yet. Paste a destination URL above to create one.
                     </td>
                   </tr>

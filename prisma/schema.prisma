@@ -84,6 +84,7 @@ model Release {
   adImportBatches       AdImportBatch[]
   adCreativeReports     AdCreativeReport[]
   adCampaignLearnings   AdCampaignLearning[]
+  shortLinks            ShortLink[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -475,11 +476,16 @@ model ShortLink {
   id             String    @id
   slug           String    @unique
   destinationUrl String    @map("destination_url")
+  releaseId      String?   @map("release_id")
+  campaignLabel  String    @default("") @map("campaign_label")
+  contentLabel   String    @default("") @map("content_label")
   clickCount     Int       @default(0) @map("click_count")
   createdAt      DateTime  @map("created_at")
   updatedAt      DateTime  @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
+  release        Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
+  @@index([releaseId])
   @@index([createdAt])
   @@index([deletedAt])
   @@map("short_links")

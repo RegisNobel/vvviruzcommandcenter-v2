@@ -279,7 +279,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
   const startDate = startOfUtcDay(
     new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - safeDays + 1))
   );
-  const [releases, analyticsCounts, siteSettings] = await Promise.all([
+  const [releases, analyticsCounts, shortLinkCounts, siteSettings] = await Promise.all([
     prisma.release.findMany({
       orderBy: [
         {
@@ -317,10 +317,27 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         _all: true
       }
     }),
+    prisma.shortLink.groupBy({
+      by: ["releaseId"],
+      where: {
+        deletedAt: null,
+        releaseId: {
+          not: null
+        }
+      },
+      _count: {
+        _all: true
+      }
+    }),
     readSiteSettings()
   ]);
   const analyticsCountByReleaseId = new Map(
     analyticsCounts
+      .filter((item) => item.releaseId)
+      .map((item) => [item.releaseId as string, item._count._all])
+  );
+  const shortLinkCountByReleaseId = new Map(
+    shortLinkCounts
       .filter((item) => item.releaseId)
       .map((item) => [item.releaseId as string, item._count._all])
   );
@@ -331,7 +348,9 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     releases.find((release) => release.id === settingsReleaseId) ??
     releases.find(
       (release) =>
-        release._count.adImportBatches > 0 || (analyticsCountByReleaseId.get(release.id) ?? 0) > 0
+        release._count.adImportBatches > 0 ||
+        (analyticsCountByReleaseId.get(release.id) ?? 0) > 0 ||
+        (shortLinkCountByReleaseId.get(release.id) ?? 0) > 0
     ) ??
     releases[0] ??
     null;
@@ -354,7 +373,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     };
   }
 
-  const [adMetrics, analyticsEvents] = await Promise.all([
+  const [adMetrics, analyticsEvents, shortLinks] = await Promise.all([
     readReleaseAdMetrics(selectedRelease.id),
     prisma.analyticsEvent.findMany({
       orderBy: {
@@ -366,6 +385,29 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         createdAt: {
           gte: startDate
         }
+      }
+    }),
+    prisma.shortLink.findMany({
+      orderBy: [
+        {
+          clickCount: "desc"
+        },
+        {
+          updatedAt: "desc"
+        }
+      ],
+      select: {
+        campaignLabel: true,
+        clickCount: true,
+        contentLabel: true,
+        createdAt: true,
+        destinationUrl: true,
+        id: true,
+        slug: true
+      },
+      where: {
+        deletedAt: null,
+        releaseId: selectedRelease.id
       }
     })
   ]);
@@ -600,6 +642,20 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     }))
     .sort((left, right) => right.spend - left.spend || right.streaming_clicks - left.streaming_clicks || left.label.localeCompare(right.label))
     .slice(0, 12);
+  const shortLinkRows = shortLinks.map((link) => ({
+    campaign_label: link.campaignLabel,
+    click_count: link.clickCount,
+    content_label: link.contentLabel,
+    created_at: link.createdAt.toISOString(),
+    destination_url: link.destinationUrl,
+    id: link.id,
+    short_path: `/p/${link.slug}`,
+    slug: link.slug
+  }));
+  const shortLinkTotalClicks = shortLinkRows.reduce(
+    (total, link) => total + link.click_count,
+    0
+  );
 
   return {
     days: safeDays,
@@ -685,6 +741,12 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       utm_coverage_rate: utmCoverageRate,
       views_with_utm: viewsWithUtm,
       views_without_utm: Math.max(linksViews - viewsWithUtm, 0)
+    },
+    short_links: {
+      active_count: shortLinkRows.length,
+      links: shortLinkRows.slice(0, 5),
+      top_link: shortLinkRows[0] ?? null,
+      total_clicks: shortLinkTotalClicks
     },
     attribution: {
       source_batch_id: preferredAttributionBatch?.id ?? null,

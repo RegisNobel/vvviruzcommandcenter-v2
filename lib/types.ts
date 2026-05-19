@@ -683,7 +683,11 @@ export type ShortLinkRecord = {
   id: string;
   slug: string;
   destination_url: string;
+  release_id: string;
+  release_title: string;
   click_count: number;
+  campaign_label: string;
+  content_label: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

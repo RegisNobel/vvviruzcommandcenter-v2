@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {headers} from "next/headers";
 
 import {ShortLinksAdminPage} from "@/components/short-links-admin-page";
+import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readActiveShortLinks} from "@/lib/repositories/short-links";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,17 @@ async function getBaseUrl() {
 }
 
 export default async function AdminShortLinksPage() {
-  const [baseUrl, links] = await Promise.all([getBaseUrl(), readActiveShortLinks()]);
+  const [baseUrl, links, releases] = await Promise.all([
+    getBaseUrl(),
+    readActiveShortLinks(),
+    readReleaseSummaries()
+  ]);
 
-  return <ShortLinksAdminPage baseUrl={baseUrl} initialLinks={links} />;
+  return (
+    <ShortLinksAdminPage
+      baseUrl={baseUrl}
+      initialLinks={links}
+      releaseOptions={releases}
+    />
+  );
 }

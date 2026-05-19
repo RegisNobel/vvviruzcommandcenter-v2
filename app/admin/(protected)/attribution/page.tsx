@@ -523,6 +523,108 @@ export default async function AdminAttributionPage({
               />
             </section>
 
+            <section className="panel overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <div>
+                  <p className="field-label">Short links</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">
+                    Campaign handoff links
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                    Lightweight readout from Short Links. Use this to confirm
+                    branded redirects tied to this release are getting traffic before
+                    deeper attribution work.
+                  </p>
+                </div>
+                <Link className="action-button-secondary" href="/admin/short-links">
+                  Manage Short Links
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+              <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <FunnelStage
+                    helper="Clicks across active short links attached to this release."
+                    label="Total short-link clicks"
+                    value={formatNumber(commandDashboard.short_links.total_clicks)}
+                  />
+                  <FunnelStage
+                    helper="Active branded redirects connected to this release."
+                    label="Active short links"
+                    value={formatNumber(commandDashboard.short_links.active_count)}
+                  />
+                  <FunnelStage
+                    helper={
+                      commandDashboard.short_links.top_link
+                        ? commandDashboard.short_links.top_link.short_path
+                        : "Attach short links to this release to identify a top link."
+                    }
+                    label="Top short link"
+                    value={
+                      commandDashboard.short_links.top_link
+                        ? formatNumber(commandDashboard.short_links.top_link.click_count)
+                        : "0"
+                    }
+                  />
+                </div>
+
+                <div className="overflow-x-auto rounded-[22px] border border-[#30343b]">
+                  <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead className="bg-[#171a1f] text-[#b8bec6]">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">Short Link</th>
+                        <th className="px-4 py-3 font-semibold">Campaign / Content</th>
+                        <th className="px-4 py-3 font-semibold">Clicks</th>
+                        <th className="px-4 py-3 font-semibold">Destination</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#252a31]">
+                      {commandDashboard.short_links.links.length > 0 ? (
+                        commandDashboard.short_links.links.map((link) => (
+                          <tr className="align-top text-[#d9dee5]" key={link.id}>
+                            <td className="px-4 py-4">
+                              <Link
+                                className="font-semibold text-[#f1dfad] transition hover:text-[#d7b45e]"
+                                href={link.short_path}
+                                target="_blank"
+                              >
+                                {link.short_path}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-wrap gap-2">
+                                {link.campaign_label ? (
+                                  <span className="pill">Campaign: {link.campaign_label}</span>
+                                ) : null}
+                                {link.content_label ? (
+                                  <span className="pill">Content: {link.content_label}</span>
+                                ) : null}
+                                {!link.campaign_label && !link.content_label ? (
+                                  <span className="text-muted">No labels yet</span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 font-semibold text-ink">
+                              {formatNumber(link.click_count)}
+                            </td>
+                            <td className="max-w-[300px] px-4 py-4">
+                              <p className="break-all text-muted">{link.destination_url}</p>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-7 text-center text-muted" colSpan={4}>
+                            No active short links are attached to this release yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
             <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
               <div className="panel p-4 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">

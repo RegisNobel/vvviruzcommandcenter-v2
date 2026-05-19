@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 14:33 -04:00
+
+- **Short Links to Attribution Handoff v1**: Added optional release, campaign label, and content label context to Short Links.
+    - Short Links can now be created or edited with a linked release plus creator-friendly campaign/content labels while existing standalone links keep working.
+    - Attribution now shows a lightweight short-link readout for the selected release with total clicks, active link count, top link, and campaign/content labels.
+    - Added SQLite/Postgres Prisma schema support and included short links in Drive restore handling so backup snapshots preserve the new context fields.
+
 ### 2026-05-19 01:05 -04:00
 
 - **Short Links UTM Presets**: Added optional UTM fields to `/admin/short-links` so campaign URLs can be built without manually editing query strings.
