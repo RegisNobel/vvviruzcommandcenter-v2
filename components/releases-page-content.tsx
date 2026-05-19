@@ -1,6 +1,6 @@
 "use client";
 
-import {useDeferredValue, useMemo, useState, useRef, useEffect} from "react";
+import {useDeferredValue, useMemo, useState} from "react";
 import Link from "next/link";
 import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
@@ -54,23 +54,6 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   const [busyReleaseId, setBusyReleaseId] = useState<string | null>(null);
   const deferredSearchValue = useDeferredValue(searchValue);
 
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const headerRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsHeaderVisible(entry.isIntersecting);
-      },
-      { threshold: 0 }
-    );
-
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
   const normalizedSearchValue = deferredSearchValue.trim().toLowerCase();
   const filteredReleases = useMemo(
     () =>
@@ -130,7 +113,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section ref={headerRef} className="panel overflow-hidden px-6 py-7 sm:px-8">
+        <section className="panel z-30 overflow-hidden px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] lg:sticky lg:top-[88px] sm:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Release planning</div>
@@ -183,39 +166,6 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
             </div>
           </div>
         </section>
-
-        <div className={`sticky top-[100px] lg:top-[64px] z-20 transition-all duration-300 ${isHeaderVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'} mb-6`}>
-          <div className="panel flex flex-wrap items-center justify-between gap-4 px-4 py-3 bg-[#101215]/95 backdrop-blur-xl border-[#30343b]">
-            <div className="text-lg font-semibold text-ink">
-              Releases
-            </div>
-            <div className="flex-1 max-w-md mx-4">
-              <span className="relative block">
-                <Search
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                  size={16}
-                />
-                <input
-                  className="field-input pl-11"
-                  onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Find a release by title..."
-                  value={searchValue}
-                />
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="pill hidden sm:inline-flex">{filteredReleases.length} results</span>
-              <Link className="action-button-secondary" href="/admin/releases/roadmap">
-                <CalendarClock size={16} />
-                Roadmap
-              </Link>
-              <Link className="action-button-primary" href="/admin/releases/new">
-                <PlusCircle size={16} />
-                New Release
-              </Link>
-            </div>
-          </div>
-        </div>
 
         <section className="space-y-4">
           {filteredReleases.map((release, index) => (

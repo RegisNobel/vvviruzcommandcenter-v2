@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 00:09 -04:00
+
+- **Admin Sticky Section Fixes**: Reworked sticky behavior for the Releases and Public Site management top panels.
+    - Removed the fragile duplicate mini-toolbar pattern that faded in/out with IntersectionObserver state.
+    - Made the actual top panels sticky on desktop so search, release actions, save status, and site settings actions remain stable while scrolling.
+    - Moved the Release Detail status dock sticky behavior from the individual card to the full right-side sidebar stack to avoid card overlap while preserving normal mobile flow.
+- **Exclusives Page Cleanup**: Removed the small hardcoded preview-eyebrow text above the early-access track title so the card reads cleaner and stays controlled by the core offer title.
+
 ### 2026-05-18 18:34 -04:00
 
 - **Production Public Homepage Hotfix**: Hardened the shared public release Discovery metadata helper so cached or legacy release objects without the newest Discovery keys cannot crash `/`.

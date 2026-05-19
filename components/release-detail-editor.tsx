@@ -2778,8 +2778,8 @@ export function ReleaseDetailEditor({
 
           </div>
 
-          <aside className="space-y-6">
-            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6 xl:sticky xl:top-[150px] xl:z-20`}>
+          <aside className="space-y-6 xl:sticky xl:top-[150px] xl:max-h-[calc(100vh-170px)] xl:self-start xl:overflow-y-auto xl:pr-1">
+            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Release Planning</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
