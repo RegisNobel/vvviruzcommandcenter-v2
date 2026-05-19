@@ -1,6 +1,6 @@
 "use client";
 
-import {useDeferredValue, useMemo, useState} from "react";
+import {useDeferredValue, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
@@ -53,6 +53,29 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   const [releaseItems, setReleaseItems] = useState(releases);
   const [busyReleaseId, setBusyReleaseId] = useState<string | null>(null);
   const deferredSearchValue = useDeferredValue(searchValue);
+  const [isCommandDockVisible, setIsCommandDockVisible] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function updateCommandDockVisibility() {
+      const header = headerRef.current;
+
+      if (!header) {
+        return;
+      }
+
+      setIsCommandDockVisible(header.getBoundingClientRect().bottom <= 112);
+    }
+
+    updateCommandDockVisibility();
+    window.addEventListener("scroll", updateCommandDockVisibility, {passive: true});
+    window.addEventListener("resize", updateCommandDockVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateCommandDockVisibility);
+      window.removeEventListener("resize", updateCommandDockVisibility);
+    };
+  }, []);
 
   const normalizedSearchValue = deferredSearchValue.trim().toLowerCase();
   const filteredReleases = useMemo(
@@ -113,7 +136,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="panel z-30 overflow-hidden px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] lg:sticky lg:top-[88px] sm:px-8">
+        <section className="panel overflow-hidden px-6 py-7 sm:px-8" ref={headerRef}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Release planning</div>
@@ -166,6 +189,45 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
             </div>
           </div>
         </section>
+
+        <div
+          className={`fixed inset-x-0 top-[92px] z-30 hidden px-4 transition-all duration-200 sm:px-6 lg:block lg:px-8 ${
+            isCommandDockVisible
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-3 opacity-0"
+          }`}
+        >
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[#30343b] bg-[#101215]/95 px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+            <div className="text-lg font-semibold text-ink">
+              Releases
+            </div>
+            <div className="mx-4 max-w-md flex-1">
+              <span className="relative block">
+                <Search
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                  size={16}
+                />
+                <input
+                  className="field-input pl-11"
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  placeholder="Find a release by title..."
+                  value={searchValue}
+                />
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="pill hidden sm:inline-flex">{filteredReleases.length} results</span>
+              <Link className="action-button-secondary" href="/admin/releases/roadmap">
+                <CalendarClock size={16} />
+                Roadmap
+              </Link>
+              <Link className="action-button-primary" href="/admin/releases/new">
+                <PlusCircle size={16} />
+                New Release
+              </Link>
+            </div>
+          </div>
+        </div>
 
         <section className="space-y-4">
           {filteredReleases.map((release, index) => (

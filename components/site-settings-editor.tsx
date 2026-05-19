@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {Save, Settings2, Globe2, ArrowLeft} from "lucide-react";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 
 import type {
   BrandPillar,
@@ -62,6 +62,29 @@ export function SiteSettingsEditor({
   const [featuredReleaseQuery, setFeaturedReleaseQuery] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [isCommandDockVisible, setIsCommandDockVisible] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    function updateCommandDockVisibility() {
+      const header = headerRef.current;
+
+      if (!header) {
+        return;
+      }
+
+      setIsCommandDockVisible(header.getBoundingClientRect().bottom <= 112);
+    }
+
+    updateCommandDockVisibility();
+    window.addEventListener("scroll", updateCommandDockVisibility, {passive: true});
+    window.addEventListener("resize", updateCommandDockVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateCommandDockVisibility);
+      window.removeEventListener("resize", updateCommandDockVisibility);
+    };
+  }, []);
 
   const statusLabel = useMemo(() => {
     if (saveState === "saving") {
@@ -228,7 +251,7 @@ export function SiteSettingsEditor({
 
   return (
     <>
-      <section className="panel z-30 mb-6 px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] lg:sticky lg:top-[88px]">
+      <section className="panel mb-6 px-6 py-7" ref={headerRef}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="pill">
@@ -259,6 +282,31 @@ export function SiteSettingsEditor({
           </div>
         </div>
       </section>
+
+      <div
+        className={`fixed inset-x-0 top-[92px] z-30 hidden px-4 transition-all duration-200 sm:px-6 lg:block lg:px-8 ${
+          isCommandDockVisible
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-3 opacity-0"
+        }`}
+      >
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[#30343b] bg-[#101215]/95 px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+          <div className="text-lg font-semibold text-ink">
+            Public Site Management
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="pill">{statusLabel}</span>
+            <button className="action-button-primary" onClick={handleSave} type="button">
+              <Save size={16} />
+              Save Site Settings
+            </button>
+            <Link className="action-button-secondary" href="/admin/releases">
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
 
       <section className="panel space-y-6 px-6 py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">

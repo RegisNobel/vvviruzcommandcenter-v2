@@ -471,6 +471,12 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 00:50 -04:00
+
+- **Admin Command Dock Fix**: Replaced the fragile sticky-header behavior on `/admin/releases` and `/admin/site` with fixed desktop command docks.
+    - Releases now keeps search, result count, Roadmap, and New Release controls reachable after the large planning card scrolls away.
+    - Public Site management now keeps save status, Save Site Settings, and Back to Dashboard controls reachable while editing long settings sections.
+
 ### 2026-05-19 00:09 -04:00
 
 - **Admin Sticky Section Fixes**: Reworked sticky behavior for the Releases and Public Site management top panels.
