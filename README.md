@@ -471,6 +471,12 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-20 12:43 -04:00
+
+- **Public Release Structured Data**: Added server-rendered JSON-LD on public release detail pages.
+    - Release pages now emit `MusicRecording` schema with vvviruz as `byArtist`, collaborator credits when present, release date, description, artwork, sameAs streaming/video links, category/project context, and public lyrics only when lyrics are already enabled publicly.
+    - Added a clean `BreadcrumbList` graph for `/music` > release pages without changing public metadata behavior or adding database fields.
+
 ### 2026-05-20 04:56 -04:00
 
 - **Public Long Description Content Polish**: Added a repeatable content update script for all 22 currently published release-story drafts.

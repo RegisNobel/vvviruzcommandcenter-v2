@@ -12,6 +12,10 @@ import {
   getSiteSettings
 } from "@/lib/repositories/public-site";
 import {
+  buildPublicReleaseJsonLd,
+  stringifyJsonLd
+} from "@/lib/public-release-schema";
+import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
   getSpotifyEmbedUrl,
@@ -105,9 +109,17 @@ export default async function PublicReleaseDetailPage({
     apple_music: siteSettings.site_content.platforms.apple_music_label,
     youtube: siteSettings.site_content.platforms.youtube_label
   };
+  const releaseJsonLd = buildPublicReleaseJsonLd({
+    artistName: siteSettings.artist_name,
+    release
+  });
 
   return (
     <main className="px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        dangerouslySetInnerHTML={{__html: stringifyJsonLd(releaseJsonLd)}}
+        type="application/ld+json"
+      />
       <div className="mx-auto max-w-[1280px] space-y-8">
         <Link
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#d5b15b] transition hover:text-[#eccd7d]"
@@ -277,4 +289,3 @@ export default async function PublicReleaseDetailPage({
     </main>
   );
 }
-
