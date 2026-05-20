@@ -101,7 +101,6 @@ export default async function PublicReleaseDetailPage({
   const youtubeEmbedUrl = getYouTubeEmbedUrl(
     release.featured_video_url || release.youtube_url
   );
-  const description = release.public_long_description || release.public_description;
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const content = siteSettings.site_content.release;
   const platformLabels = {
@@ -187,12 +186,6 @@ export default async function PublicReleaseDetailPage({
                 {release.public_description}
               </p>
 
-              {description !== release.public_description ? (
-                <p className="mt-5 max-w-3xl text-sm leading-7 text-[#98a0a8]">
-                  {description}
-                </p>
-              ) : null}
-
               <PublicPlatformLinks
                 appleMusicUrl={release.apple_music_url}
                 className="mt-7"
@@ -200,6 +193,17 @@ export default async function PublicReleaseDetailPage({
                 spotifyUrl={release.spotify_url}
                 youtubeUrl={release.youtube_url}
               />
+
+              {release.public_long_description && release.public_long_description.trim() ? (
+                <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a]/60 px-5 py-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                    About this track
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-[#dfe5eb] whitespace-pre-wrap">
+                    {release.public_long_description}
+                  </p>
+                </div>
+              ) : null}
 
               {release.public_lyrics_enabled && release.lyrics.trim() ? (
                 <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a] px-5 py-5">

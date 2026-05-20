@@ -531,6 +531,14 @@ npm run normalize:releases
     - Expanded admin subscriber CSV exports with UTM, referrer, landing page, offer mode/name/context, and consent/unsubscribe status columns.
     - Added stale `PublicRateLimit` cleanup to the existing cron backup maintenance path.
 
+### 2026-05-20 15:00 -04:00
+
+- **Public Release Page Layout Polish**: Reorganized the public release detail page description fields to avoid repetition.
+    - Kept the public summary description as the lead paragraph near the title.
+    - Moved the public long description into a dedicated, visually distinct "About this track" card section located below the streaming buttons.
+    - Conditionally hide the "About this track" section if the public long description is empty.
+    - Preserved all existing lyrics, streaming button links, metadata, Open Graph, and JSON-LD schema behavior.
+
 ### 2026-05-19 14:33 -04:00
 
 - **Short Links to Attribution Handoff v1**: Added optional release, campaign label, and content label context to Short Links.
