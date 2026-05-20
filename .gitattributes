@@ -1,0 +1,58 @@
+# Normalize project text files to LF in the repository and working tree.
+* text=auto eol=lf
+
+# Windows command files are expected to use CRLF locally.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts must stay LF for Unix-like runtimes.
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# Common text/code formats.
+*.css text eol=lf
+*.csv text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.jsx text eol=lf
+*.md text eol=lf
+*.mjs text eol=lf
+*.prisma text eol=lf
+*.sql text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# SVG assets are text, so keep them diffable and normalized.
+*.svg text eol=lf
+
+# Binary/media/assets should never be line-ending normalized.
+*.avif binary
+*.bin binary
+*.db binary
+*.dll binary
+*.exe binary
+*.gif binary
+*.gz binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.m4a binary
+*.mov binary
+*.mp3 binary
+*.mp4 binary
+*.otf binary
+*.pdf binary
+*.png binary
+*.sqlite binary
+*.ttf binary
+*.webm binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.zip binary

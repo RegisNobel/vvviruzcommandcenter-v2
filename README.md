@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 23:34 -04:00
+
+- **Line Ending Hygiene**: Added repository-level `.gitattributes` so text/code files normalize to LF while Windows command files and binary media/database assets are handled safely.
+    - Audited the working tree for CRLF normalization noise caused by Windows `core.autocrlf=true`.
+    - Normalized existing tracked text files to LF without changing app behavior.
+    - Marked binary/image/media/database assets as binary to avoid unsafe line-ending conversion.
+
 ### 2026-05-19 23:04 -04:00
 
 - **Release Workflow Polish v1.1**: Reduced release-management confusion without changing the core workflow.
