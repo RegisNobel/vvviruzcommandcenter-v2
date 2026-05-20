@@ -531,6 +531,21 @@ npm run normalize:releases
     - Expanded admin subscriber CSV exports with UTM, referrer, landing page, offer mode/name/context, and consent/unsubscribe status columns.
     - Added stale `PublicRateLimit` cleanup to the existing cron backup maintenance path.
 
+### 2026-05-20 15:16 -04:00
+
+- **Story-First Public Release Layout**: Reorganized the public release detail layout to emphasize content and storytelling.
+    - Moved the "About this track" section above the streaming buttons.
+    - Added a small, clean "Listen now" section header above the streaming platform buttons.
+    - Enforced that if `publicLongDescription` exists, `publicDescription` is hidden from the detail page, but if `publicLongDescription` is missing, `publicDescription` displays as the fallback text inside the unified "About this track" card.
+    - Preserved all other surface cards, metadata, schema properties, and analytics configurations.
+
+### 2026-05-20 15:10 -04:00
+
+- **Public Release Detail Page Description Overlap Fix**: Modified public release detail pages to only display the short summary description (`publicDescription`) if the extended `publicLongDescription` is missing.
+    - If `publicLongDescription` is present, `publicDescription` is hidden from the visible detail layout to avoid overlap/redundancy.
+    - If `publicLongDescription` is empty, `publicDescription` displays as the fallback text.
+    - Metadata fallbacks, Open Graph descriptions, JSON-LD, homepage/list cards, and links cards continue to use `publicDescription` as expected.
+
 ### 2026-05-20 15:00 -04:00
 
 - **Public Release Page Layout Polish**: Reorganized the public release detail page description fields to avoid repetition.

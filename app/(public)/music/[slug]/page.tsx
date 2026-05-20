@@ -102,6 +102,7 @@ export default async function PublicReleaseDetailPage({
     release.featured_video_url || release.youtube_url
   );
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
+  const aboutText = (release.public_long_description || release.public_description || "").trim();
   const content = siteSettings.site_content.release;
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
@@ -182,28 +183,29 @@ export default async function PublicReleaseDetailPage({
                 </div>
               ) : null}
 
-              <p className="mt-5 max-w-3xl text-base leading-8 text-[#bac2cb]">
-                {release.public_description}
-              </p>
-
-              <PublicPlatformLinks
-                appleMusicUrl={release.apple_music_url}
-                className="mt-7"
-                labels={platformLabels}
-                spotifyUrl={release.spotify_url}
-                youtubeUrl={release.youtube_url}
-              />
-
-              {release.public_long_description && release.public_long_description.trim() ? (
+              {aboutText ? (
                 <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a]/60 px-5 py-5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
                     About this track
                   </p>
                   <p className="mt-4 text-sm leading-7 text-[#dfe5eb] whitespace-pre-wrap">
-                    {release.public_long_description}
+                    {aboutText}
                   </p>
                 </div>
               ) : null}
+
+              <div className="mt-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                  Listen now
+                </p>
+                <PublicPlatformLinks
+                  appleMusicUrl={release.apple_music_url}
+                  className="mt-4"
+                  labels={platformLabels}
+                  spotifyUrl={release.spotify_url}
+                  youtubeUrl={release.youtube_url}
+                />
+              </div>
 
               {release.public_lyrics_enabled && release.lyrics.trim() ? (
                 <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a] px-5 py-5">
