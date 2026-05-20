@@ -323,6 +323,10 @@ function toLearningRecord(learning: AdCampaignLearning): AdCampaignLearningRecor
     decision: decisionOptions.has(learning.decision as AdCampaignDecision)
       ? (learning.decision as AdCampaignDecision)
       : "iterate",
+    reviewed_at: learning.reviewedAt ? learning.reviewedAt.toISOString() : null,
+    reviewed_by: learning.reviewedBy,
+    final_decision: learning.finalDecision,
+    human_override_notes: learning.humanOverrideNotes,
     created_at: learning.createdAt.toISOString(),
     updated_at: learning.updatedAt.toISOString()
   };
@@ -971,6 +975,13 @@ export async function saveAdCampaignLearning(input: {
     }
   });
 
+  // Do not allow edits to a locked (archived) learning record.
+  if (existing?.reviewedAt) {
+    throw new Error(
+      "This test cycle is archived. Use the archive record for historical reference."
+    );
+  }
+
   const data = {
     releaseId: input.releaseId,
     summary: input.summary.trim(),
@@ -996,6 +1007,52 @@ export async function saveAdCampaignLearning(input: {
       importBatchId: input.importBatchId,
       ...data,
       createdAt: now
+    }
+  });
+}
+
+/**
+ * V1.2 Lock & Archive: Permanently stamps a campaign learning record with the
+ * reviewer's identity, a final decision override, and optional human notes.
+ * Once archived, the record cannot be edited via saveAdCampaignLearning.
+ */
+export async function archiveAdCampaignLearning(input: {
+  importBatchId: string;
+  reviewedBy: string;
+  finalDecision: string;
+  humanOverrideNotes: string;
+}) {
+  const existing = await prisma.adCampaignLearning.findFirst({
+    where: {
+      importBatchId: input.importBatchId
+    },
+    orderBy: {
+      updatedAt: "desc"
+    }
+  });
+
+  if (!existing) {
+    throw new Error(
+      "No campaign learning found for this batch. Save a draft first before locking."
+    );
+  }
+
+  if (existing.reviewedAt) {
+    throw new Error("This test cycle is already archived.");
+  }
+
+  const now = new Date();
+
+  return prisma.adCampaignLearning.update({
+    where: {
+      id: existing.id
+    },
+    data: {
+      reviewedAt: now,
+      reviewedBy: input.reviewedBy.trim(),
+      finalDecision: input.finalDecision.trim(),
+      humanOverrideNotes: input.humanOverrideNotes.trim(),
+      updatedAt: now
     }
   });
 }

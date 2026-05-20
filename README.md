@@ -498,6 +498,17 @@ npm run normalize:releases
     - Included the extra context pass for `BOSSS`, `Alphabetical`, `Introduction`, `Lover`, and `Real`.
     - The drafts deepen AI-search and fan-facing context without changing public release page code or adding new database fields.
 
+### 2026-05-20 16:00 -04:00
+
+- **Campaign Intelligence History v1.2**: Extended the Ad Lab batch dashboard with ad name parsing, statistical confidence signals, and a permanent Lock & Archive Test Cycle workflow.
+    - Added `lib/ads/naming-parser.ts`: a soft delimiter parser (`_` and `|`) that extracts Visual, Hook, Format, Version, and Release prefix from ad names following the `release_visual_hook_format_version` convention. Unrecognized tokens are marked `Unparsed` rather than blocking imports.
+    - Added `lib/ads/stats.ts`: a z-score proportion test comparing each ad's conversion rate (or CTR as a fallback) against the batch average. Results are labeled **Confidence Signal** with values ranging from `"Directional Only"` to `"95% Confidence (High)"` and underperforming equivalents. Output is further labeled `"Conversion-based"` or `"CTR-based"` to prevent confusing click interest with streaming conversion intent.
+    - Added Visual, Hook, Format, Version, and Confidence Signal columns to the Creative Leaderboard table. Parsed columns show `Unparsed` in muted text when a token cannot be classified.
+    - Extended `AdCampaignLearningRecord` type with `reviewed_at`, `reviewed_by`, `final_decision`, and `human_override_notes` archive fields.
+    - Updated `saveAdCampaignLearning` to guard against writing to locked records; added `archiveAdCampaignLearning` that permanently stamps `reviewedAt`, `reviewedBy`, `finalDecision`, and `humanOverrideNotes`. No unlock flow in v1.
+    - Updated `/api/ads/batches/[batchId]/learnings` to route `archive: true` payloads to the archive function, setting `reviewedBy` automatically from the authenticated session username.
+    - Added a **Lock & Archive Test Cycle** button and confirmation dialog to the Notes and Overrides panel. The form becomes read-only once a cycle is archived. A permanent green **Archived Test Cycle** banner appears above batch metadata showing lock timestamp, reviewer, final decision, and human override notes.
+
 ### 2026-05-20 04:12 -04:00
 
 - **Public Release Context v1.1**: Improved public release discovery context without adding new database fields.

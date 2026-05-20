@@ -5,7 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
-import {saveAdCampaignLearning} from "@/lib/repositories/ads";
+import {archiveAdCampaignLearning, saveAdCampaignLearning} from "@/lib/repositories/ads";
 
 const learningSchema = z.object({
   release_id: z.string().trim().min(1).nullable().default(null),
@@ -13,7 +13,11 @@ const learningSchema = z.object({
   what_worked: z.string().default(""),
   what_failed: z.string().default(""),
   next_test: z.string().default(""),
-  decision: z.enum(["scale", "iterate", "pause", "retire", "retest-hook", "retest-visual", "retest-audience", "needs-more-data"]).default("iterate")
+  decision: z.enum(["scale", "iterate", "pause", "retire", "retest-hook", "retest-visual", "retest-audience", "needs-more-data"]).default("iterate"),
+  /** V1.2: set to true to lock this record as a permanent historical archive entry. */
+  archive: z.boolean().optional().default(false),
+  final_decision: z.string().default(""),
+  human_override_notes: z.string().default("")
 });
 
 export async function PUT(
@@ -35,6 +39,18 @@ export async function PUT(
         {message: parsed.error.issues[0]?.message ?? "Invalid learning payload."},
         {status: 400}
       );
+    }
+
+    // Route to archiving when the caller explicitly requests a lock.
+    if (parsed.data.archive) {
+      const learning = await archiveAdCampaignLearning({
+        importBatchId: batchId,
+        reviewedBy: auth.username,
+        finalDecision: parsed.data.final_decision,
+        humanOverrideNotes: parsed.data.human_override_notes
+      });
+
+      return NextResponse.json({learning});
     }
 
     const learning = await saveAdCampaignLearning({

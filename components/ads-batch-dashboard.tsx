@@ -3,10 +3,12 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {ArrowLeft, ExternalLink, Save} from "lucide-react";
+import {ArrowLeft, ExternalLink, Lock, Save} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
+import {parseAdName} from "@/lib/ads/naming-parser";
+import {calculateConfidenceSignal} from "@/lib/ads/stats";
 import {
   formatContentType,
   formatHookType,
@@ -834,6 +836,13 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
     decision: detail.learning?.decision ?? "iterate"
   });
   const [isSavingLearning, setIsSavingLearning] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [archiveForm, setArchiveForm] = useState({
+    final_decision: "",
+    human_override_notes: ""
+  });
+  const [isArchiving, setIsArchiving] = useState(false);
+  const isArchived = Boolean(detail.learning?.reviewed_at);
 
   const filteredReports = useMemo(() => {
     return detail.reports
@@ -881,6 +890,11 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
   const videoHoldRate = calculateRatio(totalVideo100, totalThreeSecondPlays);
   const campaignReadout = useMemo(() => createCampaignReadout(detail), [detail]);
 
+  // Batch-level totals used by the confidence signal calculator.
+  const batchTotalResults = detail.results;
+  const batchTotalImpressions = detail.impressions;
+  const batchTotalLinkClicks = detail.link_clicks;
+
   async function handleCopyLink(reportId: string, copyEntryId: string | null) {
     setPendingReportId(reportId);
     setMessage(null);
@@ -901,6 +915,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         throw new Error(payload?.message ?? "Copy link update failed.");
       }
 
+      setMessage("Copy link updated.");
       setMessage("Copy link updated.");
       router.refresh();
     } catch (error) {
@@ -943,6 +958,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
     }
   }
 
+  async function handleArchive(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsArchiving(true);
+    setMessage(null);
+  }
+
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1700px] space-y-6">
@@ -977,6 +998,33 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
           </div>
         </section>
+
+        {/* V1.2 Locked Archive Banner */}
+        {isArchived && detail.learning ? (
+          <div className="rounded-[22px] border border-emerald-800/50 bg-emerald-950/20 px-4 py-4 sm:px-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Lock className="mt-0.5 shrink-0 text-emerald-400" size={18} />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-300">Archived Test Cycle</p>
+                  <p className="mt-0.5 text-xs text-emerald-500">
+                    Locked {formatDateTime(detail.learning.reviewed_at)} by {detail.learning.reviewed_by || "admin"}
+                  </p>
+                </div>
+              </div>
+              {detail.learning.final_decision ? (
+                <span className="rounded-full border border-emerald-700/60 bg-emerald-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                  Final: {detail.learning.final_decision}
+                </span>
+              ) : null}
+            </div>
+            {detail.learning.human_override_notes ? (
+              <p className="mt-3 text-sm leading-6 text-emerald-200/80">
+                {detail.learning.human_override_notes}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <section className="panel px-4 py-5 sm:px-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -1195,10 +1243,15 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1900px] text-left text-sm">
+            <table className="w-full min-w-[2200px] text-left text-sm">
               <thead className="bg-[#171a1f] text-[#b8bec6]">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Ad Name</th>
+                  <th className="px-3 py-3 font-semibold">Visual</th>
+                  <th className="px-3 py-3 font-semibold">Hook</th>
+                  <th className="px-3 py-3 font-semibold">Format</th>
+                  <th className="px-3 py-3 font-semibold">Version</th>
+                  <th className="px-3 py-3 font-semibold">Confidence Signal</th>
                   <th className="px-3 py-3 font-semibold">Linked Copy</th>
                   <th className="px-3 py-3 font-semibold">Delivery</th>
                   <th className="px-3 py-3 font-semibold">Spend</th>
@@ -1226,6 +1279,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <tbody className="divide-y divide-[#252a31]">
                 {filteredReports.map((report) => {
                   const resultType = getResultTypeSummary(report.result_indicator);
+                  const parsed = parseAdName(report.ad_name);
+                  const confidence = calculateConfidenceSignal({
+                    spend: report.spend ?? 0,
+                    impressions: report.impressions ?? 0,
+                    results: report.results ?? 0,
+                    linkClicks: report.link_clicks ?? 0,
+                    batchTotalResults,
+                    batchTotalImpressions,
+                    batchTotalLinkClicks
+                  });
 
                   return (
                   <tr className="align-top text-[#d9dee5]" key={report.id}>
@@ -1237,6 +1300,38 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                           {report.utm_campaign || "No campaign"} / {report.utm_content || "No content"}
                         </p>
                       ) : null}
+                    </td>
+                    <td className="px-3 py-4 text-xs">
+                      <span className={parsed.visual === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.visual}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 text-xs">
+                      <span className={parsed.hook === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.hook}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 text-xs">
+                      <span className={parsed.format === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.format}
+                      </span>
+                    </td>
+                    <td className="px-3 py-4 text-xs">
+                      <span className={parsed.version === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.version}
+                      </span>
+                    </td>
+                    <td className="min-w-[180px] px-3 py-4">
+                      {confidence.type === "none" ? (
+                        <span className="text-xs text-muted">{confidence.score}</span>
+                      ) : (
+                        <div>
+                          <p className="text-xs font-semibold text-ink">{confidence.score}</p>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-muted">
+                            {confidence.type === "conversion" ? "Conversion-based" : "CTR-based"}
+                          </p>
+                        </div>
+                      )}
                     </td>
                     <td className="min-w-[250px] px-3 py-4">
                       <select
@@ -1427,88 +1522,167 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <form className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6" onSubmit={handleLearningSave}>
-            <div>
-              <p className="field-label">Optional Human Context</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Notes and overrides</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                The campaign decision above is computed. Use this only for context the
-                data cannot know, like why a creative was paused or what you want to try next.
-              </p>
-            </div>
+          <div className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="field-label">Human Context</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">Notes and overrides</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {isArchived
+                    ? "This test cycle is archived. Notes are read-only."
+                    : "The campaign decision above is computed. Use this only for context the data cannot know."}
+                </p>
+              </div>
 
-            <label className="space-y-2">
-              <span className="field-label">Human Summary</span>
-              <textarea
-                className="field-input min-h-[100px]"
-                onChange={(event) =>
-                  setLearning((current) => ({...current, summary: event.target.value}))
-                }
-                value={learning.summary}
-              />
-            </label>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="field-label">What Worked</span>
-                <textarea
-                  className="field-input min-h-[120px]"
-                  onChange={(event) =>
-                    setLearning((current) => ({...current, what_worked: event.target.value}))
-                  }
-                  value={learning.what_worked}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="field-label">What Failed</span>
-                <textarea
-                  className="field-input min-h-[120px]"
-                  onChange={(event) =>
-                    setLearning((current) => ({...current, what_failed: event.target.value}))
-                  }
-                  value={learning.what_failed}
-                />
-              </label>
-            </div>
-
-            <label className="space-y-2">
-              <span className="field-label">Next Test</span>
-              <textarea
-                className="field-input min-h-[100px]"
-                onChange={(event) =>
-                  setLearning((current) => ({...current, next_test: event.target.value}))
-                }
-                value={learning.next_test}
-              />
-            </label>
-
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <label className="space-y-2">
-                <span className="field-label">Decision</span>
-                <select
-                  className="field-input"
-                  onChange={(event) =>
-                    setLearning((current) => ({
-                      ...current,
-                      decision: event.target.value as AdCampaignDecision
-                    }))
-                  }
-                  value={learning.decision}
+              {!isArchived ? (
+                <button
+                  className="action-button-secondary"
+                  onClick={() => setShowArchiveDialog(true)}
+                  type="button"
                 >
-                  {decisionOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button className="action-button-primary" disabled={isSavingLearning} type="submit">
-                <Save size={16} />
-                {isSavingLearning ? "Saving..." : "Save Learning"}
-              </button>
+                  <Lock size={16} />
+                  Lock &amp; Archive Test Cycle
+                </button>
+              ) : null}
             </div>
-          </form>
+
+            {showArchiveDialog ? (
+              <form
+                className="space-y-4 rounded-[20px] border border-[#5b4920] bg-[#1a1710] px-4 py-4"
+                onSubmit={handleArchive}
+              >
+                <p className="text-sm font-semibold text-[#d7b45e]">
+                  Lock &amp; Archive — this action cannot be undone.
+                </p>
+                <label className="block space-y-2">
+                  <span className="field-label">Final Decision</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) =>
+                      setArchiveForm((current) => ({...current, final_decision: event.target.value}))
+                    }
+                    value={archiveForm.final_decision}
+                  >
+                    <option value="">Select final decision...</option>
+                    {decisionOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-2">
+                  <span className="field-label">Override Notes (optional)</span>
+                  <textarea
+                    className="field-input min-h-[80px]"
+                    onChange={(event) =>
+                      setArchiveForm((current) => ({...current, human_override_notes: event.target.value}))
+                    }
+                    placeholder="Context the data cannot know..."
+                    value={archiveForm.human_override_notes}
+                  />
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    className="action-button-primary"
+                    disabled={isArchiving || !archiveForm.final_decision}
+                    type="submit"
+                  >
+                    <Lock size={16} />
+                    {isArchiving ? "Archiving..." : "Confirm Archive"}
+                  </button>
+                  <button
+                    className="action-button-secondary"
+                    onClick={() => setShowArchiveDialog(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : null}
+
+            <form
+              className="space-y-5"
+              onSubmit={isArchived ? (event) => event.preventDefault() : handleLearningSave}
+            >
+              <fieldset className="space-y-5" disabled={isArchived}>
+                <label className="block space-y-2">
+                  <span className="field-label">Human Summary</span>
+                  <textarea
+                    className="field-input min-h-[100px]"
+                    onChange={(event) =>
+                      setLearning((current) => ({...current, summary: event.target.value}))
+                    }
+                    value={learning.summary}
+                  />
+                </label>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <span className="field-label">What Worked</span>
+                    <textarea
+                      className="field-input min-h-[120px]"
+                      onChange={(event) =>
+                        setLearning((current) => ({...current, what_worked: event.target.value}))
+                      }
+                      value={learning.what_worked}
+                    />
+                  </label>
+                  <label className="block space-y-2">
+                    <span className="field-label">What Failed</span>
+                    <textarea
+                      className="field-input min-h-[120px]"
+                      onChange={(event) =>
+                        setLearning((current) => ({...current, what_failed: event.target.value}))
+                      }
+                      value={learning.what_failed}
+                    />
+                  </label>
+                </div>
+
+                <label className="block space-y-2">
+                  <span className="field-label">Next Test</span>
+                  <textarea
+                    className="field-input min-h-[100px]"
+                    onChange={(event) =>
+                      setLearning((current) => ({...current, next_test: event.target.value}))
+                    }
+                    value={learning.next_test}
+                  />
+                </label>
+
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <label className="space-y-2">
+                    <span className="field-label">Decision</span>
+                    <select
+                      className="field-input"
+                      onChange={(event) =>
+                        setLearning((current) => ({
+                          ...current,
+                          decision: event.target.value as AdCampaignDecision
+                        }))
+                      }
+                      value={learning.decision}
+                    >
+                      {decisionOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {!isArchived ? (
+                    <button className="action-button-primary" disabled={isSavingLearning} type="submit">
+                      <Save size={16} />
+                      {isSavingLearning ? "Saving..." : "Save Learning"}
+                    </button>
+                  ) : null}
+                </div>
+              </fieldset>
+            </form>
+          </div>
 
           <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
             <div>

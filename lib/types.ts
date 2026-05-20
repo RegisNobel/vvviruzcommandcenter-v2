@@ -651,6 +651,11 @@ export type AdCampaignLearningRecord = {
   what_failed: string;
   next_test: string;
   decision: AdCampaignDecision;
+  /** V1.2 archive fields — populated when "Lock & Archive Test Cycle" is triggered. */
+  reviewed_at: string | null;
+  reviewed_by: string;
+  final_decision: string;
+  human_override_notes: string;
   created_at: string;
   updated_at: string;
 };
