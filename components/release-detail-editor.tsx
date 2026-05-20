@@ -48,39 +48,33 @@ import {
   createReleaseTask,
   getReleasePublishBlockers,
   getReleaseProgressTone,
-  getReleaseStageLabel,
-  hasReleaseCoverArt,
   getSuggestedReleaseSlug
 } from "@/lib/releases";
+import {
+  getCurrentReleasePlanningStage,
+  getReleasePlanningBlockers,
+  getReleasePlanningNextAction,
+  hasReleaseCoverArt,
+  releasePlanningStages,
+  type ReleaseChecklistKey
+} from "@/lib/release-planning";
 import {
   formatContentType,
   formatHookType,
   formatSongSection,
   getCopyHeading
 } from "@/lib/copy";
-import type {ReleaseChecklistKey} from "@/lib/releases";
 import type {
   CopySummary,
   AdCampaignLearningRecord,
   ReleaseAdMetricsOverview,
   ReleaseCoverUploadResponse,
   ReleaseRecord,
-  ReleaseStageLabel,
   ReleaseType,
   AdCampaignDecision,
-  ReleasePromoVerdict
+  ReleasePromoVerdict,
+  ShortLinkRecord
 } from "@/lib/types";
-
-type SaveState = "idle" | "saving" | "saved" | "error";
-type DiscoveryChecklistStatus = "passed" | "warning" | "missing";
-type DiscoveryChecklistPriority = "essential" | "polish" | "bonus";
-
-type DiscoveryChecklistItem = {
-  detail: string;
-  label: string;
-  priority: DiscoveryChecklistPriority;
-  status: DiscoveryChecklistStatus;
-};
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
   {value: "scale", label: "Scale"},
@@ -93,127 +87,16 @@ const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
   {value: "needs-more-data", label: "Needs More Data"}
 ];
 
-type ReleaseFlowStageDefinition = {
-  id: ReleaseChecklistKey | "cover_art";
-  checkboxKey?: ReleaseChecklistKey;
-  label: Exclude<ReleaseStageLabel, "Not Started">;
-  isComplete: (release: ReleaseRecord) => boolean;
-  getRequirements: (
-    release: ReleaseRecord
-  ) => Array<{blocker: string; nextAction: string}>;
+type SaveState = "idle" | "saving" | "saved" | "error";
+type DiscoveryChecklistStatus = "passed" | "warning" | "missing";
+type DiscoveryChecklistPriority = "essential" | "polish" | "bonus";
+
+type DiscoveryChecklistItem = {
+  detail: string;
+  label: string;
+  priority: DiscoveryChecklistPriority;
+  status: DiscoveryChecklistStatus;
 };
-
-const releaseFlowStages: ReleaseFlowStageDefinition[] = [
-  {
-    id: "concept_complete",
-    checkboxKey: "concept_complete",
-    label: "Concept",
-    isComplete: (release) => release.concept_complete,
-    getRequirements: (release) =>
-      release.concept_details.trim()
-        ? []
-        : [
-            {
-              blocker: "Missing concept details",
-              nextAction: "Add concept details"
-            }
-          ]
-  },
-  {
-    id: "cover_art",
-    label: "Cover Art",
-    isComplete: hasReleaseCoverArt,
-    getRequirements: (release) =>
-      hasReleaseCoverArt(release)
-        ? []
-        : [
-            {
-              blocker: "Missing cover art",
-              nextAction: "Upload cover art"
-            }
-          ]
-  },
-  {
-    id: "beat_made",
-    checkboxKey: "beat_made",
-    label: "Beat Made",
-    isComplete: (release) => release.beat_made,
-    getRequirements: () => []
-  },
-  {
-    id: "lyrics_finished",
-    checkboxKey: "lyrics_finished",
-    label: "Lyrics",
-    isComplete: (release) => release.lyrics_finished,
-    getRequirements: (release) =>
-      release.lyrics.trim()
-        ? []
-        : [
-            {
-              blocker: "Missing lyrics",
-              nextAction: "Add lyrics"
-            }
-          ]
-  },
-  {
-    id: "recorded",
-    checkboxKey: "recorded",
-    label: "Recorded",
-    isComplete: (release) => release.recorded,
-    getRequirements: () => []
-  },
-  {
-    id: "mix_mastered",
-    checkboxKey: "mix_mastered",
-    label: "Mix/Mastered",
-    isComplete: (release) => release.mix_mastered,
-    getRequirements: () => []
-  },
-  {
-    id: "published",
-    checkboxKey: "published",
-    label: "Published",
-    isComplete: (release) => release.published,
-    getRequirements: (release) => {
-      const requirements: Array<{blocker: string; nextAction: string}> = [];
-
-      if (release.collaborator && !release.collaborator_name.trim()) {
-        requirements.push({
-          blocker: "Missing collaborator name",
-          nextAction: "Add collaborator name"
-        });
-      }
-
-      if (!release.release_date.trim()) {
-        requirements.push({
-          blocker: "Missing release date",
-          nextAction: "Add release date"
-        });
-      }
-
-      return requirements;
-    }
-  }
-];
-
-function getCurrentSnapshotStageDefinition(release: ReleaseRecord) {
-  return (
-    releaseFlowStages.find((stage) => !stage.isComplete(release)) ??
-    releaseFlowStages[releaseFlowStages.length - 1]
-  );
-}
-
-function getSnapshotValidationWarnings(release: ReleaseRecord) {
-  return releaseFlowStages.flatMap((stage) => {
-    if (!stage.checkboxKey || !stage.isComplete(release)) {
-      return [];
-    }
-
-    return stage.getRequirements(release).map(
-      (requirement) => `${stage.label} validation warning: ${requirement.blocker}`
-    );
-  });
-}
 
 function serializeRelease(release: ReleaseRecord) {
   return JSON.stringify(release);
@@ -276,54 +159,18 @@ function normalizeExternalUrl(value: string) {
   }
 }
 
-function getSnapshotStage(release: ReleaseRecord) {
-  return getReleaseStageLabel(release);
-}
-
-function getSnapshotNextAction(release: ReleaseRecord) {
-  const currentStage = getCurrentSnapshotStageDefinition(release);
-  const requirements = currentStage.getRequirements(release);
-
-  if (requirements.length > 0) {
-    return requirements[0].nextAction;
-  }
-
-  if (currentStage.checkboxKey && !currentStage.isComplete(release)) {
-    return `Mark ${currentStage.label} complete`;
-  }
-
-  return "No action needed";
-}
-
-function getSnapshotBlockers(release: ReleaseRecord) {
-  const currentStage = getCurrentSnapshotStageDefinition(release);
-  const currentStageRequirements = currentStage.getRequirements(release);
-  const blockers = [...getSnapshotValidationWarnings(release)];
-
-  if (currentStageRequirements.length > 0) {
-    blockers.push(...currentStageRequirements.map((requirement) => requirement.blocker));
-    return blockers;
-  }
-
-  if (currentStage.checkboxKey && !currentStage.isComplete(release)) {
-    blockers.push(`${currentStage.label} approval pending`);
-  }
-
-  return blockers;
-}
-
-const orderedCheckboxStageKeys = releaseFlowStages.flatMap((stage) =>
+const orderedCheckboxStageKeys = releasePlanningStages.flatMap((stage) =>
   stage.checkboxKey ? [stage.checkboxKey] : []
 );
 
 function getStageUnlockReason(release: ReleaseRecord, key: ReleaseChecklistKey) {
-  const stageIndex = releaseFlowStages.findIndex((stage) => stage.checkboxKey === key);
+  const stageIndex = releasePlanningStages.findIndex((stage) => stage.checkboxKey === key);
 
   if (stageIndex <= 0) {
     return null;
   }
 
-  const blockingStage = releaseFlowStages
+  const blockingStage = releasePlanningStages
     .slice(0, stageIndex)
     .find((stage) => !stage.isComplete(release));
 
@@ -771,7 +618,7 @@ function getVerdictStyle(verdict: ReleasePromoVerdict): {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // V1.3 Release Intelligence Panel component
-// Rendered above the Promo Lab Performance metrics block.
+// Rendered above the Ad Lab performance metrics block.
 // All props are already available on the parent component.
 // ─────────────────────────────────────────────────────────────────────────────
 // Panel inlined below.
@@ -779,11 +626,13 @@ function getVerdictStyle(verdict: ReleasePromoVerdict): {
 export function ReleaseDetailEditor({
   adMetrics,
   initialLinkedCopies,
+  initialShortLinks = [],
   initialRelease,
   latestAdLearning
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   initialLinkedCopies: CopySummary[];
+  initialShortLinks?: ShortLinkRecord[];
   initialRelease: ReleaseRecord;
   latestAdLearning: AdCampaignLearningRecord | null;
 }) {
@@ -813,10 +662,30 @@ export function ReleaseDetailEditor({
   const [isSavingLearning, setIsSavingLearning] = useState(false);
 
   const progress = useMemo(() => calculateReleaseProgress(release), [release]);
-  const snapshotStage = useMemo(() => getSnapshotStage(release), [release]);
+  const shortLinkTotalClicks = useMemo(
+    () => initialShortLinks.reduce((total, link) => total + link.click_count, 0),
+    [initialShortLinks]
+  );
+  const topShortLink = useMemo(
+    () =>
+      [...initialShortLinks].sort(
+        (left, right) => right.click_count - left.click_count
+      )[0] ?? null,
+    [initialShortLinks]
+  );
+  const snapshotStage = useMemo(
+    () => getCurrentReleasePlanningStage(release).label,
+    [release]
+  );
   const currentStage = snapshotStage;
-  const snapshotNextAction = useMemo(() => getSnapshotNextAction(release), [release]);
-  const snapshotBlockers = useMemo(() => getSnapshotBlockers(release), [release]);
+  const snapshotNextAction = useMemo(
+    () => getReleasePlanningNextAction(release),
+    [release]
+  );
+  const snapshotBlockers = useMemo(
+    () => getReleasePlanningBlockers(release),
+    [release]
+  );
   const suggestedSlug = useMemo(
     () => getSuggestedReleaseSlug(release.title),
     [release.title]
@@ -1338,7 +1207,7 @@ export function ReleaseDetailEditor({
             <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
               <div className="rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className={pageLabelClass}>Progress</p>
+                  <p className={pageLabelClass}>Internal Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#23262c]">
@@ -1879,12 +1748,12 @@ export function ReleaseDetailEditor({
                   >
                     <p className="font-semibold">
                       {isPublishReady
-                        ? "Publish-ready"
-                        : "Public publish blockers"}
+                        ? "Public Publish Ready"
+                        : "Public Publish Ready Blockers"}
                     </p>
                     {isPublishReady ? (
                       <p className="mt-2 leading-6 text-emerald-100/85">
-                        Core public fields are in place. You can safely mark this
+                        Core public-site fields are in place. You can safely mark this
                         release visible on the public site.
                       </p>
                     ) : (
@@ -1925,7 +1794,7 @@ export function ReleaseDetailEditor({
                   <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className={pageLabelClass}>Discovery quality checklist</p>
+                        <p className={pageLabelClass}>Discovery Quality Checklist</p>
                         <h3 className="mt-2 text-xl font-semibold text-[#f0eadf]">
                           {discoveryReadinessLabel}
                         </h3>
@@ -1943,8 +1812,8 @@ export function ReleaseDetailEditor({
                       </div>
                     </div>
                     <p className="mt-3 text-sm leading-6 text-[#8a9098]">
-                      Computed from the release record only. This is a publishing
-                      confidence readout, not a save blocker.
+                      Computed from the release record only. This is search, social,
+                      and AI-readable guidance, not a save or public-publishing blocker.
                     </p>
                     <div className="mt-4 grid gap-3">
                       {discoveryChecklist.map((item) => {
@@ -2128,7 +1997,7 @@ export function ReleaseDetailEditor({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {releaseFlowStages.map((stage) => {
+                {releasePlanningStages.map((stage) => {
                   if (!stage.checkboxKey) {
                     const coverArtComplete = stage.isComplete(release);
 
@@ -2380,12 +2249,60 @@ export function ReleaseDetailEditor({
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
                     Lightweight performance context. Deeper campaign execution
-                    stays inside Promo.
+                    stays inside Ad Lab and Attribution.
                   </p>
                 </div>
-                <Link className={pageSecondaryButtonClass} href={`/admin/ad-lab?releaseId=${release.id}`}>
-                  Open Promo Lab
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link className={pageSecondaryButtonClass} href={`/admin/attribution?releaseId=${release.id}`}>
+                    Open Attribution
+                  </Link>
+                  <Link className={pageSecondaryButtonClass} href={`/admin/ad-lab?releaseId=${release.id}`}>
+                    Open Ad Lab
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className={pageLabelClass}>Short Links</p>
+                    <h3 className="mt-2 text-lg font-semibold text-[#efe7db]">
+                      Campaign Handoff
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-[#8a9098]">
+                      Quick readout only. Full short-link management stays in Short Links.
+                    </p>
+                  </div>
+                  <Link className={pageSecondaryButtonClass} href="/admin/short-links">
+                    Create Short Link
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] px-4 py-3">
+                    <p className={pageLabelClass}>Active Links</p>
+                    <p className="mt-2 text-2xl font-semibold text-[#efe7db]">
+                      {formatNumber(initialShortLinks.length)}
+                    </p>
+                  </div>
+                  <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] px-4 py-3">
+                    <p className={pageLabelClass}>Total Clicks</p>
+                    <p className="mt-2 text-2xl font-semibold text-[#efe7db]">
+                      {formatNumber(shortLinkTotalClicks)}
+                    </p>
+                  </div>
+                  <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] px-4 py-3">
+                    <p className={pageLabelClass}>Top Link</p>
+                    <p className="mt-2 break-all text-sm font-semibold text-[#efe7db]">
+                      {topShortLink ? `/p/${topShortLink.slug}` : "No linked short links yet"}
+                    </p>
+                    <p className="mt-1 text-xs text-[#8a9098]">
+                      {topShortLink
+                        ? `${formatNumber(topShortLink.click_count)} clicks`
+                        : "Attach one from Short Links when ready."}
+                    </p>
+                  </div>
+                </div>
               </div>
 
                 <>
@@ -2663,7 +2580,7 @@ export function ReleaseDetailEditor({
                     
                     <div className="rounded-[22px] border border-[#31353b] bg-[#14171b] p-5">
                       <div className="mb-5 rounded-[16px] border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-xs leading-5 text-blue-200">
-                        Draft is based on current Promo Lab data. Review before saving.
+                        Draft is based on current Ad Lab data. Review before saving.
                       </div>
                       
                       <div className="space-y-4">
@@ -2789,7 +2706,7 @@ export function ReleaseDetailEditor({
 
               <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className={pageLabelClass}>Progress</p>
+                  <p className={pageLabelClass}>Internal Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#23262c]">
@@ -2816,7 +2733,7 @@ export function ReleaseDetailEditor({
                       {release.is_published ? "Publicly Visible" : "Hidden"}
                     </span>
                     <span className={isPublishReady ? pageAccentPillClass : pagePillClass}>
-                      {isPublishReady ? "Publish-ready" : "Blocked"}
+                      {isPublishReady ? "Public Publish Ready" : "Public Site Blocked"}
                     </span>
                   </div>
                   <p className="mt-3 break-all font-mono text-xs text-[#8a9098]">
@@ -2925,7 +2842,7 @@ export function ReleaseDetailEditor({
 
             <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
-                <p className={pageLabelClass}>Section 10</p>
+                <p className={pageLabelClass}>Release Planning</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Tasks</h2>
               </div>
 

@@ -471,6 +471,25 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-19 23:04 -04:00
+
+- **Release Workflow Polish v1.1**: Reduced release-management confusion without changing the core workflow.
+    - Centralized release stage progression and blocker logic through `lib/release-planning.ts` so Release Detail, summaries, and roadmap planning share one source of truth.
+    - Clarified readiness language around **Internal Progress**, **Public Publish Ready**, and **Discovery Quality**.
+    - Replaced stale `Promo Lab` UI labels with `Ad Lab` or `Attribution` when links point to those tools.
+    - Expanded Releases search to match collaborator name, slug, UPC, and ISRC in addition to title, type, status, and date.
+    - Added a lightweight Release Detail Short Links readout with active link count, total clicks, top link, and a `Create Short Link` CTA.
+
+### 2026-05-19 15:08 -04:00
+
+- **Audience Reliability Patch v1.1**: Hardened the email capture and campaign-send path without adding new marketing automation.
+    - Added a server-side campaign send lock so already-sending campaigns reject duplicate send requests.
+    - Enforced server-side email-copy validation for Email Only and also-send-email exclusive offer modes.
+    - Validated private external preview URLs so only safe `http://` and `https://` links can be saved or used.
+    - Clarified the default `/exclusives` consent copy around receiving the preview, future updates, and unsubscribe availability.
+    - Expanded admin subscriber CSV exports with UTM, referrer, landing page, offer mode/name/context, and consent/unsubscribe status columns.
+    - Added stale `PublicRateLimit` cleanup to the existing cron backup maintenance path.
+
 ### 2026-05-19 14:33 -04:00
 
 - **Short Links to Attribution Handoff v1**: Added optional release, campaign label, and content label context to Short Links.

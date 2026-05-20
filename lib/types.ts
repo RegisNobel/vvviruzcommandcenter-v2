@@ -286,10 +286,14 @@ export type ReleaseRecord = {
 export type ReleaseSummary = {
   id: string;
   title: string;
+  slug: string;
   pinned: boolean;
   type: ReleaseType;
   status: ReleaseStageLabel;
   release_date: string;
+  collaborator_name: string;
+  upc: string;
+  isrc: string;
   progress_percentage: number;
   updated_on: string;
 };

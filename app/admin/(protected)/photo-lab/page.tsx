@@ -7,7 +7,7 @@ export default function AdminPhotoLabPage() {
         <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div>
             <div className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-wide text-muted">
-              <Link className="transition hover:text-ink" href="/admin/ad-lab">Promo Lab</Link>
+              <Link className="transition hover:text-ink" href="/admin/ad-lab">Ad Lab</Link>
               <span>/</span>
               <span className="text-[#d7b45e]">Photo Lab</span>
             </div>
@@ -25,4 +25,3 @@ export default function AdminPhotoLabPage() {
     </main>
   );
 }
-

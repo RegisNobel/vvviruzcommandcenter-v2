@@ -145,6 +145,21 @@ export async function readActiveShortLinks() {
   return links.map(toShortLinkRecord);
 }
 
+export async function readActiveShortLinksByReleaseId(releaseId: string) {
+  const links = await prisma.shortLink.findMany({
+    include: shortLinkInclude,
+    orderBy: {
+      clickCount: "desc"
+    },
+    where: {
+      deletedAt: null,
+      releaseId
+    }
+  });
+
+  return links.map(toShortLinkRecord);
+}
+
 export async function createShortLink({
   customSlug,
   destinationUrl,

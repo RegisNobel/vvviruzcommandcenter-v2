@@ -6,6 +6,7 @@ import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {normalizeExclusiveDeliverySettings} from "@/lib/exclusive-offer-safety";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {readSiteSettings, writeSiteSettings} from "@/lib/repositories/site-settings";
 import {createId} from "@/lib/utils";
@@ -276,12 +277,25 @@ export async function PUT(request: Request) {
     );
   }
 
-  const siteSettings = await writeSiteSettings(parsed.data);
+  try {
+    const siteSettings = await writeSiteSettings({
+      ...parsed.data,
+      site_content: {
+        ...parsed.data.site_content,
+        exclusive: normalizeExclusiveDeliverySettings(parsed.data.site_content.exclusive)
+      }
+    });
 
-  revalidateTag(PUBLIC_CACHE_TAGS.siteSettings);
-  revalidateTag(PUBLIC_CACHE_TAGS.exclusiveOffer);
+    revalidateTag(PUBLIC_CACHE_TAGS.siteSettings);
+    revalidateTag(PUBLIC_CACHE_TAGS.exclusiveOffer);
 
-  return NextResponse.json({siteSettings});
+    return NextResponse.json({siteSettings});
+  } catch (error) {
+    return NextResponse.json(
+      {message: error instanceof Error ? error.message : "Unable to update site settings."},
+      {status: 400}
+    );
+  }
 }
 
 

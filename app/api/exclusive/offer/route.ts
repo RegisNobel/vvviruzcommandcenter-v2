@@ -8,6 +8,7 @@ import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {normalizeExclusiveDeliverySettings} from "@/lib/exclusive-offer-safety";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {
   readExclusiveOfferSettings,
@@ -111,7 +112,9 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const payload = exclusiveOfferSchema.parse(await request.json());
+    const payload = normalizeExclusiveDeliverySettings(
+      exclusiveOfferSchema.parse(await request.json())
+    );
 
     await validateExclusiveAssets(payload);
 

@@ -4,10 +4,11 @@ export const dynamic = "force-dynamic";
 import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
-import {sendCampaignToSubscriber} from "@/lib/email/delivery";
+import {sendCampaignToSubscriber, validateCampaignEmailCopy} from "@/lib/email/delivery";
 import {
   createEmailSendLog,
   listAudienceRecipients,
+  markCampaignSendingIfReady,
   readCampaign,
   updateCampaignStatus
 } from "@/lib/repositories/audience";
@@ -36,6 +37,22 @@ export async function POST(
     );
   }
 
+  if (campaign.status === "sending") {
+    return NextResponse.json(
+      {message: "This campaign is already sending. Wait for it to finish before trying again."},
+      {status: 409}
+    );
+  }
+
+  try {
+    validateCampaignEmailCopy(campaign);
+  } catch (error) {
+    return NextResponse.json(
+      {message: error instanceof Error ? error.message : "Campaign email copy is incomplete."},
+      {status: 400}
+    );
+  }
+
   const recipients = await listAudienceRecipients(campaign.audience_filter);
 
   if (recipients.length === 0) {
@@ -45,12 +62,17 @@ export async function POST(
     );
   }
 
-  await updateCampaignStatus({
+  const sendLockAcquired = await markCampaignSendingIfReady({
     id: campaign.id,
-    status: "sending",
-    recipientCount: recipients.length,
-    sentAt: null
+    recipientCount: recipients.length
   });
+
+  if (!sendLockAcquired) {
+    return NextResponse.json(
+      {message: "This campaign is already sending or has already been sent."},
+      {status: 409}
+    );
+  }
 
   let sentCount = 0;
   let failedCount = 0;
@@ -103,4 +125,3 @@ export async function POST(
         : "Campaign sent successfully."
   });
 }
-

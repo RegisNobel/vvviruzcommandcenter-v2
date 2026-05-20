@@ -555,6 +555,28 @@ export async function updateCampaignStatus(values: {
   return toEmailCampaignRecord(campaign);
 }
 
+export async function markCampaignSendingIfReady(values: {
+  id: string;
+  recipientCount: number;
+}) {
+  const result = await prisma.emailCampaign.updateMany({
+    where: {
+      id: values.id,
+      status: {
+        notIn: ["sending", "sent"]
+      }
+    },
+    data: {
+      status: "sending",
+      recipientCount: values.recipientCount,
+      sentAt: null,
+      updatedAt: new Date()
+    }
+  });
+
+  return result.count === 1;
+}
+
 export async function deleteCampaign(campaignId: string) {
   const existing = await prisma.emailCampaign.findUnique({
     where: {

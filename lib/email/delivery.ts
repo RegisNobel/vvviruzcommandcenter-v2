@@ -9,10 +9,22 @@ import {
   sendCampaignEmail
 } from "@/lib/email/campaigns";
 
+export function validateCampaignEmailCopy(campaign: EmailCampaignRecord) {
+  if (!campaign.subject.trim()) {
+    throw new Error("Campaign subject is required before sending.");
+  }
+
+  if (!campaign.body.trim()) {
+    throw new Error("Campaign body is required before sending.");
+  }
+}
+
 export async function sendCampaignToSubscriber(
   campaign: EmailCampaignRecord,
   subscriber: SubscriberRecord
 ) {
+  validateCampaignEmailCopy(campaign);
+
   return sendCampaignEmail({
     to: subscriber.email,
     subject: campaign.subject,
@@ -25,6 +37,8 @@ export async function sendCampaignToSubscriber(
 }
 
 export async function sendCampaignTest(campaign: EmailCampaignRecord, email: string) {
+  validateCampaignEmailCopy(campaign);
+
   return sendCampaignEmail({
     to: email,
     subject: campaign.subject,
@@ -35,4 +49,3 @@ export async function sendCampaignTest(campaign: EmailCampaignRecord, email: str
     unsubscribeUrl: buildExclusivePageUrl()
   });
 }
-

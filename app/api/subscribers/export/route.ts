@@ -31,7 +31,19 @@ export async function GET(request: Request) {
       "Consent",
       "Created At",
       "Updated At",
-      "Unsubscribed At"
+      "Unsubscribed At",
+      "Source Offer Mode",
+      "Source Offer Name",
+      "Source Signup Context",
+      "UTM Source",
+      "UTM Medium",
+      "UTM Campaign",
+      "UTM Content",
+      "UTM Term",
+      "Referrer",
+      "Landing Page",
+      "Consent Status",
+      "Unsubscribe Status"
     ].join(","),
     ...subscribers.map((subscriber) =>
       [
@@ -42,7 +54,19 @@ export async function GET(request: Request) {
         subscriber.consent_given,
         subscriber.created_at,
         subscriber.updated_at,
-        subscriber.unsubscribed_at
+        subscriber.unsubscribed_at,
+        subscriber.source_offer_mode,
+        subscriber.source_offer_name,
+        subscriber.source_signup_context,
+        subscriber.source_utm_source,
+        subscriber.source_utm_medium,
+        subscriber.source_utm_campaign,
+        subscriber.source_utm_content,
+        subscriber.source_utm_term,
+        subscriber.source_referrer,
+        subscriber.source_landing_page,
+        subscriber.consent_given ? "consented" : "not consented",
+        subscriber.status === "unsubscribed" ? "unsubscribed" : "subscribed"
       ]
         .map(escapeCsvValue)
         .join(",")
@@ -58,4 +82,3 @@ export async function GET(request: Request) {
     }
   });
 }
-

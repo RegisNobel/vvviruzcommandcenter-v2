@@ -5,6 +5,7 @@ export const maxDuration = 60;
 import {NextResponse} from "next/server";
 
 import {runAllBackups} from "@/lib/backups/runner";
+import {cleanupStalePublicRateLimits} from "@/lib/public-rate-limit";
 
 function isAuthorizedCronRequest(request: Request) {
   const cronSecret = process.env.CRON_SECRET?.trim();
@@ -21,10 +22,14 @@ export async function GET(request: Request) {
     return NextResponse.json({message: "Unauthorized."}, {status: 401});
   }
 
-  const {ok, results} = await runAllBackups();
+  const [cleanupCount, backupResult] = await Promise.all([
+    cleanupStalePublicRateLimits(),
+    runAllBackups()
+  ]);
+  const {ok, results} = backupResult;
 
   return NextResponse.json(
-    {ok, results},
+    {ok, results, maintenance: {publicRateLimitRowsDeleted: cleanupCount}},
     {status: ok ? 200 : 500}
   );
 }

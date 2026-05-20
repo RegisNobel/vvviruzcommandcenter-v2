@@ -104,10 +104,10 @@ export default async function AdminAdLabPage({
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Promo Lab
+                Ad Lab
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Promo Lab
+                Ad Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Plan, test, track, and learn from every release campaign.

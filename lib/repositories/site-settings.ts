@@ -199,7 +199,8 @@ function createDefaultSiteContent(): SiteContentSettings {
     cta_label: "Get Early Access",
     name_label: "Name",
     email_label: "Email",
-    consent_label: "Send me future vvviruz updates and previews.",
+    consent_label:
+      "By signing up, you'll receive this preview and future vvviruz updates. You can unsubscribe anytime.",
     success_heading: "You’re on the early access list.",
     success_message: "Watch your inbox for the next private preview.",
     duplicate_message:
@@ -296,6 +297,7 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
   const normalizedExclusivePageTitle = input?.metadata?.exclusive_page_title?.trim();
   const normalizedCommunityHeadline = input?.exclusive?.community_headline?.trim();
   const normalizedCommunityCtaLabel = input?.exclusive?.community_cta_label?.trim();
+  const normalizedExclusiveConsentLabel = input?.exclusive?.consent_label?.trim();
 
   return {
     metadata: {
@@ -371,6 +373,11 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
       ...input?.exclusive,
       unlock_experience: input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience,
       instant_unlock_button_label: input?.exclusive?.instant_unlock_button_label || defaults.exclusive.instant_unlock_button_label,
+      consent_label:
+        !normalizedExclusiveConsentLabel ||
+        normalizedExclusiveConsentLabel === "Send me future vvviruz updates and previews."
+          ? defaults.exclusive.consent_label
+          : normalizedExclusiveConsentLabel,
       email_subject: input?.exclusive?.email_subject || defaults.exclusive.email_subject,
       email_body: input?.exclusive?.email_body || defaults.exclusive.email_body,
       community_headline:

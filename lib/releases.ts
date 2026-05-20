@@ -7,7 +7,23 @@ import type {
   ReleaseSummary,
   ReleaseTask
 } from "@/lib/types";
+import {
+  calculateReleaseProgress,
+  getReleasePlanningStageLabel,
+  getReleaseProgressTone,
+  hasReleaseCoverArt,
+  releaseChecklistKeys,
+  type ReleaseChecklistKey
+} from "@/lib/release-planning";
 import {createId, slugify} from "@/lib/utils";
+
+export {
+  calculateReleaseProgress,
+  getReleaseProgressTone,
+  hasReleaseCoverArt,
+  releaseChecklistKeys,
+  type ReleaseChecklistKey
+};
 
 export const releaseStatusOptions = [
   "Concept Complete",
@@ -17,17 +33,6 @@ export const releaseStatusOptions = [
   "Mix/Mastered",
   "Published"
 ] as const satisfies ReadonlyArray<ReleaseStatus>;
-
-export const releaseChecklistKeys = [
-  "concept_complete",
-  "beat_made",
-  "lyrics_finished",
-  "recorded",
-  "mix_mastered",
-  "published"
-] as const;
-
-export type ReleaseChecklistKey = (typeof releaseChecklistKeys)[number];
 
 type LegacyStreamingLinksShape = Partial<ReleaseStreamingLinks> & {
   appleMusic?: string;
@@ -57,26 +62,6 @@ const releaseStageEntries: Array<{
   {key: "mix_mastered", label: "Mix/Mastered"},
   {key: "published", label: "Published"}
 ];
-
-export function hasReleaseCoverArt(release: Pick<ReleaseRecord, "cover_art" | "cover_art_path">) {
-  return Boolean(release.cover_art || release.cover_art_path.trim());
-}
-
-function getReleaseFieldCompletionChecks(release: ReleaseRecord) {
-  return [
-    Boolean(release.title.trim()),
-    Boolean(release.release_date.trim()),
-    Boolean(release.concept_details.trim()),
-    Boolean(release.lyrics.trim()),
-    Boolean(release.upc.trim()),
-    Boolean(release.isrc.trim()),
-    hasReleaseCoverArt(release),
-    Boolean(release.streaming_links.spotify.trim()),
-    Boolean(release.streaming_links.apple_music.trim()),
-    Boolean(release.streaming_links.youtube.trim()),
-    release.collaborator ? Boolean(release.collaborator_name.trim()) : true
-  ];
-}
 
 type LegacyReleaseShape = Partial<ReleaseRecord> & {
   concept?: string;
@@ -395,77 +380,22 @@ export function touchRelease(release: ReleaseRecord): ReleaseRecord {
   };
 }
 
-export function calculateReleaseProgress(release: ReleaseRecord) {
-  const fieldChecks = getReleaseFieldCompletionChecks(release);
-  const completedFieldChecks = fieldChecks.filter(Boolean).length;
-  const totalFieldChecks = fieldChecks.length;
-  const completedChecklistItems = releaseChecklistKeys.filter((key) => release[key]).length;
-  const completedTasks = release.tasks.filter((task) => task.completed).length;
-  const totalItems =
-    totalFieldChecks + releaseChecklistKeys.length + release.tasks.length;
-
-  if (totalItems === 0) {
-    return 0;
-  }
-
-  const completedItems =
-    completedFieldChecks + completedChecklistItems + completedTasks;
-
-  return Math.round((completedItems / totalItems) * 100);
-}
-
-export function getReleaseProgressTone(progress: number) {
-  if (progress === 100) {
-    return "bg-emerald-500";
-  }
-
-  if (progress >= 50) {
-    return "bg-amber-500";
-  }
-
-  return "bg-rose-500";
-}
-
 export function getReleaseStageLabel(release: ReleaseRecord): ReleaseStageLabel {
-  if (!release.concept_complete) {
-    return "Concept";
-  }
-
-  if (!hasReleaseCoverArt(release)) {
-    return "Cover Art";
-  }
-
-  if (!release.beat_made) {
-    return "Beat Made";
-  }
-
-  if (!release.lyrics_finished) {
-    return "Lyrics";
-  }
-
-  if (!release.recorded) {
-    return "Recorded";
-  }
-
-  if (!release.mix_mastered) {
-    return "Mix/Mastered";
-  }
-
-  if (!release.published) {
-    return "Published";
-  }
-
-  return "Published";
+  return getReleasePlanningStageLabel(release);
 }
 
 export function summarizeRelease(release: ReleaseRecord): ReleaseSummary {
   return {
     id: release.id,
     title: release.title,
+    slug: release.slug,
     pinned: release.pinned,
     type: release.type,
     status: getReleaseStageLabel(release),
     release_date: release.release_date,
+    collaborator_name: release.collaborator_name,
+    upc: release.upc,
+    isrc: release.isrc,
     progress_percentage: calculateReleaseProgress(release),
     updated_on: release.updated_on
   };

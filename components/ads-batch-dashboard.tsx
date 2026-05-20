@@ -949,7 +949,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         <section className="panel px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="pill">Promo Lab</div>
+              <div className="pill">Ad Lab</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 {detail.name || "Imported Meta Report"}
               </h1>
@@ -965,7 +965,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             <div className="flex flex-wrap gap-3">
               <Link className="action-button-secondary" href="/admin/ad-lab">
                 <ArrowLeft size={16} />
-                Promo Lab Home
+                Ad Lab Home
               </Link>
               <Link className="action-button-primary" href="/admin/ad-lab/import">
                 Import CSV

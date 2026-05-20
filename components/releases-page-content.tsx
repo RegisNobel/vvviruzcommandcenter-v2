@@ -39,7 +39,11 @@ function matchesReleaseSearch(release: ReleaseSummary, query: string) {
     release.title,
     release.type,
     release.status,
-    release.release_date
+    release.release_date,
+    release.collaborator_name,
+    release.slug,
+    release.upc,
+    release.isrc
   ]
     .join(" ")
     .toLowerCase();
@@ -172,7 +176,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                 <input
                   className="field-input pl-11"
                   onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Find a release by title..."
+                  placeholder="Find by title, collaborator, slug, UPC, or ISRC..."
                   value={searchValue}
                 />
               </span>
@@ -210,7 +214,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                 <input
                   className="field-input pl-11"
                   onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Find a release by title..."
+                  placeholder="Find by title, collaborator, slug, UPC, or ISRC..."
                   value={searchValue}
                 />
               </span>
@@ -266,7 +270,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                 </div>
 
                 <div className="min-w-0">
-                  <p className="field-label">Progress</p>
+                  <p className="field-label">Internal Progress</p>
                   <div className="mt-2 flex items-center gap-3">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#23262c]">
                       <div
@@ -315,7 +319,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
             <div className="panel px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No matching releases</p>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Try a different title or clear the search to see the full catalog.
+                Try a different title, collaborator, slug, UPC, or ISRC.
               </p>
             </div>
           ) : null}

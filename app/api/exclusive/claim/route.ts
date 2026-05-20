@@ -17,6 +17,10 @@ import {
   buildCampaignUnsubscribeUrl,
   sendCampaignEmail
 } from "@/lib/email/campaigns";
+import {
+  normalizePrivateExternalUrl,
+  validateExclusiveEmailDeliverySettings
+} from "@/lib/exclusive-offer-safety";
 import type {ExclusiveClaimResponse} from "@/lib/types";
 
 const claimSchema = z.object({
@@ -117,6 +121,21 @@ export async function POST(request: Request) {
       );
     }
 
+    const shouldSendEmail =
+      offer.unlock_experience === "email_only" || offer.also_email_link;
+    const privateExternalUrl = offer.private_external_url?.trim()
+      ? normalizePrivateExternalUrl(offer.private_external_url)
+      : "";
+    const publicSiteBaseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+    const shouldUseUploadedTrack =
+      !privateExternalUrl && Boolean(offer.exclusive_track_file_path?.trim());
+
+    validateExclusiveEmailDeliverySettings(offer);
+
+    if (shouldSendEmail && shouldUseUploadedTrack && !publicSiteBaseUrl) {
+      throw new Error("PUBLIC_SITE_URL is required before email delivery can send preview links.");
+    }
+
     const {subscriber, isDuplicate} = await upsertExclusiveSubscriber({
       name: payload.name,
       email: payload.email,
@@ -136,30 +155,29 @@ export async function POST(request: Request) {
     });
 
     let targetLink = "";
-    if (offer.private_external_url?.trim()) {
-      targetLink = offer.private_external_url.trim();
+    if (privateExternalUrl) {
+      targetLink = privateExternalUrl;
     } else if (offer.exclusive_track_file_path?.trim()) {
-      const baseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
-      targetLink = `${baseUrl}/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`;
+      targetLink = publicSiteBaseUrl
+        ? `${publicSiteBaseUrl}/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`
+        : "";
     }
 
-    if (offer.unlock_experience === "email_only" || offer.also_email_link) {
-      if (offer.email_subject?.trim() && offer.email_body?.trim()) {
-        try {
-          await sendCampaignEmail({
-            to: subscriber.email,
-            subject: offer.email_subject,
-            previewText: "",
-            body: offer.email_body,
-            ctaLabel: offer.instant_unlock_button_label || "Access Preview",
-            ctaUrl: targetLink || undefined,
-            unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
-          });
-        } catch (emailError) {
-          console.error("Failed to send transactional exclusive email:", emailError);
-          if (offer.unlock_experience === "email_only") {
-            throw new Error("Unable to send the email right now. Please try again later.");
-          }
+    if (shouldSendEmail) {
+      try {
+        await sendCampaignEmail({
+          to: subscriber.email,
+          subject: offer.email_subject,
+          previewText: "",
+          body: offer.email_body,
+          ctaLabel: offer.instant_unlock_button_label || "Access Preview",
+          ctaUrl: targetLink || undefined,
+          unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
+        });
+      } catch (emailError) {
+        console.error("Failed to send transactional exclusive email:", emailError);
+        if (offer.unlock_experience === "email_only") {
+          throw new Error("Unable to send the email right now. Please try again later.");
         }
       }
     }
@@ -168,7 +186,7 @@ export async function POST(request: Request) {
       downloadUrl: offer.exclusive_track_file_path?.trim() ? `/api/exclusive/download?token=${encodeURIComponent(
         subscriber.download_token
       )}` : undefined,
-      privateExternalUrl: offer.private_external_url?.trim() || undefined,
+      privateExternalUrl: privateExternalUrl || undefined,
       unlockExperience: offer.unlock_experience,
       instantUnlockButtonLabel: offer.instant_unlock_button_label || "Listen Now",
       isDuplicate,

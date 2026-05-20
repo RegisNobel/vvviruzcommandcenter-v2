@@ -1,11 +1,17 @@
-import {
-  calculateReleaseProgress,
-  hasReleaseCoverArt,
-  type ReleaseChecklistKey
-} from "@/lib/releases";
 import type {ReleasePlanStep, ReleaseRecord, ReleaseStageLabel} from "@/lib/types";
 
-type ReleasePlanningStageDefinition = {
+export const releaseChecklistKeys = [
+  "concept_complete",
+  "beat_made",
+  "lyrics_finished",
+  "recorded",
+  "mix_mastered",
+  "published"
+] as const;
+
+export type ReleaseChecklistKey = (typeof releaseChecklistKeys)[number];
+
+export type ReleasePlanningStageDefinition = {
   id: ReleaseChecklistKey | "cover_art";
   checkboxKey?: ReleaseChecklistKey;
   label: Exclude<ReleaseStageLabel, "Not Started">;
@@ -14,6 +20,59 @@ type ReleasePlanningStageDefinition = {
     release: ReleaseRecord
   ) => Array<{blocker: string; nextAction: string}>;
 };
+
+function getReleaseFieldCompletionChecks(release: ReleaseRecord) {
+  return [
+    Boolean(release.title.trim()),
+    Boolean(release.release_date.trim()),
+    Boolean(release.concept_details.trim()),
+    Boolean(release.lyrics.trim()),
+    Boolean(release.upc.trim()),
+    Boolean(release.isrc.trim()),
+    hasReleaseCoverArt(release),
+    Boolean(release.streaming_links.spotify.trim()),
+    Boolean(release.streaming_links.apple_music.trim()),
+    Boolean(release.streaming_links.youtube.trim()),
+    release.collaborator ? Boolean(release.collaborator_name.trim()) : true
+  ];
+}
+
+export function hasReleaseCoverArt(
+  release: Pick<ReleaseRecord, "cover_art" | "cover_art_path">
+) {
+  return Boolean(release.cover_art || release.cover_art_path.trim());
+}
+
+export function calculateReleaseProgress(release: ReleaseRecord) {
+  const fieldChecks = getReleaseFieldCompletionChecks(release);
+  const completedFieldChecks = fieldChecks.filter(Boolean).length;
+  const totalFieldChecks = fieldChecks.length;
+  const completedChecklistItems = releaseChecklistKeys.filter((key) => release[key]).length;
+  const completedTasks = release.tasks.filter((task) => task.completed).length;
+  const totalItems =
+    totalFieldChecks + releaseChecklistKeys.length + release.tasks.length;
+
+  if (totalItems === 0) {
+    return 0;
+  }
+
+  const completedItems =
+    completedFieldChecks + completedChecklistItems + completedTasks;
+
+  return Math.round((completedItems / totalItems) * 100);
+}
+
+export function getReleaseProgressTone(progress: number) {
+  if (progress === 100) {
+    return "bg-emerald-500";
+  }
+
+  if (progress >= 50) {
+    return "bg-amber-500";
+  }
+
+  return "bg-rose-500";
+}
 
 export const releasePlanningStages: ReleasePlanningStageDefinition[] = [
   {
@@ -113,6 +172,10 @@ export function getCurrentReleasePlanningStage(release: ReleaseRecord) {
     releasePlanningStages.find((stage) => !stage.isComplete(release)) ??
     releasePlanningStages[releasePlanningStages.length - 1]
   );
+}
+
+export function getReleasePlanningStageLabel(release: ReleaseRecord): ReleaseStageLabel {
+  return getCurrentReleasePlanningStage(release).label;
 }
 
 export function getReleasePlanningValidationWarnings(release: ReleaseRecord) {

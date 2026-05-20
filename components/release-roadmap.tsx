@@ -253,7 +253,7 @@ export function ReleaseRoadmap({
                   </div>
 
                   <div>
-                    <p className="field-label">Progress</p>
+                    <p className="field-label">Internal Progress</p>
                     <div className="mt-2 flex items-center gap-3">
                       <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#23262c]">
                         <div

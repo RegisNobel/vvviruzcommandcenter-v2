@@ -95,3 +95,27 @@ export async function consumeRateLimit({
     remaining: shouldBlock ? 0 : Math.max(0, maxAttempts - nextCount)
   };
 }
+
+export async function cleanupStalePublicRateLimits(staleAfterMs = 24 * 60 * 60 * 1000) {
+  const now = new Date();
+  const staleBefore = new Date(now.getTime() - staleAfterMs);
+  const result = await prisma.publicRateLimit.deleteMany({
+    where: {
+      updatedAt: {
+        lt: staleBefore
+      },
+      OR: [
+        {
+          blockedUntil: null
+        },
+        {
+          blockedUntil: {
+            lt: now
+          }
+        }
+      ]
+    }
+  });
+
+  return result.count;
+}
