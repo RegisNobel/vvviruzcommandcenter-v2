@@ -471,10 +471,11 @@ npm run normalize:releases
 
 ## Recent Updates
 
-### 2026-05-20 04:39 -04:00
+### 2026-05-20 04:56 -04:00
 
-- **Public Long Description Content Polish**: Added a repeatable content update script for contextual release-story drafts for `BOSSS`, `Alphabetical`, `Introduction`, `Lover`, and `Real`.
+- **Public Long Description Content Polish**: Added a repeatable content update script for all 22 currently published release-story drafts.
     - Run `npm run content:update-public-long-descriptions` with the target `DATABASE_URL` to apply those `publicLongDescription` updates to local or production data.
+    - Included the extra context pass for `BOSSS`, `Alphabetical`, `Introduction`, `Lover`, and `Real`.
     - The drafts deepen AI-search and fan-facing context without changing public release page code or adding new database fields.
 
 ### 2026-05-20 04:12 -04:00
