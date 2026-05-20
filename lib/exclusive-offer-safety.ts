@@ -3,7 +3,10 @@ import type {SiteContentSettings} from "@/lib/types";
 type ExclusiveDeliverySettings = SiteContentSettings["exclusive"];
 
 function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
-  return values.unlock_experience === "email_only" || values.also_email_link;
+  return (
+    values.unlock_experience === "email_only" ||
+    (values.unlock_experience === "instant_unlock" && values.also_email_link)
+  );
 }
 
 export function normalizePrivateExternalUrl(value: string) {

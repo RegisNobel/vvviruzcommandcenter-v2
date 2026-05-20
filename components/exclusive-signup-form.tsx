@@ -3,6 +3,8 @@
 import {useState} from "react";
 import {CheckCircle2, Download, Loader2, Mail} from "lucide-react";
 
+type UnlockExperience = "instant_unlock" | "email_only" | "signup_notify";
+
 type ExclusiveSignupFormProps = {
   consentLabel: string;
   ctaLabel: string;
@@ -11,10 +13,22 @@ type ExclusiveSignupFormProps = {
   nameLabel: string;
   successHeading: string;
   trackTitle: string;
-  unlockExperience?: "instant_unlock" | "email_only" | "signup_notify";
+  unlockExperience?: UnlockExperience;
 };
 
 type SaveState = "idle" | "submitting" | "success" | "error";
+
+function getSuccessFallbackMessage(unlockExperience: UnlockExperience) {
+  if (unlockExperience === "email_only") {
+    return "You're in. Check your email for the preview.";
+  }
+
+  if (unlockExperience === "signup_notify") {
+    return "You're in. I'll send the preview/update when it's ready.";
+  }
+
+  return "You're in. Your preview is unlocked.";
+}
 
 export function ExclusiveSignupForm({
   consentLabel,
@@ -33,7 +47,7 @@ export function ExclusiveSignupForm({
   const [message, setMessage] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState("");
   const [privateExternalUrl, setPrivateExternalUrl] = useState("");
-  const [unlockExperience, setUnlockExperience] = useState<"instant_unlock" | "email_only" | "signup_notify">(initialUnlockExperience);
+  const [unlockExperience, setUnlockExperience] = useState<UnlockExperience>(initialUnlockExperience);
   const [instantUnlockButtonLabel, setInstantUnlockButtonLabel] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -67,7 +81,7 @@ export function ExclusiveSignupForm({
       const payload = (await response.json()) as {
         downloadUrl?: string;
         privateExternalUrl?: string;
-        unlockExperience?: "instant_unlock" | "email_only" | "signup_notify";
+        unlockExperience?: UnlockExperience;
         instantUnlockButtonLabel?: string;
         message?: string;
       };
@@ -76,11 +90,13 @@ export function ExclusiveSignupForm({
         throw new Error(payload.message ?? "Unable to unlock the track right now.");
       }
 
+      const nextUnlockExperience = payload.unlockExperience || initialUnlockExperience;
+
       setDownloadUrl(payload.downloadUrl || "");
       setPrivateExternalUrl(payload.privateExternalUrl || "");
-      setUnlockExperience(payload.unlockExperience || "instant_unlock");
+      setUnlockExperience(nextUnlockExperience);
       setInstantUnlockButtonLabel(payload.instantUnlockButtonLabel || "Listen Now");
-      setMessage(payload.message ?? "Your download is unlocked below.");
+      setMessage(payload.message ?? getSuccessFallbackMessage(nextUnlockExperience));
       setSaveState("success");
     } catch (error) {
       setSaveState("error");
@@ -207,4 +223,3 @@ export function ExclusiveSignupForm({
     </form>
   );
 }
-

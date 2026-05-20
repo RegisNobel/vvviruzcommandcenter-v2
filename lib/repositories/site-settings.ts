@@ -61,6 +61,37 @@ const LEGACY_EXCLUSIVE_COMMUNITY_DESCRIPTIONS = new Set([
   "Active members can earn shoutouts, credits, special roles, and recognition inside the Lab."
 ]);
 
+const DEFAULT_EXCLUSIVE_SUCCESS_HEADING = "You're on the early access list.";
+const DEFAULT_EXCLUSIVE_SUCCESS_MESSAGE =
+  "You're in. I'll send the preview/update when it's ready.";
+const DEFAULT_EXCLUSIVE_DUPLICATE_MESSAGE =
+  "You're already on the list. I'll send the update when it's ready.";
+
+function hasLegacyEncoding(value: string) {
+  return value.includes("â");
+}
+
+function normalizeModeSafeExclusiveMessage(
+  value: string | undefined,
+  fallback: string,
+  unlockExperience: SiteContentSettings["exclusive"]["unlock_experience"]
+) {
+  const normalizedValue = value?.trim() ?? "";
+
+  if (!normalizedValue || hasLegacyEncoding(normalizedValue)) {
+    return fallback;
+  }
+
+  if (
+    unlockExperience !== "instant_unlock" &&
+    /\b(download|unlock|unlocked)\b/i.test(normalizedValue)
+  ) {
+    return fallback;
+  }
+
+  return normalizedValue;
+}
+
 function createDefaultSiteContent(): SiteContentSettings {
   return {
     metadata: {
@@ -202,7 +233,7 @@ function createDefaultSiteContent(): SiteContentSettings {
     consent_label:
       "By signing up, you'll receive this preview and future vvviruz updates. You can unsubscribe anytime.",
     success_heading: "You’re on the early access list.",
-    success_message: "Watch your inbox for the next private preview.",
+    success_message: "You're in. I'll send the preview/update when it's ready.",
     duplicate_message:
       "You’re already on the list. Watch your inbox for the next preview drop.",
     download_label: "Download the preview",
@@ -217,7 +248,7 @@ function createDefaultSiteContent(): SiteContentSettings {
     unlock_experience: "signup_notify",
     private_external_url: "",
     instant_unlock_button_label: "Listen Now",
-    also_email_link: true,
+    also_email_link: false,
     email_subject: "Your Private Preview",
     email_body: "Thank you for joining the early access list.\n\nHere is your private preview link.",
     discord_invite_url: "",
@@ -298,6 +329,8 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
   const normalizedCommunityHeadline = input?.exclusive?.community_headline?.trim();
   const normalizedCommunityCtaLabel = input?.exclusive?.community_cta_label?.trim();
   const normalizedExclusiveConsentLabel = input?.exclusive?.consent_label?.trim();
+  const exclusiveUnlockExperience =
+    input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience;
 
   return {
     metadata: {
@@ -371,8 +404,27 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     exclusive: {
       ...defaults.exclusive,
       ...input?.exclusive,
-      unlock_experience: input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience,
+      unlock_experience: exclusiveUnlockExperience,
       instant_unlock_button_label: input?.exclusive?.instant_unlock_button_label || defaults.exclusive.instant_unlock_button_label,
+      success_heading:
+        !input?.exclusive?.success_heading?.trim() ||
+        hasLegacyEncoding(input.exclusive.success_heading)
+          ? DEFAULT_EXCLUSIVE_SUCCESS_HEADING
+          : input.exclusive.success_heading.trim(),
+      success_message: normalizeModeSafeExclusiveMessage(
+        input?.exclusive?.success_message,
+        DEFAULT_EXCLUSIVE_SUCCESS_MESSAGE,
+        exclusiveUnlockExperience
+      ),
+      duplicate_message: normalizeModeSafeExclusiveMessage(
+        input?.exclusive?.duplicate_message,
+        DEFAULT_EXCLUSIVE_DUPLICATE_MESSAGE,
+        exclusiveUnlockExperience
+      ),
+      also_email_link:
+        exclusiveUnlockExperience === "instant_unlock"
+          ? input?.exclusive?.also_email_link ?? defaults.exclusive.also_email_link
+          : false,
       consent_label:
         !normalizedExclusiveConsentLabel ||
         normalizedExclusiveConsentLabel === "Send me future vvviruz updates and previews."

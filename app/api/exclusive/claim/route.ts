@@ -40,6 +40,50 @@ const claimSchema = z.object({
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
+type UnlockExperience = ExclusiveClaimResponse["unlockExperience"];
+
+const CLAIM_SUCCESS_MESSAGES: Record<UnlockExperience, string> = {
+  instant_unlock: "You're in. Your preview is unlocked.",
+  email_only: "You're in. Check your email for the preview.",
+  signup_notify: "You're in. I'll send the preview/update when it's ready."
+};
+
+const CLAIM_DUPLICATE_MESSAGES: Record<UnlockExperience, string> = {
+  instant_unlock: "You're already in. Your preview is unlocked.",
+  email_only: "You're already on the list. Check your email for the preview.",
+  signup_notify: "You're already on the list. I'll send the update when it's ready."
+};
+
+function isModeSafeClaimMessage(message: string, unlockExperience: UnlockExperience) {
+  const normalizedMessage = message.trim();
+
+  if (!normalizedMessage) {
+    return false;
+  }
+
+  if (unlockExperience === "instant_unlock") {
+    return true;
+  }
+
+  return !/\b(download|downloaded|unlock|unlocked|listen now|access below)\b/i.test(
+    normalizedMessage
+  );
+}
+
+function getClaimMessage(
+  unlockExperience: UnlockExperience,
+  configuredMessage: string,
+  isDuplicate: boolean
+) {
+  const fallback = isDuplicate
+    ? CLAIM_DUPLICATE_MESSAGES[unlockExperience]
+    : CLAIM_SUCCESS_MESSAGES[unlockExperience];
+
+  return isModeSafeClaimMessage(configuredMessage, unlockExperience)
+    ? configuredMessage.trim()
+    : fallback;
+}
+
 function rateLimitResponse(state: RateLimitState) {
   return NextResponse.json(
     {message: "Too many signup attempts. Try again in a few minutes."},
@@ -64,10 +108,10 @@ function getBotTestFieldValue(payload: unknown) {
 
 function createFakeClaimSuccess(): ExclusiveClaimResponse {
   return {
-    unlockExperience: "email_only",
+    unlockExperience: "signup_notify",
     instantUnlockButtonLabel: "Listen Now",
     isDuplicate: false,
-    message: "Your preview is unlocked. Check your inbox for the link.",
+    message: CLAIM_SUCCESS_MESSAGES.signup_notify,
     subscriber: {
       id: "pending",
       name: "Subscriber",
@@ -122,7 +166,8 @@ export async function POST(request: Request) {
     }
 
     const shouldSendEmail =
-      offer.unlock_experience === "email_only" || offer.also_email_link;
+      offer.unlock_experience === "email_only" ||
+      (offer.unlock_experience === "instant_unlock" && offer.also_email_link);
     const privateExternalUrl = offer.private_external_url?.trim()
       ? normalizePrivateExternalUrl(offer.private_external_url)
       : "";
@@ -148,9 +193,15 @@ export async function POST(request: Request) {
         sourceUtmTerm: payload.source_utm_term,
         sourceReferrer: payload.source_referrer || request.headers.get("referer") || "",
         sourceLandingPage: payload.source_landing_page,
-        sourceOfferMode: offer.unlock_experience === "signup_notify" ? "signup_notify_me" : offer.unlock_experience,
+        sourceOfferMode:
+          offer.unlock_experience === "signup_notify"
+            ? "signup_notify_me"
+            : offer.unlock_experience,
         sourceOfferName: offer.exclusive_track_title || "Early Access Preview List",
-        sourceSignupContext: offer.unlock_experience === "signup_notify" ? "early_access_preview_list" : "exclusives_page"
+        sourceSignupContext:
+          offer.unlock_experience === "signup_notify"
+            ? "early_access_preview_list"
+            : "exclusives_page"
       }
     });
 
@@ -182,19 +233,20 @@ export async function POST(request: Request) {
       }
     }
 
+    const isInstantUnlock = offer.unlock_experience === "instant_unlock";
     const response: ExclusiveClaimResponse = {
-      downloadUrl: offer.exclusive_track_file_path?.trim() ? `/api/exclusive/download?token=${encodeURIComponent(
-        subscriber.download_token
-      )}` : undefined,
-      privateExternalUrl: privateExternalUrl || undefined,
+      downloadUrl: isInstantUnlock && offer.exclusive_track_file_path?.trim()
+        ? `/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`
+        : undefined,
+      privateExternalUrl: isInstantUnlock ? privateExternalUrl || undefined : undefined,
       unlockExperience: offer.unlock_experience,
       instantUnlockButtonLabel: offer.instant_unlock_button_label || "Listen Now",
       isDuplicate,
-      message: isDuplicate
-        ? offer.duplicate_message
-        : offer.unlock_experience === "signup_notify"
-          ? offer.success_message || "You’re on the early access list. Watch your inbox for the next preview drop."
-          : offer.success_message || "Your preview is unlocked.",
+      message: getClaimMessage(
+        offer.unlock_experience,
+        isDuplicate ? offer.duplicate_message : offer.success_message,
+        isDuplicate
+      ),
       subscriber: {
         id: subscriber.id,
         name: subscriber.name,
@@ -214,7 +266,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to unlock the exclusive track right now."},
+      {message: error instanceof Error ? error.message : "Unable to complete signup right now."},
       {status: 500}
     );
   }

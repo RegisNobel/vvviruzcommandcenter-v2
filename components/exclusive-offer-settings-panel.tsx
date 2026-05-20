@@ -47,6 +47,86 @@ async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
   return payload as T & {message?: string};
 }
 
+const UNLOCK_MODE_LABELS: Record<ExclusiveOfferSettings["unlock_experience"], string> = {
+  instant_unlock: "Instant Unlock",
+  email_only: "Email Only",
+  signup_notify: "Notify Me"
+};
+
+function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
+  const hasPrivateUrl = Boolean(exclusiveOffer.private_external_url.trim());
+  const hasUploadedPreview = Boolean(exclusiveOffer.exclusive_track_file_path.trim());
+  const hasPreviewAccess = hasPrivateUrl || hasUploadedPreview;
+  const hasPreviewTitle = Boolean(exclusiveOffer.exclusive_track_title.trim());
+  const hasEmailCopy =
+    Boolean(exclusiveOffer.email_subject.trim()) && Boolean(exclusiveOffer.email_body.trim());
+  const mode = exclusiveOffer.unlock_experience;
+  const visitorReceives =
+    mode === "signup_notify"
+      ? "Signup confirmation only"
+      : mode === "email_only"
+        ? "Email with preview link"
+        : hasPrivateUrl
+          ? "Immediate private link"
+          : hasUploadedPreview
+            ? "Immediate tokenized download"
+            : "No immediate access configured";
+
+  if (!exclusiveOffer.exclusive_track_enabled) {
+    return {
+      modeLabel: UNLOCK_MODE_LABELS[mode],
+      visitorReceives: "Unavailable state",
+      readiness: "Disabled",
+      readinessTone: "neutral"
+    };
+  }
+
+  if (mode === "signup_notify") {
+    return {
+      modeLabel: UNLOCK_MODE_LABELS[mode],
+      visitorReceives,
+      readiness: "Notify mode ready",
+      readinessTone: "ready"
+    };
+  }
+
+  if (!hasPreviewTitle) {
+    return {
+      modeLabel: UNLOCK_MODE_LABELS[mode],
+      visitorReceives,
+      readiness: "Needs preview title",
+      readinessTone: "warning"
+    };
+  }
+
+  if (!hasPreviewAccess) {
+    return {
+      modeLabel: UNLOCK_MODE_LABELS[mode],
+      visitorReceives,
+      readiness: mode === "instant_unlock"
+        ? "Needs private URL or uploaded file for instant unlock"
+        : "Needs private URL or uploaded file for email delivery",
+      readinessTone: "warning"
+    };
+  }
+
+  if ((mode === "email_only" || (mode === "instant_unlock" && exclusiveOffer.also_email_link)) && !hasEmailCopy) {
+    return {
+      modeLabel: UNLOCK_MODE_LABELS[mode],
+      visitorReceives,
+      readiness: "Needs email subject/body",
+      readinessTone: "warning"
+    };
+  }
+
+  return {
+    modeLabel: UNLOCK_MODE_LABELS[mode],
+    visitorReceives,
+    readiness: "Ready",
+    readinessTone: "ready"
+  };
+}
+
 export function ExclusiveOfferSettingsPanel({
   exclusiveOffer,
   initialTrackArtOptions,
@@ -78,6 +158,8 @@ export function ExclusiveOfferSettingsPanel({
       )
     });
   }
+
+  const offerPreview = getExclusiveOfferPreview(exclusiveOffer);
 
   async function handleUploadAsset(assetType: "track" | "art") {
     const file = assetType === "track" ? trackUploadFile : artUploadFile;
@@ -162,6 +244,31 @@ export function ExclusiveOfferSettingsPanel({
             </p>
           </div>
           <span className="pill">Saved with Site Settings</span>
+        </div>
+
+        <div className="mt-5 grid gap-3 rounded-[22px] border border-[#30343b] bg-[#0f1217] p-4 text-sm sm:grid-cols-3">
+          <div>
+            <p className="field-label">Current Mode</p>
+            <p className="mt-2 font-semibold text-ink">{offerPreview.modeLabel}</p>
+          </div>
+          <div>
+            <p className="field-label">Visitor Receives</p>
+            <p className="mt-2 font-semibold text-ink">{offerPreview.visitorReceives}</p>
+          </div>
+          <div>
+            <p className="field-label">Readiness</p>
+            <p
+              className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                offerPreview.readinessTone === "ready"
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                  : offerPreview.readinessTone === "warning"
+                    ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                    : "border-[#30343b] bg-[#15181c] text-muted"
+              }`}
+            >
+              {offerPreview.readiness}
+            </p>
+          </div>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -425,7 +532,9 @@ export function ExclusiveOfferSettingsPanel({
               </label>
             ) : null}
 
-            {(exclusiveOffer.unlock_experience === "email_only" || exclusiveOffer.also_email_link) ? (
+            {(exclusiveOffer.unlock_experience === "email_only" ||
+              (exclusiveOffer.unlock_experience === "instant_unlock" &&
+                exclusiveOffer.also_email_link)) ? (
               <>
                 <label className="space-y-2 md:col-span-2">
                   <span className="field-label">Email Subject</span>

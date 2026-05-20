@@ -9,8 +9,13 @@ import {sendMetaConversionsApiEvent} from "@/lib/server/meta-conversions-api";
 import {createId} from "@/lib/utils";
 
 const analyticsEventSchema = z.object({
-  eventType: z.enum(["links_page_view", "links_link_click"]),
-  page: z.literal("links"),
+  eventType: z.enum([
+    "links_page_view",
+    "links_link_click",
+    "vault_page_view",
+    "vault_cta_click"
+  ]),
+  page: z.enum(["links", "vault"]),
   path: z.string().default(""),
   releaseId: z.string().nullish(),
   linkType: z.string().default(""),
@@ -24,6 +29,20 @@ const analyticsEventSchema = z.object({
   metaEventId: z.string().max(200).default(""),
   metaEventName: z.enum(["ViewContent", "Lead"]).optional(),
   releaseTitle: z.string().default("")
+}).superRefine((event, ctx) => {
+  const isLinksEvent =
+    event.page === "links" &&
+    (event.eventType === "links_page_view" || event.eventType === "links_link_click");
+  const isVaultEvent =
+    event.page === "vault" &&
+    (event.eventType === "vault_page_view" || event.eventType === "vault_cta_click");
+
+  if (!isLinksEvent && !isVaultEvent) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Unsupported analytics event for page."
+    });
+  }
 });
 
 function readCookieValue(cookieHeader: string | null, name: string) {
@@ -87,7 +106,7 @@ export async function POST(request: Request) {
       country: request.headers.get("x-vercel-ip-country") || ""
     });
 
-    if (parsed.metaEventName && parsed.metaEventId) {
+    if (parsed.page === "links" && parsed.metaEventName && parsed.metaEventId) {
       await sendMetaConversionsApiEvent({
         eventId: parsed.metaEventId,
         eventName: parsed.metaEventName,

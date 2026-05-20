@@ -34,7 +34,7 @@ export default async function AdminAudiencePageRoute() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted sm:text-base">
                 Manage exclusive-track signups, subscribers, and lean campaign sends
-                from one protected workspace. Public capture lives on <code>/exclusive</code>;
+                from one protected workspace. Public capture lives on <code>/exclusives</code>;
                 audience operations stay here.
               </p>
             </div>

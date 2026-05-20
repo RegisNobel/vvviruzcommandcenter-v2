@@ -71,7 +71,7 @@ Collaboration and feature tracking with:
 
 Email capture and outreach workspace with:
 
-- public exclusive-track landing page with Instant Unlock or Email Only delivery modes
+- public early-access landing page with Instant Unlock, Email Only, or Notify Me delivery modes
 - private external URL support for unlisted YouTube, SoundCloud, BandLab, or Dropbox links
 - transactional email delivery via Resend with compliant unsubscribe URLs
 - subscriber CRUD and CSV export
@@ -470,6 +470,20 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-20 14:20 -04:00
+
+- **Supabase RLS Advisor Patch**: Added `scripts/supabase-rls-v1.1.sql` for the latest Security Advisor findings.
+    - Enables RLS on `public."CommissionRequest"` and `public."short_links"` without adding public policies.
+    - Updated the RLS baseline documentation so newer private/admin tables stay aligned with the production security posture.
+
+### 2026-05-20 14:02 -04:00
+
+- **Vault / Exclusives Polish v1.1**: Tightened the early-access and Vault funnel behavior.
+    - Allowed first-party `/vault` page-view and CTA-click analytics through the existing analytics endpoint while keeping unsupported event names rejected and Meta forwarding limited to `/links`.
+    - Made `/exclusives` claim responses mode-aware so Email Only and Notify Me modes do not expose browser unlock/download URLs.
+    - Added an admin readiness preview for the Early Access Preview offer showing the current mode, what visitors receive, and the setup state.
+    - Updated stale admin copy to point to `/exclusives` while preserving the legacy `/exclusive` redirect.
 
 ### 2026-05-20 12:43 -04:00
 
@@ -929,6 +943,8 @@ AuthSession
 PublicRateLimit
 BackupRun
 CopyEntry
+CommissionRequest
+short_links
 AdImportBatch
 AdCampaignLearning
 AdCreativeReport
@@ -996,10 +1012,16 @@ alter table public."AuthSession" enable row level security;
 alter table public."PublicRateLimit" enable row level security;
 alter table public."BackupRun" enable row level security;
 alter table public."CopyEntry" enable row level security;
+alter table public."CommissionRequest" enable row level security;
+alter table public."short_links" enable row level security;
 alter table public."AdImportBatch" enable row level security;
 alter table public."AdCampaignLearning" enable row level security;
 alter table public."AdCreativeReport" enable row level security;
 alter table public."AdCreativeCopyLink" enable row level security;
+
+Latest patch file:
+
+scripts/supabase-rls-v1.1.sql
 Validation Checklist
 
 After applying RLS changes:
