@@ -154,6 +154,23 @@ export default async function PublicReleaseDetailPage({
                 </p>
               ) : null}
 
+              {release.categories.length > 0 ? (
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                    Part of
+                  </span>
+                  {release.categories.map((category) => (
+                    <Link
+                      className="rounded-full border border-[#c9a347]/25 bg-[#c9a347]/10 px-3 py-1 text-xs font-semibold text-[#f0d991] transition hover:border-[#c9a347]/55 hover:bg-[#c9a347]/15 hover:text-[#f8edcf]"
+                      href={`/music?category=${encodeURIComponent(category.slug)}`}
+                      key={category.id}
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+
               <p className="mt-5 max-w-3xl text-base leading-8 text-[#bac2cb]">
                 {release.public_description}
               </p>

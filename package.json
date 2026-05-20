@@ -18,6 +18,7 @@
     "hash:admin-password": "node scripts/hash-admin-password.mjs",
     "sync:releases": "tsx scripts/sync-releases.ts",
     "normalize:releases": "tsx scripts/normalize-release-titles.ts",
+    "content:update-public-long-descriptions": "tsx scripts/update-release-public-long-descriptions.ts",
     "db:generate:postgres": "node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma",
     "db:push:postgres": "node scripts/run-prisma.mjs db push --schema prisma/schema.postgres.prisma",
     "db:studio:postgres": "node scripts/run-prisma.mjs studio --schema prisma/schema.postgres.prisma",

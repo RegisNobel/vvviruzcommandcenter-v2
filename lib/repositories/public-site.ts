@@ -380,40 +380,85 @@ export async function getPublishedReleaseBySlug(slug: string) {
 
 const getCachedRelatedPublishedReleases = unstable_cache(
   async (releaseId: string, type: ReleaseType) => {
-  const sameType = await prisma.release.findMany({
+  const categoryAssignments = await prisma.releaseCategoryAssignment.findMany({
     where: {
-      id: {
-        not: releaseId
-      },
-      type,
-      isPublished: true
+      releaseId
     },
-    select: publicReleaseSelect,
-    orderBy: newestPublicReleaseOrder,
-    take: 3
+    select: {
+      categoryId: true
+    }
   });
+  const categoryIds = categoryAssignments.map((assignment) => assignment.categoryId);
+  const relatedReleases: PublicReleaseModel[] = [];
+  const relatedReleaseIds = new Set<string>([releaseId]);
 
-  if (sameType.length >= 3) {
-    return sameType.map(toPublicRelease);
+  if (categoryIds.length > 0) {
+    const sameCategory = await prisma.release.findMany({
+      where: {
+        id: {
+          not: releaseId
+        },
+        isPublished: true,
+        categories: {
+          some: {
+            categoryId: {
+              in: categoryIds
+            }
+          }
+        }
+      },
+      select: publicReleaseSelect,
+      orderBy: newestPublicReleaseOrder,
+      take: 3
+    });
+
+    for (const release of sameCategory) {
+      relatedReleases.push(release);
+      relatedReleaseIds.add(release.id);
+    }
   }
 
-  const fallback = await prisma.release.findMany({
+  if (relatedReleases.length < 3) {
+    const sameType = await prisma.release.findMany({
+      where: {
+        id: {
+          notIn: Array.from(relatedReleaseIds)
+        },
+        type,
+        isPublished: true
+      },
+      select: publicReleaseSelect,
+      orderBy: newestPublicReleaseOrder,
+      take: 3 - relatedReleases.length
+    });
+
+    for (const release of sameType) {
+      relatedReleases.push(release);
+      relatedReleaseIds.add(release.id);
+    }
+  }
+
+  if (relatedReleases.length >= 3) {
+    return relatedReleases.slice(0, 3).map(toPublicRelease);
+  }
+
+  const recentFallback = await prisma.release.findMany({
     where: {
       id: {
-        notIn: [releaseId, ...sameType.map((release) => release.id)]
+        notIn: Array.from(relatedReleaseIds)
       },
       isPublished: true
     },
     select: publicReleaseSelect,
     orderBy: newestPublicReleaseOrder,
-    take: 3 - sameType.length
+    take: 3 - relatedReleases.length
   });
 
-  return [...sameType, ...fallback].map(toPublicRelease);
+  return [...relatedReleases, ...recentFallback].map(toPublicRelease);
   },
   ["public-related-releases"],
   {
-    tags: [PUBLIC_CACHE_TAGS.releases]
+    tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
   }
 );
 

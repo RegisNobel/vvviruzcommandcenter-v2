@@ -471,6 +471,19 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-20 04:39 -04:00
+
+- **Public Long Description Content Polish**: Added a repeatable content update script for contextual release-story drafts for `BOSSS`, `Alphabetical`, `Introduction`, `Lover`, and `Real`.
+    - Run `npm run content:update-public-long-descriptions` with the target `DATABASE_URL` to apply those `publicLongDescription` updates to local or production data.
+    - The drafts deepen AI-search and fan-facing context without changing public release page code or adding new database fields.
+
+### 2026-05-20 04:12 -04:00
+
+- **Public Release Context v1.1**: Improved public release discovery context without adding new database fields.
+    - Added subtle `Part of` category/project chips to public release detail pages, linking to the matching `/music?category=...` filtered view.
+    - Updated related-release selection to prioritize same category/project releases first, then same release type, then recent published releases as fallback.
+    - Kept draft/unpublished releases excluded from public related-release surfaces and preserved existing metadata behavior.
+
 ### 2026-05-19 23:34 -04:00
 
 - **Line Ending Hygiene**: Added repository-level `.gitattributes` so text/code files normalize to LF while Windows command files and binary media/database assets are handled safely.
