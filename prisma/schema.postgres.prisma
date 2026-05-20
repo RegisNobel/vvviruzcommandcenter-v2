@@ -303,18 +303,22 @@ model AdCreativeCopyLink {
 }
 
 model AdCampaignLearning {
-  id            String        @id
-  importBatchId String
-  releaseId     String?
-  summary       String        @default("")
-  whatWorked    String        @default("")
-  whatFailed    String        @default("")
-  nextTest      String        @default("")
-  decision      String        @default("iterate")
-  createdAt     DateTime
-  updatedAt     DateTime
-  importBatch   AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
-  release       Release?      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  id                 String        @id
+  importBatchId      String
+  releaseId          String?
+  summary            String        @default("")
+  whatWorked         String        @default("")
+  whatFailed         String        @default("")
+  nextTest           String        @default("")
+  decision           String        @default("iterate")
+  reviewedAt         DateTime?
+  reviewedBy         String        @default("")
+  finalDecision      String        @default("")
+  humanOverrideNotes String        @default("")
+  createdAt          DateTime
+  updatedAt          DateTime
+  importBatch        AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  release            Release?      @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([importBatchId])
   @@index([releaseId])
