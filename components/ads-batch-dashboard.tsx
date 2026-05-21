@@ -1101,6 +1101,46 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
         ) : null}
 
+        <section className="overflow-hidden rounded-[30px] border border-[#5b4920] bg-[linear-gradient(135deg,rgba(215,180,94,0.16),rgba(18,20,24,0.96)_38%,rgba(12,14,18,0.98))] px-4 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="field-label text-[#d7b45e]">Decision Summary</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
+                {campaignReadout.decision}
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c7c0ae]">
+                This is the operator readout before the raw table: what looks strongest,
+                how much to trust it, and what the next creative test should be.
+              </p>
+            </div>
+            <div
+              className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getConfidenceClass(
+                campaignReadout.attributionConfidence.level
+              )}`}
+            >
+              {campaignReadout.attributionConfidence.level}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
+            <ReadoutItem label="Best Hook" value={campaignReadout.bestHook} />
+            <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
+            <ReadoutItem label="Spend" value={campaignReadout.spend} />
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
+              <p className="field-label text-[#d7b45e]">Main Lesson</p>
+              <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.mainLesson}</p>
+            </div>
+            <div className="rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
+              <p className="field-label text-[#d7b45e]">Next Test</p>
+              <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
+            </div>
+          </div>
+        </section>
+
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <MetricCard label="Spend" note="Total imported Meta spend." value={formatMoney(detail.spend)} />
           <MetricCard label="Impressions" note="Imported ad impressions." value={formatNumber(detail.impressions)} />
@@ -1123,7 +1163,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="field-label">Computed Campaign Readout</p>
+              <p className="field-label">Detailed Campaign Readout</p>
               <h2 className="mt-2 text-2xl font-semibold text-ink">
                 Decision: {campaignReadout.decision}
               </h2>

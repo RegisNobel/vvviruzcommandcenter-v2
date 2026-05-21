@@ -7,6 +7,33 @@ import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
 import {readReleaseSummaries} from "@/lib/server/releases";
 
+const promoWorkflowSteps = [
+  {
+    label: "1. Write",
+    title: "Copy Lab",
+    body: "Build hooks, captions, and strategy tags before traffic starts.",
+    href: "/admin/copy-lab"
+  },
+  {
+    label: "2. Track",
+    title: "Short Links",
+    body: "Create campaign URLs with UTMs so traffic can be traced cleanly.",
+    href: "/admin/short-links"
+  },
+  {
+    label: "3. Import",
+    title: "Meta CSV",
+    body: "Upload snapshots into Ad Lab without summing rolling windows.",
+    href: "/admin/ad-lab/import"
+  },
+  {
+    label: "4. Decide",
+    title: "Attribution",
+    body: "Compare Meta signals against first-party /links behavior.",
+    href: "/admin/attribution"
+  }
+];
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
 }
@@ -121,6 +148,38 @@ export default async function AdminAdLabPage({
           </div>
         </section>
  
+        <section className="panel overflow-hidden px-4 py-5 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="field-label">Operator Flow</p>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">Promo workflow strip</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                Use this as the campaign loop: write the idea, create the tracked link,
+                import the Meta snapshot, then decide what earns the next test.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {promoWorkflowSteps.map((step) => (
+              <Link
+                className="group rounded-[24px] border border-[#30343b] bg-[#101216] px-4 py-4 transition hover:-translate-y-0.5 hover:border-[#d7b45e]/45 hover:bg-[#15181c]"
+                href={step.href}
+                key={step.title}
+              >
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#d7b45e]">
+                  {step.label}
+                </p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
+                  <ArrowRight className="text-muted transition group-hover:text-[#d7b45e]" size={16} />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted">{step.body}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <div className="space-y-10">
           <section className="space-y-4">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">

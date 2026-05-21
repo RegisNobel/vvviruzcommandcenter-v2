@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-20 18:05 -04:00
+
+- **Operator Mode UX Prep**: Added focused navigation and decision-support polish before deeper campaign use.
+    - Added a Promo workflow strip that connects Copy Lab, Short Links, Meta CSV import, and Attribution in the intended operator order.
+    - Added section anchors to Release Detail and Public Site Settings so long admin workflows are easier to jump through without changing underlying behavior.
+    - Elevated Ad Lab batch pages with a Decision Summary panel above the metric grid and clarified Short Links UTM helper copy.
+
 ### 2026-05-20 17:20 -04:00
 
 - **Campaign History Timeline v1**: Added a release-level timeline for archived Ad Lab test cycles.

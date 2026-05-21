@@ -309,6 +309,25 @@ export function ShortLinksAdminPage({
               </div>
             </div>
 
+            <div className="mt-4 grid gap-3 rounded-[20px] border border-[#3b3322] bg-[#17140d] p-4 text-sm leading-6 text-[#d7c48f] md:grid-cols-2">
+              <p>
+                <span className="font-semibold text-[#f1dfad]">Source</span> is where
+                traffic comes from, like `meta`, `instagram`, or `email`.
+              </p>
+              <p>
+                <span className="font-semibold text-[#f1dfad]">Medium</span> is the
+                traffic lane, like `paid_social`, `bio_link`, or `organic_social`.
+              </p>
+              <p>
+                <span className="font-semibold text-[#f1dfad]">Campaign</span> should
+                usually be the release or rollout name, like `mad_bunny`.
+              </p>
+              <p>
+                <span className="font-semibold text-[#f1dfad]">Content</span> should
+                match the ad or creative name when possible, like `mad_bunny_amv_v1`.
+              </p>
+            </div>
+
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
               <div className="space-y-3">
                 <label className="block">

@@ -308,6 +308,36 @@ export function SiteSettingsEditor({
         </div>
       </div>
 
+      <nav
+        aria-label="Public site settings sections"
+        className="panel mb-6 flex flex-wrap gap-2 px-4 py-3"
+      >
+        {[
+          {href: "#core-profile", label: "Core"},
+          {href: "#metadata-seo", label: "Metadata"},
+          {href: "#site-chrome", label: "Chrome"},
+          {href: "#home-page", label: "Home"},
+          {href: "#music-page", label: "Music"},
+          {href: "#about-page", label: "About"},
+          {href: "#platform-labels", label: "Platforms"},
+          {href: "#links-page", label: "Links"},
+          {href: "#exclusives-settings", label: "Exclusives"},
+          {href: "#tracking-settings", label: "Tracking"},
+          {href: "#release-page", label: "Release"},
+          {href: "#social-links", label: "Social"},
+          {href: "#vault-settings", label: "Vault"},
+          {href: "#commissions-settings", label: "Commissions"}
+        ].map((item) => (
+          <a
+            className="rounded-full border border-[#30343b] bg-[#15181c] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
+            href={item.href}
+            key={item.href}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+
       <section className="panel space-y-6 px-6 py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -327,7 +357,7 @@ export function SiteSettingsEditor({
         </div>
 
         <div className="grid gap-6">
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="core-profile">
           <div>
             <p className="field-label">Section 1</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Core Profile</h3>
@@ -379,7 +409,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="metadata-seo">
           <div>
             <p className="field-label">Section 2</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Metadata & SEO</h3>
@@ -544,7 +574,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="site-chrome">
           <div>
             <p className="field-label">Section 3</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Chrome</h3>
@@ -662,7 +692,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="home-page">
           <div>
             <p className="field-label">Section 4</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Home Page</h3>
@@ -934,7 +964,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="music-page">
           <div>
             <p className="field-label">Section 5</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Music Page</h3>
@@ -1020,7 +1050,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="about-page">
           <div>
             <p className="field-label">Section 6</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">About Page</h3>
@@ -1192,7 +1222,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="platform-labels">
           <div>
             <p className="field-label">Section 7</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Platform Labels</h3>
@@ -1294,7 +1324,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="links-page">
           <div>
             <p className="field-label">Section 8</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Links Page</h3>
@@ -1354,22 +1384,24 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <ExclusiveOfferSettingsPanel
-          exclusiveOffer={settings.site_content.exclusive}
-          initialTrackArtOptions={exclusiveTrackArtOptions}
-          initialTrackFileOptions={exclusiveTrackFileOptions}
-          onChange={(exclusive) =>
-            setSettings((current) => ({
-              ...current,
-              site_content: {
-                ...current.site_content,
-                exclusive
-              }
-            }))
-          }
-        />
+        <div className="scroll-mt-36" id="exclusives-settings">
+          <ExclusiveOfferSettingsPanel
+            exclusiveOffer={settings.site_content.exclusive}
+            initialTrackArtOptions={exclusiveTrackArtOptions}
+            initialTrackFileOptions={exclusiveTrackFileOptions}
+            onChange={(exclusive) =>
+              setSettings((current) => ({
+                ...current,
+                site_content: {
+                  ...current.site_content,
+                  exclusive
+                }
+              }))
+            }
+          />
+        </div>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="tracking-settings">
           <div>
             <p className="field-label">Section 11</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Tracking</h3>
@@ -1422,7 +1454,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="release-page">
           <div>
             <p className="field-label">Section 12</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Release Page</h3>
@@ -1542,7 +1574,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="social-links">
           <div>
             <p className="field-label">Section 13</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Social Links</h3>
@@ -1564,31 +1596,35 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <VaultSettingsPanel
-          onChange={(vault) => {
-            setSettings((current) => ({
-              ...current,
-              site_content: {
-                ...current.site_content,
-                vault
-              }
-            }));
-          }}
-          vaultSettings={settings.site_content.vault}
-        />
+        <div className="scroll-mt-36" id="vault-settings">
+          <VaultSettingsPanel
+            onChange={(vault) => {
+              setSettings((current) => ({
+                ...current,
+                site_content: {
+                  ...current.site_content,
+                  vault
+                }
+              }));
+            }}
+            vaultSettings={settings.site_content.vault}
+          />
+        </div>
 
-        <CommissionsSettingsPanel
-          commissionsSettings={settings.site_content.commissions}
-          onChange={(commissions) => {
-            setSettings((current) => ({
-              ...current,
-              site_content: {
-                ...current.site_content,
-                commissions
-              }
-            }));
-          }}
-        />
+        <div className="scroll-mt-36" id="commissions-settings">
+          <CommissionsSettingsPanel
+            commissionsSettings={settings.site_content.commissions}
+            onChange={(commissions) => {
+              setSettings((current) => ({
+                ...current,
+                site_content: {
+                  ...current.site_content,
+                  commissions
+                }
+              }));
+            }}
+          />
+        </div>
       </div>
 
       <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">

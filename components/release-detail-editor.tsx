@@ -1276,6 +1276,27 @@ export function ReleaseDetailEditor({
             Back to Releases
           </Link>
 
+          <nav
+            aria-label="Release detail sections"
+            className="mobile-scroll-x order-3 flex w-full items-center gap-2 lg:order-none lg:w-auto"
+          >
+            {[
+              {href: "#overview", label: "Overview"},
+              {href: "#discovery", label: "Discovery"},
+              {href: "#media", label: "Media"},
+              {href: "#promo-summary", label: "Promo"},
+              {href: "#release-actions", label: "Actions"}
+            ].map((item) => (
+              <a
+                className="shrink-0 rounded-full border border-[#30343b] bg-[#15181c] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
           <div className="flex flex-wrap items-center gap-3">
             <button
               className={hasPendingChanges ? pagePrimaryButtonClass : pageSecondaryButtonClass}
@@ -1313,7 +1334,7 @@ export function ReleaseDetailEditor({
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
-            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
+            <section className={`${pagePanelClass} scroll-mt-36 space-y-5 px-4 py-5 sm:px-6 sm:py-6`} id="overview">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className={pageLabelClass}>Overview</p>
@@ -1439,7 +1460,7 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+            <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="discovery">
               <div>
                 <p className={pageLabelClass}>Discovery</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
@@ -1903,7 +1924,7 @@ export function ReleaseDetailEditor({
               />
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+            <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="media">
               <div>
                 <p className={pageLabelClass}>Media</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Cover Art</h2>
@@ -2184,7 +2205,7 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
-            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
+            <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="promo-summary">
               <div>
                 <p className={pageLabelClass}>Promo Summary</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
@@ -2860,7 +2881,7 @@ export function ReleaseDetailEditor({
 
           </div>
 
-          <aside className="space-y-6 xl:sticky xl:top-[150px] xl:max-h-[calc(100vh-170px)] xl:self-start xl:overflow-y-auto xl:pr-1">
+          <aside className="scroll-mt-36 space-y-6 xl:sticky xl:top-[150px] xl:max-h-[calc(100vh-170px)] xl:self-start xl:overflow-y-auto xl:pr-1" id="release-actions">
             <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Release Planning</p>
