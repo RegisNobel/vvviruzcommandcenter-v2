@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 18:30 -04:00
+
+- **Attribution Dashboard IA Simplification**:
+    - Reduced the visible dashboard to a decision-focused flow: executive summary, campaign funnel, attribution quality, current winners, short links, and the Meta-to-`/links` match matrix.
+    - Moved raw `/links` analytics, daily breakdowns, campaign platform/source/link/UTM details, and recent link-hub trend tables into collapsed Advanced Diagnostics.
+    - Made Short Links compact when no release-linked short links exist, avoiding multiple zero-state cards and empty tables by default.
+    - Added a Campaign History anchor on Release Detail so Attribution can link to deeper archived campaign decisions without duplicating that analysis.
+
 ### 2026-05-21 17:48 -04:00
 
 - **Promo Page Information Architecture Simplification**:

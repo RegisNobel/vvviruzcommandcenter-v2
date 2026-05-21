@@ -2358,7 +2358,10 @@ export function ReleaseDetailEditor({
                   releaseTitle={initialRelease.title}
                 />
 
-                <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5">
+                <div
+                  className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 scroll-mt-28 sm:px-5"
+                  id="campaign-history"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className={pageLabelClass}>Campaign History</p>
