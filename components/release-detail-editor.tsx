@@ -925,24 +925,10 @@ export function ReleaseDetailEditor({
   }
 
   function handleStageToggle(key: ReleaseChecklistKey, checked: boolean) {
-    updateRelease((current) => {
-      const nextRelease = {
-        ...current,
-        [key]: checked
-      };
-
-      if (checked) {
-        return nextRelease;
-      }
-
-      const keyIndex = orderedCheckboxStageKeys.indexOf(key);
-
-      for (const downstreamKey of orderedCheckboxStageKeys.slice(keyIndex + 1)) {
-        nextRelease[downstreamKey] = false;
-      }
-
-      return nextRelease;
-    });
+    updateRelease((current) => ({
+      ...current,
+      [key]: checked
+    }));
   }
 
   async function handleManualSave() {
@@ -1960,14 +1946,14 @@ export function ReleaseDetailEditor({
 
               <div className="flex flex-wrap gap-3">
                 <Link
-                  className={pagePrimaryButtonClass}
+                  className={pageSecondaryButtonClass}
                   href={`/admin/photo-lab?releaseId=${release.id}`}
                 >
                   <Sparkles size={16} />
-                  Create Cover Art
+                  Photo Lab (Preview)
                 </Link>
 
-                <label className={pageSecondaryButtonClass}>
+                <label className={`${pagePrimaryButtonClass} cursor-pointer`}>
                   <ImagePlus size={16} />
                   {isUploadingCover ? "Uploading cover..." : "Choose Cover Art"}
                   <input
@@ -2076,7 +2062,7 @@ export function ReleaseDetailEditor({
                   }
 
                   const unlockReason = getStageUnlockReason(release, stage.checkboxKey);
-                  const isDisabled = !release[stage.checkboxKey] && Boolean(unlockReason);
+                  const isDisabled = false;
                   const stageRequirements = stage.getRequirements(release);
                   const helperText = unlockReason
                     ? unlockReason

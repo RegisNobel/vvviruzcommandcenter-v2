@@ -6,11 +6,12 @@ import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
 
 const navItems = [
+  {href: "/admin/releases", label: "Releases"},
+  {href: "/admin/ad-lab", label: "Promo"},
+  {href: "/admin/attribution", label: "Attribution"},
+  {href: "/admin/short-links", label: "Short Links"},
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
-  {href: "/admin/short-links", label: "Short Links"},
-  {href: "/admin/ad-lab", label: "Promo"},
-  {href: "/admin/releases", label: "Releases"},
   {href: "/admin/commissions", label: "Commissions"},
   {href: "/admin/backups", label: "Backups"}
 ];

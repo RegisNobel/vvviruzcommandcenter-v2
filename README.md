@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 13:35 -04:00
+
+- **Command Center Styling & Usability Refinements**:
+    - **Checklist Flexibility**: Decoupled release stages sequentially by removing disabling checkbox restrictions in the admin editor. Users can check/uncheck milestones in any order while preserving warning instructions and strict Public Publish validation.
+    - **Photo Lab Preview & Hierarchy**: Swapped the Cover Art button styling to make "Choose Cover Art" primary and "Photo Lab (Preview)" secondary. Refactored the Photo Lab dashboard as a beautiful, dark-themed "Coming Soon" workspace displaying upcoming canvas tools, aspect ratio generators, and color swatches with links to active workflows.
+    - **Navigation Reordering**: Preserved Attribution as a top-level nav item and updated CommandCenterNav ordering to Releases, Promo, Attribution, Short Links, Audience, Public Site, Commissions, and Backups.
+    - **Commissions Dark-Theme & Settings Padding**: Aligned commissions tables, borders, and status badges to premium dark-theme variables. Relocated the Settings Save dock to the bottom, implementing responsive compact layouts on mobile and adding a `pb-36` section padding offset to prevent overlapping settings inputs.
+
 ### 2026-05-20 18:05 -04:00
 
 - **Operator Mode UX Prep**: Added focused navigation and decision-support polish before deeper campaign use.

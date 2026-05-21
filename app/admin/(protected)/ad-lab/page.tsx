@@ -215,17 +215,22 @@ export default async function AdminAdLabPage({
                     <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#4a3c1d] bg-[#1a1710] text-[#d7b45e] transition-transform group-hover:scale-110">
                       <Camera size={24} />
                     </div>
-                    <h3 className="text-2xl font-bold text-ink">Photo Lab</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-2xl font-bold text-ink">Photo Lab</h3>
+                      <span className="rounded-full border border-[#4a3c1d] bg-[#1a1710] px-2.5 py-0.5 text-xs font-semibold text-[#d7b45e]">
+                        Coming Soon
+                      </span>
+                    </div>
                     <p className="mt-3 text-sm leading-6 text-muted">
                       Create and manage promo visuals, cover assets, and image-based campaign creative.
                     </p>
                   </div>
                   <div>
                     <Link 
-                      className="inline-flex items-center gap-2 rounded-full bg-[#d7b45e] px-6 py-3 text-sm font-bold text-[#15120a] transition hover:bg-[#e2c47c]" 
+                      className="inline-flex items-center gap-2 rounded-full border border-[#30343b] bg-transparent px-6 py-3 text-sm font-bold text-ink transition hover:bg-[#16191d] hover:text-[#d7b45e] hover:border-[#d7b45e]/50" 
                       href="/admin/photo-lab"
                     >
-                      Open Photo Lab
+                      Preview Photo Lab
                       <ArrowRight size={16} />
                     </Link>
                   </div>
