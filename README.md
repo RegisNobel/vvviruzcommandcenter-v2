@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 17:48 -04:00
+
+- **Promo Page Information Architecture Simplification**:
+    - **Cleaned Up Redundant Feature Links**: Removed duplicate large cards for Copy Lab and Attribution tools already featured in the navigation header and the campaign workflow strip.
+    - **Demoted Photo Lab**: Moved the Coming Soon Photo Lab tool to a compact, secondary "Future Tools" section near the bottom of the page to prevent visual competition with active workflow tools.
+    - **Campaign Intelligence Summary**: Added a high-level summary panel displaying the current release status, latest import batch details, latest archived decision details, and a quick reminder of the naming convention (`release_visual_songsection_revision`).
+    - **Enhanced Naming & Branding**: Consolidated the page title to "Promo" and adjusted the description to align with its role as a campaign workflow hub.
+
 ### 2026-05-21 17:05 -04:00
 
 - **Copy Pair Performance Memory v1**:
