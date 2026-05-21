@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {ArrowLeft, ExternalLink, Lock, Save} from "lucide-react";
+import {ArrowLeft, Edit, ExternalLink, Lock, Save, X} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
@@ -844,6 +844,41 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
   const [isArchiving, setIsArchiving] = useState(false);
   const isArchived = Boolean(detail.learning?.reviewed_at);
 
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [newName, setNewName] = useState(detail.name || "");
+  const [isRenaming, setIsRenaming] = useState(false);
+
+  async function handleRename(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsRenaming(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/ads/batches/${detail.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({name: newName})
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {message?: string}
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Batch renaming failed.");
+      }
+
+      setMessage(payload?.message ?? "Batch renamed successfully.");
+      setShowRenameDialog(false);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Batch renaming failed.");
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
   const filteredReports = useMemo(() => {
     return detail.reports
       .filter((report) => {
@@ -999,9 +1034,22 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Ad Lab</div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                {detail.name || "Imported Meta Report"}
-              </h1>
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+                  {detail.name || "Imported Meta Report"}
+                </h1>
+                <button
+                  className="rounded-lg p-1.5 text-muted hover:bg-[#1a1d24] hover:text-ink transition-colors"
+                  onClick={() => {
+                    setNewName(detail.name || "");
+                    setShowRenameDialog(true);
+                  }}
+                  title="Rename Batch"
+                  type="button"
+                >
+                  <Edit size={18} />
+                </button>
+              </div>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 {detail.release_title ? `${detail.release_title} / ` : ""}
                 {formatDate(detail.reporting_start)} to {formatDate(detail.reporting_end)}
@@ -1016,6 +1064,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 <ArrowLeft size={16} />
                 Ad Lab Home
               </Link>
+              <button
+                className="action-button-secondary"
+                onClick={() => {
+                  setNewName(detail.name || "");
+                  setShowRenameDialog(true);
+                }}
+                type="button"
+              >
+                Rename Batch
+              </button>
               <Link className="action-button-primary" href="/admin/ad-lab/import">
                 Import CSV
               </Link>
@@ -1825,6 +1883,72 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </table>
           </div>
         </section>
+
+        {showRenameDialog ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
+            <form
+              className="w-full max-w-xl rounded-[28px] border border-[#30343b] bg-[#111418] p-5 shadow-2xl sm:p-6"
+              onSubmit={handleRename}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="field-label text-[#d7b45e]">Metadata Cleanup</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">Rename ad import batch?</h2>
+                </div>
+                <button
+                  className="action-button-tertiary !w-auto"
+                  onClick={() => setShowRenameDialog(false)}
+                  type="button"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-4 text-sm leading-6 text-muted">
+                <p>
+                  Only the batch display label/name will be edited. All metrics, reports, links, and archived decision properties will remain untouched.
+                </p>
+              </div>
+
+              <label className="mt-5 block space-y-2">
+                <span className="field-label">Batch Name</span>
+                <input
+                  className="field-input"
+                  onChange={(event) => setNewName(event.target.value)}
+                  placeholder="e.g. mad_bunny_cycle_01"
+                  value={newName}
+                  required
+                  maxLength={120}
+                />
+              </label>
+
+              {message ? (
+                <div className="mt-4 rounded-[18px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
+                  {message}
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap justify-end gap-3">
+                <button
+                  className="action-button-secondary"
+                  disabled={isRenaming}
+                  onClick={() => setShowRenameDialog(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="action-button-primary"
+                  disabled={isRenaming || !newName.trim()}
+                  type="submit"
+                >
+                  <Save size={16} />
+                  {isRenaming ? "Renaming..." : "Save Name"}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
       </div>
     </main>
   );

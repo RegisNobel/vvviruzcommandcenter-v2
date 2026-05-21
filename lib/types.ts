@@ -914,3 +914,60 @@ export type AdPerformanceTimeline = {
   hasOverlappingSnapshots: boolean;
 };
 
+export type CopyPerformanceRow = {
+  label: string;
+  copyEntryId: string | null;
+  hook?: string;
+  caption?: string;
+  spend: number;
+  results: number;
+  cpr: number | null;
+  linkClicks: number;
+  landingPageViews: number;
+  outboundStreamingClicks: number;
+  batchCount: number;
+  confidenceScore: string;
+  confidenceType: "conversion" | "ctr" | "none";
+};
+
+export type CopyPerformanceCoverage = {
+  totalSpend: number;
+  linkedSpend: number;
+  unlinkedSpend: number;
+  linkedSpendPercentage: number;
+  unlinkedSpendPercentage: number;
+  linkedAdCount: number;
+  unlinkedAdCount: number;
+};
+
+export type CopyPerformanceMemoryWinner = {
+  label: string;
+  cpr: number | null;
+  results: number;
+  warning?: string;
+};
+
+export type UnlinkedAdSummaryRow = {
+  adName: string;
+  spend: number;
+  results: number;
+  cpr: number | null;
+  linkClicks: number;
+  landingPageViews: number;
+  batchCount: number;
+};
+
+export type CopyPerformanceMemory = {
+  coverage: CopyPerformanceCoverage;
+  copyPairs: CopyPerformanceRow[];
+  copyAngles: CopyPerformanceRow[];
+  songSections: CopyPerformanceRow[];
+  combos: CopyPerformanceRow[];
+  unlinkedAds: UnlinkedAdSummaryRow[];
+  winners: {
+    bestCopyPair: CopyPerformanceMemoryWinner | null;
+    bestAngle: CopyPerformanceMemoryWinner | null;
+    bestCombo: CopyPerformanceMemoryWinner | null;
+    volumeWinner: CopyPerformanceMemoryWinner | null;
+  };
+};

@@ -43,7 +43,12 @@ import type {
   AdPerformanceTimeline,
   AdPerformanceSnapshot,
   AdPerformanceRow,
-  AdPerformanceCell
+  AdPerformanceCell,
+  CopyPerformanceRow,
+  CopyPerformanceCoverage,
+  CopyPerformanceMemoryWinner,
+  UnlinkedAdSummaryRow,
+  CopyPerformanceMemory
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
 import {
@@ -720,33 +725,42 @@ function collectReportingDateRange(rows: ParsedMetaAdRow[]) {
 }
 
 async function readPreviousCopyLinksForCarryover(releaseId: string, createdBefore: Date) {
-  const previousBatch = await prisma.adImportBatch.findFirst({
+  const reports = await prisma.adCreativeReport.findMany({
     where: {
       releaseId,
-      createdAt: {
-        lt: createdBefore
+      importBatch: {
+        createdAt: {
+          lt: createdBefore
+        }
+      },
+      copyLinks: {
+        some: {}
       }
     },
-    include: {
-      reports: {
-        include: {
-          copyLinks: {
-            orderBy: {
-              createdAt: "asc"
-            },
-            take: 1
-          }
+    select: {
+      adName: true,
+      copyLinks: {
+        select: {
+          copyEntryId: true
+        }
+      },
+      importBatch: {
+        select: {
+          createdAt: true
         }
       }
-    },
-    orderBy: {
-      createdAt: "desc"
     }
+  });
+
+  const sortedReports = [...reports].sort((a, b) => {
+    const aTime = a.importBatch?.createdAt?.getTime() ?? 0;
+    const bTime = b.importBatch?.createdAt?.getTime() ?? 0;
+    return bTime - aTime;
   });
 
   const links = new Map<string, string>();
 
-  for (const report of previousBatch?.reports ?? []) {
+  for (const report of sortedReports) {
     const copyEntryId = report.copyLinks[0]?.copyEntryId;
 
     if (!copyEntryId) {
@@ -956,6 +970,38 @@ export async function deleteAdImportBatch(batchId: string) {
         id: batchId
       }
     });
+  });
+}
+
+export async function renameAdImportBatch(batchId: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("Batch name cannot be empty.");
+  }
+  if (trimmed.length > 120) {
+    throw new Error("Batch name cannot exceed 120 characters.");
+  }
+
+  const existing = await prisma.adImportBatch.findUnique({
+    where: {
+      id: batchId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Ad import batch not found.");
+  }
+
+  await prisma.adImportBatch.update({
+    where: {
+      id: batchId
+    },
+    data: {
+      name: trimmed
+    }
   });
 }
 
@@ -2076,5 +2122,339 @@ export async function readAdPerformanceTimeline(
     snapshots,
     rows,
     hasOverlappingSnapshots
+  };
+}
+
+export async function readCopyPerformanceMemory(
+  releaseId: string
+): Promise<CopyPerformanceMemory> {
+  const batches = await prisma.adImportBatch.findMany({
+    where: { releaseId },
+    include: {
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "asc"
+    }
+  });
+
+  // Dynamic copy link carryover across batches chronologically
+  const activeCopyLinksMap = new Map<string, CopyEntry>();
+  for (const batch of batches) {
+    for (const report of batch.reports) {
+      const normName = normalizeMetaAdName(report.adName);
+      const existingLink = report.copyLinks[0]?.copyEntry;
+      if (existingLink) {
+        activeCopyLinksMap.set(normName, existingLink);
+      } else {
+        const carriedOver = activeCopyLinksMap.get(normName);
+        if (carriedOver) {
+          report.copyLinks = [
+            {
+              id: `virtual-${report.id}`,
+              adCreativeReportId: report.id,
+              copyEntryId: carriedOver.id,
+              createdAt: new Date(),
+              copyEntry: carriedOver,
+            },
+          ] as any;
+        }
+      }
+    }
+  }
+
+  const allReports = batches.flatMap((b) => b.reports);
+  const averages = createBatchAverages(allReports);
+  const reportRecords = allReports.map((report) => toReportRecord(report, averages));
+  const followThroughs = await createLinkFollowThrough(reportRecords);
+  const followThroughMap = new Map<string, AdLinkFollowThroughRecord>();
+  for (const ft of followThroughs) {
+    followThroughMap.set(ft.ad_report_id, ft);
+  }
+
+  type ReportWithData = {
+    report: typeof allReports[0];
+    record: AdCreativeReportRecord;
+    visual: string;
+    outboundStreamingClicks: number;
+    batch: typeof batches[0];
+  };
+
+  const reportsWithData: ReportWithData[] = allReports.map((report, idx) => {
+    const record = reportRecords[idx];
+    const parsed = parseAdName(report.adName);
+    const ft = followThroughMap.get(report.id);
+    const outboundStreamingClicks = ft?.outbound_streaming_clicks ?? 0;
+    const batch = batches.find((b) => b.id === report.importBatchId)!;
+    return {
+      report,
+      record,
+      visual: parsed.visual || "Unparsed",
+      outboundStreamingClicks,
+      batch
+    };
+  });
+
+  let totalSpend = 0;
+  let linkedSpend = 0;
+  let unlinkedSpend = 0;
+
+  const adCopyStatus = new Map<string, boolean>();
+
+  for (const item of reportsWithData) {
+    const hasLink = item.report.copyLinks.length > 0;
+    const normName = normalizeMetaAdName(item.report.adName);
+    totalSpend += item.report.spend ?? 0;
+    if (hasLink) {
+      linkedSpend += item.report.spend ?? 0;
+      adCopyStatus.set(normName, true);
+    } else {
+      unlinkedSpend += item.report.spend ?? 0;
+      if (!adCopyStatus.has(normName)) {
+        adCopyStatus.set(normName, false);
+      }
+    }
+  }
+
+  let linkedAdCount = 0;
+  let unlinkedAdCount = 0;
+  for (const isLinked of adCopyStatus.values()) {
+    if (isLinked) {
+      linkedAdCount++;
+    } else {
+      unlinkedAdCount++;
+    }
+  }
+
+  const linkedSpendPercentage = totalSpend > 0 ? (linkedSpend / totalSpend) * 100 : 0;
+  const unlinkedSpendPercentage = totalSpend > 0 ? (unlinkedSpend / totalSpend) * 100 : 0;
+
+  const coverage: CopyPerformanceCoverage = {
+    totalSpend,
+    linkedSpend,
+    unlinkedSpend,
+    linkedSpendPercentage,
+    unlinkedSpendPercentage,
+    linkedAdCount,
+    unlinkedAdCount
+  };
+
+  const pairGroups = new Map<string, { copyEntry: CopyEntry; items: ReportWithData[] }>();
+  const angleGroups = new Map<string, ReportWithData[]>();
+  const songSectionGroups = new Map<string, ReportWithData[]>();
+  const comboGroups = new Map<string, { key: string; copyEntry?: CopyEntry; visual?: string; items: ReportWithData[] }>();
+  const unlinkedAdsMap = new Map<string, ReportWithData[]>();
+
+  angleGroups.set("Unlinked", []);
+  songSectionGroups.set("Unlinked", []);
+  comboGroups.set("Unlinked", { key: "Unlinked", items: [] });
+
+  function formatHookType(hookType: string): string {
+    if (!hookType) return "Unspecified Angle";
+    return hookType
+      .replace(/[-_]+/g, " ")
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  function formatSongSection(songSection: string): string {
+    if (!songSection) return "Unspecified Section";
+    return songSection
+      .replace(/[-_]+/g, " ")
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  for (const item of reportsWithData) {
+    const copyLink = item.report.copyLinks[0]?.copyEntry;
+    const normName = normalizeMetaAdName(item.report.adName);
+
+    if (copyLink) {
+      const pairKey = copyLink.id;
+      const pairGroup = pairGroups.get(pairKey) ?? { copyEntry: copyLink, items: [] };
+      pairGroup.items.push(item);
+      pairGroups.set(pairKey, pairGroup);
+
+      const angleKey = formatHookType(copyLink.hookType);
+      const angleList = angleGroups.get(angleKey) ?? [];
+      angleList.push(item);
+      angleGroups.set(angleKey, angleList);
+
+      const sectionKey = formatSongSection(copyLink.songSection);
+      const sectionList = songSectionGroups.get(sectionKey) ?? [];
+      sectionList.push(item);
+      songSectionGroups.set(sectionKey, sectionList);
+
+      const comboKey = `${copyLink.id} + ${item.visual}`;
+      const comboGroup = comboGroups.get(comboKey) ?? { key: comboKey, copyEntry: copyLink, visual: item.visual, items: [] };
+      comboGroup.items.push(item);
+      comboGroups.set(comboKey, comboGroup);
+    } else {
+      angleGroups.get("Unlinked")!.push(item);
+      songSectionGroups.get("Unlinked")!.push(item);
+      comboGroups.get("Unlinked")!.items.push(item);
+
+      const adList = unlinkedAdsMap.get(normName) ?? [];
+      adList.push(item);
+      unlinkedAdsMap.set(normName, adList);
+    }
+  }
+
+  function aggregateRow(
+    label: string,
+    copyEntryId: string | null,
+    items: ReportWithData[],
+    hook?: string,
+    caption?: string
+  ): CopyPerformanceRow {
+    const totalSpend = sum(items.map((it) => it.report.spend));
+    const totalResults = sum(items.map((it) => it.report.results));
+    const totalImpressions = sum(items.map((it) => it.report.impressions));
+    const totalLinkClicks = sum(items.map((it) => it.report.linkClicks));
+    const totalLandingPageViews = sum(items.map((it) => it.report.landingPageViews));
+    const totalOutbound = sum(items.map((it) => it.outboundStreamingClicks));
+
+    const activeBatchIds = Array.from(new Set(items.map((it) => it.batch.id)));
+    const activeBatches = activeBatchIds.map((id) => batches.find((b) => b.id === id)!);
+
+    const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
+    const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
+    const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+
+    const confidence = calculateConfidenceSignal({
+      spend: totalSpend,
+      impressions: totalImpressions,
+      results: totalResults,
+      linkClicks: totalLinkClicks,
+      batchTotalResults: bgResults,
+      batchTotalImpressions: bgImpressions,
+      batchTotalLinkClicks: bgLinkClicks
+    });
+
+    return {
+      label,
+      copyEntryId,
+      hook,
+      caption,
+      spend: totalSpend,
+      results: totalResults,
+      cpr: cost(totalSpend, totalResults),
+      linkClicks: totalLinkClicks,
+      landingPageViews: totalLandingPageViews,
+      outboundStreamingClicks: totalOutbound,
+      batchCount: activeBatchIds.length,
+      confidenceScore: confidence.score,
+      confidenceType: confidence.type
+    };
+  }
+
+  const copyPairs: CopyPerformanceRow[] = [];
+  for (const grp of pairGroups.values()) {
+    copyPairs.push(
+      aggregateRow(
+        grp.copyEntry.hook,
+        grp.copyEntry.id,
+        grp.items,
+        grp.copyEntry.hook,
+        grp.copyEntry.caption
+      )
+    );
+  }
+  copyPairs.sort((a, b) => b.spend - a.spend);
+
+  const copyAngles: CopyPerformanceRow[] = [];
+  for (const [angle, items] of angleGroups.entries()) {
+    if (angle === "Unlinked" && items.length === 0) continue;
+    copyAngles.push(aggregateRow(angle, null, items));
+  }
+  copyAngles.sort((a, b) => b.spend - a.spend);
+
+  const songSections: CopyPerformanceRow[] = [];
+  for (const [section, items] of songSectionGroups.entries()) {
+    if (section === "Unlinked" && items.length === 0) continue;
+    songSections.push(aggregateRow(section, null, items));
+  }
+  songSections.sort((a, b) => b.spend - a.spend);
+
+  const combos: CopyPerformanceRow[] = [];
+  for (const grp of comboGroups.values()) {
+    if (grp.key === "Unlinked" && grp.items.length === 0) continue;
+    const label = grp.key === "Unlinked" ? "Unlinked" : `${grp.copyEntry!.hook} + ${grp.visual}`;
+    combos.push(aggregateRow(label, grp.copyEntry?.id ?? null, grp.items));
+  }
+  combos.sort((a, b) => b.spend - a.spend);
+
+  const unlinkedAds: UnlinkedAdSummaryRow[] = [];
+  for (const [adName, items] of unlinkedAdsMap.entries()) {
+    const totalSpend = sum(items.map((it) => it.report.spend));
+    const totalResults = sum(items.map((it) => it.report.results));
+    const totalLinkClicks = sum(items.map((it) => it.report.linkClicks));
+    const totalLandingPageViews = sum(items.map((it) => it.report.landingPageViews));
+    const activeBatchIds = new Set(items.map((it) => it.batch.id));
+
+    unlinkedAds.push({
+      adName,
+      spend: totalSpend,
+      results: totalResults,
+      cpr: cost(totalSpend, totalResults),
+      linkClicks: totalLinkClicks,
+      landingPageViews: totalLandingPageViews,
+      batchCount: activeBatchIds.size
+    });
+  }
+  unlinkedAds.sort((a, b) => b.spend - a.spend);
+
+  function findEfficiencyWinner(rows: CopyPerformanceRow[]): CopyPerformanceMemoryWinner | null {
+    const validRows = rows.filter(
+      (r) => r.label !== "Unlinked" && r.spend >= 10 && r.results >= 5 && r.cpr !== null
+    );
+    if (validRows.length === 0) return null;
+    const winner = [...validRows].sort((a, b) => a.cpr! - b.cpr!)[0];
+    return {
+      label: winner.label,
+      cpr: winner.cpr,
+      results: winner.results
+    };
+  }
+
+  function findVolumeWinner(rows: CopyPerformanceRow[]): CopyPerformanceMemoryWinner | null {
+    const validRows = rows.filter((r) => r.label !== "Unlinked" && r.spend >= 10);
+    if (validRows.length === 0) return null;
+    const winner = [...validRows].sort((a, b) => b.results - a.results)[0];
+    return {
+      label: winner.label,
+      cpr: winner.cpr,
+      results: winner.results
+    };
+  }
+
+  const bestCopyPair = findEfficiencyWinner(copyPairs);
+  const bestAngle = findEfficiencyWinner(copyAngles);
+  const bestCombo = findEfficiencyWinner(combos);
+  const volumeWinner = findVolumeWinner(copyPairs);
+
+  return {
+    coverage,
+    copyPairs,
+    copyAngles,
+    songSections,
+    combos,
+    unlinkedAds,
+    winners: {
+      bestCopyPair,
+      bestAngle,
+      bestCombo,
+      volumeWinner
+    }
   };
 }

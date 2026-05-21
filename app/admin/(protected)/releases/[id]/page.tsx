@@ -8,7 +8,8 @@ import {
   readReleaseAdMetrics,
   readReleaseCampaignHistory,
   readCreativePerformanceMemory,
-  readAdPerformanceTimeline
+  readAdPerformanceTimeline,
+  readCopyPerformanceMemory
 } from "@/lib/repositories/ads";
 import {readActiveShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
@@ -21,7 +22,17 @@ export default async function AdminReleaseDetailPage({
 }) {
   try {
     const {id} = await params;
-    const [release, linkedCopies, latestAdLearning, adMetrics, campaignHistory, shortLinks, creativePerformanceMemory, adPerformanceTimeline] = await Promise.all([
+    const [
+      release,
+      linkedCopies,
+      latestAdLearning,
+      adMetrics,
+      campaignHistory,
+      shortLinks,
+      creativePerformanceMemory,
+      adPerformanceTimeline,
+      copyPerformanceMemory
+    ] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
       readLatestAdCampaignLearningForRelease(id),
@@ -29,7 +40,8 @@ export default async function AdminReleaseDetailPage({
       readReleaseCampaignHistory(id),
       readActiveShortLinksByReleaseId(id),
       readCreativePerformanceMemory(id),
-      readAdPerformanceTimeline(id)
+      readAdPerformanceTimeline(id),
+      readCopyPerformanceMemory(id)
     ]);
 
     return (
@@ -42,6 +54,7 @@ export default async function AdminReleaseDetailPage({
         initialRelease={release}
         creativePerformanceMemory={creativePerformanceMemory}
         adPerformanceTimeline={adPerformanceTimeline}
+        copyPerformanceMemory={copyPerformanceMemory}
       />
     );
   } catch {

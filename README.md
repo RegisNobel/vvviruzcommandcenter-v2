@@ -471,7 +471,18 @@ npm run normalize:releases
 
 ## Recent Updates
 
-### 2026-05-21 16:35 -04:00
+### 2026-05-21 17:05 -04:00
+
+- **Copy Pair Performance Memory v1**:
+    - **Robust Copy Link Carryover**: Improved copy-link carryover logic by searching all older batches for the same release and normalized ad name when the immediate previous batch has no matching link.
+    - **Existing Schema Only**: Built the feature on top of the existing database schema without adding new database fields or migrations.
+    - **Aggregated Performance Metrics**: Added `readCopyPerformanceMemory(releaseId)` to aggregate Copy Pair, Copy Angle, Copy Song Section, Copy + Visual Combo performance, and an Unlinked Ads Summary.
+    - **Copy Angle Grouping**: Grouped copy performance by "Copy Angle" (mapping to `CopyEntry.hookType`) and Title-Cased the strategy types to avoid confusion with song sections/hooks.
+    - **Winner Thresholds**: Implemented strict winner rules: Efficiency Winner requires spend >= $10 and results >= 5; Volume Winner requires spend >= $10. Low-data rows are explicitly crowned with "Needs More Data" rather than a winner status.
+    - **Coverage Metrics**: Calculated coverage details: linked/unlinked spend and linked/unlinked ad counts and percentages. Show a clear warning when unlinked spend exceeds 10%.
+    - **Follow-Through Mapping**: Leveraged existing first-party follow-through records to attribute outbound streaming clicks as a secondary metric.
+    - **Campaign History UI**: Rendered the compact, dark-themed `<CopyPerformanceMemorySection />` under Release Detail → Campaign History, with collapsible/stacked tables.
+
 
 - **Ad Performance Timeline v1**:
     - **Chronological Ad Matrix**: Implemented a dynamic ad-level matrix visualizer comparing performance across chronological snapshot uploads.
@@ -1123,6 +1134,13 @@ After applying RLS changes:
 [ ] Subscriber emails are not readable from the public client
 [ ] Admin dashboard still works through protected server-side routes
 [ ] Supabase service role key is only used server-side
+
+### 2026-05-21 16:45 -04:00
+
+- Implemented Ad Lab Batch Rename Support to allow operators to clean up human-readable batch names (e.g. metadata correction) after import without mutating imported CSV metrics, release associations, or campaign learnings.
+- Added a PATCH handler `/api/ads/batches/[batchId]` for authenticated admins to perform trim, empty name, and length validation.
+- Updated the Ad Lab batch dashboard with a pencil/edit button and a styled Overlay Modal for renaming.
+- Verified renamed batch names propagate dynamically across all interfaces, including Ad Lab batch details, import history, Release Detail Campaign History, and Ad Performance Timeline snapshot headers.
 
 ### 2026-05-14 02:11 -04:00
 
