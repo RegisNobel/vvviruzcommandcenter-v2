@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 14:02 -04:00
+
+- **Creative Performance Memory v1**:
+    - **Dynamic Performance Rollups**: Implemented a dynamic component performance breakdown system grouping historical ad performance by parsed naming components (Visual, Hook, Format, Version) without requiring database schema changes.
+    - **Top-Level Interpretation Summary**: Added a top-level interpretation grid to highlight Best Reusable Visual, Best Reusable Hook, Volume Winner, Efficiency Winner, and Strongest Confidence Signal.
+    - **Conservative Winner Thresholds**: Applied strict thresholds for summary highlights: Efficiency Winner requires $\ge \$10$ spend and $\ge 5$ results; Best Visual/Hook require $\ge \$10$ spend (warning if seen in only 1 batch); Strongest Confidence Signal requires $\ge \$5$ spend, $\ge 100$ impressions, and passes statistical significance testing.
+    - **Overlapping Snapshot Validation**: Implemented automatic detection of overlapping date ranges across imported batches, displaying warnings and clearly labeling aggregated spend and results as "overlapping snapshot total" or "snapshot-based" to prevent double-counting.
+    - **Strict Trend Labeling**: Introduced a conservative trend classification engine: labels display "Improving" when CPR improves by $\ge 15\%$, "Fading" when CPR worsens by $\ge 15\%$, "Stable" when movement is small, and "Needs More Data" when there are fewer than 2 batches or low spend/results.
+    - **Unified UI Integration**: Integrated the new breakdown tables and interpretation summary cards seamlessly within the existing Campaign History tab of the Release Detail page.
+
 ### 2026-05-21 13:35 -04:00
 
 - **Command Center Styling & Usability Refinements**:

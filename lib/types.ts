@@ -844,3 +844,39 @@ export type CommissionRequestRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ComponentPerformanceRow = {
+  value: string;
+  batchCount: number;
+  totalSpend: number;
+  isSpendOverlapping: boolean;
+  totalResults: number;
+  averageCpr: number | null;
+  bestBatchCpr: number | null;
+  latestBatchCpr: number | null;
+  confidenceScore: string;
+  confidenceType: "conversion" | "ctr" | "none";
+  trendLabel: "Improving" | "Stable" | "Fading" | "Needs More Data";
+};
+
+export type CreativePerformanceMemorySummaryRow = {
+  value: string;
+  cpr?: number | null;
+  results?: number;
+  score?: string;
+  isLowData?: boolean;
+  warning?: string;
+};
+
+export type CreativePerformanceMemory = {
+  visuals: ComponentPerformanceRow[];
+  hooks: ComponentPerformanceRow[];
+  formats: ComponentPerformanceRow[];
+  versions: ComponentPerformanceRow[];
+  bestVisual: CreativePerformanceMemorySummaryRow | null;
+  bestHook: CreativePerformanceMemorySummaryRow | null;
+  volumeWinner: CreativePerformanceMemorySummaryRow | null;
+  efficiencyWinner: CreativePerformanceMemorySummaryRow | null;
+  strongestConfidenceSignal: CreativePerformanceMemorySummaryRow | null;
+  hasOverlappingSnapshots: boolean;
+};

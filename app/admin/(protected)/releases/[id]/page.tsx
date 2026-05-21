@@ -6,7 +6,8 @@ import {ReleaseDetailEditor} from "@/components/release-detail-editor";
 import {
   readLatestAdCampaignLearningForRelease,
   readReleaseAdMetrics,
-  readReleaseCampaignHistory
+  readReleaseCampaignHistory,
+  readCreativePerformanceMemory
 } from "@/lib/repositories/ads";
 import {readActiveShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
@@ -19,13 +20,14 @@ export default async function AdminReleaseDetailPage({
 }) {
   try {
     const {id} = await params;
-    const [release, linkedCopies, latestAdLearning, adMetrics, campaignHistory, shortLinks] = await Promise.all([
+    const [release, linkedCopies, latestAdLearning, adMetrics, campaignHistory, shortLinks, creativePerformanceMemory] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
       readLatestAdCampaignLearningForRelease(id),
       readReleaseAdMetrics(id),
       readReleaseCampaignHistory(id),
-      readActiveShortLinksByReleaseId(id)
+      readActiveShortLinksByReleaseId(id),
+      readCreativePerformanceMemory(id)
     ]);
 
     return (
@@ -36,10 +38,10 @@ export default async function AdminReleaseDetailPage({
         initialShortLinks={shortLinks}
         latestAdLearning={latestAdLearning}
         initialRelease={release}
+        creativePerformanceMemory={creativePerformanceMemory}
       />
     );
   } catch {
     notFound();
   }
 }
-

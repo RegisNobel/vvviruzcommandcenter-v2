@@ -36,10 +36,14 @@ import type {
   CampaignHistoryCycle,
   CampaignHistoryCreative,
   ReleaseCampaignHistory,
-  ReleaseAdMetricsOverview
+  ReleaseAdMetricsOverview,
+  ComponentPerformanceRow,
+  CreativePerformanceMemorySummaryRow,
+  CreativePerformanceMemory
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
 import {
+  adDateRangesOverlap,
   canCombineAdBatchTotals,
   defaultAdAttributionSetting,
   getAdBatchComparisonMode,
@@ -1520,5 +1524,336 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
       report_count: batch.reports.length,
       created_at: batch.createdAt.toISOString()
     }))
+  };
+}
+
+export async function readCreativePerformanceMemory(
+  releaseId: string
+): Promise<CreativePerformanceMemory> {
+  const batches = await prisma.adImportBatch.findMany({
+    where: { releaseId },
+    include: {
+      reports: true
+    },
+    orderBy: {
+      createdAt: "asc"
+    }
+  });
+
+  const hasOverlappingSnapshots = batches.some((batch, index) =>
+    batches.slice(index + 1).some((otherBatch) => {
+      const left = {
+        reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+        reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+      };
+      const right = {
+        reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
+        reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
+      };
+      return adDateRangesOverlap(left, right);
+    })
+  );
+
+  type ReportWithBatch = {
+    report: typeof batches[0]["reports"][0];
+    batch: typeof batches[0];
+  };
+
+  const componentGroups = {
+    visuals: new Map<string, ReportWithBatch[]>(),
+    hooks: new Map<string, ReportWithBatch[]>(),
+    formats: new Map<string, ReportWithBatch[]>(),
+    versions: new Map<string, ReportWithBatch[]>()
+  };
+
+  for (const batch of batches) {
+    for (const report of batch.reports) {
+      const parsed = parseAdName(report.adName);
+
+      if (parsed.visual && parsed.visual !== "Unparsed") {
+        const list = componentGroups.visuals.get(parsed.visual) ?? [];
+        list.push({ report, batch });
+        componentGroups.visuals.set(parsed.visual, list);
+      }
+      if (parsed.hook && parsed.hook !== "Unparsed") {
+        const list = componentGroups.hooks.get(parsed.hook) ?? [];
+        list.push({ report, batch });
+        componentGroups.hooks.set(parsed.hook, list);
+      }
+      if (parsed.format && parsed.format !== "Unparsed") {
+        const list = componentGroups.formats.get(parsed.format) ?? [];
+        list.push({ report, batch });
+        componentGroups.formats.set(parsed.format, list);
+      }
+      if (parsed.version && parsed.version !== "Unparsed") {
+        const list = componentGroups.versions.get(parsed.version) ?? [];
+        list.push({ report, batch });
+        componentGroups.versions.set(parsed.version, list);
+      }
+    }
+  }
+
+  function processGroup(
+    groupMap: Map<string, ReportWithBatch[]>
+  ): ComponentPerformanceRow[] {
+    const rows: ComponentPerformanceRow[] = [];
+
+    for (const [value, reportsWithBatch] of groupMap.entries()) {
+      const activeBatchIds = Array.from(
+        new Set(reportsWithBatch.map((rb) => rb.batch.id))
+      );
+      const activeBatches = activeBatchIds.map((id) => batches.find((b) => b.id === id)!);
+
+      const isSpendOverlapping = activeBatches.some((batch, index) =>
+        activeBatches.slice(index + 1).some((otherBatch) => {
+          const left = {
+            reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+            reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+          };
+          const right = {
+            reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
+            reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
+          };
+          return adDateRangesOverlap(left, right);
+        })
+      );
+
+      const totalSpend = sum(reportsWithBatch.map((rb) => rb.report.spend));
+      const totalResults = sum(reportsWithBatch.map((rb) => rb.report.results));
+      const totalImpressions = sum(reportsWithBatch.map((rb) => rb.report.impressions));
+      const totalLinkClicks = sum(reportsWithBatch.map((rb) => rb.report.linkClicks));
+
+      const averageCpr = cost(totalSpend, totalResults);
+
+      const reportsByBatch = new Map<string, typeof reportsWithBatch>();
+      for (const rb of reportsWithBatch) {
+        const list = reportsByBatch.get(rb.batch.id) ?? [];
+        list.push(rb);
+        reportsByBatch.set(rb.batch.id, list);
+      }
+
+      const batchCprs: { batchId: string; cpr: number | null; results: number; spend: number }[] = [];
+      for (const [batchId, rbList] of reportsByBatch.entries()) {
+        const bSpend = sum(rbList.map((rb) => rb.report.spend));
+        const bResults = sum(rbList.map((rb) => rb.report.results));
+        batchCprs.push({
+          batchId,
+          cpr: cost(bSpend, bResults),
+          results: bResults,
+          spend: bSpend
+        });
+      }
+
+      const batchesWithResults = batchCprs.filter((bc) => bc.results > 0 && bc.cpr !== null);
+      const bestBatchCpr =
+        batchesWithResults.length > 0
+          ? Math.min(...batchesWithResults.map((bc) => bc.cpr!))
+          : null;
+
+      const latestBatch = activeBatches[activeBatches.length - 1];
+      const latestBatchData = batchCprs.find((bc) => bc.batchId === latestBatch.id);
+      const latestBatchCpr = latestBatchData ? latestBatchData.cpr : null;
+
+      const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
+      const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
+      const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+
+      const confidence = calculateConfidenceSignal({
+        spend: totalSpend,
+        impressions: totalImpressions,
+        results: totalResults,
+        linkClicks: totalLinkClicks,
+        batchTotalResults: bgResults,
+        batchTotalImpressions: bgImpressions,
+        batchTotalLinkClicks: bgLinkClicks
+      });
+
+      let trendLabel: ComponentPerformanceRow["trendLabel"] = "Needs More Data";
+      const batchCount = activeBatches.length;
+
+      if (batchCount < 2 || totalSpend < 10 || totalResults < 5) {
+        trendLabel = "Needs More Data";
+      } else {
+        const previousBatches = activeBatches.slice(0, -1);
+        const previousRbList = reportsWithBatch.filter((rb) =>
+          previousBatches.some((pb) => pb.id === rb.batch.id)
+        );
+        const previousSpend = sum(previousRbList.map((rb) => rb.report.spend));
+        const previousResults = sum(previousRbList.map((rb) => rb.report.results));
+
+        if (previousResults > 0 && latestBatchData && latestBatchData.results > 0 && latestBatchCpr !== null) {
+          const previousCpr = cost(previousSpend, previousResults);
+          if (previousCpr !== null && previousCpr > 0) {
+            if (latestBatchCpr <= previousCpr * 0.85) {
+              trendLabel = "Improving";
+            } else if (latestBatchCpr >= previousCpr * 1.15) {
+              trendLabel = "Fading";
+            } else {
+              trendLabel = "Stable";
+            }
+          } else {
+            trendLabel = "Stable";
+          }
+        } else {
+          trendLabel = "Stable";
+        }
+      }
+
+      rows.push({
+        value,
+        batchCount,
+        totalSpend,
+        isSpendOverlapping,
+        totalResults,
+        averageCpr,
+        bestBatchCpr,
+        latestBatchCpr,
+        confidenceScore: confidence.score,
+        confidenceType: confidence.type,
+        trendLabel
+      });
+    }
+
+    return rows.sort((a, b) => b.totalSpend - a.totalSpend);
+  }
+
+  const visuals = processGroup(componentGroups.visuals);
+  const hooks = processGroup(componentGroups.hooks);
+  const formats = processGroup(componentGroups.formats);
+  const versions = processGroup(componentGroups.versions);
+
+  // Best Visual: spend >= 10, warning if seen in only 1 batch
+  const qualifyingVisuals = visuals.filter((v) => v.totalSpend >= 10 && v.averageCpr !== null);
+  let bestVisual: CreativePerformanceMemorySummaryRow | null = null;
+  if (qualifyingVisuals.length > 0) {
+    const winner = qualifyingVisuals.reduce((best, curr) =>
+      curr.averageCpr! < best.averageCpr! ? curr : best
+    );
+    bestVisual = {
+      value: winner.value,
+      cpr: winner.averageCpr,
+      results: winner.totalResults,
+      warning: winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
+    };
+  }
+
+  // Best Hook: spend >= 10, warning if seen in only 1 batch
+  const qualifyingHooks = hooks.filter((h) => h.totalSpend >= 10 && h.averageCpr !== null);
+  let bestHook: CreativePerformanceMemorySummaryRow | null = null;
+  if (qualifyingHooks.length > 0) {
+    const winner = qualifyingHooks.reduce((best, curr) =>
+      curr.averageCpr! < best.averageCpr! ? curr : best
+    );
+    bestHook = {
+      value: winner.value,
+      cpr: winner.averageCpr,
+      results: winner.totalResults,
+      warning: winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
+    };
+  }
+
+  const allRows = [...visuals, ...hooks, ...formats, ...versions];
+
+  // Efficiency Winner: at least $10 spend and at least 5 results
+  const qualifyingEfficiency = allRows.filter(
+    (row) => row.totalSpend >= 10 && row.totalResults >= 5 && row.averageCpr !== null
+  );
+  let efficiencyWinner: CreativePerformanceMemorySummaryRow | null = null;
+  if (qualifyingEfficiency.length > 0) {
+    const winner = qualifyingEfficiency.reduce((best, curr) =>
+      curr.averageCpr! < best.averageCpr! ? curr : best
+    );
+    efficiencyWinner = {
+      value: winner.value,
+      cpr: winner.averageCpr,
+      results: winner.totalResults
+    };
+  }
+
+  // Volume Winner: highest total results with spend >= 10 and results >= 5
+  const qualifyingVolume = allRows.filter((row) => row.totalSpend >= 10 && row.totalResults >= 5);
+  let volumeWinner: CreativePerformanceMemorySummaryRow | null = null;
+  if (qualifyingVolume.length > 0) {
+    const winner = qualifyingVolume.reduce((best, curr) =>
+      curr.totalResults > best.totalResults ? curr : best
+    );
+    volumeWinner = {
+      value: winner.value,
+      cpr: winner.averageCpr,
+      results: winner.totalResults
+    };
+  }
+
+  // Strongest Confidence Signal: must pass minimum spend ($5.0) and impression (100) thresholds
+  let strongestConfidenceSignal: CreativePerformanceMemorySummaryRow | null = null;
+  let highestZ = -Infinity;
+  let bestConfRow: typeof allRows[0] | null = null;
+
+  for (const row of allRows) {
+    const rbList = [
+      ...(componentGroups.visuals.get(row.value) ?? []),
+      ...(componentGroups.hooks.get(row.value) ?? []),
+      ...(componentGroups.formats.get(row.value) ?? []),
+      ...(componentGroups.versions.get(row.value) ?? [])
+    ];
+    const spend = sum(rbList.map((rb) => rb.report.spend));
+    const impressions = sum(rbList.map((rb) => rb.report.impressions));
+    const results = sum(rbList.map((rb) => rb.report.results));
+    const linkClicks = sum(rbList.map((rb) => rb.report.linkClicks));
+
+    if (spend < 5.0 || impressions < 100) {
+      continue;
+    }
+
+    const activeBatches = Array.from(
+      new Set(rbList.map((rb) => rb.batch.id))
+    ).map((id) => batches.find((b) => b.id === id)!);
+    const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
+    const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
+    const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+
+    let p1 = 0;
+    let p0 = 0;
+    if (bgResults > 0) {
+      p1 = results / impressions;
+      p0 = bgResults / bgImpressions;
+    } else if (bgLinkClicks > 0) {
+      p1 = linkClicks / impressions;
+      p0 = bgLinkClicks / bgImpressions;
+    } else {
+      continue;
+    }
+
+    if (p0 <= 0 || p0 >= 1) continue;
+    const se = Math.sqrt((p0 * (1.0 - p0)) / impressions);
+    if (se === 0) continue;
+    const z = (p1 - p0) / se;
+
+    if (z >= 1.28 && z > highestZ) {
+      highestZ = z;
+      bestConfRow = row;
+    }
+  }
+
+  if (bestConfRow) {
+    strongestConfidenceSignal = {
+      value: bestConfRow.value,
+      score: bestConfRow.confidenceScore,
+      results: bestConfRow.totalResults,
+      cpr: bestConfRow.averageCpr
+    };
+  }
+
+  return {
+    visuals,
+    hooks,
+    formats,
+    versions,
+    bestVisual,
+    bestHook,
+    volumeWinner,
+    efficiencyWinner,
+    strongestConfidenceSignal,
+    hasOverlappingSnapshots
   };
 }
