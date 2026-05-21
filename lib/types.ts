@@ -673,6 +673,49 @@ export type AdImportBatchDetail = AdImportBatchSummary & {
   learning: AdCampaignLearningRecord | null;
 };
 
+export type CampaignHistoryCreative = {
+  ad_name: string;
+  visual: string;
+  hook: string;
+  format: string;
+  version: string;
+  spend: number;
+  results: number;
+  cost_per_result: number | null;
+  confidence_score: string;
+  confidence_source: "conversion" | "ctr" | "none";
+};
+
+export type CampaignHistoryCycle = {
+  learning_id: string;
+  batch_id: string;
+  batch_name: string;
+  reviewed_at: string;
+  reviewed_by: string;
+  final_decision: string;
+  human_override_notes: string;
+  reporting_start: string | null;
+  reporting_end: string | null;
+  batch_type: AdBatchType;
+  spend: number;
+  results: number;
+  cost_per_result: number | null;
+  top_creative: CampaignHistoryCreative | null;
+  confidence_score: string;
+  confidence_source: "conversion" | "ctr" | "none";
+};
+
+export type ReleaseCampaignHistory = {
+  archived_cycles: CampaignHistoryCycle[];
+  current_snapshot: CampaignHistoryCycle | null;
+  comparison: {
+    mode: AdBatchComparisonMode | "No Comparison";
+    archived_winner: CampaignHistoryCreative | null;
+    current_winner: CampaignHistoryCreative | null;
+    ranges_overlap: boolean;
+  } | null;
+};
+
 export type AppearsOnRecord = {
   id: string;
   title: string;

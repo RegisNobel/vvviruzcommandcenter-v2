@@ -7,6 +7,14 @@ import type {
 } from "@prisma/client";
 
 import {
+  parseAdName,
+  type ParsedAdName
+} from "@/lib/ads/naming-parser";
+import {
+  calculateConfidenceSignal,
+  type ConfidenceSignalResult
+} from "@/lib/ads/stats";
+import {
   mergeParsedMetaRows,
   normalizeMetaAdName,
   parseMetaCsv,
@@ -25,6 +33,9 @@ import type {
   AdLinkFollowThroughRecord,
   AdStrategyBreakdownRow,
   CopySummary,
+  CampaignHistoryCycle,
+  CampaignHistoryCreative,
+  ReleaseCampaignHistory,
   ReleaseAdMetricsOverview
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
@@ -370,6 +381,142 @@ function summarizeBatch(batch: BatchWithReports): AdImportBatchSummary {
     created_at: batch.createdAt.toISOString(),
     updated_at: batch.updatedAt.toISOString()
   };
+}
+
+function getCampaignHistoryCreative(
+  report: AdCreativeReportRecord | null,
+  batchTotals: {
+    results: number;
+    impressions: number;
+    linkClicks: number;
+  }
+): CampaignHistoryCreative | null {
+  if (!report) {
+    return null;
+  }
+
+  const parsed: ParsedAdName = parseAdName(report.ad_name);
+  const confidence: ConfidenceSignalResult = calculateConfidenceSignal({
+    spend: report.spend ?? 0,
+    impressions: report.impressions ?? 0,
+    results: report.results ?? 0,
+    linkClicks: report.link_clicks ?? 0,
+    batchTotalResults: batchTotals.results,
+    batchTotalImpressions: batchTotals.impressions,
+    batchTotalLinkClicks: batchTotals.linkClicks
+  });
+
+  return {
+    ad_name: report.ad_name,
+    visual: parsed.visual,
+    hook: parsed.hook,
+    format: parsed.format,
+    version: parsed.version,
+    spend: report.spend ?? 0,
+    results: report.results ?? 0,
+    cost_per_result: report.cost_per_result ?? cost(report.spend ?? 0, report.results ?? 0),
+    confidence_score: confidence.score,
+    confidence_source: confidence.type
+  };
+}
+
+function getTopCampaignHistoryReport(reports: AdCreativeReportRecord[]) {
+  if (reports.length === 0) {
+    return null;
+  }
+
+  const reportsWithResults = reports.filter((report) => (report.results ?? 0) > 0);
+
+  if (reportsWithResults.length > 0) {
+    return reportsWithResults.reduce((best, current) => {
+      const bestCpr = best.cost_per_result ?? cost(best.spend ?? 0, best.results ?? 0) ?? Infinity;
+      const currentCpr = current.cost_per_result ?? cost(current.spend ?? 0, current.results ?? 0) ?? Infinity;
+
+      if (currentCpr < bestCpr) {
+        return current;
+      }
+
+      if (currentCpr === bestCpr && (current.results ?? 0) > (best.results ?? 0)) {
+        return current;
+      }
+
+      return best;
+    });
+  }
+
+  return reports.reduce((best, current) => {
+    const bestScore =
+      (best.link_clicks ?? 0) * 2 +
+      (best.landing_page_views ?? 0) * 3 +
+      (best.post_saves ?? 0) * 3 +
+      (best.post_shares ?? 0) * 2 +
+      (best.video_100 ?? 0) * 0.1;
+    const currentScore =
+      (current.link_clicks ?? 0) * 2 +
+      (current.landing_page_views ?? 0) * 3 +
+      (current.post_saves ?? 0) * 3 +
+      (current.post_shares ?? 0) * 2 +
+      (current.video_100 ?? 0) * 0.1;
+
+    return currentScore > bestScore ? current : best;
+  });
+}
+
+function createCampaignHistoryCycle(
+  batch: BatchWithReports,
+  learning: AdCampaignLearning | null
+): CampaignHistoryCycle {
+  const averages = createBatchAverages(batch.reports);
+  const reports = batch.reports.map((report) => toReportRecord(report, averages));
+  const spend = sum(batch.reports.map((report) => report.spend));
+  const impressions = sum(batch.reports.map((report) => report.impressions));
+  const results = sum(batch.reports.map((report) => report.results));
+  const linkClicks = sum(batch.reports.map((report) => report.linkClicks));
+  const topReport = getTopCampaignHistoryReport(reports);
+  const topCreative = getCampaignHistoryCreative(topReport, {
+    results,
+    impressions,
+    linkClicks
+  });
+
+  return {
+    learning_id: learning?.id ?? "",
+    batch_id: batch.id,
+    batch_name: batch.name,
+    reviewed_at: learning?.reviewedAt?.toISOString() ?? "",
+    reviewed_by: learning?.reviewedBy ?? "",
+    final_decision: learning?.finalDecision || learning?.decision || "",
+    human_override_notes: learning?.humanOverrideNotes ?? "",
+    reporting_start: toIso(batch.reportingStart),
+    reporting_end: toIso(batch.reportingEnd),
+    batch_type: normalizeAdBatchType(batch.batchType) as AdBatchType,
+    spend,
+    results,
+    cost_per_result: cost(spend, results),
+    top_creative: topCreative,
+    confidence_score: topCreative?.confidence_score ?? "Insufficient Data",
+    confidence_source: topCreative?.confidence_source ?? "none"
+  };
+}
+
+function dateRangesOverlap(
+  left: Pick<CampaignHistoryCycle, "reporting_start" | "reporting_end">,
+  right: Pick<CampaignHistoryCycle, "reporting_start" | "reporting_end">
+) {
+  if (!left.reporting_start || !left.reporting_end || !right.reporting_start || !right.reporting_end) {
+    return false;
+  }
+
+  const leftStart = new Date(left.reporting_start).getTime();
+  const leftEnd = new Date(left.reporting_end).getTime();
+  const rightStart = new Date(right.reporting_start).getTime();
+  const rightEnd = new Date(right.reporting_end).getTime();
+
+  if ([leftStart, leftEnd, rightStart, rightEnd].some((value) => Number.isNaN(value))) {
+    return false;
+  }
+
+  return leftStart <= rightEnd && rightStart <= leftEnd;
 }
 
 function createStrategyBreakdowns(reports: AdCreativeReportRecord[]) {
@@ -1068,6 +1215,73 @@ export async function readLatestAdCampaignLearningForRelease(releaseId: string) 
   });
 
   return learning ? toLearningRecord(learning) : null;
+}
+
+export async function readReleaseCampaignHistory(
+  releaseId: string
+): Promise<ReleaseCampaignHistory> {
+  const batches = await prisma.adImportBatch.findMany({
+    where: {
+      releaseId
+    },
+    include: {
+      release: {
+        select: {
+          id: true,
+          title: true
+        }
+      },
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      },
+      learnings: true
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  const archivedCycles = batches
+    .flatMap((batch) =>
+      batch.learnings
+        .filter((learning) => learning.reviewedAt)
+        .map((learning) => createCampaignHistoryCycle(batch, learning))
+    )
+    .sort((left, right) => {
+      const rightDate = new Date(right.reviewed_at).getTime();
+      const leftDate = new Date(left.reviewed_at).getTime();
+
+      return rightDate - leftDate;
+    });
+
+  const currentBatch =
+    batches.find((batch) => !batch.learnings.some((learning) => learning.reviewedAt)) ?? null;
+  const currentSnapshot = currentBatch ? createCampaignHistoryCycle(currentBatch, null) : null;
+  const latestArchivedCycle = archivedCycles[0] ?? null;
+  const rangesOverlap =
+    latestArchivedCycle && currentSnapshot
+      ? dateRangesOverlap(latestArchivedCycle, currentSnapshot)
+      : false;
+
+  return {
+    archived_cycles: archivedCycles,
+    current_snapshot: currentSnapshot,
+    comparison:
+      latestArchivedCycle && currentSnapshot
+        ? {
+            mode: rangesOverlap ? "Snapshot Comparison" : "Combined Fixed Period",
+            archived_winner: latestArchivedCycle.top_creative,
+            current_winner: currentSnapshot.top_creative,
+            ranges_overlap: rangesOverlap
+          }
+        : null
+  };
 }
 
 const emptyReleaseAdMetrics: ReleaseAdMetricsOverview = {

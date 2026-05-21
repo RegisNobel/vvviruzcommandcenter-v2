@@ -72,6 +72,7 @@ import type {
   ReleaseRecord,
   ReleaseType,
   AdCampaignDecision,
+  ReleaseCampaignHistory,
   ReleasePromoVerdict,
   ShortLinkRecord
 } from "@/lib/types";
@@ -135,6 +136,28 @@ function formatPercentage(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value / 100);
+}
+
+function formatNullableCurrency(value: number | null) {
+  return value === null ? "N/A" : formatCurrency(value);
+}
+
+function formatDecisionLabel(value: string) {
+  const option = decisionOptions.find((item) => item.value === value);
+
+  return option?.label ?? (value.trim() || "No decision");
+}
+
+function formatConfidenceSource(value: "conversion" | "ctr" | "none") {
+  if (value === "conversion") {
+    return "Conversion-based";
+  }
+
+  if (value === "ctr") {
+    return "CTR-based";
+  }
+
+  return "Directional only";
 }
 
 function formatReleaseType(value: ReleaseType) {
@@ -625,12 +648,14 @@ function getVerdictStyle(verdict: ReleasePromoVerdict): {
 
 export function ReleaseDetailEditor({
   adMetrics,
+  campaignHistory,
   initialLinkedCopies,
   initialShortLinks = [],
   initialRelease,
   latestAdLearning
 }: {
   adMetrics: ReleaseAdMetricsOverview;
+  campaignHistory: ReleaseCampaignHistory;
   initialLinkedCopies: CopySummary[];
   initialShortLinks?: ShortLinkRecord[];
   initialRelease: ReleaseRecord;
@@ -2312,6 +2337,146 @@ export function ReleaseDetailEditor({
                   latestAdLearning={latestAdLearning}
                   releaseTitle={initialRelease.title}
                 />
+
+                <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className={pageLabelClass}>Campaign History</p>
+                      <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+                        Archived test cycles
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+                        Locked campaign readouts stay immutable here, so you can compare old decisions against the current snapshot without summing overlapping Meta exports.
+                      </p>
+                    </div>
+                    <span className={pagePillClass}>
+                      {formatNumber(campaignHistory.archived_cycles.length)} archived
+                    </span>
+                  </div>
+
+                  {campaignHistory.comparison ? (
+                    <div className="mt-5 rounded-[20px] border border-[#3a3324] bg-[#191713] px-4 py-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className={pageLabelClass}>Previous Winner vs Current Winner</p>
+                          <h4 className="mt-2 text-base font-semibold text-[#efe7db]">
+                            {campaignHistory.comparison.mode}
+                          </h4>
+                        </div>
+                        {campaignHistory.comparison.ranges_overlap ? (
+                          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-300">
+                            Overlapping snapshot
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="rounded-[18px] border border-[#30343b] bg-[#101318] px-4 py-3">
+                          <p className={pageLabelClass}>Archived decision</p>
+                          <p className="mt-2 text-sm font-semibold text-[#efe7db]">
+                            {campaignHistory.comparison.archived_winner?.ad_name ?? "No archived winner isolated"}
+                          </p>
+                          {campaignHistory.comparison.archived_winner ? (
+                            <p className="mt-2 text-xs leading-5 text-[#8a9098]">
+                              {campaignHistory.comparison.archived_winner.visual} / {campaignHistory.comparison.archived_winner.hook} / {campaignHistory.comparison.archived_winner.format} / {campaignHistory.comparison.archived_winner.version}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="rounded-[18px] border border-[#30343b] bg-[#101318] px-4 py-3">
+                          <p className={pageLabelClass}>Current snapshot</p>
+                          <p className="mt-2 text-sm font-semibold text-[#efe7db]">
+                            {campaignHistory.comparison.current_winner?.ad_name ?? "No current winner isolated"}
+                          </p>
+                          {campaignHistory.comparison.current_winner ? (
+                            <p className="mt-2 text-xs leading-5 text-[#8a9098]">
+                              {campaignHistory.comparison.current_winner.visual} / {campaignHistory.comparison.current_winner.hook} / {campaignHistory.comparison.current_winner.format} / {campaignHistory.comparison.current_winner.version}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-5 space-y-3">
+                    {campaignHistory.archived_cycles.map((cycle) => (
+                      <article
+                        className="rounded-[20px] border border-[#30343b] bg-[#101318] px-4 py-4"
+                        key={cycle.learning_id}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-emerald-700/50 bg-emerald-950/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                                Archived decision
+                              </span>
+                              <span className={pagePillClass}>{formatDecisionLabel(cycle.final_decision)}</span>
+                              <span className={pagePillClass}>{cycle.batch_type}</span>
+                            </div>
+                            <h4 className="mt-3 text-base font-semibold text-[#efe7db]">
+                              {cycle.batch_name || "Imported Meta report"}
+                            </h4>
+                            <p className="mt-1 text-xs leading-5 text-[#8a9098]">
+                              Reviewed {formatTimestamp(cycle.reviewed_at)} by {cycle.reviewed_by || "admin"}
+                            </p>
+                            {cycle.reporting_start && cycle.reporting_end ? (
+                              <p className="mt-1 text-xs leading-5 text-[#8a9098]">
+                                Reporting window: {formatTimestamp(cycle.reporting_start)} to {formatTimestamp(cycle.reporting_end)}
+                              </p>
+                            ) : null}
+                          </div>
+                          <Link className={pageSecondaryButtonClass} href={`/admin/ad-lab/${cycle.batch_id}`}>
+                            Open Batch
+                            <ArrowRight size={16} />
+                          </Link>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                          <div className="rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3">
+                            <p className={pageLabelClass}>Spend</p>
+                            <p className="mt-2 text-sm font-semibold text-[#efe7db]">{formatCurrency(cycle.spend)}</p>
+                          </div>
+                          <div className="rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3">
+                            <p className={pageLabelClass}>Results</p>
+                            <p className="mt-2 text-sm font-semibold text-[#efe7db]">{formatNumber(cycle.results)}</p>
+                          </div>
+                          <div className="rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3">
+                            <p className={pageLabelClass}>Cost / Result</p>
+                            <p className="mt-2 text-sm font-semibold text-[#efe7db]">{formatNullableCurrency(cycle.cost_per_result)}</p>
+                          </div>
+                          <div className="rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3 lg:col-span-2">
+                            <p className={pageLabelClass}>Confidence Signal</p>
+                            <p className="mt-2 text-sm font-semibold text-[#efe7db]">{cycle.confidence_score}</p>
+                            <p className="mt-1 text-xs text-[#8a9098]">{formatConfidenceSource(cycle.confidence_source)}</p>
+                          </div>
+                        </div>
+
+                        {cycle.top_creative ? (
+                          <div className="mt-4 rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3">
+                            <p className={pageLabelClass}>Top Creative / Winner</p>
+                            <p className="mt-2 text-sm font-semibold text-[#efe7db]">{cycle.top_creative.ad_name}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <span className={pagePillClass}>Visual: {cycle.top_creative.visual}</span>
+                              <span className={pagePillClass}>Hook: {cycle.top_creative.hook}</span>
+                              <span className={pagePillClass}>Format: {cycle.top_creative.format}</span>
+                              <span className={pagePillClass}>Version: {cycle.top_creative.version}</span>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {cycle.human_override_notes ? (
+                          <p className="mt-4 rounded-[16px] border border-[#282d34] bg-[#0c0f13] px-3 py-3 text-sm leading-6 text-[#b8bec6]">
+                            {cycle.human_override_notes}
+                          </p>
+                        ) : null}
+                      </article>
+                    ))}
+
+                    {campaignHistory.archived_cycles.length === 0 ? (
+                      <div className="rounded-[20px] border border-dashed border-[#383c43] bg-[#101318] px-4 py-5 text-sm leading-6 text-[#7f858d]">
+                        No archived campaign test cycles yet. Save a campaign learning in Ad Lab, then use Lock & Archive Test Cycle when the readout is final.
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
 
 
                 {!adMetrics.has_data ? (

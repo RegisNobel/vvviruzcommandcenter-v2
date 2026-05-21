@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-20 17:20 -04:00
+
+- **Campaign History Timeline v1**: Added a release-level timeline for archived Ad Lab test cycles.
+    - Release Detail now shows locked campaign decisions newest-first, including reviewed date, final decision, notes, reporting window, batch type, spend, results, cost per result, top creative, parsed creative components, and confidence signal.
+    - Added a Previous Winner vs Current Winner comparison when an archived cycle and current unarchived batch exist, with overlapping date ranges labeled as snapshot comparisons instead of summed totals.
+    - Kept archived records immutable and reused existing `AdCampaignLearning` archive fields without adding new database schema.
+
 ### 2026-05-20 14:20 -04:00
 
 - **Supabase RLS Advisor Patch**: Added `scripts/supabase-rls-v1.1.sql` for the latest Security Advisor findings.
