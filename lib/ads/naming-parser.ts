@@ -1,12 +1,20 @@
 function isVisual(token: string): boolean {
   const t = token.toLowerCase();
-  return /^video\d+$/.test(t) || /^visual\d+$/.test(t) || t === "amv" || t === "2screens" || t === "performance";
+  return (
+    /^video\d+$/.test(t) ||
+    /^visual\d+$/.test(t) ||
+    /^amv\d*$/.test(t) ||
+    t === "2screens" ||
+    t === "performance" ||
+    t === "perf"
+  );
 }
 
 function isHook(token: string): boolean {
   const t = token.toLowerCase();
-  return /^hook\d+$/.test(t);
+  return /^hook\d*$/.test(t);
 }
+
 
 function isFormat(token: string): boolean {
   const t = token.toLowerCase();
