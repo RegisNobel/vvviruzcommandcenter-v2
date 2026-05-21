@@ -916,7 +916,6 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
       }
 
       setMessage("Copy link updated.");
-      setMessage("Copy link updated.");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Copy link update failed.");
@@ -962,6 +961,35 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
     event.preventDefault();
     setIsArchiving(true);
     setMessage(null);
+
+    try {
+      const response = await fetch(`/api/ads/batches/${detail.id}/learnings`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          archive: true,
+          final_decision: archiveForm.final_decision,
+          human_override_notes: archiveForm.human_override_notes
+        })
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {message?: string}
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Archive failed.");
+      }
+
+      setMessage("Test cycle archived.");
+      setShowArchiveDialog(false);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Archive failed.");
+    } finally {
+      setIsArchiving(false);
+    }
   }
 
   return (
