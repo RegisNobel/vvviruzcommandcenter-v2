@@ -471,6 +471,17 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 16:35 -04:00
+
+- **Ad Performance Timeline v1**:
+    - **Chronological Ad Matrix**: Implemented a dynamic ad-level matrix visualizer comparing performance across chronological snapshot uploads.
+    - **Plain Threshold Reliable Winners**: Applied a plain threshold rule where a reliable winner requires spend >= $10 and results >= 5.
+    - **No Reliable Winner State**: Supported a clear "No Reliable Winner" status when no ads meet the threshold, showing the lowest-CPR low-data ad as a secondary note rather than the main winner.
+    - **Conservative Movement Labels**: Designed cell badges to track New Winner, Held Lead, Rebounded, New Entrant, and Needs More Data conservatively.
+    - **Lost Lead Summary Note**: Added a dedicated snapshot/column-level note identifying when the previous winner lost the lead in the current snapshot, avoiding noisy cell labels.
+    - **Conservative Normalization**: Utilized conservative normalization (trim, lowercase, whitespace collapse) that preserves underscores and revision-level distinctions.
+    - **Overlapping Snapshot Warnings**: Added clear timeline-level and column-level notices for overlapping snapshot periods, preventing incorrect summed representations.
+
 ### 2026-05-21 15:45 -04:00
 
 - **Campaign Naming Parser & UI Refactor**:

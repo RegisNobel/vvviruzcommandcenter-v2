@@ -39,7 +39,11 @@ import type {
   ReleaseAdMetricsOverview,
   ComponentPerformanceRow,
   CreativePerformanceMemorySummaryRow,
-  CreativePerformanceMemory
+  CreativePerformanceMemory,
+  AdPerformanceTimeline,
+  AdPerformanceSnapshot,
+  AdPerformanceRow,
+  AdPerformanceCell
 } from "@/lib/types";
 import {createId} from "@/lib/utils";
 import {
@@ -1844,6 +1848,233 @@ export async function readCreativePerformanceMemory(
     volumeWinner,
     efficiencyWinner,
     strongestConfidenceSignal,
+    hasOverlappingSnapshots
+  };
+}
+
+export async function readAdPerformanceTimeline(
+  releaseId: string
+): Promise<AdPerformanceTimeline> {
+  const batches = await prisma.adImportBatch.findMany({
+    where: { releaseId },
+    include: {
+      reports: true
+    }
+  });
+
+  const sortedBatches = [...batches].sort((a, b) => {
+    const dateA = a.reportingEnd ? new Date(a.reportingEnd).getTime() : new Date(a.createdAt).getTime();
+    const dateB = b.reportingEnd ? new Date(b.reportingEnd).getTime() : new Date(b.createdAt).getTime();
+    if (dateA !== dateB) {
+      return dateA - dateB;
+    }
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+
+  const hasOverlappingSnapshots = sortedBatches.some((batch, index) =>
+    sortedBatches.slice(index + 1).some((otherBatch) => {
+      const left = {
+        reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+        reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+      };
+      const right = {
+        reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
+        reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
+      };
+      return adDateRangesOverlap(left, right);
+    })
+  );
+
+  const adNamesMap = new Map<string, string>(); // normalized -> original
+  const batchAdDataMap = new Map<string, Map<string, { spend: number; results: number; impressions: number; linkClicks: number; cpr: number | null; originalName: string }>>();
+
+  for (const batch of sortedBatches) {
+    const adMap = new Map<string, { spend: number; results: number; impressions: number; linkClicks: number; cpr: number | null; originalName: string }>();
+    for (const report of batch.reports) {
+      const norm = normalizeMetaAdName(report.adName);
+      adNamesMap.set(norm, report.adName);
+
+      const existing = adMap.get(norm);
+      const spend = report.spend ?? 0;
+      const results = report.results ?? 0;
+      const impressions = report.impressions ?? 0;
+      const linkClicks = report.linkClicks ?? 0;
+
+      if (existing) {
+        existing.spend += spend;
+        existing.results += results;
+        existing.impressions += impressions;
+        existing.linkClicks += linkClicks;
+      } else {
+        adMap.set(norm, {
+          spend,
+          results,
+          impressions,
+          linkClicks,
+          cpr: null,
+          originalName: report.adName
+        });
+      }
+    }
+
+    for (const data of adMap.values()) {
+      data.cpr = cost(data.spend, data.results);
+    }
+    batchAdDataMap.set(batch.id, adMap);
+  }
+
+  const snapshots: AdPerformanceSnapshot[] = sortedBatches.map((batch) => {
+    const adMap = batchAdDataMap.get(batch.id)!;
+    const totalSpend = sum(Array.from(adMap.values()).map(a => a.spend));
+    const totalResults = sum(Array.from(adMap.values()).map(a => a.results));
+
+    let winnerAdName: string | null = null;
+    let lowestCpr = Infinity;
+    for (const [norm, data] of adMap.entries()) {
+      if (data.spend >= 10 && data.results >= 5 && data.cpr !== null) {
+        if (data.cpr < lowestCpr) {
+          lowestCpr = data.cpr;
+          winnerAdName = norm;
+        }
+      }
+    }
+
+    let lowDataWinnerAdName: string | null = null;
+    if (!winnerAdName) {
+      let lowestLowDataCpr = Infinity;
+      for (const [norm, data] of adMap.entries()) {
+        if (data.spend > 0 && data.results > 0 && data.cpr !== null) {
+          if (data.cpr < lowestLowDataCpr) {
+            lowestLowDataCpr = data.cpr;
+            lowDataWinnerAdName = norm;
+          }
+        }
+      }
+    }
+
+    return {
+      id: batch.id,
+      name: batch.name,
+      reportingStart: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+      reportingEnd: batch.reportingEnd ? batch.reportingEnd.toISOString() : null,
+      totalSpend,
+      totalResults,
+      winnerAdName,
+      lowDataWinnerAdName,
+      lostLeadAdName: null
+    };
+  });
+
+  for (let i = 1; i < snapshots.length; i++) {
+    const prevWinner = snapshots[i - 1].winnerAdName;
+    const currWinner = snapshots[i].winnerAdName;
+    if (prevWinner && currWinner !== prevWinner) {
+      snapshots[i].lostLeadAdName = prevWinner;
+    }
+  }
+
+  const adTotalSpend = new Map<string, number>();
+  for (const norm of adNamesMap.keys()) {
+    let total = 0;
+    for (const batch of sortedBatches) {
+      const adMap = batchAdDataMap.get(batch.id)!;
+      total += adMap.get(norm)?.spend ?? 0;
+    }
+    adTotalSpend.set(norm, total);
+  }
+
+  const sortedAdNames = Array.from(adNamesMap.keys()).sort((a, b) => {
+    return (adTotalSpend.get(b) ?? 0) - (adTotalSpend.get(a) ?? 0);
+  });
+
+  const rows: AdPerformanceRow[] = sortedAdNames.map((norm) => {
+    const originalName = adNamesMap.get(norm)!;
+    const cells: Array<AdPerformanceCell | null> = [];
+
+    for (let i = 0; i < sortedBatches.length; i++) {
+      const batch = sortedBatches[i];
+      const adMap = batchAdDataMap.get(batch.id)!;
+      const data = adMap.get(norm);
+
+      if (!data) {
+        cells.push(null);
+        continue;
+      }
+
+      const bgResults = sum(batch.reports.map((r) => r.results));
+      const bgImpressions = sum(batch.reports.map((r) => r.impressions));
+      const bgLinkClicks = sum(batch.reports.map((r) => r.linkClicks));
+
+      const confidence = calculateConfidenceSignal({
+        spend: data.spend,
+        impressions: data.impressions,
+        results: data.results,
+        linkClicks: data.linkClicks,
+        batchTotalResults: bgResults,
+        batchTotalImpressions: bgImpressions,
+        batchTotalLinkClicks: bgLinkClicks
+      });
+
+      const isSnapshotWinner = snapshots[i].winnerAdName === norm;
+
+      let movementLabel: AdPerformanceCell["movementLabel"] = null;
+
+      let isPresentBefore = false;
+      for (let prevIdx = 0; prevIdx < i; prevIdx++) {
+        if (batchAdDataMap.get(sortedBatches[prevIdx].id)!.has(norm)) {
+          isPresentBefore = true;
+          break;
+        }
+      }
+
+      let hasWonBefore = false;
+      for (let prevIdx = 0; prevIdx < i - 1; prevIdx++) {
+        if (snapshots[prevIdx].winnerAdName === norm) {
+          hasWonBefore = true;
+          break;
+        }
+      }
+
+      const wasWinner = i > 0 && snapshots[i - 1].winnerAdName === norm;
+
+      if (isSnapshotWinner) {
+        if (wasWinner) {
+          movementLabel = "Held Lead";
+        } else if (hasWonBefore) {
+          movementLabel = "Rebounded";
+        } else {
+          movementLabel = "New Winner";
+        }
+      } else {
+        if (!isPresentBefore) {
+          movementLabel = "New Entrant";
+        } else if (data.spend < 10 || data.results < 5) {
+          movementLabel = "Needs More Data";
+        }
+      }
+
+      cells.push({
+        cpr: data.cpr,
+        results: data.results,
+        spend: data.spend,
+        confidenceScore: confidence.score,
+        confidenceType: confidence.type,
+        movementLabel,
+        isSnapshotWinner,
+        isPresent: true
+      });
+    }
+
+    return {
+      normalizedName: norm,
+      originalName,
+      cells
+    };
+  });
+
+  return {
+    snapshots,
+    rows,
     hasOverlappingSnapshots
   };
 }

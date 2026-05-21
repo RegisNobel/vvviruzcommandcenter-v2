@@ -878,3 +878,39 @@ export type CreativePerformanceMemory = {
   strongestConfidenceSignal: CreativePerformanceMemorySummaryRow | null;
   hasOverlappingSnapshots: boolean;
 };
+
+export type AdPerformanceCell = {
+  cpr: number | null;
+  results: number;
+  spend: number;
+  confidenceScore: string;
+  confidenceType: "conversion" | "ctr" | "none";
+  movementLabel: "New Winner" | "Held Lead" | "Rebounded" | "New Entrant" | "Needs More Data" | null;
+  isSnapshotWinner: boolean;
+  isPresent: boolean;
+};
+
+export type AdPerformanceSnapshot = {
+  id: string;
+  name: string;
+  reportingStart: string | null;
+  reportingEnd: string | null;
+  totalSpend: number;
+  totalResults: number;
+  winnerAdName: string | null;
+  lowDataWinnerAdName: string | null;
+  lostLeadAdName: string | null; // For snapshot summary note if previous winner lost the lead in this snapshot
+};
+
+export type AdPerformanceRow = {
+  normalizedName: string;
+  originalName: string;
+  cells: Array<AdPerformanceCell | null>;
+};
+
+export type AdPerformanceTimeline = {
+  snapshots: AdPerformanceSnapshot[];
+  rows: AdPerformanceRow[];
+  hasOverlappingSnapshots: boolean;
+};
+

@@ -75,9 +75,11 @@ import type {
   ReleaseCampaignHistory,
   ReleasePromoVerdict,
   ShortLinkRecord,
-  CreativePerformanceMemory
+  CreativePerformanceMemory,
+  AdPerformanceTimeline
 } from "@/lib/types";
 import { CreativePerformanceMemorySection } from "./creative-performance-memory";
+import { AdPerformanceTimelineSection } from "./ad-performance-timeline";
 
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
@@ -656,7 +658,8 @@ export function ReleaseDetailEditor({
   initialShortLinks = [],
   initialRelease,
   latestAdLearning,
-  creativePerformanceMemory
+  creativePerformanceMemory,
+  adPerformanceTimeline
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -665,6 +668,7 @@ export function ReleaseDetailEditor({
   initialRelease: ReleaseRecord;
   latestAdLearning: AdCampaignLearningRecord | null;
   creativePerformanceMemory: CreativePerformanceMemory;
+  adPerformanceTimeline: AdPerformanceTimeline;
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -2494,6 +2498,8 @@ export function ReleaseDetailEditor({
                 </div>
 
                 <CreativePerformanceMemorySection memory={creativePerformanceMemory} />
+
+                <AdPerformanceTimelineSection timeline={adPerformanceTimeline} />
 
                 {!adMetrics.has_data ? (
                   <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
