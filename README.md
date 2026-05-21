@@ -471,6 +471,19 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 15:45 -04:00
+
+- **Campaign Naming Parser & UI Refactor**:
+    - **Simplified Naming Convention**: Updated ad-name parsing and UI to support the `release_visual_songsection_revision` format.
+    - **Refactored Parser Fields**: Aligned parser with four core fields (`release`, `visual`, `songSection`, `revision`).
+    - **Mutually Exclusive Song Sections**: Added support for mutually exclusive song section tokens (`chorus`, `hook`, `verse1`, `verse2`, `verse3`, `intro`, `bridge`, `outro`), with backward-compatible mapping of legacy `v1`/`v2`/`v3` to `verse1`/`verse2`/`verse3`.
+    - **Ambiguity Detection**: Implemented checking for multiple song section tokens in one ad name, marking them as `"Ambiguous"` rather than silently treating them as separate fields.
+    - **Revision Tokens**: Constrained revision parsing strictly to explicit tokens (`rev1`, `rev2`, `rev3`, `edit1`, `edit2`).
+    - **Visual Parsing Pattern**: Configured visual parsing to match exact tokens (`2screens`, `perf`, `performance`) and `amv` followed by optional digits (e.g. `amv916`).
+    - **Placement Removal**: Removed Format/Placement dimensions from the Creative Performance Memory.
+    - **UI Renames & Cleanup**: Renamed UI tables and summaries to "Song Section Performance" and "Best Reusable Song Section". Removed Version and Format/Placement performance views, and render Revision Performance conditionally only when explicit revision tokens exist.
+    - **Dynamic Recomputation**: Preserved all historical database imports and batches, dynamically parsing and aggregating values from raw ad names.
+
 ### 2026-05-21 14:02 -04:00
 
 - **Creative Performance Memory v1**:

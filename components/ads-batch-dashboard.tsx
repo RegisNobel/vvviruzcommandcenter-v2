@@ -1316,9 +1316,8 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 <tr>
                   <th className="px-3 py-3 font-semibold">Ad Name</th>
                   <th className="px-3 py-3 font-semibold">Visual</th>
-                  <th className="px-3 py-3 font-semibold">Hook</th>
-                  <th className="px-3 py-3 font-semibold">Format</th>
-                  <th className="px-3 py-3 font-semibold">Version</th>
+                  <th className="px-3 py-3 font-semibold">Song Section</th>
+                  <th className="px-3 py-3 font-semibold">Revision</th>
                   <th className="px-3 py-3 font-semibold">Confidence Signal</th>
                   <th className="px-3 py-3 font-semibold">Linked Copy</th>
                   <th className="px-3 py-3 font-semibold">Delivery</th>
@@ -1375,18 +1374,13 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                       </span>
                     </td>
                     <td className="px-3 py-4 text-xs">
-                      <span className={parsed.hook === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
-                        {parsed.hook}
+                      <span className={parsed.songSection === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.songSection}
                       </span>
                     </td>
                     <td className="px-3 py-4 text-xs">
-                      <span className={parsed.format === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
-                        {parsed.format}
-                      </span>
-                    </td>
-                    <td className="px-3 py-4 text-xs">
-                      <span className={parsed.version === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
-                        {parsed.version}
+                      <span className={parsed.revision === "Unparsed" ? "text-muted" : "font-semibold text-ink"}>
+                        {parsed.revision}
                       </span>
                     </td>
                     <td className="min-w-[180px] px-3 py-4">

@@ -30,11 +30,10 @@ interface CreativePerformanceMemorySectionProps {
 export function CreativePerformanceMemorySection({ memory }: CreativePerformanceMemorySectionProps) {
   const {
     visuals,
-    hooks,
-    formats,
-    versions,
+    songSections,
+    revisions,
     bestVisual,
-    bestHook,
+    bestSongSection,
     volumeWinner,
     efficiencyWinner,
     strongestConfidenceSignal,
@@ -109,7 +108,7 @@ export function CreativePerformanceMemorySection({ memory }: CreativePerformance
   };
 
   const hasAnyData =
-    visuals.length > 0 || hooks.length > 0 || formats.length > 0 || versions.length > 0;
+    visuals.length > 0 || songSections.length > 0 || revisions.length > 0;
 
   if (!hasAnyData) {
     return null;
@@ -151,15 +150,15 @@ export function CreativePerformanceMemorySection({ memory }: CreativePerformance
         )}
 
         {renderSummaryCard(
-          "Best Reusable Hook",
-          bestHook?.value,
+          "Best Reusable Song Section",
+          bestSongSection?.value,
           <Award size={12} className="text-purple-400" />,
-          bestHook ? (
+          bestSongSection ? (
             <p className="text-xs text-[#8a9098]">
-              {formatNullableCurrency(bestHook.cpr)} CPR &middot; {bestHook.results} results
+              {formatNullableCurrency(bestSongSection.cpr)} CPR &middot; {bestSongSection.results} results
             </p>
           ) : null,
-          bestHook?.warning
+          bestSongSection?.warning
         )}
 
         {renderSummaryCard(
@@ -201,9 +200,8 @@ export function CreativePerformanceMemorySection({ memory }: CreativePerformance
       <div className="space-y-6">
         {/* Helper to render group table */}
         {renderGroupTable("Visual Performance", visuals)}
-        {renderGroupTable("Hook Performance", hooks)}
-        {renderGroupTable("Format Performance", formats)}
-        {renderGroupTable("Version Performance", versions)}
+        {renderGroupTable("Song Section Performance", songSections)}
+        {renderGroupTable("Revision Performance", revisions)}
       </div>
     </div>
   );

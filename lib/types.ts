@@ -676,9 +676,8 @@ export type AdImportBatchDetail = AdImportBatchSummary & {
 export type CampaignHistoryCreative = {
   ad_name: string;
   visual: string;
-  hook: string;
-  format: string;
-  version: string;
+  songSection: string;
+  revision: string;
   spend: number;
   results: number;
   cost_per_result: number | null;
@@ -870,11 +869,10 @@ export type CreativePerformanceMemorySummaryRow = {
 
 export type CreativePerformanceMemory = {
   visuals: ComponentPerformanceRow[];
-  hooks: ComponentPerformanceRow[];
-  formats: ComponentPerformanceRow[];
-  versions: ComponentPerformanceRow[];
+  songSections: ComponentPerformanceRow[];
+  revisions: ComponentPerformanceRow[];
   bestVisual: CreativePerformanceMemorySummaryRow | null;
-  bestHook: CreativePerformanceMemorySummaryRow | null;
+  bestSongSection: CreativePerformanceMemorySummaryRow | null;
   volumeWinner: CreativePerformanceMemorySummaryRow | null;
   efficiencyWinner: CreativePerformanceMemorySummaryRow | null;
   strongestConfidenceSignal: CreativePerformanceMemorySummaryRow | null;

@@ -413,9 +413,8 @@ function getCampaignHistoryCreative(
   return {
     ad_name: report.ad_name,
     visual: parsed.visual,
-    hook: parsed.hook,
-    format: parsed.format,
-    version: parsed.version,
+    songSection: parsed.songSection,
+    revision: parsed.revision,
     spend: report.spend ?? 0,
     results: report.results ?? 0,
     cost_per_result: report.cost_per_result ?? cost(report.spend ?? 0, report.results ?? 0),
@@ -1561,9 +1560,8 @@ export async function readCreativePerformanceMemory(
 
   const componentGroups = {
     visuals: new Map<string, ReportWithBatch[]>(),
-    hooks: new Map<string, ReportWithBatch[]>(),
-    formats: new Map<string, ReportWithBatch[]>(),
-    versions: new Map<string, ReportWithBatch[]>()
+    songSections: new Map<string, ReportWithBatch[]>(),
+    revisions: new Map<string, ReportWithBatch[]>()
   };
 
   for (const batch of batches) {
@@ -1575,20 +1573,15 @@ export async function readCreativePerformanceMemory(
         list.push({ report, batch });
         componentGroups.visuals.set(parsed.visual, list);
       }
-      if (parsed.hook && parsed.hook !== "Unparsed") {
-        const list = componentGroups.hooks.get(parsed.hook) ?? [];
+      if (parsed.songSection && parsed.songSection !== "Unparsed") {
+        const list = componentGroups.songSections.get(parsed.songSection) ?? [];
         list.push({ report, batch });
-        componentGroups.hooks.set(parsed.hook, list);
+        componentGroups.songSections.set(parsed.songSection, list);
       }
-      if (parsed.format && parsed.format !== "Unparsed") {
-        const list = componentGroups.formats.get(parsed.format) ?? [];
+      if (parsed.revision && parsed.revision !== "Unparsed") {
+        const list = componentGroups.revisions.get(parsed.revision) ?? [];
         list.push({ report, batch });
-        componentGroups.formats.set(parsed.format, list);
-      }
-      if (parsed.version && parsed.version !== "Unparsed") {
-        const list = componentGroups.versions.get(parsed.version) ?? [];
-        list.push({ report, batch });
-        componentGroups.versions.set(parsed.version, list);
+        componentGroups.revisions.set(parsed.revision, list);
       }
     }
   }
@@ -1718,9 +1711,8 @@ export async function readCreativePerformanceMemory(
   }
 
   const visuals = processGroup(componentGroups.visuals);
-  const hooks = processGroup(componentGroups.hooks);
-  const formats = processGroup(componentGroups.formats);
-  const versions = processGroup(componentGroups.versions);
+  const songSections = processGroup(componentGroups.songSections);
+  const revisions = processGroup(componentGroups.revisions);
 
   // Best Visual: spend >= 10, warning if seen in only 1 batch
   const qualifyingVisuals = visuals.filter((v) => v.totalSpend >= 10 && v.averageCpr !== null);
@@ -1737,14 +1729,14 @@ export async function readCreativePerformanceMemory(
     };
   }
 
-  // Best Hook: spend >= 10, warning if seen in only 1 batch
-  const qualifyingHooks = hooks.filter((h) => h.totalSpend >= 10 && h.averageCpr !== null);
-  let bestHook: CreativePerformanceMemorySummaryRow | null = null;
-  if (qualifyingHooks.length > 0) {
-    const winner = qualifyingHooks.reduce((best, curr) =>
+  // Best Song Section: spend >= 10, warning if seen in only 1 batch
+  const qualifyingSongSections = songSections.filter((s) => s.totalSpend >= 10 && s.averageCpr !== null);
+  let bestSongSection: CreativePerformanceMemorySummaryRow | null = null;
+  if (qualifyingSongSections.length > 0) {
+    const winner = qualifyingSongSections.reduce((best, curr) =>
       curr.averageCpr! < best.averageCpr! ? curr : best
     );
-    bestHook = {
+    bestSongSection = {
       value: winner.value,
       cpr: winner.averageCpr,
       results: winner.totalResults,
@@ -1752,7 +1744,7 @@ export async function readCreativePerformanceMemory(
     };
   }
 
-  const allRows = [...visuals, ...hooks, ...formats, ...versions];
+  const allRows = [...visuals, ...songSections, ...revisions];
 
   // Efficiency Winner: at least $10 spend and at least 5 results
   const qualifyingEfficiency = allRows.filter(
@@ -1792,9 +1784,8 @@ export async function readCreativePerformanceMemory(
   for (const row of allRows) {
     const rbList = [
       ...(componentGroups.visuals.get(row.value) ?? []),
-      ...(componentGroups.hooks.get(row.value) ?? []),
-      ...(componentGroups.formats.get(row.value) ?? []),
-      ...(componentGroups.versions.get(row.value) ?? [])
+      ...(componentGroups.songSections.get(row.value) ?? []),
+      ...(componentGroups.revisions.get(row.value) ?? [])
     ];
     const spend = sum(rbList.map((rb) => rb.report.spend));
     const impressions = sum(rbList.map((rb) => rb.report.impressions));
@@ -1846,11 +1837,10 @@ export async function readCreativePerformanceMemory(
 
   return {
     visuals,
-    hooks,
-    formats,
-    versions,
+    songSections,
+    revisions,
     bestVisual,
-    bestHook,
+    bestSongSection,
     volumeWinner,
     efficiencyWinner,
     strongestConfidenceSignal,

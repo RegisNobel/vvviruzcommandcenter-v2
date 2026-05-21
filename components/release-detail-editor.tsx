@@ -2389,7 +2389,8 @@ export function ReleaseDetailEditor({
                           </p>
                           {campaignHistory.comparison.archived_winner ? (
                             <p className="mt-2 text-xs leading-5 text-[#8a9098]">
-                              {campaignHistory.comparison.archived_winner.visual} / {campaignHistory.comparison.archived_winner.hook} / {campaignHistory.comparison.archived_winner.format} / {campaignHistory.comparison.archived_winner.version}
+                              {campaignHistory.comparison.archived_winner.visual} / {campaignHistory.comparison.archived_winner.songSection}
+                              {campaignHistory.comparison.archived_winner.revision && campaignHistory.comparison.archived_winner.revision !== "Unparsed" ? ` / ${campaignHistory.comparison.archived_winner.revision}` : ""}
                             </p>
                           ) : null}
                         </div>
@@ -2400,7 +2401,8 @@ export function ReleaseDetailEditor({
                           </p>
                           {campaignHistory.comparison.current_winner ? (
                             <p className="mt-2 text-xs leading-5 text-[#8a9098]">
-                              {campaignHistory.comparison.current_winner.visual} / {campaignHistory.comparison.current_winner.hook} / {campaignHistory.comparison.current_winner.format} / {campaignHistory.comparison.current_winner.version}
+                              {campaignHistory.comparison.current_winner.visual} / {campaignHistory.comparison.current_winner.songSection}
+                              {campaignHistory.comparison.current_winner.revision && campaignHistory.comparison.current_winner.revision !== "Unparsed" ? ` / ${campaignHistory.comparison.current_winner.revision}` : ""}
                             </p>
                           ) : null}
                         </div>
@@ -2467,9 +2469,10 @@ export function ReleaseDetailEditor({
                             <p className="mt-2 text-sm font-semibold text-[#efe7db]">{cycle.top_creative.ad_name}</p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <span className={pagePillClass}>Visual: {cycle.top_creative.visual}</span>
-                              <span className={pagePillClass}>Hook: {cycle.top_creative.hook}</span>
-                              <span className={pagePillClass}>Format: {cycle.top_creative.format}</span>
-                              <span className={pagePillClass}>Version: {cycle.top_creative.version}</span>
+                              <span className={pagePillClass}>Song Section: {cycle.top_creative.songSection}</span>
+                              {cycle.top_creative.revision && cycle.top_creative.revision !== "Unparsed" && (
+                                <span className={pagePillClass}>Revision: {cycle.top_creative.revision}</span>
+                              )}
                             </div>
                           </div>
                         ) : null}
