@@ -30,7 +30,7 @@
     "db:sync:assets": "tsx scripts/sync-assets-from-manifest.ts",
     "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
-    "build:vercel": "npm run db:push:postgres && npm run db:generate:postgres && next build",
+    "build:vercel": "npm run db:push:postgres -- --accept-data-loss && npm run db:generate:postgres && next build",
     "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts"
   },
   "dependencies": {
