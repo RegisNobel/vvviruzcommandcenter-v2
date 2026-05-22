@@ -78,7 +78,6 @@ model Release {
   updatedOn             DateTime
   tasks                 ReleaseTask[]
   streamingLinks        ReleaseStreamingLink[]
-  projects              LyricProject[]
   copies                CopyEntry[]
   categories            ReleaseCategoryAssignment[]
   adImportBatches       AdImportBatch[]
@@ -143,41 +142,6 @@ model ReleaseStreamingLink {
 
   @@unique([releaseId, platform])
   @@index([releaseId])
-}
-
-model LyricProject {
-  id                    String      @id
-  title                 String
-  releaseId             String?
-  audioJson             String?
-  backgroundJson        String
-  lyricsJson            String
-  animationStyle        String
-  aspectRatio           String
-  lyricPlacementJson    String
-  resolution            String
-  transcriptionLanguage String
-  workflowStep          String
-  transcriptionStatus   String
-  createdAt             DateTime
-  updatedAt             DateTime
-  release               Release?    @relation(fields: [releaseId], references: [id], onDelete: SetNull)
-  lines                 LyricLine[]
-
-  @@index([releaseId])
-  @@index([updatedAt])
-}
-
-model LyricLine {
-  id        String       @id
-  projectId String
-  text      String
-  startMs   Int
-  endMs     Int
-  sortOrder Int          @default(0)
-  project   LyricProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId, sortOrder])
 }
 
 model CopyEntry {

@@ -4,15 +4,17 @@ import {prisma} from "@/lib/db/prisma";
 import type {AppearsOnRecord} from "@/lib/types";
 import {createId} from "@/lib/utils";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
+import {getBlobOrigin, rewriteAssetUrlToBlob} from "@/lib/server/blob-origin";
 
 type AppearsOnModel = Prisma.AppearsOnGetPayload<{}>;
 
-function toAppearsOnRecord(record: AppearsOnModel): AppearsOnRecord {
+async function toAppearsOnRecord(record: AppearsOnModel): Promise<AppearsOnRecord> {
+  const blobOrigin = await getBlobOrigin();
   return {
     id: record.id,
     title: record.title,
     artists: record.artists,
-    cover_art_url: record.coverArtUrl,
+    cover_art_url: rewriteAssetUrlToBlob(record.coverArtUrl, blobOrigin),
     spotify_url: record.spotifyUrl,
     apple_music_url: record.appleMusicUrl,
     youtube_music_url: record.youtubeMusicUrl,
@@ -32,7 +34,7 @@ export async function readAllAppearsOn(): Promise<AppearsOnRecord[]> {
     ]
   });
 
-  return records.map(toAppearsOnRecord);
+  return Promise.all(records.map(toAppearsOnRecord));
 }
 
 export async function readAppearsOn(id: string): Promise<AppearsOnRecord | null> {
@@ -95,7 +97,7 @@ const getCachedPublicAppearsOn = unstable_cache(
         {createdAt: "desc"}
       ]
     });
-    return records.map(toAppearsOnRecord);
+    return Promise.all(records.map(toAppearsOnRecord));
   },
   ["public-appears-on"],
   {

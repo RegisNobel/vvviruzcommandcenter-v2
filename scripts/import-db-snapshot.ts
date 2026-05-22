@@ -17,8 +17,6 @@ type Snapshot = {
   releaseCategoryAssignments?: SnapshotRecord[];
   releaseTasks?: SnapshotRecord[];
   releaseStreamingLinks?: SnapshotRecord[];
-  lyricProjects?: SnapshotRecord[];
-  lyricLines?: SnapshotRecord[];
   copyEntries?: SnapshotRecord[];
   siteSettings?: SnapshotRecord[];
   subscribers?: SnapshotRecord[];
@@ -41,7 +39,6 @@ const dateFieldsByModel: Record<string, string[]> = {
   releaseCategoryAssignment: ["createdAt", "updatedAt"],
   releaseTask: ["createdAt", "updatedAt"],
   releaseStreamingLink: ["createdAt", "updatedAt"],
-  lyricProject: ["createdAt", "updatedAt"],
   copyEntry: ["createdOn", "updatedOn"],
   siteSettings: ["createdOn", "updatedOn"],
   subscriber: ["createdAt", "updatedAt", "unsubscribedAt"],
@@ -137,8 +134,6 @@ async function main() {
     "releaseStreamingLink",
     snapshot.releaseStreamingLinks
   );
-  counts.lyricProjects = await upsertMany("lyricProject", snapshot.lyricProjects);
-  counts.lyricLines = await upsertMany("lyricLine", snapshot.lyricLines);
   counts.copyEntries = await upsertMany("copyEntry", snapshot.copyEntries);
   counts.siteSettings = await upsertMany("siteSettings", snapshot.siteSettings);
   counts.subscribers = await upsertMany("subscriber", snapshot.subscribers);

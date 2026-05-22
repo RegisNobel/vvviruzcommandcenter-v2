@@ -184,6 +184,11 @@ export function ExclusiveOfferSettingsPanel({
       formData.append("assetType", assetType);
       formData.append("file", file);
 
+      const prevPath = assetType === "track" ? exclusiveOffer.exclusive_track_file_path : exclusiveOffer.exclusive_track_art_path;
+      if (prevPath) {
+        formData.append("previousPath", prevPath);
+      }
+
       const payload = await readJson<{
         assetType: "track" | "art";
         fileName: string;

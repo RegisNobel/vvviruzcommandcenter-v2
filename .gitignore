@@ -37,7 +37,5 @@ storage/uploads/*
 !storage/release-covers/.gitkeep
 !storage/releases/.gitkeep
 !storage/uploads/.gitkeep
-whisper.cpp
-
 .vercel
 test.js

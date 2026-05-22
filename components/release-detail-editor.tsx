@@ -988,6 +988,9 @@ export function ReleaseDetailEditor({
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (release.cover_art_path) {
+        formData.append("previousPath", release.cover_art_path);
+      }
 
       const response = await fetch("/api/releases/cover-upload", {
         method: "POST",

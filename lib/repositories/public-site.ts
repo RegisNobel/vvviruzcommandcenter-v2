@@ -8,6 +8,7 @@ import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/t
 
 import {listPublicReleaseCategories} from "@/lib/repositories/release-categories";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
+import {getBlobOrigin, rewriteAssetUrlToBlob} from "@/lib/server/blob-origin";
 
 type PublicReleaseModel = Prisma.ReleaseGetPayload<{
   select: {
@@ -101,7 +102,8 @@ const publicReleaseSelect = {
   }
 } satisfies Prisma.ReleaseSelect;
 
-function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
+async function toPublicRelease(release: PublicReleaseModel): Promise<PublicReleaseRecord> {
+  const blobOrigin = await getBlobOrigin();
   return {
     id: release.id,
     slug: release.slug,
@@ -110,7 +112,7 @@ function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
     collaborator_name: release.collaboratorName,
     release_date: toDateInputValue(release.releaseDate),
     type: release.type as ReleaseType,
-    cover_art_path: release.coverArtPath || release.coverArtUrl || "",
+    cover_art_path: rewriteAssetUrlToBlob(release.coverArtPath || release.coverArtUrl || "", blobOrigin),
     public_description: release.publicDescription || release.title,
     public_long_description: release.publicLongDescription || "",
     seo_title: release.seoTitle || "",
@@ -138,12 +140,45 @@ function toPublicRelease(release: PublicReleaseModel): PublicReleaseRecord {
   };
 }
 
+async function rewriteSiteSettingsUrls(settings: SiteSettingsRecord): Promise<SiteSettingsRecord> {
+  const blobOrigin = await getBlobOrigin();
+  const content = settings.site_content;
+  return {
+    ...settings,
+    site_content: {
+      ...content,
+      chrome: {
+        ...content.chrome,
+        brand_mark_file: rewriteAssetUrlToBlob(content.chrome.brand_mark_file, blobOrigin)
+      },
+      about: {
+        ...content.about,
+        artist_image_file: rewriteAssetUrlToBlob(content.about.artist_image_file, blobOrigin)
+      },
+      home: {
+        ...content.home,
+        brand_pillars: content.home.brand_pillars.map((pillar) => ({
+          ...pillar,
+          imageFile: rewriteAssetUrlToBlob(pillar.imageFile, blobOrigin)
+        }))
+      },
+      exclusive: {
+        ...content.exclusive,
+        exclusive_track_art_path: rewriteAssetUrlToBlob(content.exclusive.exclusive_track_art_path, blobOrigin)
+      }
+    }
+  };
+}
+
 export async function getSiteSettings(): Promise<SiteSettingsRecord> {
   return getCachedSiteSettings();
 }
 
 const getCachedSiteSettings = unstable_cache(
-  async () => readSiteSettings(),
+  async () => {
+    const settings = await readSiteSettings();
+    return rewriteSiteSettingsUrls(settings);
+  },
   ["public-site-settings"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
@@ -160,7 +195,8 @@ const getCachedFeaturedRelease = unstable_cache(
     orderBy: [{isFeatured: "desc"}, ...newestPublicReleaseOrder]
   });
 
-  return release ? toPublicRelease(release) : null;
+  if (!release) return null;
+  return toPublicRelease(release);
   },
   ["public-featured-release"],
   {
@@ -220,7 +256,8 @@ const getCachedPublishedFeaturedReleasesByIds = unstable_cache(
     select: publicReleaseSelect
   });
 
-  const releasesById = new Map(releases.map((release) => [release.id, toPublicRelease(release)]));
+  const mappedReleases = await Promise.all(releases.map((release) => toPublicRelease(release)));
+  const releasesById = new Map(mappedReleases.map((release) => [release.id, release]));
 
   return normalizedIds
     .map((releaseId) => releasesById.get(releaseId))
@@ -274,9 +311,11 @@ const getCachedHomepageFeaturedReleases = unstable_cache(
     },
     select: publicReleaseSelect
   });
-  const randomExtras = shuffleItems(extraPool)
-    .slice(0, Math.max(0, 3 - selected.length))
-    .map(toPublicRelease);
+  const randomExtras = await Promise.all(
+    shuffleItems(extraPool)
+      .slice(0, Math.max(0, 3 - selected.length))
+      .map(toPublicRelease)
+  );
 
   return [...selected, ...randomExtras].slice(0, 3);
   },
@@ -324,7 +363,7 @@ const getCachedPublishedReleases = unstable_cache(
     ...(limit > 0 ? {take: limit} : {})
   });
 
-  return releases.map(toPublicRelease);
+  return Promise.all(releases.map(toPublicRelease));
   },
   ["public-published-releases"],
   {
@@ -366,7 +405,8 @@ const getCachedPublishedReleaseBySlug = unstable_cache(
     select: publicReleaseSelect
   });
 
-  return release ? toPublicRelease(release) : null;
+  if (!release) return null;
+  return toPublicRelease(release);
   },
   ["public-release-by-slug"],
   {
@@ -439,7 +479,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
   }
 
   if (relatedReleases.length >= 3) {
-    return relatedReleases.slice(0, 3).map(toPublicRelease);
+    return Promise.all(relatedReleases.slice(0, 3).map(toPublicRelease));
   }
 
   const recentFallback = await prisma.release.findMany({
@@ -454,7 +494,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
     take: 3 - relatedReleases.length
   });
 
-  return [...relatedReleases, ...recentFallback].map(toPublicRelease);
+  return Promise.all([...relatedReleases, ...recentFallback].map(toPublicRelease));
   },
   ["public-related-releases"],
   {

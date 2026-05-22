@@ -11,7 +11,7 @@ const compat = new FlatCompat({
 
 const config = [
   {
-    ignores: [".next/**", "node_modules/**", "storage/**", "whisper.cpp/**"]
+    ignores: [".next/**", "node_modules/**", "storage/**"]
   },
   ...compat.extends("next/core-web-vitals")
 ];

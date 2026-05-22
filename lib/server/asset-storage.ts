@@ -110,6 +110,37 @@ export async function storeAsset({
   };
 }
 
+export async function deleteAsset(kind: StoredAssetKind, assetPathOrUrl: string) {
+  if (!assetPathOrUrl) return;
+
+  const fileName = fileNameFromPath(assetPathOrUrl);
+  if (!fileName) return;
+
+  try {
+    if (isDurableObjectStorageEnabled()) {
+      const { del } = await import("@vercel/blob");
+      try {
+        await del(getBlobPath(kind, fileName));
+      } catch (e) {
+        console.error(`Failed to delete blob ${kind}/${fileName}:`, e);
+      }
+      try {
+        await del(getBlobPath(kind, `original-${fileName}`));
+      } catch (e) {
+        console.error(`Failed to delete original blob ${kind}/original-${fileName}:`, e);
+      }
+    } else {
+      const localPath = path.join(getAssetDirectory(kind), fileName);
+      await fs.unlink(localPath).catch(() => {});
+      const originalLocalPath = path.join(getAssetDirectory(kind), `original-${fileName}`);
+      await fs.unlink(originalLocalPath).catch(() => {});
+    }
+  } catch (error) {
+    console.error(`Failed to delete asset ${kind}/${fileName}:`, error);
+  }
+}
+
+
 async function streamToBuffer(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];

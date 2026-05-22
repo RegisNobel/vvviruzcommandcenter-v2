@@ -11,7 +11,8 @@ import {NextResponse} from "next/server";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {canPubliclyReadCoverAsset} from "@/lib/repositories/public-site";
 import {canPubliclyReadExclusiveArtAsset} from "@/lib/repositories/exclusive-offer";
-import {resolveAssetToLocalPath} from "@/lib/server/asset-storage";
+import {resolveAssetToLocalPath, getBlobPath, type StoredAssetKind} from "@/lib/server/asset-storage";
+import {getBlobOrigin} from "@/lib/server/blob-origin";
 
 function getContentType(fileName: string) {
   const extension = path.extname(fileName).toLowerCase();
@@ -133,7 +134,6 @@ export async function GET(
       kind === "site-icon" ||
       (kind === "cover" && (await canPubliclyReadCoverAsset(file))) ||
       (kind === "exclusive-art" && (await canPubliclyReadExclusiveArtAsset(file)));
-
     if (!isPublicAsset) {
       const auth = await requireAuthenticatedApiRequest(request);
 
@@ -142,12 +142,34 @@ export async function GET(
       }
     }
 
+    // Direct Vercel Blob redirect if enabled and resolution works
+    if (isPublicAsset) {
+      const redirectsEnabled = process.env.ASSET_DIRECT_BLOB_REDIRECTS === "true";
+      const driverEnabled = process.env.ASSET_STORAGE_DRIVER === "vercel-blob";
+      if (redirectsEnabled && driverEnabled) {
+        try {
+          const origin = await getBlobOrigin();
+          if (origin) {
+            const blobUrl = `${origin}/${getBlobPath(kind as StoredAssetKind, file)}`;
+            return NextResponse.redirect(blobUrl, {
+              status: 307,
+              headers: {
+                "Cache-Control": "public, max-age=31536000, immutable"
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Direct blob redirect resolution failed, falling back to proxy:", error);
+        }
+      }
+    }
+
     const filePath = await resolveAssetToLocalPath(kind, file, "public");
     const stats = await fsPromises.stat(filePath);
     const contentDisposition = `inline; filename="${file}"`;
     const range = parseByteRangeHeader(request.headers.get("range"), stats.size);
     const cacheControl = isPublicAsset
-      ? "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800"
+      ? "public, max-age=31536000, immutable"
       : "private, no-store";
     const lastModified = stats.mtime;
     const etag = createAssetEtag(file, stats.size, stats.mtimeMs);

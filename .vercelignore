@@ -22,4 +22,3 @@ storage/release-covers/**
 storage/releases/**
 storage/uploads/**
 storage/*.db*
-whisper.cpp/**

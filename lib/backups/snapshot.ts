@@ -64,8 +64,6 @@ export async function createDatabaseSnapshotArtifact() {
     releaseCategoryAssignments: await prisma.releaseCategoryAssignment.findMany(),
     releaseTasks: await prisma.releaseTask.findMany(),
     releaseStreamingLinks: await prisma.releaseStreamingLink.findMany(),
-    lyricProjects: await prisma.lyricProject.findMany(),
-    lyricLines: await prisma.lyricLine.findMany(),
     copyEntries: await prisma.copyEntry.findMany(),
     siteSettings: await prisma.siteSettings.findMany(),
     subscribers: await prisma.subscriber.findMany(),
