@@ -2184,6 +2184,8 @@ export async function readCopyPerformanceMemory(
     report: typeof allReports[0];
     record: AdCreativeReportRecord;
     visual: string;
+    songSection: string;
+    revision: string;
     outboundStreamingClicks: number;
     batch: typeof batches[0];
   };
@@ -2198,6 +2200,8 @@ export async function readCopyPerformanceMemory(
       report,
       record,
       visual: parsed.visual || "Unparsed",
+      songSection: parsed.songSection || "Unparsed",
+      revision: parsed.revision || "Unparsed",
       outboundStreamingClicks,
       batch
     };
@@ -2250,7 +2254,7 @@ export async function readCopyPerformanceMemory(
   const pairGroups = new Map<string, { copyEntry: CopyEntry; items: ReportWithData[] }>();
   const angleGroups = new Map<string, ReportWithData[]>();
   const songSectionGroups = new Map<string, ReportWithData[]>();
-  const comboGroups = new Map<string, { key: string; copyEntry?: CopyEntry; visual?: string; items: ReportWithData[] }>();
+  const comboGroups = new Map<string, { key: string; copyEntry?: CopyEntry; songSection?: string; items: ReportWithData[] }>();
   const unlinkedAdsMap = new Map<string, ReportWithData[]>();
 
   angleGroups.set("Unlinked", []);
@@ -2290,13 +2294,13 @@ export async function readCopyPerformanceMemory(
       angleList.push(item);
       angleGroups.set(angleKey, angleList);
 
-      const sectionKey = formatSongSection(copyLink.songSection);
+      const sectionKey = formatSongSection(item.songSection);
       const sectionList = songSectionGroups.get(sectionKey) ?? [];
       sectionList.push(item);
       songSectionGroups.set(sectionKey, sectionList);
 
-      const comboKey = `${copyLink.id} + ${item.visual}`;
-      const comboGroup = comboGroups.get(comboKey) ?? { key: comboKey, copyEntry: copyLink, visual: item.visual, items: [] };
+      const comboKey = `${copyLink.id} + ${formatSongSection(item.songSection)}`;
+      const comboGroup = comboGroups.get(comboKey) ?? { key: comboKey, copyEntry: copyLink, songSection: formatSongSection(item.songSection), items: [] };
       comboGroup.items.push(item);
       comboGroups.set(comboKey, comboGroup);
     } else {
@@ -2389,7 +2393,7 @@ export async function readCopyPerformanceMemory(
   const combos: CopyPerformanceRow[] = [];
   for (const grp of comboGroups.values()) {
     if (grp.key === "Unlinked" && grp.items.length === 0) continue;
-    const label = grp.key === "Unlinked" ? "Unlinked" : `${grp.copyEntry!.hook} + ${grp.visual}`;
+    const label = grp.key === "Unlinked" ? "Unlinked" : `${grp.copyEntry!.hook} + ${grp.songSection}`;
     combos.push(aggregateRow(label, grp.copyEntry?.id ?? null, grp.items));
   }
   combos.sort((a, b) => b.spend - a.spend);

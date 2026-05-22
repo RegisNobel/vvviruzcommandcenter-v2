@@ -183,7 +183,7 @@ export function CopyPerformanceMemorySection({ memory }: CopyPerformanceMemorySe
         )}
 
         {renderSummaryCard(
-          "Best Copy + Visual Combo",
+          "Best Copy + Song Section Combo",
           winners.bestCombo,
           <Sparkles size={12} className="text-sky-400" />
         )}
@@ -269,28 +269,50 @@ export function CopyPerformanceMemorySection({ memory }: CopyPerformanceMemorySe
           )
         )}
 
-        {/* Copy + Visual Combo Performance */}
+        {/* Copy + Song Section Combo Performance */}
         {renderCollapsibleTable(
           "combos",
-          "Copy + Visual Combo Performance",
+          "Copy + Song Section Combo Performance",
           combos,
-          ["Combination (Copy + Visual Component)", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
-          (row: CopyPerformanceRow) => (
-            <tr key={row.label} className={`hover:bg-[#141820]/30 transition-colors ${row.label === "Unlinked" ? "bg-[#18120c]/25 border-l-2 border-amber-500/40" : ""}`}>
-              <td className="py-3 px-4 text-xs">
-                <span className="font-semibold text-[#efe7db]">{row.label}</span>
-                {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
-              </td>
-              <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
-              <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
-              <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
-              <td className="py-3 px-4 text-center">{row.batchCount}</td>
-              <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
-            </tr>
-          )
+          ["Copy + Song Section Combo", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
+          (row: CopyPerformanceRow) => {
+            const isUnlinked = row.label === "Unlinked";
+            const plusIndex = row.label.lastIndexOf(" + ");
+            const hookText = plusIndex !== -1 ? row.label.slice(0, plusIndex) : row.label;
+            const songSec = plusIndex !== -1 ? row.label.slice(plusIndex + 3) : "";
+
+            return (
+              <tr key={row.copyEntryId ? `${row.copyEntryId}-${row.label}` : row.label} className={`hover:bg-[#141820]/30 transition-colors ${isUnlinked ? "bg-[#18120c]/25 border-l-2 border-amber-500/40" : ""}`}>
+                <td className="py-3 px-4 text-xs max-w-[320px]">
+                  {isUnlinked ? (
+                    <>
+                      <span className="font-semibold text-[#efe7db]">Unlinked</span>
+                      <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium text-[#efe7db] truncate block" title={hookText}>
+                        {hookText || "Untitled Copy"}
+                      </span>
+                      {songSec && (
+                        <span className="text-[10px] text-[#7f858d] uppercase tracking-wider block">
+                          {songSec}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
+                <td className="py-3 px-4 text-center">{row.batchCount}</td>
+                <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
+              </tr>
+            );
+          }
         )}
 
         {/* Unlinked Ads Summary */}

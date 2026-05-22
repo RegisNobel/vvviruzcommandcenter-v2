@@ -2245,10 +2245,10 @@ export function ReleaseDetailEditor({
                             {formatHookType(linkedCopy.hook_type)}
                           </span>
                           <span className={pagePillClass}>
-                            {formatContentType(linkedCopy.content_type)}
+                            {formatContentType(linkedCopy.content_type)} (Legacy)
                           </span>
                           <span className={pagePillClass}>
-                            {formatSongSection(linkedCopy.song_section)}
+                            {formatSongSection(linkedCopy.song_section)} (Legacy)
                           </span>
                           <span className={pagePillClass}>
                             Created {formatTimestamp(linkedCopy.created_on)}

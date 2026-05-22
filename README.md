@@ -82,13 +82,13 @@ Email capture and outreach workspace with:
 
 ### Copy Lab
 
-Hook/caption management workspace with:
+A library of reusable message/copy pairs containing:
 
 - simple CRUD
-- hook types: Discovery Shock, Identity Callout, Proof of Skill
-- creative strategy tags for Content Type, Song Section, and optional Creative Notes
-- optional release linking
-- standalone reusable copy support
+- hook types: Discovery Shock, Identity Callout, Proof of Skill (rebranded to Copy Angle)
+- Hook Text (rebranded from Hook) and Caption management
+- Optional release linking and creative notes for campaign concept description
+- Collapsed "Legacy / Optional Metadata" (Content Type and Song Section) for backward compatibility
 
 ### Photo Lab
 
@@ -470,6 +470,16 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-05-21 23:00 -04:00
+
+- **Refactored Copy Lab to serve as a reusable copy-pair library**:
+  - Rebranded Hook Type to Copy Angle and Hook to Hook Text across creation forms, editors, dashboards, and tables.
+  - Hid Content Type and Song Section from primary workflows, moving them to a collapsed "Legacy / Optional Metadata" section in editors and forms without breaking existing records or database schemas.
+  - Streamlined library grouping options to Release, Copy Angle, and Flat.
+  - Refactored Copy Performance Memory backend (`readCopyPerformanceMemory`) to aggregate based on CopyEntry (copy pair and angle) and parsed ad name attributes (visual, song section, and revision).
+  - Adopted a clean two-line layout for Copy + Song Section Combo tables to avoid unreadable labels.
+  - Appended `(Legacy)` to Content Type and Song Section badges on the Release Detail campaign history list.
 
 ### 2026-05-21 22:17 -04:00
 

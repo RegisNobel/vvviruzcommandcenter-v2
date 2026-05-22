@@ -112,7 +112,7 @@ export function CopyCreateForm({
         <form className="panel space-y-6 px-6 py-7" onSubmit={handleSubmit}>
           <div className="grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="field-label">Hook Type</span>
+              <span className="field-label">Copy Angle</span>
               <select
                 className="field-input"
                 onChange={(event) =>
@@ -155,49 +155,9 @@ export function CopyCreateForm({
             <div className="md:col-span-2">
               <p className="field-label">Creative Strategy</p>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Content Type describes the format. Song Section describes the musical moment. Hook Type describes the marketing angle. Creative Notes describe the execution.
+                Copy Lab stores the reusable message: the angle, hook text, caption, and notes. Visuals and song sections are tracked from ad names and Meta imports.
               </p>
             </div>
-
-            <label className="space-y-2">
-              <span className="field-label">Content Type</span>
-              <select
-                className="field-input"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    content_type: event.target.value as CopyContentType
-                  }))
-                }
-                value={form.content_type}
-              >
-                {contentTypeOptions.map((contentType) => (
-                  <option key={contentType} value={contentType}>
-                    {formatContentType(contentType)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Song Section</span>
-              <select
-                className="field-input"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    song_section: event.target.value as CopySongSection
-                  }))
-                }
-                value={form.song_section}
-              >
-                {songSectionOptions.map((songSection) => (
-                  <option key={songSection} value={songSection}>
-                    {formatSongSection(songSection)}
-                  </option>
-                ))}
-              </select>
-            </label>
 
             <label className="space-y-2 md:col-span-2">
               <span className="field-label">Creative Notes</span>
@@ -214,8 +174,57 @@ export function CopyCreateForm({
               />
             </label>
 
+            <details className="group border border-[#252a31] rounded-[22px] bg-[#101319]/40 p-4 md:col-span-2 space-y-4">
+              <summary className="flex cursor-pointer items-center justify-between font-semibold text-sm text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+                <span>Legacy / Optional Metadata</span>
+                <span className="text-xs text-muted group-open:hidden">Show</span>
+                <span className="text-xs text-muted hidden group-open:inline">Hide</span>
+              </summary>
+              <div className="grid gap-5 md:grid-cols-2 pt-3 border-t border-[#252a31]/60">
+                <label className="space-y-2">
+                  <span className="field-label">Content Type</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        content_type: event.target.value as CopyContentType
+                      }))
+                    }
+                    value={form.content_type}
+                  >
+                    {contentTypeOptions.map((contentType) => (
+                      <option key={contentType} value={contentType}>
+                        {formatContentType(contentType)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="field-label">Song Section</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        song_section: event.target.value as CopySongSection
+                      }))
+                    }
+                    value={form.song_section}
+                  >
+                    {songSectionOptions.map((songSection) => (
+                      <option key={songSection} value={songSection}>
+                        {formatSongSection(songSection)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </details>
+
             <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Hook</span>
+              <span className="field-label">Hook Text</span>
               <textarea
                 className="field-input min-h-[140px]"
                 onChange={(event) =>

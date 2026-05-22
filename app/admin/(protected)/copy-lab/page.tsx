@@ -40,7 +40,7 @@ const copyGroupOptions: Array<{
   },
   {
     key: "hook-type",
-    label: "Hook Type",
+    label: "Copy Angle",
     description: "Compare Discovery Shock, Identity Callout, and Proof of Skill angles."
   },
   {
@@ -249,7 +249,7 @@ function getCopyGroup(
     const label = formatHookType(copy.hook_type);
 
     return {
-      eyebrow: "Hook type",
+      eyebrow: "Copy angle",
       key: `hook-type:${copy.hook_type}`,
       label
     };
@@ -259,7 +259,7 @@ function getCopyGroup(
     const label = formatContentType(copy.content_type);
 
     return {
-      eyebrow: "Content type",
+      eyebrow: "Content type (Legacy)",
       key: `content-type:${copy.content_type}`,
       label
     };
@@ -269,7 +269,7 @@ function getCopyGroup(
     const label = formatSongSection(copy.song_section);
 
     return {
-      eyebrow: "Song section",
+      eyebrow: "Song section (Legacy)",
       key: `song-section:${copy.song_section}`,
       label
     };
@@ -344,18 +344,18 @@ function CopyRow({
         </div>
 
         <div>
-          <p className="field-label">Hook Type</p>
+          <p className="field-label">Copy Angle</p>
           <p className="mt-2 text-sm font-semibold text-ink">
             {formatHookType(copy.hook_type)}
           </p>
         </div>
 
         <div>
-          <p className="field-label">Strategy</p>
-          <p className="mt-2 text-sm font-semibold text-ink">
+          <p className="field-label">Legacy Metadata</p>
+          <p className="mt-2 text-sm font-semibold text-muted/80">
             {formatContentType(copy.content_type)}
           </p>
-          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted">
+          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted/60">
             {formatSongSection(copy.song_section)}
           </p>
         </div>
@@ -406,18 +406,18 @@ function CopyVariantRow({
         </div>
 
         <div>
-          <p className="field-label">Hook Type</p>
+          <p className="field-label">Copy Angle</p>
           <p className="mt-2 text-sm font-semibold text-ink">
             {formatHookType(representative.hook_type)}
           </p>
         </div>
 
         <div>
-          <p className="field-label">Content Variants</p>
+          <p className="field-label">Content Variants (Legacy)</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {variantSet.copies.map((copy) => (
               <Link
-                className="rounded-full border border-[#30343b] bg-[#151820] px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-[#d9dee5] transition hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
+                className="rounded-full border border-[#30343b] bg-[#151820] px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-muted transition hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
                 href={`/admin/copy-lab/${copy.id}`}
                 key={copy.id}
                 title={`Open copy #${copyNumberById.get(copy.id) ?? "?"}`}
@@ -426,7 +426,7 @@ function CopyVariantRow({
               </Link>
             ))}
           </div>
-          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted">
+          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted/60">
             {formatSongSection(representative.song_section)}
           </p>
         </div>
@@ -508,24 +508,26 @@ export default async function AdminCopyLabPage({
             </div>
 
             <div className="flex flex-wrap gap-2 rounded-full border border-[#252a31] bg-[#0e1116] p-1.5">
-              {copyGroupOptions.map((option) => {
-                const isActive = option.key === selectedGroupBy;
+              {copyGroupOptions
+                .filter((option) => option.key !== "content-type" && option.key !== "song-section")
+                .map((option) => {
+                  const isActive = option.key === selectedGroupBy;
 
-                return (
-                  <Link
-                    aria-current={isActive ? "page" : undefined}
-                    className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
-                      isActive
-                        ? "border-[#d7b45e] bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
-                        : "border-[#30343b] bg-[#151820] text-[#d9dee5] hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
-                    }`}
-                    href={getGroupHref(option.key)}
-                    key={option.key}
-                  >
-                    {option.label}
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      aria-current={isActive ? "page" : undefined}
+                      className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
+                        isActive
+                          ? "border-[#d7b45e] bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
+                          : "border-[#30343b] bg-[#151820] text-[#d9dee5] hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
+                      }`}
+                      href={getGroupHref(option.key)}
+                      key={option.key}
+                    >
+                      {option.label}
+                    </Link>
+                  );
+                })}
             </div>
           </div>
         </section>

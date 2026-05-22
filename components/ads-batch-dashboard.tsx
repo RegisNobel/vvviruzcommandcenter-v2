@@ -166,10 +166,10 @@ function formatStrategyValue(value: string, kind: "hook" | "content" | "section"
   }
 
   if (kind === "content") {
-    return formatContentType(value as CopyContentType);
+    return `${formatContentType(value as CopyContentType)} (Legacy)`;
   }
 
-  return formatSongSection(value as CopySongSection);
+  return `${formatSongSection(value as CopySongSection)} (Legacy)`;
 }
 
 function getResultTypeSummary(value: string) {
@@ -1182,7 +1182,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
-            <ReadoutItem label="Best Hook" value={campaignReadout.bestHook} />
+            <ReadoutItem label="Best Copy Angle" value={campaignReadout.bestHook} />
             <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
             <ReadoutItem label="Spend" value={campaignReadout.spend} />
           </div>
@@ -1247,8 +1247,8 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             <ReadoutItem label="Spend" value={campaignReadout.spend} />
             <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
             <ReadoutItem label="Worst Creative" value={campaignReadout.worstCreative} />
-            <ReadoutItem label="Best Hook" value={campaignReadout.bestHook} />
-            <ReadoutItem label="Worst Hook" value={campaignReadout.worstHook} />
+            <ReadoutItem label="Best Copy Angle" value={campaignReadout.bestHook} />
+            <ReadoutItem label="Worst Copy Angle" value={campaignReadout.worstHook} />
             <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
           </div>
 
@@ -1330,7 +1330,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
             <div className="grid w-full gap-3 md:w-auto md:grid-cols-5">
               <select className="field-input" onChange={(event) => setHookFilter(event.target.value)} value={hookFilter}>
-                <option value="all">All Hook Types</option>
+                <option value="all">All Copy Angles</option>
                 {hookTypeOptions.map((value) => (
                   <option key={value} value={value}>
                     {formatHookType(value)}
@@ -1338,7 +1338,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 ))}
               </select>
               <select className="field-input" onChange={(event) => setContentFilter(event.target.value)} value={contentFilter}>
-                <option value="all">All Content Types</option>
+                <option value="all">All Content Types (Legacy)</option>
                 {contentTypeOptions.map((value) => (
                   <option key={value} value={value}>
                     {formatContentType(value)}
@@ -1346,7 +1346,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 ))}
               </select>
               <select className="field-input" onChange={(event) => setSectionFilter(event.target.value)} value={sectionFilter}>
-                <option value="all">All Song Sections</option>
+                <option value="all">All Song Sections (Legacy)</option>
                 {songSectionOptions.map((value) => (
                   <option key={value} value={value}>
                     {formatSongSection(value)}
@@ -1564,21 +1564,21 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               ...row,
               label: formatStrategyValue(row.label, "hook")
             }))}
-            title="Performance by Hook Type"
+            title="Performance by Copy Angle"
           />
           <StrategyTable
             rows={detail.strategy_breakdowns.content_type.map((row) => ({
               ...row,
               label: formatStrategyValue(row.label, "content")
             }))}
-            title="Performance by Content Type"
+            title="Performance by Content Type (Legacy)"
           />
           <StrategyTable
             rows={detail.strategy_breakdowns.song_section.map((row) => ({
               ...row,
               label: formatStrategyValue(row.label, "section")
             }))}
-            title="Performance by Song Section"
+            title="Performance by Song Section (Legacy)"
           />
           <StrategyTable rows={detail.strategy_breakdowns.combo} title="Performance by Combo" />
         </section>

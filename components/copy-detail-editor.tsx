@@ -231,7 +231,7 @@ export function CopyDetailEditor({
             <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
               <div className="space-y-3 rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="field-label">Hook Type</span>
+                  <span className="field-label">Copy Angle</span>
                   <span className="font-semibold text-ink">
                     {formatHookType(copy.hook_type)}
                   </span>
@@ -315,7 +315,7 @@ export function CopyDetailEditor({
 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="field-label">Hook Type</span>
+                  <span className="field-label">Copy Angle</span>
                   <select
                     className="field-input"
                     onChange={(event) =>
@@ -364,51 +364,11 @@ export function CopyDetailEditor({
                   Creative Strategy
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Content Type describes the format. Song Section describes the musical moment. Hook Type describes the marketing angle. Creative Notes describe the execution.
+                  Creative Notes describe the specific visual hook or campaign concept. Content Type and Song Section are legacy fields and not required for new copy pairs.
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="field-label">Content Type</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      updateCopy((current) => ({
-                        ...current,
-                        content_type: event.target.value as CopyContentType
-                      }))
-                    }
-                    value={copy.content_type}
-                  >
-                    {contentTypeOptions.map((contentType) => (
-                      <option key={contentType} value={contentType}>
-                        {formatContentType(contentType)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="field-label">Song Section</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      updateCopy((current) => ({
-                        ...current,
-                        song_section: event.target.value as CopySongSection
-                      }))
-                    }
-                    value={copy.song_section}
-                  >
-                    {songSectionOptions.map((songSection) => (
-                      <option key={songSection} value={songSection}>
-                        {formatSongSection(songSection)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
                 <label className="space-y-2 md:col-span-2">
                   <span className="field-label">Creative Notes</span>
                   <textarea
@@ -423,13 +383,62 @@ export function CopyDetailEditor({
                     value={copy.creative_notes}
                   />
                 </label>
+
+                <details className="group border border-[#252a31] rounded-[22px] bg-[#101319]/40 p-4 md:col-span-2 space-y-4">
+                  <summary className="flex cursor-pointer items-center justify-between font-semibold text-sm text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+                    <span>Legacy / Optional Metadata</span>
+                    <span className="text-xs text-muted group-open:hidden">Show</span>
+                    <span className="text-xs text-muted hidden group-open:inline">Hide</span>
+                  </summary>
+                  <div className="grid gap-5 md:grid-cols-2 pt-3 border-t border-[#252a31]/60">
+                    <label className="space-y-2">
+                      <span className="field-label">Content Type</span>
+                      <select
+                        className="field-input"
+                        onChange={(event) =>
+                          updateCopy((current) => ({
+                            ...current,
+                            content_type: event.target.value as CopyContentType
+                          }))
+                        }
+                        value={copy.content_type}
+                      >
+                        {contentTypeOptions.map((contentType) => (
+                          <option key={contentType} value={contentType}>
+                            {formatContentType(contentType)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="space-y-2">
+                      <span className="field-label">Song Section</span>
+                      <select
+                        className="field-input"
+                        onChange={(event) =>
+                          updateCopy((current) => ({
+                            ...current,
+                            song_section: event.target.value as CopySongSection
+                          }))
+                        }
+                        value={copy.song_section}
+                      >
+                        {songSectionOptions.map((songSection) => (
+                          <option key={songSection} value={songSection}>
+                            {formatSongSection(songSection)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </details>
               </div>
             </section>
 
             <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6">
               <div>
                 <p className="field-label">Section 3</p>
-                <h2 className="mt-2 text-2xl font-semibold text-ink">Hook</h2>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">Hook Text</h2>
               </div>
 
               <textarea
@@ -476,29 +485,62 @@ export function CopyDetailEditor({
 
               <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="field-label">Hook Type</span>
+                  <span className="field-label">Copy Angle</span>
                   <span className="font-semibold text-ink">
                     {formatHookType(copy.hook_type)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="field-label">Content Type</span>
-                  <span className="text-right font-semibold text-ink">
-                    {formatContentType(copy.content_type)}
+                  <span className="field-label">Release</span>
+                  <span className="font-semibold text-ink text-right">
+                    {selectedRelease ? selectedRelease.title : "Standalone"}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="field-label">Song Section</span>
-                  <span className="font-semibold text-ink">
-                    {formatSongSection(copy.song_section)}
-                  </span>
+
+                <div className="border-t border-[#31353b] pt-3">
+                  <span className="field-label">Hook Text Preview</span>
+                  <p className="mt-1 text-ink line-clamp-2 text-xs leading-normal">
+                    {copy.hook.trim() || "(Empty)"}
+                  </p>
                 </div>
+
+                {copy.caption.trim() ? (
+                  <div className="border-t border-[#31353b] pt-3">
+                    <span className="field-label">Caption Preview</span>
+                    <p className="mt-1 text-ink line-clamp-2 text-xs leading-normal">
+                      {copy.caption}
+                    </p>
+                  </div>
+                ) : null}
+
                 {copy.creative_notes.trim() ? (
                   <div className="border-t border-[#31353b] pt-3">
                     <span className="field-label">Creative Notes</span>
-                    <p className="mt-2 leading-6 text-ink">{copy.creative_notes}</p>
+                    <p className="mt-1 text-xs text-ink leading-normal">{copy.creative_notes}</p>
                   </div>
                 ) : null}
+
+                <details className="group border border-[#252a31] rounded-[18px] bg-[#101319]/40 p-3 mt-3">
+                  <summary className="flex cursor-pointer items-center justify-between font-medium text-xs text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+                    <span>Legacy Metadata</span>
+                    <span className="text-[10px] text-muted group-open:hidden">Show</span>
+                    <span className="text-[10px] text-muted hidden group-open:inline">Hide</span>
+                  </summary>
+                  <div className="space-y-2 pt-2 mt-2 border-t border-[#252a31]/60 text-xs">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted">Content Type</span>
+                      <span className="font-semibold text-ink text-right">
+                        {formatContentType(copy.content_type)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted">Song Section</span>
+                      <span className="font-semibold text-ink text-right">
+                        {formatSongSection(copy.song_section)}
+                      </span>
+                    </div>
+                  </div>
+                </details>
               </div>
             </section>
 
