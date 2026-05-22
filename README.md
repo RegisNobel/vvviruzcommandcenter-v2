@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-21 22:17 -04:00
+
+- **Implemented `/llms.txt` support for the public site**:
+  - Added a dynamic Route Handler at `/llms.txt` returning a structured, plain-text summary of the public vvviruz site for AI agents.
+  - Configured canonical base URLs using `PUBLIC_SITE_URL` and `NEXT_PUBLIC_SITE_URL` with a standard fallback.
+  - Documented site overview, key public pages, catalog structure, major series groupings, early access preview setup, vault plans, and commissions entry points.
+  - Excluded all `/admin` routes, subscriber metrics, campaign data, and private endpoints.
+
 ### 2026-05-21 18:30 -04:00
 
 - **Attribution Dashboard IA Simplification**:
