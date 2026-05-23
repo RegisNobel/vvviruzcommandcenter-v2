@@ -39,14 +39,27 @@ function loadEnvFile(filePath: string) {
 }
 
 export function ensureDatabaseUrl() {
-  if (process.env.DATABASE_URL?.trim()) {
-    return process.env.DATABASE_URL;
-  }
-
   const root = process.cwd();
 
   loadEnvFile(path.join(root, ".env"));
   loadEnvFile(path.join(root, ".env.local"));
 
+  if (!process.env.DATABASE_URL?.trim()) {
+    if (process.env.POSTGRES_PRISMA_URL?.trim()) {
+      process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
+    } else if (process.env.POSTGRES_URL?.trim()) {
+      process.env.DATABASE_URL = process.env.POSTGRES_URL;
+    }
+  }
+
+  if (!process.env.DIRECT_URL?.trim()) {
+    if (process.env.POSTGRES_URL_NON_POOLING?.trim()) {
+      process.env.DIRECT_URL = process.env.POSTGRES_URL_NON_POOLING;
+    } else if (process.env.DATABASE_URL?.trim()) {
+      process.env.DIRECT_URL = process.env.DATABASE_URL;
+    }
+  }
+
   return process.env.DATABASE_URL;
 }
+
