@@ -10,6 +10,7 @@ import {
   parseAdName,
   type ParsedAdName
 } from "@/lib/ads/naming-parser";
+import { calculateBatchDiagnostics, calculateReleaseComboSuggestions } from "@/lib/ads/diagnostics-engine";
 import {
   calculateConfidenceSignal,
   type ConfidenceSignalResult
@@ -1099,7 +1100,7 @@ export async function readAdImportBatchDetail(batchId: string): Promise<AdImport
     ]
   });
 
-  return {
+  const detailResult: AdImportBatchDetail = {
     ...summarizeBatch(batch),
     reports,
     available_copies: availableCopies.map(toCopySummary),
@@ -1107,6 +1108,64 @@ export async function readAdImportBatchDetail(batchId: string): Promise<AdImport
     link_follow_through: await createLinkFollowThrough(reports),
     learning: batch.learnings[0] ? toLearningRecord(batch.learnings[0]) : null
   };
+
+  // Find other batches with the same ad names to determine multi-batch status
+  const adNamesInBatch = reports.map((r) => r.ad_name);
+  const allReportsWithSameNames = await prisma.adCreativeReport.findMany({
+    where: {
+      adName: { in: adNamesInBatch }
+    },
+    select: {
+      adName: true,
+      importBatchId: true
+    }
+  });
+
+  const batchCountMap: Record<string, number> = {};
+  const batchesPerAd = new Map<string, Set<string>>();
+  for (const r of allReportsWithSameNames) {
+    const norm = normalizeMetaAdName(r.adName);
+    if (!batchesPerAd.has(norm)) {
+      batchesPerAd.set(norm, new Set());
+    }
+    batchesPerAd.get(norm)!.add(r.importBatchId);
+  }
+  for (const [norm, batchIds] of batchesPerAd.entries()) {
+    batchCountMap[norm] = batchIds.size;
+  }
+
+  // Find other batches for the same release to check for overlaps
+  let hasOverlappingSnapshots = false;
+  if (batch.releaseId) {
+    const otherBatches = await prisma.adImportBatch.findMany({
+      where: {
+        releaseId: batch.releaseId,
+        id: { not: batchId }
+      },
+      select: {
+        reportingStart: true,
+        reportingEnd: true
+      }
+    });
+    hasOverlappingSnapshots = otherBatches.some((other) => {
+      const left = {
+        reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+        reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+      };
+      const right = {
+        reporting_start: other.reportingStart ? other.reportingStart.toISOString() : null,
+        reporting_end: other.reportingEnd ? other.reportingEnd.toISOString() : null
+      };
+      return adDateRangesOverlap(left, right);
+    });
+  }
+
+  detailResult.creative_diagnostics = calculateBatchDiagnostics(detailResult, {
+    batchCountMap,
+    hasOverlappingSnapshots
+  });
+
+  return detailResult;
 }
 
 export async function setAdCreativeCopyLink(adCreativeReportId: string, copyEntryId: string | null) {
@@ -2447,6 +2506,26 @@ export async function readCopyPerformanceMemory(
   const bestCombo = findEfficiencyWinner(combos);
   const volumeWinner = findVolumeWinner(copyPairs);
 
+  const creativeMemory = await readCreativePerformanceMemory(releaseId);
+  const suggestions = calculateReleaseComboSuggestions(
+    creativeMemory,
+    {
+      coverage,
+      copyPairs,
+      copyAngles,
+      songSections,
+      combos,
+      unlinkedAds,
+      winners: {
+        bestCopyPair,
+        bestAngle,
+        bestCombo,
+        volumeWinner
+      }
+    },
+    reportRecords
+  );
+
   return {
     coverage,
     copyPairs,
@@ -2459,6 +2538,7 @@ export async function readCopyPerformanceMemory(
       bestAngle,
       bestCombo,
       volumeWinner
-    }
+    },
+    suggestions
   };
 }

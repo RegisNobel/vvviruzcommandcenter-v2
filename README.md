@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-23 05:25 -04:00
+
+- **Implemented Creative Diagnosis & Next Test Suggestions v1**:
+  - Built a 100% deterministic, rule-based diagnostic engine to analyze Meta CSV import metrics, copy linkages, and first-party attribution data.
+  - Implemented per-ad diagnostics in the Ad Batch Dashboard displaying actions, evidence, and confidence indicators.
+  - Implemented Release-level strategic Next Test Suggestions inside the Campaign History tab to suggest untested copy/visual/song-section combinations based on performance.
+  - Added a first-class `data-quality-warning` diagnostic type to flag low sample size, weak UTM tracking coverage, overlapping batch snapshots, and missing retention metrics.
+  - Enforced wording rules: used "Maintain / Consider Scaling," avoided causal wording like "caused" or "proves," and added a prominent Causal Caveat warning to the recommendations.
+  - Maintained complete read-only safety, compact styling, and full compiler and linter compliance.
+
 ### 2026-05-21 23:00 -04:00
 
 - **Refactored Copy Lab to serve as a reusable copy-pair library**:

@@ -24,7 +24,8 @@ import type {
   AdStrategyBreakdownRow,
   CopyContentType,
   CopySongSection,
-  HookType
+  HookType,
+  CreativeDiagnostic
 } from "@/lib/types";
 
 type SortKey =
@@ -1314,6 +1315,72 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
           ) : null}
         </section>
+
+        {detail.creative_diagnostics && detail.creative_diagnostics.length > 0 ? (
+          <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+            <div>
+              <p className="field-label">Campaign Ad Insights</p>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">Creative Diagnostics</h2>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                Deterministic, rule-based recommendations for immediate per-ad actions. Wording is correlation-based and suggests potential improvements.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {detail.creative_diagnostics.map((diag, index) => (
+                <div
+                  key={`${diag.adName}-${diag.type}-${index}`}
+                  className={`rounded-[22px] border p-4 flex flex-col justify-between ${
+                    diag.severity === "success"
+                      ? "border-emerald-800/40 bg-emerald-950/10 text-[#d1f2e5]"
+                      : diag.severity === "danger"
+                      ? "border-red-800/40 bg-red-950/10 text-[#f2d1d1]"
+                      : diag.severity === "warning"
+                      ? "border-amber-800/40 bg-amber-950/10 text-[#f2e5d1]"
+                      : "border-blue-800/40 bg-blue-950/10 text-[#d1e5f2]"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[10px] uppercase font-bold tracking-wider opacity-90 truncate max-w-[200px]" title={diag.adName}>
+                        {diag.adName}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                          diag.confidence === "High"
+                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            : diag.confidence === "Moderate"
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                            : diag.confidence === "Directional"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                            : "bg-[#252a31] text-muted border border-muted/20"
+                        }`}
+                      >
+                        {diag.confidence}
+                      </span>
+                    </div>
+
+                    <h4 className="mt-3 text-base font-semibold leading-5 text-ink">
+                      {diag.action}
+                    </h4>
+                    <p className="mt-2 text-xs leading-5 text-muted opacity-85">
+                      {diag.reason}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-muted/10 flex justify-between items-center text-[10px] opacity-75">
+                    <span className="font-mono truncate max-w-[170px]" title={diag.evidence}>{diag.evidence}</span>
+                    <span className="italic">Type: {diag.type.replace(/-/g, " ")}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[18px] border border-[#3a3324] bg-[#191713] p-4 text-xs text-[#d7b45e] leading-5">
+              <strong>Causal Caveat:</strong> These recommendations are correlation-based. If multiple variables (visual, copy, song section, or budget) were changed at once, run the suggestion as a controlled test before making a final call.
+            </div>
+          </section>
+        ) : null}
 
         {message ? (
           <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
