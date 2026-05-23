@@ -671,6 +671,7 @@ export type AdImportBatchDetail = AdImportBatchSummary & {
   };
   link_follow_through: AdLinkFollowThroughRecord[];
   learning: AdCampaignLearningRecord | null;
+  creative_diagnostics?: CreativeDiagnostic[];
 };
 
 export type CampaignHistoryCreative = {
@@ -970,4 +971,35 @@ export type CopyPerformanceMemory = {
     bestCombo: CopyPerformanceMemoryWinner | null;
     volumeWinner: CopyPerformanceMemoryWinner | null;
   };
+  suggestions?: NextTestSuggestion[];
 };
+
+export type DiagnosticType =
+  | "data-quality-warning"
+  | "strong-control"
+  | "maintain-consider-scale"
+  | "pause-retire"
+  | "retest-contender"
+  | "weak-visual-scroll-stop"
+  | "weak-copy-click-intent"
+  | "weak-song-section-retention"
+  | "landing-follow-through-issue"
+  | "combo-test";
+
+export interface CreativeDiagnostic {
+  adName: string;
+  type: DiagnosticType;
+  action: string;
+  severity: "success" | "warning" | "danger" | "info";
+  reason: string;
+  confidence: "High" | "Moderate" | "Directional" | "Needs More Data";
+  evidence: string;
+}
+
+export interface NextTestSuggestion {
+  type: "combo-test" | "data-quality-warning";
+  action: string;
+  reason: string;
+  confidence: "High" | "Moderate" | "Directional" | "Needs More Data";
+  evidence: string;
+}
