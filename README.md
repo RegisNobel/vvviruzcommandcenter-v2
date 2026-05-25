@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-25 15:58 -04:00
+
+- **Updated Promo Intelligence Summary Naming + UTM Convention & Short Links UTM Preset Helpers**:
+  - Expanded the Naming Convention card on the Promo page to **Naming + UTM Convention**, detailing both the Meta CSV ad naming structure (`release_visual_songsection_revision`) and its corresponding UTM parameter mapping.
+  - Added a concrete example using the `mahoraga` release (`mahoraga_amv916_chorus_rev1`) demonstrating exactly how ad names map to `utm_content`.
+  - Added a `useEffect` hook in `components/short-links-admin-page.tsx` to automatically pre-fill/suggest `utm_source=meta`, `utm_medium=paid_social`, and `utm_campaign=[release slug]` when a release is selected.
+  - Updated the UTM presets guide and added explicit inline helper labels underneath the campaign and content fields, reinforcing the `Ad Name = utm_content` and `Release slug = utm_campaign` mapping conventions.
+
 ### 2026-05-25 15:44 -04:00
 
 - **Extracted Discovery Quality Checklist & Added to Releases Dashboard**:

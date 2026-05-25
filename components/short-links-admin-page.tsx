@@ -92,6 +92,19 @@ export function ShortLinksAdminPage({
     setContextDrafts(createContextDrafts(initialLinks));
   }, [initialLinks]);
 
+  useEffect(() => {
+    if (!releaseId) return;
+    const selectedRelease = releaseOptions.find((r) => r.id === releaseId);
+    if (!selectedRelease) return;
+
+    setUtmFields((current) => ({
+      ...current,
+      utm_source: current.utm_source || "meta",
+      utm_medium: current.utm_medium || "paid_social",
+      utm_campaign: selectedRelease.slug
+    }));
+  }, [releaseId, releaseOptions]);
+
   function updateUtmField(key: keyof UtmFields, value: string) {
     setUtmFields((current) => ({
       ...current,
@@ -311,20 +324,19 @@ export function ShortLinksAdminPage({
 
             <div className="mt-4 grid gap-3 rounded-[20px] border border-[#3b3322] bg-[#17140d] p-4 text-sm leading-6 text-[#d7c48f] md:grid-cols-2">
               <p>
-                <span className="font-semibold text-[#f1dfad]">Source</span> is where
-                traffic comes from, like `meta`, `instagram`, or `email`.
+                <span className="font-semibold text-[#f1dfad]">utm_source</span> is where traffic comes from. For paid campaigns, use <code className="text-ink">meta</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">Medium</span> is the
-                traffic lane, like `paid_social`, `bio_link`, or `organic_social`.
+                <span className="font-semibold text-[#f1dfad]">utm_medium</span> is the traffic lane. For paid campaigns, use <code className="text-ink">paid_social</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">Campaign</span> should
-                usually be the release or rollout name, like `mad_bunny`.
+                <span className="font-semibold text-[#f1dfad]">utm_campaign</span> is the campaign release slug. <code className="text-ink">Release slug = utm_campaign</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">Content</span> should
-                match the ad or creative name when possible, like `mad_bunny_amv_v1`.
+                <span className="font-semibold text-[#f1dfad]">utm_content</span> is the creative ad identifier. <code className="text-ink">Ad Name = utm_content</code>.
+              </p>
+              <p className="md:col-span-2 text-xs text-[#efdfba] border-t border-[#3b3322] pt-2 mt-1">
+                <strong>Attribution Rule:</strong> Ad Name = utm_content. Release slug = utm_campaign. This keeps Meta CSV imports, Short Links, and Attribution matched.
               </p>
             </div>
 
@@ -385,6 +397,7 @@ export function ShortLinksAdminPage({
                   placeholder="mad_bunny"
                   value={utmFields.utm_campaign ?? ""}
                 />
+                <span className="mt-1 block text-[10px] text-muted">Release slug = utm_campaign.</span>
               </label>
 
               <label className="block">
@@ -392,9 +405,10 @@ export function ShortLinksAdminPage({
                 <input
                   className="field-input mt-2"
                   onChange={(event) => updateUtmField("utm_content", event.target.value)}
-                  placeholder="mad_bunny_ad_1"
+                  placeholder="mad_bunny_amv916_chorus_rev1"
                   value={utmFields.utm_content ?? ""}
                 />
+                <span className="mt-1 block text-[10px] text-muted">Use the exact Meta ad name for utm_content. Ad Name = utm_content.</span>
               </label>
 
               <label className="block xl:col-span-2">
