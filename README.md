@@ -471,6 +471,15 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-25 16:22 -04:00
+
+- **Implemented Desktop Left-Sidebar Navigation for Command Center**:
+  - Re-organized the admin layout to include a persistent, fixed left-sidebar on desktop screen sizes (`lg` viewport).
+  - Maintained the top horizontal navigation and header layout for mobile and tablet devices (`lg:hidden`).
+  - Set the desktop sidebar to a fixed width of `w-64` (256px) and added appropriate `lg:pl-64` left-padding to the main content container in `app/admin/(protected)/layout.tsx` to prevent any overlapping.
+  - Retained top-level navigation links only (Releases, Promo, Audience, Public Site, Commissions, Backups) and positioned the logout form/button cleanly at the bottom of the sidebar.
+  - Preserved active route highlighting for the navigation links, including nested/related sub-routes under the "Promo" tab (such as Short Links, Copy Lab, and Attribution).
+
 ### 2026-05-25 15:58 -04:00
 
 - **Updated Promo Intelligence Summary Naming + UTM Convention & Short Links UTM Preset Helpers**:
