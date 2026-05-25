@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, BarChart3, UploadCloud, Camera} from "lucide-react";
+import {ArrowRight, BarChart3, Camera} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {ReleaseFilterSelect} from "@/components/release-filter-select";
@@ -187,11 +187,6 @@ export default async function AdminAdLabPage({
                 Plan, track, and learn from release campaigns.
               </p>
             </div>
- 
-            <Link className="action-button-primary" href="/admin/ad-lab/import">
-              <UploadCloud size={16} />
-              Import Meta CSV
-            </Link>
           </div>
         </section>
  
