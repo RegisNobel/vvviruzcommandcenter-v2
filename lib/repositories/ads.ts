@@ -79,6 +79,13 @@ type AdReportWithLinks = AdCreativeReport & {
   copyLinks: Array<{
     copyEntry: CopyEntry;
   }>;
+  directCopyLinks?: Array<{
+    copyEntry: CopyEntry;
+  }>;
+  effectiveCopyLinks?: Array<{
+    copyEntry: CopyEntry;
+  }>;
+  copyLinkSource?: "direct" | "carryover" | "none";
 };
 
 type BatchWithReports = AdImportBatch & {
@@ -272,8 +279,9 @@ function toReportRecord(
   report: AdReportWithLinks,
   averages: {costPerResult: number | null; ctr: number | null}
 ): AdCreativeReportRecord {
-  const linkedCopy = report.copyLinks[0]?.copyEntry
-    ? toCopySummary(report.copyLinks[0].copyEntry)
+  const targetLinks = report.effectiveCopyLinks || report.copyLinks;
+  const linkedCopy = targetLinks[0]?.copyEntry
+    ? toCopySummary(targetLinks[0].copyEntry)
     : null;
 
   return {
@@ -330,6 +338,7 @@ function toReportRecord(
     utm_campaign: normalizeString(report.utmCampaign),
     utm_content: normalizeString(report.utmContent),
     linked_copy: linkedCopy,
+    copy_link_source: report.copyLinkSource || (report.copyLinks.length > 0 ? "direct" : "none"),
     performance_signals: calculateReportSignals(report, averages),
     created_at: report.createdAt.toISOString(),
     updated_at: report.updatedAt.toISOString()
@@ -381,7 +390,10 @@ function summarizeBatch(batch: BatchWithReports): AdImportBatchSummary {
     file_names: fromJsonArray(batch.fileNames),
     notes: batch.notes,
     report_count: reports.length,
-    linked_copy_count: reports.filter((report) => report.copyLinks.length > 0).length,
+    linked_copy_count: reports.filter((report) => {
+      const targetLinks = report.effectiveCopyLinks || report.copyLinks;
+      return targetLinks.length > 0;
+    }).length,
     spend,
     impressions,
     reach,
@@ -702,7 +714,96 @@ async function readBatchWithReports(batchId: string): Promise<BatchWithReports> 
     throw new Error("Ad import batch not found.");
   }
 
+  if (batch.releaseId) {
+    await resolveEffectiveCopyLinksForRelease(batch.releaseId, batch.reports);
+  }
+
   return batch;
+}
+
+export async function resolveEffectiveCopyLinksForRelease<T extends AdReportWithLinks>(
+  releaseId: string | null,
+  reports: T[]
+): Promise<T[]> {
+  if (reports.length === 0) {
+    return reports;
+  }
+
+  // Step 0: Initialize direct & effective copy links based on raw db copyLinks
+  for (const r of reports) {
+    r.directCopyLinks = [...r.copyLinks];
+    r.effectiveCopyLinks = [...r.copyLinks];
+    r.copyLinkSource = r.copyLinks.length > 0 ? "direct" : "none";
+  }
+
+  if (!releaseId) {
+    return reports;
+  }
+
+  // 1. Fetch all batches for this release with their reports and copyLinks, ordered chronologically
+  const batches = await prisma.adImportBatch.findMany({
+    where: { releaseId },
+    include: {
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "asc"
+    }
+  });
+
+  // 2. Sequentially build active copy links chronologically (forward-only carryover)
+  const activeCopyLinksMap = new Map<string, CopyEntry>();
+  const resolvedCarryoverMap = new Map<string, CopyEntry>();
+
+  for (const batch of batches) {
+    for (const report of batch.reports) {
+      const normName = normalizeMetaAdName(report.adName);
+      const existingLink = report.copyLinks[0]?.copyEntry;
+      if (existingLink) {
+        activeCopyLinksMap.set(normName, existingLink);
+      } else {
+        const carriedOver = activeCopyLinksMap.get(normName);
+        if (carriedOver) {
+          resolvedCarryoverMap.set(report.id, carriedOver);
+        }
+      }
+    }
+  }
+
+  // 3. Apply resolved carryover to the input reports if they have no direct/manual links
+  for (const r of reports) {
+    if (r.directCopyLinks && r.directCopyLinks.length > 0) {
+      // Direct link wins
+      r.copyLinkSource = "direct";
+    } else {
+      const carriedCopy = resolvedCarryoverMap.get(r.id);
+      if (carriedCopy) {
+        r.effectiveCopyLinks = [
+          {
+            id: `virtual-${r.id}`,
+            adCreativeReportId: r.id,
+            copyEntryId: carriedCopy.id,
+            createdAt: new Date(),
+            copyEntry: carriedCopy
+          }
+        ] as any;
+        r.copyLinkSource = "carryover";
+      } else {
+        r.effectiveCopyLinks = [];
+        r.copyLinkSource = "none";
+      }
+    }
+  }
+
+  return reports;
 }
 
 function collectReportingDateRange(rows: ParsedMetaAdRow[]) {
@@ -1036,6 +1137,18 @@ export async function readAdImportBatchSummaries(releaseId?: string | null) {
     }
   });
 
+  const reportsByRelease = new Map<string, AdReportWithLinks[]>();
+  for (const batch of batches) {
+    if (batch.releaseId) {
+      const list = reportsByRelease.get(batch.releaseId) || [];
+      list.push(...batch.reports);
+      reportsByRelease.set(batch.releaseId, list);
+    }
+  }
+  for (const [rid, rpts] of reportsByRelease.entries()) {
+    await resolveEffectiveCopyLinksForRelease(rid, rpts);
+  }
+
   return batches.map(summarizeBatch);
 }
 
@@ -1359,6 +1472,9 @@ export async function readReleaseCampaignHistory(
     }
   });
 
+  const allReports = batches.flatMap((b) => b.reports);
+  await resolveEffectiveCopyLinksForRelease(releaseId, allReports);
+
   const archivedCycles = batches
     .flatMap((batch) =>
       batch.learnings
@@ -1447,6 +1563,9 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
     return emptyReleaseAdMetrics;
   }
 
+  const allReports = batches.flatMap((b) => b.reports);
+  await resolveEffectiveCopyLinksForRelease(releaseId, allReports);
+
   let metricBatches: typeof batches;
   let sourceLabel = "";
   let sourceContext: ReleaseAdMetricsOverview["source_context"] = null;
@@ -1498,18 +1617,18 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
     }
   }
 
-  const allReports = metricBatches.flatMap((batch) => batch.reports);
-  const averages = createBatchAverages(allReports);
-  const reportRecords = allReports.map((report) => toReportRecord(report as AdReportWithLinks, averages));
+  const metricReports = metricBatches.flatMap((batch) => batch.reports);
+  const averages = createBatchAverages(metricReports);
+  const reportRecords = metricReports.map((report) => toReportRecord(report as AdReportWithLinks, averages));
 
-  const totalSpend = sum(allReports.map((r) => r.spend));
-  const totalImpressions = sum(allReports.map((r) => r.impressions));
-  const totalReach = sum(allReports.map((r) => r.reach));
-  const totalResults = sum(allReports.map((r) => r.results));
-  const totalLinkClicks = sum(allReports.map((r) => r.linkClicks));
-  const totalLandingPageViews = sum(allReports.map((r) => r.landingPageViews));
-  const totalThruPlays = sum(allReports.map((r) => r.thruPlays));
-  const totalVideo100 = sum(allReports.map((r) => r.video100));
+  const totalSpend = sum(metricReports.map((r) => r.spend));
+  const totalImpressions = sum(metricReports.map((r) => r.impressions));
+  const totalReach = sum(metricReports.map((r) => r.reach));
+  const totalResults = sum(metricReports.map((r) => r.results));
+  const totalLinkClicks = sum(metricReports.map((r) => r.linkClicks));
+  const totalLandingPageViews = sum(metricReports.map((r) => r.landingPageViews));
+  const totalThruPlays = sum(metricReports.map((r) => r.thruPlays));
+  const totalVideo100 = sum(metricReports.map((r) => r.video100));
 
   const getCpr = (r: AdCreativeReportRecord) => r.cost_per_result ?? cost(r.spend ?? 0, r.results ?? 0);
 
@@ -2205,32 +2324,9 @@ export async function readCopyPerformanceMemory(
     }
   });
 
-  // Dynamic copy link carryover across batches chronologically
-  const activeCopyLinksMap = new Map<string, CopyEntry>();
-  for (const batch of batches) {
-    for (const report of batch.reports) {
-      const normName = normalizeMetaAdName(report.adName);
-      const existingLink = report.copyLinks[0]?.copyEntry;
-      if (existingLink) {
-        activeCopyLinksMap.set(normName, existingLink);
-      } else {
-        const carriedOver = activeCopyLinksMap.get(normName);
-        if (carriedOver) {
-          report.copyLinks = [
-            {
-              id: `virtual-${report.id}`,
-              adCreativeReportId: report.id,
-              copyEntryId: carriedOver.id,
-              createdAt: new Date(),
-              copyEntry: carriedOver,
-            },
-          ] as any;
-        }
-      }
-    }
-  }
+  const allReports = batches.flatMap((b) => b.reports) as AdReportWithLinks[];
+  await resolveEffectiveCopyLinksForRelease(releaseId, allReports);
 
-  const allReports = batches.flatMap((b) => b.reports);
   const averages = createBatchAverages(allReports);
   const reportRecords = allReports.map((report) => toReportRecord(report, averages));
   const followThroughs = await createLinkFollowThrough(reportRecords);
@@ -2273,7 +2369,8 @@ export async function readCopyPerformanceMemory(
   const adCopyStatus = new Map<string, boolean>();
 
   for (const item of reportsWithData) {
-    const hasLink = item.report.copyLinks.length > 0;
+    const targetLinks = item.report.effectiveCopyLinks || item.report.copyLinks;
+    const hasLink = targetLinks.length > 0;
     const normName = normalizeMetaAdName(item.report.adName);
     totalSpend += item.report.spend ?? 0;
     if (hasLink) {
@@ -2339,7 +2436,8 @@ export async function readCopyPerformanceMemory(
   }
 
   for (const item of reportsWithData) {
-    const copyLink = item.report.copyLinks[0]?.copyEntry;
+    const targetLinks = item.report.effectiveCopyLinks || item.report.copyLinks;
+    const copyLink = targetLinks[0]?.copyEntry;
     const normName = normalizeMetaAdName(item.report.adName);
 
     if (copyLink) {

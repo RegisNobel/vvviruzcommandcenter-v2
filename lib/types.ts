@@ -606,6 +606,7 @@ export type AdCreativeReportRecord = {
   utm_campaign: string;
   utm_content: string;
   linked_copy: CopySummary | null;
+  copy_link_source?: "direct" | "carryover" | "none";
   performance_signals: string[];
   created_at: string;
   updated_at: string;

@@ -1537,18 +1537,28 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                         ))}
                       </select>
                       {report.linked_copy ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-2 items-center">
+                          {report.copy_link_source === "carryover" ? (
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
+                              Carried Link
+                            </span>
+                          ) : null}
+                          {report.linked_copy.hook ? (
+                            <p className="w-full text-xs font-medium text-ink italic bg-[#14171c]/50 p-2 rounded border border-[#2a2f37] leading-relaxed">
+                              &quot;{report.linked_copy.hook}&quot;
+                            </p>
+                          ) : null}
                           <span className="pill">
                             {formatHookType(report.linked_copy.hook_type)}
                           </span>
-                          <span className="pill">
-                            {formatContentType(report.linked_copy.content_type)}
+                          <span className="pill text-[10px] opacity-60">
+                            {formatContentType(report.linked_copy.content_type)} (Legacy)
                           </span>
-                          <span className="pill">
-                            {formatSongSection(report.linked_copy.song_section)}
+                          <span className="pill text-[10px] opacity-60">
+                            {formatSongSection(report.linked_copy.song_section)} (Legacy)
                           </span>
                           {report.linked_copy.creative_notes ? (
-                            <p className="mt-2 text-xs leading-5 text-muted">
+                            <p className="mt-2 text-xs leading-5 text-[#969ca5] w-full">
                               {report.linked_copy.creative_notes}
                             </p>
                           ) : null}
