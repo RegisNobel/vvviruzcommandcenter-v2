@@ -322,14 +322,30 @@ export default async function AdminAdLabPage({
             <div className="flex flex-col justify-between rounded-[20px] border border-[#30343b] bg-[#121418] p-5">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  Naming Convention
+                  Naming + UTM Convention
                 </p>
-                <div className="mt-3">
-                  <div className="rounded-lg border border-[#342e1f] bg-[#1a1710] px-3 py-1.5 text-xs font-mono text-[#d7b45e] break-all">
-                    release_visual_songsection_revision
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-muted block">Ad Name Pattern</span>
+                    <div className="mt-1 rounded-lg border border-[#342e1f] bg-[#1a1710] px-3 py-1.5 text-xs font-mono text-[#d7b45e] break-all">
+                      release_visual_songsection_revision
+                    </div>
                   </div>
-                  <p className="mt-2 text-[10px] leading-4 text-muted">
-                    Example: <code className="text-ink">madbunny_amv_chorus_rev1</code>. Keeps parsed revisions separate.
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-muted block">UTM Mapping</span>
+                    <div className="mt-1 rounded-lg border border-[#30343b] bg-[#171a21] px-3 py-1.5 text-xs font-mono text-[#8cb4f5] space-y-1">
+                      <div>utm_source=meta</div>
+                      <div>utm_medium=paid_social</div>
+                      <div>utm_campaign=release</div>
+                      <div>utm_content=release_visual_songsection_revision</div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] leading-4 text-muted border-t border-[#25282f] pt-2">
+                    <strong>Example (Mahoraga):</strong>
+                    <br />
+                    Ad: <code className="text-ink font-mono text-[10px]">mahoraga_amv916_chorus_rev1</code>
+                    <br />
+                    UTM content: <code className="text-[#8cb4f5] font-mono text-[10px]">mahoraga_amv916_chorus_rev1</code>
                   </p>
                 </div>
               </div>
