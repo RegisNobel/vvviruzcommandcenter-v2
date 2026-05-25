@@ -4,6 +4,7 @@ import Link from "next/link";
 import {ArrowRight, BarChart3, UploadCloud, Camera} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
+import {ReleaseFilterSelect} from "@/components/release-filter-select";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
 import {readReleaseSummaries} from "@/lib/server/releases";
 import {prisma} from "@/lib/db/prisma";
@@ -377,31 +378,10 @@ export default async function AdminAdLabPage({
             <h2 className="mt-2 text-2xl font-semibold text-ink">Campaign scope</h2>
           </div>
 
-          <div className="mobile-scroll-x flex gap-2">
-            <Link
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${
-                !activeReleaseId
-                  ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                  : "border-[#30343b] bg-[#15181c] text-[#d5d9df]"
-              }`}
-              href="/admin/ad-lab"
-            >
-              All Releases
-            </Link>
-            {releases.map((release) => (
-              <Link
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${
-                  activeReleaseId === release.id
-                    ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df]"
-                }`}
-                href={`/admin/ad-lab?releaseId=${release.id}`}
-                key={release.id}
-              >
-                {release.title}
-              </Link>
-            ))}
-          </div>
+          <ReleaseFilterSelect
+            releases={releases}
+            activeReleaseId={activeReleaseId}
+          />
         </section>
 
         <section className="space-y-4" id="batch-list">
