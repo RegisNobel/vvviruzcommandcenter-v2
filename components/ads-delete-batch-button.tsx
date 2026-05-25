@@ -85,79 +85,84 @@ export function AdsDeleteBatchButton({
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6 max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
-            <div className="flex items-start justify-between gap-4 flex-shrink-0">
-              <div>
-                <p className="field-label text-[#e79a8f]">Destructive cleanup</p>
-                <h2 className="mt-2 text-2xl font-semibold text-ink">Delete ad import batch?</h2>
-              </div>
-              <button
-                className="action-button-tertiary !w-auto"
-                onClick={() => setIsOpen(false)}
-                type="button"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4 text-sm leading-6 text-muted overflow-y-auto flex-1 min-h-0 pr-1">
-              <p>
-                This will permanently delete{" "}
-                <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
-              </p>
-              <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
-                <p className="font-semibold text-[#f0d7d2]">This will delete:</p>
-                <p className="mt-2">
-                  the import batch, its ad report rows, Copy Lab links attached to those rows,
-                  and campaign learnings for this batch.
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-[#30343b] bg-[#121418] px-4 py-4">
-                <p className="font-semibold text-ink">This will not delete:</p>
-                <p className="mt-2">
-                  releases, Copy Lab entries, other ad batches, /links analytics, public site
-                  content, or any release data.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex-shrink-0 space-y-4">
-              <label className="block space-y-2">
-                <span className="field-label">Type DELETE to confirm</span>
-                <input
-                  className="field-input"
-                  onChange={(event) => setConfirmation(event.target.value)}
-                  placeholder="DELETE"
-                  value={confirmation}
-                />
-              </label>
-
-              {message ? (
-                <div className="mt-4 rounded-[18px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
-                  {message}
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}
+        >
+          <div className="flex min-h-full items-center justify-center p-4 py-8">
+            <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="field-label text-[#e79a8f]">Destructive cleanup</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">Delete ad import batch?</h2>
                 </div>
-              ) : null}
-            </div>
+                <button
+                  className="action-button-tertiary !w-auto"
+                  onClick={() => setIsOpen(false)}
+                  type="button"
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-            <div className="mt-6 flex flex-wrap justify-end gap-3 flex-shrink-0">
-              <button
-                className="action-button-secondary"
-                disabled={isDeleting}
-                onClick={() => setIsOpen(false)}
-                type="button"
-              >
-                Keep Batch
-              </button>
-              <button
-                className="action-button-danger"
-                disabled={!canDelete || isDeleting}
-                onClick={() => void handleDelete()}
-                type="button"
-              >
-                <Trash2 size={16} />
-                {isDeleting ? "Deleting..." : "Delete Batch"}
-              </button>
+              <div className="mt-5 space-y-4 text-sm leading-6 text-muted">
+                <p>
+                  This will permanently delete{" "}
+                  <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
+                </p>
+                <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
+                  <p className="font-semibold text-[#f0d7d2]">This will delete:</p>
+                  <p className="mt-2">
+                    the import batch, its ad report rows, Copy Lab links attached to those rows,
+                    and campaign learnings for this batch.
+                  </p>
+                </div>
+                <div className="rounded-[22px] border border-[#30343b] bg-[#121418] px-4 py-4">
+                  <p className="font-semibold text-ink">This will not delete:</p>
+                  <p className="mt-2">
+                    releases, Copy Lab entries, other ad batches, /links analytics, public site
+                    content, or any release data.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <label className="block space-y-2">
+                  <span className="field-label">Type DELETE to confirm</span>
+                  <input
+                    className="field-input"
+                    onChange={(event) => setConfirmation(event.target.value)}
+                    placeholder="DELETE"
+                    value={confirmation}
+                  />
+                </label>
+
+                {message ? (
+                  <div className="rounded-[18px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
+                    {message}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-6 flex flex-wrap justify-end gap-3">
+                <button
+                  className="action-button-secondary"
+                  disabled={isDeleting}
+                  onClick={() => setIsOpen(false)}
+                  type="button"
+                >
+                  Keep Batch
+                </button>
+                <button
+                  className="action-button-danger"
+                  disabled={!canDelete || isDeleting}
+                  onClick={() => void handleDelete()}
+                  type="button"
+                >
+                  <Trash2 size={16} />
+                  {isDeleting ? "Deleting..." : "Delete Batch"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
