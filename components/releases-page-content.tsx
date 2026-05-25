@@ -240,7 +240,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
               key={release.id}
               onClick={() => router.push(`/admin/releases/${release.id}`)}
             >
-              <div className="grid gap-5 lg:grid-cols-[80px_minmax(0,1.2fr)_150px_180px_minmax(240px,1fr)_132px] lg:items-center">
+              <div className="grid gap-5 lg:grid-cols-[50px_minmax(0,1.2fr)_110px_130px_minmax(180px,1fr)_minmax(200px,1fr)_110px] lg:items-center">
                 <div className="pill w-fit">{index + 1}</div>
 
                 <div className="min-w-0">
@@ -284,6 +284,22 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                       {release.progress_percentage}%
                     </span>
                   </div>
+                </div>
+
+                <div className="min-w-0">
+                  <p className="field-label">Discovery Quality</p>
+                  <p className={`mt-2 text-sm font-semibold ${
+                    release.discovery_status === "Ready"
+                      ? "text-emerald-400"
+                      : release.discovery_status === "Needs polish"
+                        ? "text-amber-400"
+                        : "text-red-400"
+                  }`}>
+                    {release.discovery_status}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {release.discovery_passed} passed · {release.discovery_warning} warning · {release.discovery_missing} missing
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-end gap-3">

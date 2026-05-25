@@ -50,7 +50,11 @@ import {
   createReleaseTask,
   getReleasePublishBlockers,
   getReleaseProgressTone,
-  getSuggestedReleaseSlug
+  getSuggestedReleaseSlug,
+  getDiscoveryChecklist,
+  getDiscoveryReadinessLabel,
+  type DiscoveryChecklistStatus,
+  type DiscoveryChecklistItem
 } from "@/lib/releases";
 import {
   getCurrentReleasePlanningStage,
@@ -98,15 +102,6 @@ const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
 ];
 
 type SaveState = "idle" | "saving" | "saved" | "error";
-type DiscoveryChecklistStatus = "passed" | "warning" | "missing";
-type DiscoveryChecklistPriority = "essential" | "polish" | "bonus";
-
-type DiscoveryChecklistItem = {
-  detail: string;
-  label: string;
-  priority: DiscoveryChecklistPriority;
-  status: DiscoveryChecklistStatus;
-};
 
 function serializeRelease(release: ReleaseRecord) {
   return JSON.stringify(release);
@@ -236,171 +231,7 @@ function getFallbackMetaDescription(release: ReleaseRecord) {
   );
 }
 
-function createDiscoveryChecklistItem({
-  detail,
-  hasFallback = false,
-  hasValue,
-  label,
-  priority
-}: {
-  detail: string;
-  hasFallback?: boolean;
-  hasValue: boolean;
-  label: string;
-  priority: DiscoveryChecklistPriority;
-}): DiscoveryChecklistItem {
-  return {
-    detail,
-    label,
-    priority,
-    status: hasValue ? "passed" : hasFallback ? "warning" : "missing"
-  };
-}
 
-function getDiscoveryChecklist(release: ReleaseRecord): DiscoveryChecklistItem[] {
-  const hasStreamingLink =
-    Boolean(release.streaming_links.spotify.trim()) ||
-    Boolean(release.streaming_links.apple_music.trim()) ||
-    Boolean(release.streaming_links.youtube.trim());
-  const hasTitle = Boolean(release.title.trim());
-  const hasSeoTitle = Boolean(release.seo_title.trim());
-  const hasPublicSummary = Boolean(release.public_description.trim());
-  const hasMetaDescription = Boolean(release.meta_description.trim());
-  const hasSocialShareTitle = Boolean(release.social_share_title.trim());
-  const hasSocialShareDescription = Boolean(release.social_share_description.trim());
-  const hasCoverArtAltText = Boolean(release.cover_art_alt_text.trim());
-  const hasLyrics = Boolean(release.lyrics.trim());
-
-  return [
-    createDiscoveryChecklistItem({
-      detail: hasSeoTitle
-        ? "Dedicated SEO title is saved."
-        : "Using the release title as the search title.",
-      hasFallback: hasTitle,
-      hasValue: hasSeoTitle,
-      label: "SEO Title",
-      priority: "polish"
-    }),
-    createDiscoveryChecklistItem({
-      detail: hasMetaDescription
-        ? "Dedicated search description is saved."
-        : "Using the public summary as the search description.",
-      hasFallback: hasPublicSummary,
-      hasValue: hasMetaDescription,
-      label: "Meta Description",
-      priority: "essential"
-    }),
-    createDiscoveryChecklistItem({
-      detail: hasCoverArtAltText
-        ? "Cover art has a custom image description."
-        : "Using the generated cover art description.",
-      hasFallback: hasTitle,
-      hasValue: hasCoverArtAltText,
-      label: "Cover Art Alt Text",
-      priority: "polish"
-    }),
-    createDiscoveryChecklistItem({
-      detail: hasSocialShareTitle
-        ? "Dedicated social title is saved."
-        : "Using the SEO title or release title for shares.",
-      hasFallback: hasSeoTitle || hasTitle,
-      hasValue: hasSocialShareTitle,
-      label: "Social Share Title",
-      priority: "polish"
-    }),
-    createDiscoveryChecklistItem({
-      detail: hasSocialShareDescription
-        ? "Dedicated social description is saved."
-        : "Using the meta description or public summary for shares.",
-      hasFallback: hasMetaDescription || hasPublicSummary,
-      hasValue: hasSocialShareDescription,
-      label: "Social Share Description",
-      priority: "polish"
-    }),
-    {
-      detail: release.slug.trim()
-        ? "Public release URL is ready."
-        : "Add a URL slug so the public page has a stable address.",
-      label: "Public URL",
-      priority: "essential",
-      status: release.slug.trim() ? "passed" : "missing"
-    },
-    {
-      detail: hasPublicSummary
-        ? "Short public summary is ready for cards and snippets."
-        : "Add a short summary for music cards, previews, and search snippets.",
-      label: "Public Summary",
-      priority: "essential",
-      status: hasPublicSummary ? "passed" : "missing"
-    },
-    {
-      detail: release.public_long_description.trim()
-        ? "Extended story is ready for the release page."
-        : "Add a deeper release story when this page needs more context.",
-      label: "Release Story",
-      priority: "polish",
-      status: release.public_long_description.trim() ? "passed" : "warning"
-    },
-    {
-      detail: hasReleaseCoverArt(release)
-        ? "Cover art is available for cards and share previews."
-        : "Upload cover art before relying on public discovery.",
-      label: "Cover Art",
-      priority: "essential",
-      status: hasReleaseCoverArt(release) ? "passed" : "missing"
-    },
-    {
-      detail: hasStreamingLink
-        ? "At least one listening destination is available."
-        : "Add at least one streaming link so listeners have somewhere to go.",
-      label: "Streaming Link",
-      priority: "essential",
-      status: hasStreamingLink ? "passed" : "missing"
-    },
-    {
-      detail: hasLyrics
-        ? release.public_lyrics_enabled
-          ? "Lyrics exist and are included publicly."
-          : "Lyrics exist but are currently hidden from the public page."
-        : "No lyrics are saved, so public lyric visibility is not needed yet.",
-      label: "Lyrics Visibility",
-      priority: "polish",
-      status: hasLyrics ? (release.public_lyrics_enabled ? "passed" : "warning") : "passed"
-    },
-    {
-      detail: release.is_published
-        ? "This release is visible on public surfaces."
-        : "Release is still hidden from public discovery surfaces.",
-      label: "Public Visibility",
-      priority: "essential",
-      status: release.is_published ? "passed" : "warning"
-    },
-    {
-      detail: release.featured_video_url.trim()
-        ? "Featured video is available as an extra discovery asset."
-        : "Optional bonus: add a featured video when one is ready.",
-      label: "Featured Video",
-      priority: "bonus",
-      status: release.featured_video_url.trim() ? "passed" : "warning"
-    }
-  ];
-}
-
-function getDiscoveryReadinessLabel(items: DiscoveryChecklistItem[]) {
-  const hasMissingEssential = items.some(
-    (item) => item.priority === "essential" && item.status === "missing"
-  );
-
-  if (hasMissingEssential) {
-    return "Missing essentials";
-  }
-
-  const hasPolishWarning = items.some(
-    (item) => item.priority !== "bonus" && item.status === "warning"
-  );
-
-  return hasPolishWarning ? "Needs polish" : "Ready";
-}
 
 const pageShellClass =
   "min-h-[calc(100vh-81px)] bg-[#0f1114] text-[#e7e2d8]";
