@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {Trash2, X} from "lucide-react";
 
@@ -21,6 +21,21 @@ export function AdsDeleteBatchButton({
   const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const canDelete = confirmation === "DELETE";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   async function handleDelete() {
     if (!canDelete) {
@@ -71,8 +86,8 @@ export function AdsDeleteBatchButton({
 
       {isOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6">
-            <div className="flex items-start justify-between gap-4">
+          <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6 max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+            <div className="flex items-start justify-between gap-4 flex-shrink-0">
               <div>
                 <p className="field-label text-[#e79a8f]">Destructive cleanup</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Delete ad import batch?</h2>
@@ -86,7 +101,7 @@ export function AdsDeleteBatchButton({
               </button>
             </div>
 
-            <div className="mt-5 space-y-4 text-sm leading-6 text-muted">
+            <div className="mt-5 space-y-4 text-sm leading-6 text-muted overflow-y-auto flex-1 pr-1">
               <p>
                 This will permanently delete{" "}
                 <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
@@ -105,9 +120,9 @@ export function AdsDeleteBatchButton({
                   content, or any release data.
                 </p>
               </div>
-            </div>
 
-            <label className="mt-5 block space-y-2">
+
+            <label className="block space-y-2">
               <span className="field-label">Type DELETE to confirm</span>
               <input
                 className="field-input"
@@ -122,8 +137,9 @@ export function AdsDeleteBatchButton({
                 {message}
               </div>
             ) : null}
+            </div>
 
-            <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <div className="mt-6 flex flex-wrap justify-end gap-3 flex-shrink-0">
               <button
                 className="action-button-secondary"
                 disabled={isDeleting}
