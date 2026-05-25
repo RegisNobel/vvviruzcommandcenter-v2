@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-25 15:44 -04:00
+
+- **Extracted Discovery Quality Checklist & Added to Releases Dashboard**:
+  - Extracted the computed Discovery Quality checklist logic (`getDiscoveryChecklist` and `getDiscoveryReadinessLabel`) from `components/release-detail-editor.tsx` and moved it into the shared `@/lib/releases` utilities.
+  - Added discovery quality fields (`discovery_status`, `discovery_passed`, `discovery_warning`, `discovery_missing`) to the `ReleaseSummary` type definition in `lib/types.ts`.
+  - Updated `summarizeRelease` in `lib/releases.ts` to compute these discovery metrics at the DTO level, ensuring all page fetches automatically receive populated discovery quality metadata.
+  - Updated `components/releases-page-content.tsx` to display a compact Discovery Quality readout on each release card/row showing the color-coded status (`Ready` in green, `Needs polish` in amber, `Missing essentials` in red) along with the passed, warning, and missing counts.
+
 ### 2026-05-25 15:33 -04:00
 
 - **Promo Hub Reorganization and Navigation Cleanup**:

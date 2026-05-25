@@ -296,6 +296,10 @@ export type ReleaseSummary = {
   isrc: string;
   progress_percentage: number;
   updated_on: string;
+  discovery_status: "Ready" | "Needs polish" | "Missing essentials";
+  discovery_passed: number;
+  discovery_warning: number;
+  discovery_missing: number;
 };
 export type ReleasePlanStep = {
   id: string;
