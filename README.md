@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-25 15:33 -04:00
+
+- **Promo Hub Reorganization and Navigation Cleanup**:
+  - Removed "Short Links" and "Attribution" links from the main admin navigation bar to reduce visual clutter and simplify entry points.
+  - Keep both routes active, fully functional, and accessible through the Promo page workflow strip.
+  - Added navigation routing checks to ensure the "Promo" navigation item remains highlighted as active when visiting Promo-related sub-routes directly (`/admin/short-links`, `/admin/attribution`, `/admin/copy-lab`).
+  - Removed the "Import Meta CSV" primary CTA button from the Promo page header card, centralizing all campaign setup and execution tools within the Promo workflow strip.
+
 ### 2026-05-23 05:25 -04:00
 
 - **Implemented Creative Diagnosis & Next Test Suggestions v1**:

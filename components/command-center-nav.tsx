@@ -8,8 +8,6 @@ import {cn} from "@/lib/utils";
 const navItems = [
   {href: "/admin/releases", label: "Releases"},
   {href: "/admin/ad-lab", label: "Promo"},
-  {href: "/admin/attribution", label: "Attribution"},
-  {href: "/admin/short-links", label: "Short Links"},
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
   {href: "/admin/commissions", label: "Commissions"},
@@ -38,7 +36,17 @@ export function CommandCenterNav() {
 
         <nav aria-label="Admin navigation" className="mobile-scroll-x flex items-center gap-2 lg:mx-0 lg:px-0">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            let isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            if (item.href === "/admin/ad-lab") {
+              isActive =
+                isActive ||
+                pathname === "/admin/copy-lab" ||
+                pathname.startsWith("/admin/copy-lab/") ||
+                pathname === "/admin/short-links" ||
+                pathname.startsWith("/admin/short-links/") ||
+                pathname === "/admin/attribution" ||
+                pathname.startsWith("/admin/attribution/");
+            }
 
             return (
               <Link
