@@ -86,7 +86,7 @@ export function AdsDeleteBatchButton({
 
       {isOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6 max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+          <div className="w-full max-w-xl rounded-[28px] border border-[#5a312d] bg-[#111418] p-5 shadow-2xl sm:p-6 max-h-[calc(100vh-6rem)] flex flex-col overflow-hidden">
             <div className="flex items-start justify-between gap-4 flex-shrink-0">
               <div>
                 <p className="field-label text-[#e79a8f]">Destructive cleanup</p>
@@ -101,7 +101,7 @@ export function AdsDeleteBatchButton({
               </button>
             </div>
 
-            <div className="mt-5 space-y-4 text-sm leading-6 text-muted overflow-y-auto flex-1 pr-1">
+            <div className="mt-5 space-y-4 text-sm leading-6 text-muted overflow-y-auto flex-1 min-h-0 pr-1">
               <p>
                 This will permanently delete{" "}
                 <span className="font-semibold text-ink">{batchName}</span> from Ad Lab.
@@ -120,23 +120,24 @@ export function AdsDeleteBatchButton({
                   content, or any release data.
                 </p>
               </div>
+            </div>
 
+            <div className="mt-5 flex-shrink-0 space-y-4">
+              <label className="block space-y-2">
+                <span className="field-label">Type DELETE to confirm</span>
+                <input
+                  className="field-input"
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  placeholder="DELETE"
+                  value={confirmation}
+                />
+              </label>
 
-            <label className="block space-y-2">
-              <span className="field-label">Type DELETE to confirm</span>
-              <input
-                className="field-input"
-                onChange={(event) => setConfirmation(event.target.value)}
-                placeholder="DELETE"
-                value={confirmation}
-              />
-            </label>
-
-            {message ? (
-              <div className="mt-4 rounded-[18px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
-                {message}
-              </div>
-            ) : null}
+              {message ? (
+                <div className="mt-4 rounded-[18px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
+                  {message}
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-6 flex flex-wrap justify-end gap-3 flex-shrink-0">
