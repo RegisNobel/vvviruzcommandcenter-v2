@@ -471,6 +471,18 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-25 23:28 -04:00
+
+- **Consolidated Campaign Recommendation Messaging & UI Labels**:
+  - Implemented a unified recommendation engine in [`lib/ads/recommendations.ts`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/lib/ads/recommendations.ts) that deterministically evaluates campaign performance data to output consistent campaign decisions, control creative selections, and next moves.
+  - Aligned page roles and added context-specific recommendation cards:
+    - **Ad Lab**: Renamed the "Next Test" card to **Batch Action** and displays the latest batch readout metrics and action plans.
+    - **Attribution**: Renamed the "Recommended Next Move" card to **Funnel Verdict** and displays funnel streaming-intent conclusions.
+    - **Release Detail**: Displays the unified **Campaign Decision** card and **Next Test Direction** section.
+  - Implemented support for compound decisions (e.g. *Maintain / carefully scale the control + run an iteration test*).
+  - Isolated and rendered data quality warnings (overlapping snapshots, weak UTMs, low sample sizes) separately in each UI view without replacing main decision text.
+  - Enforced cautious, correlation-based phrasing rules across all generated recommendations and replaced references to "Hook" with "Copy Angle."
+
 ### 2026-05-25 16:22 -04:00
 
 - **Implemented Desktop Left-Sidebar Navigation for Command Center**:
