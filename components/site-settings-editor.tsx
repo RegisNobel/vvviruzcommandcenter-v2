@@ -13,6 +13,7 @@ import type {
 import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
+import {StickyActionDock} from "@/components/sticky-action-dock";
 import {VaultSettingsPanel} from "@/components/vault-settings-panel";
 import {CommissionsSettingsPanel} from "@/components/commissions-settings-panel";
 
@@ -283,35 +284,24 @@ export function SiteSettingsEditor({
         </div>
       </section>
 
-      <div
-        className={`fixed inset-x-0 bottom-6 z-30 px-4 transition-all duration-200 sm:px-6 lg:px-8 ${
-          isCommandDockVisible
-            ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0"
-        }`}
-      >
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 rounded-[24px] border border-[#30343b] bg-[#101215]/95 px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:px-6">
-          <div className="hidden text-base font-semibold text-ink lg:block">
-            Public Site Management
-          </div>
-          <div className="flex w-full items-center justify-between gap-3 lg:w-auto lg:justify-end">
-            <div className="flex items-center gap-2">
-              <span className="pill text-xs">{statusLabel}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="action-button-primary !py-2 !px-4 text-sm flex items-center gap-2" onClick={handleSave} type="button">
-                <Save size={14} />
-                <span className="hidden sm:inline">Save Site Settings</span>
-                <span className="sm:hidden">Save</span>
-              </button>
-              <Link className="action-button-secondary !py-2 !px-3 text-sm hidden sm:inline-flex" href="/admin/releases">
-                <ArrowLeft size={14} />
-                <span className="hidden md:inline">Back to Dashboard</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StickyActionDock
+        isVisible={isCommandDockVisible}
+        label="Public Site Management"
+        statusSlot={<span className="pill text-xs">{statusLabel}</span>}
+        primaryActionSlot={
+          <button className="action-button-primary !py-2 !px-4 text-sm flex items-center gap-2" onClick={handleSave} type="button">
+            <Save size={14} />
+            <span className="hidden sm:inline">Save Site Settings</span>
+            <span className="sm:hidden">Save</span>
+          </button>
+        }
+        secondaryActionsSlot={
+          <Link className="action-button-secondary !py-2 !px-3 text-sm hidden sm:inline-flex" href="/admin/releases">
+            <ArrowLeft size={14} />
+            <span className="hidden md:inline">Back to Dashboard</span>
+          </Link>
+        }
+      />
 
       <nav
         aria-label="Public site settings sections"

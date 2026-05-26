@@ -4,6 +4,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, FolderOpen, Save, Trash2} from "lucide-react";
+import {StickyActionDock} from "@/components/sticky-action-dock";
 
 import {
   contentTypeOptions,
@@ -206,7 +207,7 @@ export function CopyDetailEditor({
   }
 
   return (
-    <main className="px-4 py-5 sm:px-6 lg:px-8">
+    <main className="px-4 py-5 sm:px-6 lg:px-8 pb-36">
       <div className="mx-auto max-w-[1450px] space-y-6">
         <section className="panel overflow-hidden px-6 py-7">
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -262,47 +263,6 @@ export function CopyDetailEditor({
             <ArrowLeft size={16} />
             Back to Copy Lab
           </Link>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {selectedRelease ? (
-              <Link className="action-button-secondary" href={`/admin/releases/${selectedRelease.id}`}>
-                <FolderOpen size={16} />
-                Open Release
-              </Link>
-            ) : null}
-
-            <button
-              className={hasPendingChanges ? "action-button-primary" : "action-button-secondary"}
-              disabled={saveState === "saving" || !hasPendingChanges}
-              onClick={() => void handleManualSave()}
-              type="button"
-            >
-              <Save size={16} />
-              {saveState === "saving" ? "Saving..." : "Save"}
-            </button>
-
-            <button
-              className="action-button-danger"
-              disabled={isDeleting}
-              onClick={() => void handleDelete()}
-              type="button"
-            >
-              <Trash2 size={16} />
-              {isDeleting ? "Deleting..." : "Delete Copy"}
-            </button>
-
-            {message ? (
-              <span
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  isErrorMessage
-                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
-                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                }`}
-              >
-                {message}
-              </span>
-            ) : null}
-          </div>
         </div>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -593,6 +553,60 @@ export function CopyDetailEditor({
             </section>
           </aside>
         </section>
+
+        <StickyActionDock
+          isVisible={true}
+          position="sticky"
+          statusSlot={
+            message ? (
+              <span
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  isErrorMessage
+                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
+                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                }`}
+              >
+                {message}
+              </span>
+            ) : (
+              <span className="pill text-xs">{saveStatusLabel}</span>
+            )
+          }
+          secondaryActionsSlot={
+            <div className="flex items-center gap-2">
+              <Link className="action-button-tertiary" href="/admin/copy-lab">
+                <ArrowLeft size={16} />
+                Back
+              </Link>
+              {selectedRelease ? (
+                <Link className="action-button-secondary" href={`/admin/releases/${selectedRelease.id}`}>
+                  <FolderOpen size={16} />
+                  Open Release
+                </Link>
+              ) : null}
+              <button
+                className="action-button-danger"
+                disabled={isDeleting}
+                onClick={() => void handleDelete()}
+                type="button"
+              >
+                <Trash2 size={16} />
+                Delete Copy
+              </button>
+            </div>
+          }
+          primaryActionSlot={
+            <button
+              className={hasPendingChanges ? "action-button-primary" : "action-button-secondary"}
+              disabled={saveState === "saving" || !hasPendingChanges}
+              onClick={() => void handleManualSave()}
+              type="button"
+            >
+              <Save size={16} />
+              {saveState === "saving" ? "Saving..." : "Save"}
+            </button>
+          }
+        />
       </div>
     </main>
   );

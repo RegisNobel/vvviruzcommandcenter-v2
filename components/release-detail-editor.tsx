@@ -17,6 +17,7 @@ const ReleaseIntelligencePanel = dynamic(
   () => import("./release-intelligence-panel"),
   { ssr: false }
 );
+import {StickyActionDock} from "@/components/sticky-action-dock";
 import {
   Activity,
   AlertTriangle,
@@ -234,7 +235,7 @@ function getFallbackMetaDescription(release: ReleaseRecord) {
 
 
 const pageShellClass =
-  "min-h-[calc(100vh-81px)] bg-[#0f1114] text-[#e7e2d8]";
+  "min-h-[calc(100vh-81px)] bg-[#0f1114] text-[#e7e2d8] pb-36";
 const pagePanelClass =
   "rounded-[28px] border border-[#2a2d32] bg-[#17191d]";
 const pageLabelClass =
@@ -1063,67 +1064,7 @@ export function ReleaseDetailEditor({
           </div>
         </section>
 
-        <div className={`${pagePanelClass} z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.22)] lg:sticky lg:top-[88px]`}>
-          <Link className={pageTertiaryButtonClass} href="/admin/releases">
-            <ArrowLeft size={16} />
-            Back to Releases
-          </Link>
 
-          <nav
-            aria-label="Release detail sections"
-            className="mobile-scroll-x order-3 flex w-full items-center gap-2 lg:order-none lg:w-auto"
-          >
-            {[
-              {href: "#overview", label: "Overview"},
-              {href: "#discovery", label: "Discovery"},
-              {href: "#media", label: "Media"},
-              {href: "#promo-summary", label: "Promo"},
-              {href: "#release-actions", label: "Actions"}
-            ].map((item) => (
-              <a
-                className="shrink-0 rounded-full border border-[#30343b] bg-[#15181c] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
-                href={item.href}
-                key={item.href}
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              className={hasPendingChanges ? pagePrimaryButtonClass : pageSecondaryButtonClass}
-              disabled={saveState === "saving" || !hasPendingChanges}
-              onClick={() => void handleManualSave()}
-              type="button"
-            >
-              <Save size={16} />
-              {saveState === "saving" ? "Saving..." : "Save"}
-            </button>
-
-            <button
-              className={pageDangerButtonClass}
-              disabled={isDeleting}
-              onClick={() => void handleDeleteRelease()}
-              type="button"
-            >
-              <Trash2 size={16} />
-              {isDeleting ? "Deleting..." : "Delete Release"}
-            </button>
-
-            {message ? (
-              <span
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  isErrorMessage
-                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
-                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                }`}
-              >
-                {message}
-              </span>
-            ) : null}
-          </div>
-        </div>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-6">
@@ -2981,6 +2922,75 @@ export function ReleaseDetailEditor({
             </section>
           </aside>
         </section>
+
+        <StickyActionDock
+          isVisible={true}
+          position="sticky"
+          statusSlot={
+            message ? (
+              <span
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  isErrorMessage
+                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
+                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                }`}
+              >
+                {message}
+              </span>
+            ) : (
+              <span className="pill text-xs">{saveStatusLabel}</span>
+            )
+          }
+          secondaryActionsSlot={
+            <div className="flex items-center gap-2">
+              <Link className={pageTertiaryButtonClass} href="/admin/releases">
+                <ArrowLeft size={16} />
+                Back
+              </Link>
+              <button
+                className={pageDangerButtonClass}
+                disabled={isDeleting}
+                onClick={() => void handleDeleteRelease()}
+                type="button"
+              >
+                <Trash2 size={16} />
+                Delete Release
+              </button>
+            </div>
+          }
+          primaryActionSlot={
+            <button
+              className={hasPendingChanges ? pagePrimaryButtonClass : pageSecondaryButtonClass}
+              disabled={saveState === "saving" || !hasPendingChanges}
+              onClick={() => void handleManualSave()}
+              type="button"
+            >
+              <Save size={16} />
+              {saveState === "saving" ? "Saving..." : "Save"}
+            </button>
+          }
+        >
+          <nav
+            aria-label="Release detail sections"
+            className="mobile-scroll-x order-3 flex w-full items-center gap-2 lg:order-none lg:w-auto"
+          >
+            {[
+              {href: "#overview", label: "Overview"},
+              {href: "#discovery", label: "Discovery"},
+              {href: "#media", label: "Media"},
+              {href: "#promo-summary", label: "Promo"},
+              {href: "#release-actions", label: "Actions"}
+            ].map((item) => (
+              <a
+                className="shrink-0 rounded-full border border-[#30343b] bg-[#15181c] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        </StickyActionDock>
       </div>
     </main>
   );
