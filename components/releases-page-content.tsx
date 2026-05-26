@@ -2,6 +2,7 @@
 
 import {useDeferredValue, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
+import {StickyContextBar} from "@/components/sticky-context-bar";
 import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
 
@@ -194,32 +195,27 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           </div>
         </section>
 
-        <div
-          className={`fixed inset-x-0 top-[92px] z-30 hidden px-4 transition-all duration-200 sm:px-6 lg:block lg:px-8 ${
-            isCommandDockVisible
-              ? "pointer-events-auto translate-y-0 opacity-100"
-              : "pointer-events-none -translate-y-3 opacity-0"
-          }`}
-        >
-          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[#30343b] bg-[#101215]/95 px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl">
-            <div className="text-lg font-semibold text-ink">
-              Releases
-            </div>
-            <div className="mx-4 max-w-md flex-1">
-              <span className="relative block">
-                <Search
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-                  size={16}
-                />
-                <input
-                  className="field-input pl-11"
-                  onChange={(event) => setSearchValue(event.target.value)}
-                  placeholder="Find by title, collaborator, slug, UPC, or ISRC..."
-                  value={searchValue}
-                />
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
+
+        <StickyContextBar
+          className="hidden lg:block"
+          isVisible={isCommandDockVisible}
+          title="Releases"
+          centerSlot={
+            <span className="relative block">
+              <Search
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+                size={16}
+              />
+              <input
+                className="field-input pl-11"
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Find by title, collaborator, slug, UPC, or ISRC..."
+                value={searchValue}
+              />
+            </span>
+          }
+          rightSlot={
+            <>
               <span className="pill hidden sm:inline-flex">{filteredReleases.length} results</span>
               <Link className="action-button-secondary" href="/admin/releases/roadmap">
                 <CalendarClock size={16} />
@@ -229,10 +225,9 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
                 <PlusCircle size={16} />
                 New Release
               </Link>
-            </div>
-          </div>
-        </div>
-
+            </>
+          }
+        />
         <section className="space-y-4">
           {filteredReleases.map((release, index) => (
             <article

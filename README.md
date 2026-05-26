@@ -471,6 +471,17 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-26 00:09 -04:00
+
+- **Implemented Command Center Sticky UI Standardization v1**:
+  - Introduced two new reusable components: [`components/sticky-context-bar.tsx`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/sticky-context-bar.tsx) (for top context/search headers on listing pages) and [`components/sticky-action-dock.tsx`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/sticky-action-dock.tsx) (for bottom action/save docks on settings and editors).
+  - Configured `StickyActionDock` to support both `fixed` positioning (with fade transition on scroll) and `sticky` positioning (container-aligned block).
+  - Replaced the custom top bar on the **Releases page** (`components/releases-page-content.tsx`) with `StickyContextBar` using the existing scroll visibility threshold.
+  - Replaced the custom bottom bar on the **Public Site Settings page** (`components/site-settings-editor.tsx`) with `StickyActionDock` in fixed mode.
+  - Converted the action bar on the **Release Detail Editor page** (`components/release-detail-editor.tsx`) from a top sticky bar to a bottom floating action dock using `StickyActionDock` in sticky mode, keeping it always visible. Added `pb-36` to the page container to ensure bottom fields are reachable.
+  - Simplified the top action bar in the **Copy Detail Editor page** (`components/copy-detail-editor.tsx`) to a clean header back-link breadcrumb, and moved all other actions to a bottom `StickyActionDock` in sticky mode with `pb-36` bottom padding on the main wrapper.
+  - Enforced separation of the destructive actions (e.g. Delete Release, Delete Copy) on the left side of the bottom docks, away from the primary Save actions on the right side.
+
 ### 2026-05-25 23:28 -04:00
 
 - **Consolidated Campaign Recommendation Messaging & UI Labels**:
