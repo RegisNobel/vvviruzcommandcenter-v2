@@ -176,18 +176,18 @@ function MetricCard({
   );
 }
 
-function NextMoveCard({value}: {value: string}) {
+function FunnelVerdictCard({value}: {value: string}) {
   return (
     <div className="rounded-[24px] border border-[#4a3c1d] bg-[#17140d] px-4 py-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="field-label">Recommended Next Move</p>
+        <p className="field-label">Funnel Verdict</p>
         <span className="rounded-full border border-[#4a3c1d] bg-[#1f1a10] p-2 text-[#d7b45e]">
           <ArrowRight size={16} />
         </span>
       </div>
       <p className="mt-4 text-sm font-semibold leading-6 text-ink">{value}</p>
       <p className="mt-2 text-xs leading-5 text-muted">
-        The next operator action based on current spend, traffic, and stream intent.
+        The stream follow-through and campaign conversion health verdict.
       </p>
     </div>
   );
@@ -500,7 +500,7 @@ export default async function AdminAttributionPage({
                 note="Tracked /links views with campaign or content UTM values."
                 value={formatOptionalPercent(commandDashboard.overview.utm_coverage_rate)}
               />
-              <NextMoveCard value={commandDashboard.recommended_next_move} />
+              <FunnelVerdictCard value={commandDashboard.recommended_next_move} />
             </section>
 
             <section className="panel overflow-hidden p-0">

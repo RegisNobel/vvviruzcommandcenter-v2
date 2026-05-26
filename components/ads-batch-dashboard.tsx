@@ -17,6 +17,7 @@ import {
   contentTypeOptions,
   songSectionOptions
 } from "@/lib/copy";
+import {getUnifiedCampaignRecommendation} from "@/lib/ads/recommendations";
 import type {
   AdCampaignDecision,
   AdCreativeReportRecord,
@@ -651,90 +652,6 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
  * Returns exactly one label from the controlled decision set.
  * Low confidence always returns "Needs More Data" to prevent premature budget moves.
  */
-function getComputedDecision({
-  confidence,
-  detail,
-  landingQuality,
-  streamingQuality,
-  topCreative
-}: {
-  confidence: ConfidenceReadout;
-  detail: AdImportBatchDetail;
-  landingQuality: ReadoutQuality;
-  streamingQuality: ReadoutQuality;
-  topCreative: AdCreativeReportRecord | null;
-}) {
-  const outboundClicks = getOutboundClickTotal(detail);
-
-  const activeAdCount = detail.reports.filter(r => (r.spend ?? 0) >= 1.0).length || 1;
-
-  // V1.2: Low confidence must force "Needs More Data" — never let the user
-  // act on data the system itself does not trust.
-  if (confidence.level === "Low confidence") {
-    return "Needs More Data";
-  }
-
-  // High spend with near-zero engagement = dead creative
-  if (detail.spend / activeAdCount >= 5 && detail.link_clicks / activeAdCount <= 1 && outboundClicks / activeAdCount < 0.5) {
-    return "Retire";
-  }
-
-  // Clicks exist but drop off at the landing page = hook/message mismatch
-  if (landingQuality.tone === "bad" && detail.link_clicks >= 50) {
-    return "Retest Hook";
-  }
-
-  // Landing works but streaming intent is missing = visual/CTA problem
-  if (streamingQuality.tone === "bad" && detail.landing_page_views >= 25) {
-    return "Retest Visual";
-  }
-
-  // Strong top creative with good funnel = scale candidate
-  if (
-    topCreative &&
-    (topCreative.results ?? 0) > 0 &&
-    landingQuality.tone === "good" &&
-    streamingQuality.tone !== "bad"
-  ) {
-    return "Scale";
-  }
-
-  // Meaningful spend but no outbound intent = stop bleeding
-  if (detail.spend / activeAdCount >= 6 && outboundClicks / activeAdCount < 0.5) {
-    return "Pause";
-  }
-
-  return "Iterate";
-}
-
-/**
- * V1.2 next-test recommendation generator.
- * Each decision label produces a specific, actionable recommendation.
- * The recommendation should tell the user exactly what to change and what to keep.
- */
-function getNextTestRecommendation(decision: string, topCreativeName: string, bestHookLabel: string) {
-  switch (decision) {
-    case "Scale":
-      return `Increase budget carefully around ${topCreativeName}. Keep the same UTM discipline and monitor frequency.`;
-    case "Iterate":
-      return "Run the next test with one controlled change (hook, visual, or audience) and wait for stronger confidence before scaling.";
-    case "Pause":
-      return "Stop spending on this batch. Review whether the audience, offer, or creative concept needs to change before restarting.";
-    case "Retire":
-      return "Stop spending on this direction entirely. Rebuild the creative from a different angle, hook, or content type.";
-    case "Retest Hook":
-      return `Keep the strongest visual direction, but test a sharper hook and clearer promise. ${bestHookLabel !== "No linked hook signal yet" ? `Current best hook angle: ${bestHookLabel}.` : ""}`;
-    case "Retest Visual":
-      return "Keep the strongest hook, but test a new visual direction or stronger first-frame pattern to improve streaming intent.";
-    case "Retest Audience":
-      return "Keep the current creative and hook, but test a different audience segment or interest targeting.";
-    case "Needs More Data":
-      return "The current data is too thin for a reliable recommendation. Keep running and wait for more spend, clicks, and outbound signal before deciding.";
-    default:
-      return "Run the next test with one controlled change and wait for stronger confidence before scaling.";
-  }
-}
-
 function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
   const followThroughByReportId = getFollowThroughMap(detail);
   const topCreative = getTopCreative(detail.reports, followThroughByReportId);
@@ -749,15 +666,72 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     detail.name ||
     getMostCommonValue(detail.reports.map((report) => report.campaign_name)) ||
     "Imported Meta campaign";
-  const decision = getComputedDecision({
-    confidence: attributionConfidence,
-    detail,
-    landingQuality: landingPageViewQuality,
-    streamingQuality: streamingOutboundClickQuality,
-    topCreative
-  });
   const topCreativeName = topCreative?.ad_name || "No creative signal yet";
-  const bestHookLabel = bestHook ? formatStrategyValue(bestHook.label, "hook") : "No linked hook signal yet";
+  const bestHookLabel = bestHook ? formatStrategyValue(bestHook.label, "hook") : "No linked Copy Angle signal yet";
+
+  const totalLpv = detail.landing_page_views ?? 0;
+  const outboundClicks = detail.link_follow_through.reduce((sum, ft) => sum + (ft.outbound_streaming_clicks ?? 0), 0);
+  const linksPageViews = detail.link_follow_through.reduce((sum, ft) => sum + (ft.links_page_views ?? 0), 0);
+  const unlinkedSpend = detail.reports.filter((r) => !r.linked_copy).reduce((sum, r) => sum + (r.spend ?? 0), 0);
+  const unlinkedSpendPercentage = detail.spend > 0 ? (unlinkedSpend / detail.spend) * 100 : 0;
+  const reportsWithUtmsCount = detail.reports.filter((r) => r.utm_campaign && r.utm_content).length;
+  const isWeakUtmCoverage = detail.reports.length > 0 ? (reportsWithUtmsCount / detail.reports.length) * 100 < 50 : false;
+  const activeAdCount = detail.reports.filter(r => (r.spend ?? 0) >= 1.0).length || 1;
+
+  const recommendation = getUnifiedCampaignRecommendation({
+    adMetrics: {
+      totalSpend: detail.spend,
+      totalResults: detail.results,
+      totalImpressions: detail.impressions,
+      totalLinkClicks: detail.link_clicks,
+      totalLandingPageViews: detail.landing_page_views,
+      clickToLandingRate: detail.click_to_landing_rate,
+      cpr: detail.results > 0 ? detail.spend / detail.results : null,
+      bestAd: topCreative ? {
+        ad_name: topCreative.ad_name,
+        spend: topCreative.spend ?? 0,
+        results: topCreative.results ?? 0,
+        cpr: topCreative.cost_per_result
+      } : null,
+      bestHook: bestHook ? {
+        label: bestHook.label,
+        spend: bestHook.spend,
+        results: bestHook.results,
+        cpr: bestHook.results > 0 ? bestHook.spend / bestHook.results : null
+      } : null,
+      worstAd: worstCreative ? {
+        ad_name: worstCreative.ad_name,
+        spend: worstCreative.spend ?? 0,
+        results: worstCreative.results ?? 0,
+        cpr: worstCreative.cost_per_result
+      } : null,
+      worstHook: worstHook ? {
+        label: worstHook.label,
+        spend: worstHook.spend,
+        results: worstHook.results,
+        cpr: worstHook.results > 0 ? worstHook.spend / worstHook.results : null
+      } : null,
+      batchCount: 1
+    },
+    funnel: {
+      linksViews: linksPageViews,
+      streamingClicks: outboundClicks,
+      viewToStreamRate: linksPageViews > 0 ? (outboundClicks / linksPageViews) * 100 : 0,
+      trackedViewCoverageRate: totalLpv > 0 ? (linksPageViews / totalLpv) * 100 : 0
+    },
+    batchContext: {
+      hasOverlappingSnapshots: false,
+      unlinkedSpendPercentage,
+      isWeakUtmCoverage,
+      activeAdCount,
+      confidenceLevel: attributionConfidence.level
+    },
+    latestLearning: detail.learning ? {
+      decision: detail.learning.decision,
+      next_test: detail.learning.next_test,
+      updated_at: detail.learning.updated_at ? new Date(detail.learning.updated_at).toISOString() : null
+    } : null
+  });
 
   return {
     attributionConfidence,
@@ -767,13 +741,13 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     bestHook: bestHookLabel,
     campaign,
     dateRange: `${formatDate(detail.reporting_start)} to ${formatDate(detail.reporting_end)}`,
-    decision,
+    decision: recommendation.campaignDecision,
     landingPageViewQuality,
     mainLesson:
       topCreative && bestHook
-        ? `${topCreativeName} is leading the current read. ${bestHookLabel} is the strongest linked hook angle so far.`
+        ? `${topCreativeName} is leading the current read. ${bestHookLabel} is the strongest linked Copy Angle so far.`
         : "The campaign needs more linked Copy Lab and/or Meta signal before a durable lesson is available.",
-    nextTest: getNextTestRecommendation(decision, topCreativeName, bestHookLabel),
+    nextTest: recommendation.batchAction,
     release: detail.release_title || "Standalone / no release linked",
     spend: formatMoney(detail.spend),
     streamingOutboundClickQuality,
@@ -1194,7 +1168,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.mainLesson}</p>
             </div>
             <div className="rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
-              <p className="field-label text-[#d7b45e]">Next Test</p>
+              <p className="field-label text-[#d7b45e]">Batch Action</p>
               <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
             </div>
           </div>

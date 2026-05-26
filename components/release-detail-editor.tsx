@@ -408,48 +408,6 @@ function getReleasePromoVerdict(
   return "Testing";
 }
 
-/**
- * Generate the recommended next move text for the release-level view.
- * This is intentionally shorter than the campaign-level recommendation —
- * it answers "what should this song's promotion do next?" not just one batch.
- */
-function getReleaseNextMove(
-  verdict: ReleasePromoVerdict,
-  adMetrics: ReleaseAdMetricsOverview,
-  latestLearning: AdCampaignLearningRecord | null
-): string {
-  const bestHookLabel = adMetrics.best_hook?.label ?? null;
-  const bestAdName = adMetrics.best_ad?.ad_name ?? null;
-  const savedNextTest = latestLearning?.next_test?.trim() ?? "";
-
-  // If a human has already written a next test, surface it.
-  if (savedNextTest) return savedNextTest;
-
-  switch (verdict) {
-    case "Untested":
-      return "No campaign data yet. Import a Meta CSV batch to begin.";
-    case "Testing":
-      return bestHookLabel
-        ? `Keep testing. ${bestHookLabel} is showing the strongest hook signal — build the next batch around it.`
-        : "Keep running. Not enough data to determine a winning angle yet.";
-    case "Winner":
-      return bestAdName
-        ? `Scale carefully around ${bestAdName}. Keep UTM discipline and watch for frequency fatigue.`
-        : "Scale carefully. Monitor frequency and landing page drop-off.";
-    case "Promising":
-      return bestHookLabel
-        ? `Good signal emerging with ${bestHookLabel}. Run one more focused batch before scaling.`
-        : "Promising signal — run one more tight batch to confirm before adding budget.";
-    case "Needs New Creative":
-      return "Current creative angles are not converting. Rebuild the hook or visual direction before spending more.";
-    case "Paused":
-      return "Paused. Review audience, offer, or creative concept before restarting spend.";
-    case "Retired":
-      return "Retired from active promotion. Move budget to a newer release.";
-    default:
-      return "Review campaign data and import a new batch to get a fresh read.";
-  }
-}
 
 /**
  * Return display metadata for a verdict pill (label already on the type).

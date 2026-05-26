@@ -6,8 +6,8 @@ import {
   AdCampaignLearningRecord,
   ReleasePromoVerdict 
 } from "@/lib/types";
+import { getUnifiedCampaignRecommendation } from "@/lib/ads/recommendations";
 
-// Helper functions (copied from release-detail-editor.tsx)
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -72,37 +72,6 @@ function getReleasePromoVerdict(
   return "Testing";
 }
 
-function getReleaseNextMove(
-  verdict: ReleasePromoVerdict,
-  adMetrics: ReleaseAdMetricsOverview,
-  latestLearning: AdCampaignLearningRecord | null
-): string {
-  const bestHookLabel = adMetrics.best_hook?.label ?? null;
-  const nextTest = latestLearning?.next_test?.trim();
-
-  if (nextTest) return nextTest;
-
-  switch (verdict) {
-    case "Winner":
-      return "Scale budget and test lookalike audiences based on current winners.";
-    case "Promising":
-      return `Promising signal — run one more tight batch to confirm before adding budget.`;
-    case "Needs New Creative":
-      return "Current hooks aren't hitting. Test 3 radically different visual concepts.";
-    case "Testing":
-      return bestHookLabel
-        ? `Keep testing. ${bestHookLabel.replace(/_/g, " ")} is showing the strongest signal.`
-        : "Keep running. Not enough data to determine a winning angle yet.";
-    case "Paused":
-      return "Release is on hold. Review metrics before resuming.";
-    case "Retired":
-      return "Promotion concluded. Archive and apply lessons to next release.";
-    case "Untested":
-    default:
-      return "Import Meta campaign data to generate a promo verdict.";
-  }
-}
-
 export default function ReleaseIntelligencePanel({
   adMetrics,
   latestAdLearning,
@@ -113,11 +82,58 @@ export default function ReleaseIntelligencePanel({
   releaseTitle: string;
 }) {
   const promoVerdict = useMemo(() => getReleasePromoVerdict(adMetrics, latestAdLearning), [adMetrics, latestAdLearning]);
-  const promoNextMove = useMemo(() => getReleaseNextMove(promoVerdict, adMetrics, latestAdLearning), [promoVerdict, adMetrics, latestAdLearning]);
   const promoStyle = useMemo(() => getVerdictStyle(promoVerdict), [promoVerdict]);
   const promoContentTypeHint = useMemo(() => adMetrics.best_ad?.signals.find(s =>
     ["Scale Winner", "Efficiency Winner", "Attention Winner", "Click Winner"].includes(s)
   ) ?? null, [adMetrics.best_ad]);
+
+  const recommendation = useMemo(() => {
+    return getUnifiedCampaignRecommendation({
+      adMetrics: {
+        totalSpend: adMetrics.total_spend,
+        totalResults: adMetrics.total_results,
+        totalImpressions: adMetrics.total_impressions,
+        totalLinkClicks: adMetrics.total_link_clicks,
+        totalLandingPageViews: adMetrics.total_landing_page_views,
+        clickToLandingRate: adMetrics.click_to_landing_rate,
+        cpr: adMetrics.cpr,
+        bestAd: adMetrics.best_ad ? {
+          ad_name: adMetrics.best_ad.ad_name,
+          spend: adMetrics.best_ad.spend,
+          results: adMetrics.best_ad.results,
+          cpr: adMetrics.best_ad.cpr,
+          ctr: adMetrics.best_ad.ctr,
+          signals: adMetrics.best_ad.signals
+        } : null,
+        bestHook: adMetrics.best_hook ? {
+          label: adMetrics.best_hook.label,
+          spend: adMetrics.best_hook.spend,
+          results: adMetrics.best_hook.results,
+          cpr: adMetrics.best_hook.cpr,
+          ctr: adMetrics.best_hook.ctr
+        } : null,
+        worstAd: adMetrics.worst_ad ? {
+          ad_name: adMetrics.worst_ad.ad_name,
+          spend: adMetrics.worst_ad.spend,
+          results: adMetrics.worst_ad.results,
+          cpr: adMetrics.worst_ad.cpr
+        } : null,
+        worstHook: adMetrics.worst_hook ? {
+          label: adMetrics.worst_hook.label,
+          spend: adMetrics.worst_hook.spend,
+          results: adMetrics.worst_hook.results,
+          cpr: adMetrics.worst_hook.cpr
+        } : null,
+        batchCount: adMetrics.batch_count
+      },
+      funnel: null,
+      latestLearning: latestAdLearning ? {
+        decision: latestAdLearning.decision,
+        next_test: latestAdLearning.next_test,
+        updated_at: latestAdLearning.updated_at
+      } : null
+    });
+  }, [adMetrics, latestAdLearning]);
 
   return (
     <div className="rounded-[22px] border border-[#31353b] bg-[#121418] p-5 space-y-5">
@@ -174,7 +190,7 @@ export default function ReleaseIntelligencePanel({
           )}
           {adMetrics.best_hook && (
             <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#272b31] bg-[#14171b] px-3 py-2.5">
-              <span className="text-xs text-[#7f858d]">Best Hook Type</span>
+              <span className="text-xs text-[#7f858d]">Best Copy Angle</span>
               <span className="text-right text-xs font-medium text-[#ede7dc]">
                 {formatHookType(adMetrics.best_hook.label as any)}
                 {adMetrics.best_hook.cpr !== null && (
@@ -192,10 +208,30 @@ export default function ReleaseIntelligencePanel({
         </div>
       )}
 
-      <div className={`rounded-[16px] border px-4 py-3 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
-        <span className="font-semibold">Next Move: </span>
-        {promoNextMove}
-      </div>
+      {adMetrics.has_data && (
+        <div className="space-y-4">
+          <div className="rounded-[16px] border border-[#5b4920]/40 bg-[#1a1710] px-4 py-3.5 text-sm leading-6 text-[#d7b45e]">
+            <p className="text-[10px] uppercase font-bold tracking-wider opacity-90 text-[#aeb3bb] mb-1">Campaign Decision</p>
+            <p className="font-semibold text-sm text-[#efe7dc]">{recommendation.campaignDecision}</p>
+          </div>
+
+          <div className={`rounded-[16px] border px-4 py-3.5 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
+            <p className="text-[10px] uppercase font-bold tracking-wider opacity-90 mb-1">Next Test Direction</p>
+            <p className="font-semibold text-sm">{recommendation.nextTestDirection}</p>
+          </div>
+        </div>
+      )}
+
+      {adMetrics.has_data && recommendation.dataWarnings.length > 0 && (
+        <div className="space-y-2">
+          {recommendation.dataWarnings.map((warning, idx) => (
+            <div key={idx} className="rounded-[14px] border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-200 flex items-center gap-2">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
+              <span>{warning}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!adMetrics.has_data && (
         <p className="text-sm text-[#6b7280]">

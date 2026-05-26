@@ -1,8 +1,9 @@
 import {normalizeMetaAdName} from "@/lib/ads/meta-csv";
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
-import {readReleaseAdMetrics} from "@/lib/repositories/ads";
+import {readReleaseAdMetrics, readLatestAdCampaignLearningForRelease} from "@/lib/repositories/ads";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
+import {getUnifiedCampaignRecommendation} from "@/lib/ads/recommendations";
 
 const streamingLinkTypes = new Set(["apple-music", "spotify", "youtube-music", "youtube-video"]);
 
@@ -233,46 +234,7 @@ function createProblemSignals(input: {
   return signals;
 }
 
-function createRecommendedMove(input: {
-  bestAdName?: string | null;
-  bestHookLabel?: string | null;
-  hasAdsData: boolean;
-  linksViews: number;
-  metaLandingPageViews: number;
-  streamingClicks: number;
-  trackedViewCoverageRate: number | null;
-  viewToStreamRate: number | null;
-}) {
-  if (!input.hasAdsData) {
-    return "Import the latest Meta CSV export so spend, CTR, CPC, and creative winners can be read beside link-hub behavior.";
-  }
 
-  if (input.linksViews === 0) {
-    return "Verify the campaign URL points to /links and keep ad names aligned with utm_content before judging ad quality.";
-  }
-
-  if (
-    input.metaLandingPageViews >= 20 &&
-    (input.trackedViewCoverageRate ?? 0) > 0 &&
-    (input.trackedViewCoverageRate ?? 0) < 60
-  ) {
-    return "Audit the /links tracking path before making creative decisions; Meta LPV and first-party tracked views are too far apart.";
-  }
-
-  if ((input.viewToStreamRate ?? 0) >= 25 && input.bestAdName) {
-    return `Scale or duplicate ${input.bestAdName}; it has enough follow-through to deserve another test.`;
-  }
-
-  if (input.streamingClicks === 0) {
-    return "Do not scale yet. Fix link-page offer clarity or platform button placement before increasing spend.";
-  }
-
-  if (input.bestHookLabel) {
-    return `Make the next creative around ${input.bestHookLabel}; it is the strongest tagged hook signal right now.`;
-  }
-
-  return "Keep collecting traffic, then link top ads to Copy Lab entries so strategy winners become clearer.";
-}
 
 export async function readCampaignCommandDashboard(input: CampaignDashboardInput = {}) {
   const safeDays = Math.min(Math.max(input.days ?? 30, 7), 120);
@@ -373,7 +335,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     };
   }
 
-  const [adMetrics, analyticsEvents, shortLinks] = await Promise.all([
+  const [adMetrics, analyticsEvents, shortLinks, latestLearning] = await Promise.all([
     readReleaseAdMetrics(selectedRelease.id),
     prisma.analyticsEvent.findMany({
       orderBy: {
@@ -409,7 +371,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         deletedAt: null,
         releaseId: selectedRelease.id
       }
-    })
+    }),
+    readLatestAdCampaignLearningForRelease(selectedRelease.id)
   ]);
   const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
   const allClicks = analyticsEvents.filter((event) => event.eventType === "links_link_click");
@@ -722,16 +685,60 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       utmCoverageRate,
       viewToStreamRate
     }),
-    recommended_next_move: createRecommendedMove({
-      bestAdName: adMetrics.best_ad?.ad_name,
-      bestHookLabel: adMetrics.best_hook?.label,
-      hasAdsData: adMetrics.has_data,
-      linksViews,
-      metaLandingPageViews,
-      streamingClicks: streamingClickCount,
-      trackedViewCoverageRate,
-      viewToStreamRate
-    }),
+    recommended_next_move: getUnifiedCampaignRecommendation({
+      adMetrics: {
+        totalSpend: adMetrics.total_spend,
+        totalResults: adMetrics.total_results,
+        totalImpressions: adMetrics.total_impressions,
+        totalLinkClicks: adMetrics.total_link_clicks,
+        totalLandingPageViews: adMetrics.total_landing_page_views,
+        clickToLandingRate: adMetrics.click_to_landing_rate,
+        cpr: adMetrics.cpr,
+        bestAd: adMetrics.best_ad ? {
+          ad_name: adMetrics.best_ad.ad_name,
+          spend: adMetrics.best_ad.spend,
+          results: adMetrics.best_ad.results,
+          cpr: adMetrics.best_ad.cpr,
+          ctr: adMetrics.best_ad.ctr,
+          signals: adMetrics.best_ad.signals
+        } : null,
+        bestHook: adMetrics.best_hook ? {
+          label: adMetrics.best_hook.label,
+          spend: adMetrics.best_hook.spend,
+          results: adMetrics.best_hook.results,
+          cpr: adMetrics.best_hook.cpr,
+          ctr: adMetrics.best_hook.ctr
+        } : null,
+        worstAd: adMetrics.worst_ad ? {
+          ad_name: adMetrics.worst_ad.ad_name,
+          spend: adMetrics.worst_ad.spend,
+          results: adMetrics.worst_ad.results,
+          cpr: adMetrics.worst_ad.cpr
+        } : null,
+        worstHook: adMetrics.worst_hook ? {
+          label: adMetrics.worst_hook.label,
+          spend: adMetrics.worst_hook.spend,
+          results: adMetrics.worst_hook.results,
+          cpr: adMetrics.worst_hook.cpr
+        } : null,
+        batchCount: adMetrics.batch_count
+      },
+      funnel: {
+        linksViews,
+        streamingClicks: streamingClickCount,
+        viewToStreamRate,
+        trackedViewCoverageRate
+      },
+      batchContext: {
+        isWeakUtmCoverage: (ratio(viewsWithUtm, linksViews) ?? 0) < 50,
+        unlinkedSpendPercentage: 0
+      },
+      latestLearning: latestLearning ? {
+        decision: latestLearning.decision,
+        next_test: latestLearning.next_test,
+        updated_at: latestLearning.updated_at
+      } : null
+    }).funnelVerdict,
     daily_trend: Array.from(dailyBuckets.values()).reverse(),
     tracking_health: {
       meta_landing_page_views: metaLandingPageViews,
