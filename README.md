@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-28 21:18 -04:00
+
+- **Release Detail & Copy Detail Action Dock Visibility Fix**:
+  - Configured `StickyActionDock` to accept a custom `maxWidth` prop to align the inner container on wide viewports (defaults to `max-w-[1600px]`).
+  - Swapped `StickyActionDock` from `position="sticky"` to the default `position="fixed"` in both [release-detail-editor.tsx](file:///C:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/release-detail-editor.tsx) and [copy-detail-editor.tsx](file:///C:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/copy-detail-editor.tsx).
+  - Passed `maxWidth="max-w-[1450px]"` to both docks so they align perfectly with the page container width and respect the desktop left-sidebar padding offset without poking out.
+  - Verified sufficient bottom padding is present in both page shells to prevent inputs from being covered when scrolled to the bottom.
+
 ### 2026-05-26 00:09 -04:00
 
 - **Implemented Command Center Sticky UI Standardization v1**:

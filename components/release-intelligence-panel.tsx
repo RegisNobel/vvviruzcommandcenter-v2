@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { 
   ReleaseAdMetricsOverview, 
   AdCampaignLearningRecord,
@@ -75,11 +76,17 @@ function getReleasePromoVerdict(
 export default function ReleaseIntelligencePanel({
   adMetrics,
   latestAdLearning,
-  releaseTitle
+  releaseTitle,
+  streamingClicksCount = 0,
+  utmCoverageRate = 0,
+  releaseId
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   latestAdLearning: AdCampaignLearningRecord | null;
   releaseTitle: string;
+  streamingClicksCount?: number;
+  utmCoverageRate?: number;
+  releaseId: string;
 }) {
   const promoVerdict = useMemo(() => getReleasePromoVerdict(adMetrics, latestAdLearning), [adMetrics, latestAdLearning]);
   const promoStyle = useMemo(() => getVerdictStyle(promoVerdict), [promoVerdict]);
@@ -140,7 +147,7 @@ export default function ReleaseIntelligencePanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
-            Promo Intelligence
+            Strategic Campaign Intelligence
           </p>
           <p className="mt-1 text-sm font-semibold text-[#ede7dc]">{releaseTitle}</p>
         </div>
@@ -153,7 +160,7 @@ export default function ReleaseIntelligencePanel({
       </div>
 
       {adMetrics.has_data && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Campaigns</p>
             <p className="mt-1 text-base font-semibold text-[#ede7dc]">{adMetrics.batch_count}</p>
@@ -167,10 +174,24 @@ export default function ReleaseIntelligencePanel({
             <p className="mt-1 text-base font-semibold text-[#ede7dc]">{formatNumber(adMetrics.total_results)}</p>
           </div>
           <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Latest Decision</p>
-            <p className="mt-1 text-sm font-semibold capitalize text-[#ede7dc]">
-              {latestAdLearning?.decision ? latestAdLearning.decision.replace(/-/g, " ") : "—"}
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Streaming Clicks</p>
+            <p className="mt-1 text-base font-semibold text-[#ede7dc]">{formatNumber(streamingClicksCount)}</p>
+          </div>
+          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">UTM Coverage</p>
+            <p className="mt-1 text-base font-semibold text-[#ede7dc]">
+              {utmCoverageRate > 0 ? `${utmCoverageRate.toFixed(1)}%` : "0%"}
             </p>
+          </div>
+          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3 flex flex-col justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Attribution</p>
+            <Link
+              href={`/admin/attribution?releaseId=${releaseId}`}
+              className="mt-1 text-xs font-semibold text-[#c9a347] hover:text-[#d5b15b] transition inline-flex items-center gap-1"
+            >
+              Open Auditor
+              <span className="text-[10px]">→</span>
+            </Link>
           </div>
         </div>
       )}

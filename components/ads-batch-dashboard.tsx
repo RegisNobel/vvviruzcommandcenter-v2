@@ -3,7 +3,7 @@
 import {useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {ArrowLeft, Edit, ExternalLink, Lock, Save, X} from "lucide-react";
+import {ArrowLeft, AlertTriangle, Edit, ExternalLink, Lock, Save, X} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
@@ -1120,8 +1120,14 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           {detail.batch_type === "Rolling Snapshot" ? (
-            <div className="mt-5 rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm leading-6 text-[#d7b45e]">
-              This is an overlapping Meta snapshot. Do not sum it with other overlapping batches.
+            <div className="mt-4 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300 font-sans">
+                <AlertTriangle size={12} className="shrink-0" />
+                Snapshot-based read
+              </span>
+              <span className="text-xs text-muted">
+                Rolling snapshots can overlap; compare directionally rather than summing totals.
+              </span>
             </div>
           ) : null}
         </section>
@@ -1137,10 +1143,23 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         <section className="overflow-hidden rounded-[30px] border border-[#5b4920] bg-[linear-gradient(135deg,rgba(215,180,94,0.16),rgba(18,20,24,0.96)_38%,rgba(12,14,18,0.98))] px-4 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="field-label text-[#d7b45e]">Decision Summary</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
-                {campaignReadout.decision}
-              </h2>
+              <p className="field-label text-[#d7b45e]">Campaign Recommendation (Strategic)</p>
+              {detail.release_id ? (
+                <div className="mt-2 text-base font-semibold leading-7 text-[#efe7db] max-w-2xl">
+                  Campaign strategy and decisions are managed at the release level. View the full strategic plan on the{" "}
+                  <Link
+                    className="font-bold text-[#c9a347] underline hover:text-[#d5b15b] transition"
+                    href={`/admin/releases/${detail.release_id}`}
+                  >
+                    Release Detail Page
+                  </Link>
+                  .
+                </div>
+              ) : (
+                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
+                  {campaignReadout.decision}
+                </h2>
+              )}
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c7c0ae]">
                 This is the operator readout before the raw table: what looks strongest,
                 how much to trust it, and what the next creative test should be.
@@ -1198,7 +1217,19 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             <div>
               <p className="field-label">Detailed Campaign Readout</p>
               <h2 className="mt-2 text-2xl font-semibold text-ink">
-                Decision: {campaignReadout.decision}
+                {detail.release_id ? (
+                  <span>
+                    Campaign strategy is managed on the{" "}
+                    <Link
+                      className="text-[#c9a347] underline hover:text-[#d5b15b] transition"
+                      href={`/admin/releases/${detail.release_id}`}
+                    >
+                      Release Detail Page
+                    </Link>
+                  </span>
+                ) : (
+                  <span>Decision: {campaignReadout.decision}</span>
+                )}
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
                 Auto-generated from Meta CSV metrics, Copy Lab links, and first-party
@@ -1273,7 +1304,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.mainLesson}</p>
             </div>
             <div className="rounded-[22px] border border-[#252a31] bg-[#171a1f] px-4 py-4">
-              <p className="field-label">Next Test</p>
+              <p className="field-label">Batch Action</p>
               <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.nextTest}</p>
             </div>
           </div>

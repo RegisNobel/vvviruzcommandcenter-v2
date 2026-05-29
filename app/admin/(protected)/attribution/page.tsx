@@ -12,7 +12,6 @@ import {
   Radio,
   Target,
   TrendingUp,
-  Trophy,
   Users
 } from "lucide-react";
 import Link from "next/link";
@@ -151,6 +150,32 @@ function getBreakdownHref({
   return `/admin/attribution?${params.toString()}#daily-breakdown`;
 }
 
+function getTrendDaysHref({
+  trendDays,
+  releaseId,
+  breakdown,
+  date
+}: {
+  trendDays: number;
+  releaseId?: string;
+  breakdown?: string;
+  date?: string;
+}) {
+  const nextParams = new URLSearchParams();
+  if (releaseId) nextParams.set("releaseId", releaseId);
+  if (breakdown) nextParams.set("breakdown", breakdown);
+  if (date) nextParams.set("date", date);
+  nextParams.set("trendDays", trendDays.toString());
+  return `/admin/attribution?${nextParams.toString()}`;
+}
+
+function calculateStreamRate(views: number, clicks: number) {
+  if (views <= 0) {
+    return "0.0%";
+  }
+  return `${(Math.round((clicks / views) * 1000) / 10).toFixed(1)}%`;
+}
+
 function MetricCard({
   icon: Icon,
   label,
@@ -254,7 +279,7 @@ function BreakdownDetailTable({
   items: AnalyticsBreakdownItem[];
   kind: AnalyticsBreakdownKind;
 }) {
-  const countLabel = kind === "link" ? "Clicks" : "Conversions";
+  const countLabel = kind === "link" ? "Clicks" : "All Outbound Clicks";
 
   return (
     <div className="overflow-x-auto">
@@ -419,13 +444,22 @@ function SignalList({
 export default async function AdminAttributionPage({
   searchParams
 }: {
-  searchParams: Promise<{breakdown?: string; date?: string; releaseId?: string}>;
+  searchParams: Promise<{
+    breakdown?: string;
+    date?: string;
+    releaseId?: string;
+    trendDays?: string;
+  }>;
 }) {
   const params = await searchParams;
+  const trendDays = typeof params.trendDays === "string" ? parseInt(params.trendDays, 10) : 14;
+  const safeTrendDays = Number.isNaN(trendDays) ? 14 : trendDays;
+
   const [analytics, commandDashboard] = await Promise.all([
     readLinkPageAnalytics(30),
     readCampaignCommandDashboard({
       days: 30,
+      trendDays: safeTrendDays,
       releaseId: params.releaseId
     })
   ]);
@@ -471,6 +505,24 @@ export default async function AdminAttributionPage({
               selectedReleaseId={selectedReleaseId}
             />
           </div>
+          {selectedReleaseId ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                className="action-button-secondary !w-auto text-xs py-1.5 px-3"
+                href={`/admin/releases/${selectedReleaseId}`}
+              >
+                View Release Detail
+                <ArrowRight size={12} />
+              </Link>
+              <Link
+                className="action-button-secondary !w-auto text-xs py-1.5 px-3"
+                href={`/admin/ad-lab?releaseId=${selectedReleaseId}`}
+              >
+                Open Ad Lab
+                <ArrowRight size={12} />
+              </Link>
+            </div>
+          ) : null}
         </section>
 
         {commandDashboard.selected_release && "overview" in commandDashboard ? (
@@ -547,6 +599,76 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
+            <section className="panel overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <div>
+                  <p className="field-label">Daily funnel trend</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">
+                    Daily Funnel Trend
+                  </h2>
+                  <p className="mt-2 text-xs leading-5 text-muted">
+                    Selected release only. Streaming clicks count outbound clicks to Spotify, Apple Music, YouTube Music, or YouTube for this campaign.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                      safeTrendDays === 14
+                        ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
+                        : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                    }`}
+                    href={getTrendDaysHref({
+                      trendDays: 14,
+                      releaseId: selectedReleaseId,
+                      breakdown: params.breakdown,
+                      date: params.date
+                    })}
+                  >
+                    Last 14 Days
+                  </Link>
+                  <Link
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                      safeTrendDays === 30
+                        ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
+                        : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                    }`}
+                    href={getTrendDaysHref({
+                      trendDays: 30,
+                      releaseId: selectedReleaseId,
+                      breakdown: params.breakdown,
+                      date: params.date
+                    })}
+                  >
+                    Last 30 Days
+                  </Link>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[620px] text-left text-sm">
+                  <thead className="bg-[#171a1f] text-[#b8bec6]">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Date</th>
+                      <th className="px-4 py-3 font-semibold">Link-Hub Views</th>
+                      <th className="px-4 py-3 font-semibold">Streaming Clicks</th>
+                      <th className="px-4 py-3 font-semibold">Stream Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#252a31]">
+                    {commandDashboard.daily_trend.map((day) => (
+                      <tr className="text-[#d9dee5]" key={day.date}>
+                        <td className="px-4 py-4 font-semibold">{formatDate(day.date)}</td>
+                        <td className="px-4 py-4">{formatNumber(day.views)}</td>
+                        <td className="px-4 py-4">{formatNumber(day.streamingClicks)}</td>
+                        <td className="px-4 py-4">
+                          {calculateStreamRate(day.views, day.streamingClicks)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
             <section className="panel p-4 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -592,80 +714,6 @@ export default async function AdminAttributionPage({
                     <SignalList signals={commandDashboard.problem_signals} />
                   </div>
                 </div>
-              </div>
-            </section>
-
-            <section className="panel p-4 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Trophy className="text-[#d7b45e]" size={18} />
-                    <h2 className="text-2xl font-semibold text-ink">Current winners</h2>
-                  </div>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                    Compact winners only. Open Ad Lab or the release campaign history for deeper creative analysis.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    className="action-button-secondary !w-auto"
-                    href={`/admin/ad-lab${selectedReleaseId ? `?releaseId=${selectedReleaseId}` : ""}`}
-                  >
-                    Open Ad Lab
-                    <ArrowRight size={16} />
-                  </Link>
-                  {selectedReleaseId ? (
-                    <Link
-                      className="action-button-secondary !w-auto"
-                      href={`/admin/releases/${selectedReleaseId}#campaign-history`}
-                    >
-                      Campaign History
-                      <ArrowRight size={16} />
-                    </Link>
-                  ) : null}
-                </div>
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <WinnerCard
-                  detail={
-                    commandDashboard.winners.best_ad
-                      ? `${formatOptionalMoney(commandDashboard.winners.best_ad.cpr)} CPR, ${formatOptionalPercent(commandDashboard.winners.best_ad.ctr)} CTR`
-                      : "Import Meta CSV rows to identify the strongest ad."
-                  }
-                  empty={!commandDashboard.winners.best_ad}
-                  label="Best ad"
-                  title={commandDashboard.winners.best_ad?.ad_name ?? "No ad winner yet"}
-                />
-                <WinnerCard
-                  detail={
-                    commandDashboard.winners.best_hook
-                      ? `${formatNumber(commandDashboard.winners.best_hook.results)} results from ${formatMoney(commandDashboard.winners.best_hook.spend)} spend`
-                      : "Link top ads to Copy Lab entries to unlock strategy winners."
-                  }
-                  empty={!commandDashboard.winners.best_hook}
-                  label="Best copy angle / hook"
-                  title={commandDashboard.winners.best_hook?.label ?? "No hook signal yet"}
-                />
-                <WinnerCard
-                  detail={
-                    commandDashboard.winners.top_platform
-                      ? `${formatNumber(commandDashboard.winners.top_platform.value)} tracked outbound clicks`
-                      : "Streaming button clicks have not been recorded yet."
-                  }
-                  empty={!commandDashboard.winners.top_platform}
-                  label="Top platform"
-                  title={commandDashboard.winners.top_platform?.label ?? "No platform winner yet"}
-                />
-                <WinnerCard
-                  detail={
-                    commandDashboard.winners.top_source
-                      ? `${formatNumber(commandDashboard.winners.top_source.value)} tracked events`
-                      : "UTM or referrer data will appear after traffic arrives."
-                  }
-                  empty={!commandDashboard.winners.top_source}
-                  label="Top source"
-                  title={commandDashboard.winners.top_source?.label ?? "No source signal yet"}
-                />
               </div>
             </section>
 
@@ -921,33 +969,6 @@ export default async function AdminAttributionPage({
                   />
                 </section>
 
-                <section className="panel overflow-hidden p-0">
-                  <div className="border-b border-[#30343b] px-4 py-5 sm:px-6">
-                    <p className="field-label">Recent link-hub trend</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-ink">Last 14 days</h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[520px] text-left text-sm">
-                      <thead className="bg-[#171a1f] text-[#b8bec6]">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold">Date</th>
-                          <th className="px-4 py-3 font-semibold">Views</th>
-                          <th className="px-4 py-3 font-semibold">Streaming clicks</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#252a31]">
-                        {commandDashboard.daily_trend.map((day) => (
-                          <tr className="text-[#d9dee5]" key={day.date}>
-                            <td className="px-4 py-4 font-semibold">{formatDate(day.date)}</td>
-                            <td className="px-4 py-4">{formatNumber(day.views)}</td>
-                            <td className="px-4 py-4">{formatNumber(day.streamingClicks)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                   <MetricCard
                     icon={Activity}
@@ -957,14 +978,14 @@ export default async function AdminAttributionPage({
                   />
                   <MetricCard
                     icon={MousePointerClick}
-                    label="Conversions"
+                    label="All Outbound Clicks"
                     note="Outbound link clicks from the link hub."
                     value={formatNumber(analytics.overview.conversions)}
                   />
                   <MetricCard
                     icon={TrendingUp}
                     label="CTR"
-                    note="Conversions divided by page views."
+                    note="All outbound clicks divided by page views."
                     value={`${analytics.overview.ctr}%`}
                   />
                   <MetricCard
@@ -983,8 +1004,11 @@ export default async function AdminAttributionPage({
 
                 <section className="panel overflow-hidden p-0">
                   <div className="border-b border-[#30343b] px-4 py-5 sm:px-6">
-                    <p className="field-label">Daily analytics</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 days</h2>
+                    <p className="field-label">Raw Daily Analytics Global</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 Days</h2>
+                    <p className="mt-2 text-xs leading-5 text-muted">
+                      Global /links activity. All Outbound Clicks may include streaming, social, website, or other destination clicks across releases.
+                    </p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-left text-sm">
@@ -992,7 +1016,7 @@ export default async function AdminAttributionPage({
                         <tr>
                           <th className="px-4 py-3 font-semibold">Date</th>
                           <th className="px-4 py-3 font-semibold">Views</th>
-                          <th className="px-4 py-3 font-semibold">Conversions</th>
+                          <th className="px-4 py-3 font-semibold">All Outbound Clicks</th>
                           <th className="px-4 py-3 font-semibold">CTR</th>
                         </tr>
                       </thead>
@@ -1127,14 +1151,14 @@ export default async function AdminAttributionPage({
               />
               <MetricCard
                 icon={MousePointerClick}
-                label="Conversions"
+                label="All Outbound Clicks"
                 note="Outbound link clicks from the link hub."
                 value={formatNumber(analytics.overview.conversions)}
               />
               <MetricCard
                 icon={TrendingUp}
                 label="CTR"
-                note="Conversions divided by page views."
+                note="All outbound clicks divided by page views."
                 value={`${analytics.overview.ctr}%`}
               />
               <MetricCard
@@ -1153,8 +1177,11 @@ export default async function AdminAttributionPage({
 
             <section className="panel overflow-hidden p-0">
               <div className="border-b border-[#30343b] px-4 py-5 sm:px-6">
-                <p className="field-label">Daily analytics</p>
-                <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 days</h2>
+                <p className="field-label">Raw Daily Analytics Global</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 Days</h2>
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  Global /links activity. All Outbound Clicks may include streaming, social, website, or other destination clicks across releases.
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-left text-sm">
@@ -1162,7 +1189,7 @@ export default async function AdminAttributionPage({
                     <tr>
                       <th className="px-4 py-3 font-semibold">Date</th>
                       <th className="px-4 py-3 font-semibold">Views</th>
-                      <th className="px-4 py-3 font-semibold">Conversions</th>
+                      <th className="px-4 py-3 font-semibold">All Outbound Clicks</th>
                       <th className="px-4 py-3 font-semibold">CTR</th>
                     </tr>
                   </thead>

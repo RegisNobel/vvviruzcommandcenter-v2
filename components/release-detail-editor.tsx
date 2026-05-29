@@ -357,86 +357,6 @@ function AppleMusicLogo(props: SVGProps<SVGSVGElement>) {
  * @param adMetrics  The existing ReleaseAdMetricsOverview
  * @param latestLearning  The most recently saved AdCampaignLearning (if any)
  */
-function getReleasePromoVerdict(
-  adMetrics: ReleaseAdMetricsOverview,
-  latestLearning: AdCampaignLearningRecord | null
-): ReleasePromoVerdict {
-  if (!adMetrics.has_data || adMetrics.total_spend < 5) {
-    return "Untested";
-  }
-
-  const decision = latestLearning?.decision ?? null;
-
-  // Definitive stop signals from any saved learning.
-  if (decision === "retire") return "Retired";
-  if (decision === "pause") return "Paused";
-
-  const hasResults = adMetrics.total_results > 0;
-  const hasMeaningfulSpend = adMetrics.total_spend >= 30;
-  const hasBestAd = adMetrics.best_ad !== null;
-  const hasBestHook = adMetrics.best_hook !== null;
-  const cpr = adMetrics.cpr;
-
-  // Definitive win: meaningful spend, results, strong CPR, winning creative angle.
-  if (
-    hasMeaningfulSpend &&
-    hasResults &&
-    hasBestAd &&
-    cpr !== null &&
-    cpr < 2.0
-  ) {
-    // Scale decision from a saved learning confirms winner.
-    if (decision === "scale") return "Winner";
-    // Strong signals but not yet confirmed as scale-worthy.
-    return "Promising";
-  }
-
-  // Creative angles are exhausted but no clear results.
-  if (
-    hasMeaningfulSpend &&
-    !hasResults &&
-    (decision === "retest-hook" || decision === "retest-visual" || decision === "retest-audience")
-  ) {
-    return "Needs New Creative";
-  }
-
-  // Some data exists but not enough to call it either way.
-  if (adMetrics.batch_count > 0 && (hasBestAd || hasBestHook || hasResults)) {
-    return "Testing";
-  }
-
-  // Data exists but nothing meaningful to read yet.
-  return "Testing";
-}
-
-
-/**
- * Return display metadata for a verdict pill (label already on the type).
- */
-function getVerdictStyle(verdict: ReleasePromoVerdict): {
-  border: string;
-  bg: string;
-  text: string;
-  dot: string;
-} {
-  switch (verdict) {
-    case "Winner":
-      return {border: "border-emerald-500/40", bg: "bg-emerald-500/10", text: "text-emerald-300", dot: "bg-emerald-400"};
-    case "Promising":
-      return {border: "border-sky-500/40", bg: "bg-sky-500/10", text: "text-sky-300", dot: "bg-sky-400"};
-    case "Testing":
-      return {border: "border-amber-500/30", bg: "bg-amber-500/10", text: "text-amber-300", dot: "bg-amber-400"};
-    case "Needs New Creative":
-      return {border: "border-orange-500/30", bg: "bg-orange-500/10", text: "text-orange-300", dot: "bg-orange-400"};
-    case "Paused":
-      return {border: "border-[#424852]", bg: "bg-[#1a1d23]", text: "text-[#aeb3bb]", dot: "bg-[#6b7280]"};
-    case "Retired":
-      return {border: "border-red-900/40", bg: "bg-red-900/10", text: "text-red-400", dot: "bg-red-500"};
-    case "Untested":
-    default:
-      return {border: "border-[#31353b]", bg: "bg-[#14171b]", text: "text-[#7f858d]", dot: "bg-[#424852]"};
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // V1.3 Release Intelligence Panel component
@@ -454,7 +374,9 @@ export function ReleaseDetailEditor({
   latestAdLearning,
   creativePerformanceMemory,
   adPerformanceTimeline,
-  copyPerformanceMemory
+  copyPerformanceMemory,
+  streamingClicksCount = 0,
+  utmCoverageRate = 0
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -465,6 +387,8 @@ export function ReleaseDetailEditor({
   creativePerformanceMemory: CreativePerformanceMemory;
   adPerformanceTimeline: AdPerformanceTimeline;
   copyPerformanceMemory: CopyPerformanceMemory;
+  streamingClicksCount?: number;
+  utmCoverageRate?: number;
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -2086,11 +2010,13 @@ export function ReleaseDetailEditor({
               </div>
 
                 <>
-                {/* V1.3 Release Intelligence Panel — dynamically loaded to bypass SSR issues */}
                 <ReleaseIntelligencePanel
                   adMetrics={adMetrics}
                   latestAdLearning={latestAdLearning}
                   releaseTitle={initialRelease.title}
+                  streamingClicksCount={streamingClicksCount}
+                  utmCoverageRate={utmCoverageRate}
+                  releaseId={release.id}
                 />
 
                 <div
@@ -2925,7 +2851,7 @@ export function ReleaseDetailEditor({
 
         <StickyActionDock
           isVisible={true}
-          position="sticky"
+          maxWidth="max-w-[1450px]"
           statusSlot={
             message ? (
               <span
