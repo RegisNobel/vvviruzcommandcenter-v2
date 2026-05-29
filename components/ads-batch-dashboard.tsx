@@ -667,7 +667,22 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     getMostCommonValue(detail.reports.map((report) => report.campaign_name)) ||
     "Imported Meta campaign";
   const topCreativeName = topCreative?.ad_name || "No creative signal yet";
-  const bestHookLabel = bestHook ? formatStrategyValue(bestHook.label, "hook") : "No linked Copy Angle signal yet";
+
+  const isHookLowData = (row: AdStrategyBreakdownRow) => {
+    return row.spend < 5.0 || row.link_clicks < 5;
+  };
+
+  const bestHookLabel = bestHook
+    ? isHookLowData(bestHook)
+      ? `${formatStrategyValue(bestHook.label, "hook")} (Needs More Data)`
+      : formatStrategyValue(bestHook.label, "hook")
+    : "No linked Copy Angle signal yet";
+
+  const worstHookLabel = worstHook
+    ? isHookLowData(worstHook)
+      ? `${formatStrategyValue(worstHook.label, "hook")} (Needs More Data)`
+      : formatStrategyValue(worstHook.label, "hook")
+    : "No weak hook isolated yet";
 
   const totalLpv = detail.landing_page_views ?? 0;
   const outboundClicks = detail.link_follow_through.reduce((sum, ft) => sum + (ft.outbound_streaming_clicks ?? 0), 0);
@@ -753,7 +768,7 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     streamingOutboundClickQuality,
     topCreative: topCreativeName,
     worstCreative: worstCreative?.ad_name || "No weak creative isolated yet",
-    worstHook: worstHook ? formatStrategyValue(worstHook.label, "hook") : "No weak hook isolated yet"
+    worstHook: worstHookLabel
   };
 }
 
@@ -1140,59 +1155,6 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-[30px] border border-[#5b4920] bg-[linear-gradient(135deg,rgba(215,180,94,0.16),rgba(18,20,24,0.96)_38%,rgba(12,14,18,0.98))] px-4 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="field-label text-[#d7b45e]">Campaign Recommendation (Strategic)</p>
-              {detail.release_id ? (
-                <div className="mt-2 text-base font-semibold leading-7 text-[#efe7db] max-w-2xl">
-                  Campaign strategy and decisions are managed at the release level. View the full strategic plan on the{" "}
-                  <Link
-                    className="font-bold text-[#c9a347] underline hover:text-[#d5b15b] transition"
-                    href={`/admin/releases/${detail.release_id}`}
-                  >
-                    Release Detail Page
-                  </Link>
-                  .
-                </div>
-              ) : (
-                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
-                  {campaignReadout.decision}
-                </h2>
-              )}
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c7c0ae]">
-                This is the operator readout before the raw table: what looks strongest,
-                how much to trust it, and what the next creative test should be.
-              </p>
-            </div>
-            <div
-              className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getConfidenceClass(
-                campaignReadout.attributionConfidence.level
-              )}`}
-            >
-              {campaignReadout.attributionConfidence.level}
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
-            <ReadoutItem label="Best Copy Angle" value={campaignReadout.bestHook} />
-            <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
-            <ReadoutItem label="Spend" value={campaignReadout.spend} />
-          </div>
-
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
-              <p className="field-label text-[#d7b45e]">Main Lesson</p>
-              <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.mainLesson}</p>
-            </div>
-            <div className="rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
-              <p className="field-label text-[#d7b45e]">Batch Action</p>
-              <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
-            </div>
-          </div>
-        </section>
-
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <MetricCard label="Spend" note="Total imported Meta spend." value={formatMoney(detail.spend)} />
           <MetricCard label="Impressions" note="Imported ad impressions." value={formatNumber(detail.impressions)} />
@@ -1212,26 +1174,24 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <MetricCard label="100% Hold" note="100% plays divided by 3-second plays." value={formatPercent(videoHoldRate)} />
         </section>
 
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="overflow-hidden rounded-[30px] border border-[#5b4920] bg-[linear-gradient(135deg,rgba(215,180,94,0.16),rgba(18,20,24,0.96)_38%,rgba(12,14,18,0.98))] px-4 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-6 sm:py-6 space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="field-label">Detailed Campaign Readout</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">
-                {detail.release_id ? (
-                  <span>
-                    Campaign strategy is managed on the{" "}
-                    <Link
-                      className="text-[#c9a347] underline hover:text-[#d5b15b] transition"
-                      href={`/admin/releases/${detail.release_id}`}
-                    >
-                      Release Detail Page
-                    </Link>
-                  </span>
-                ) : (
-                  <span>Decision: {campaignReadout.decision}</span>
-                )}
+              <p className="field-label text-[#d7b45e]">Batch Readout & Diagnostics</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
+                {campaignReadout.decision}
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              {detail.release_id ? (
+                <p className="mt-1 text-xs">
+                  <Link
+                    className="font-semibold text-[#c9a347] underline hover:text-[#d5b15b] transition"
+                    href={`/admin/releases/${detail.release_id}`}
+                  >
+                    View Strategic Campaign Intelligence on Release Detail
+                  </Link>
+                </p>
+              ) : null}
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c7c0ae]">
                 Auto-generated from Meta CSV metrics, Copy Lab links, and first-party
                 `/links` follow-through. Manual notes are optional context only.
               </p>
@@ -1246,16 +1206,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <ReadoutItem label="Release" value={campaignReadout.release} />
-            <ReadoutItem label="Campaign" value={campaignReadout.campaign} />
-            <ReadoutItem label="Date Range" value={campaignReadout.dateRange} />
-            <ReadoutItem label="Spend" value={campaignReadout.spend} />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
-            <ReadoutItem label="Worst Creative" value={campaignReadout.worstCreative} />
             <ReadoutItem label="Best Copy Angle" value={campaignReadout.bestHook} />
+            <ReadoutItem label="Worst Creative" value={campaignReadout.worstCreative} />
             <ReadoutItem label="Worst Copy Angle" value={campaignReadout.worstHook} />
-            <ReadoutItem label="Best Content Type" value={campaignReadout.bestContentType} />
+            <ReadoutItem label="Spend" value={campaignReadout.spend} />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -1298,15 +1254,9 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-[22px] border border-[#252a31] bg-[#171a1f] px-4 py-4">
-              <p className="field-label">Main Lesson</p>
-              <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.mainLesson}</p>
-            </div>
-            <div className="rounded-[22px] border border-[#252a31] bg-[#171a1f] px-4 py-4">
-              <p className="field-label">Batch Action</p>
-              <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.nextTest}</p>
-            </div>
+          <div className="mt-4 rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
+            <p className="field-label text-[#d7b45e]">Batch Action</p>
+            <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
           </div>
 
           {campaignReadout.attributionConfidence.warnings.length > 0 ? (
@@ -1314,7 +1264,10 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               <p className="field-label text-[#d7b45e]">Read Before Trusting This</p>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-[#d7b45e]">
                 {campaignReadout.attributionConfidence.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
+                  <li key={warning} className="flex items-start gap-2">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#d7b45e] shrink-0 mt-2" />
+                    <span>{warning}</span>
+                  </li>
                 ))}
               </ul>
             </div>

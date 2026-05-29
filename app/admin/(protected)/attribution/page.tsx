@@ -6,10 +6,8 @@ import {
   ArrowRight,
   BarChart3,
   DollarSign,
-  Gauge,
   Link2,
   MousePointerClick,
-  Radio,
   Target,
   TrendingUp,
   Users
@@ -385,31 +383,7 @@ function FunnelStage({
   );
 }
 
-function WinnerCard({
-  detail,
-  empty,
-  label,
-  title
-}: {
-  detail: string;
-  empty?: boolean;
-  label: string;
-  title: string;
-}) {
-  return (
-    <div
-      className={`rounded-[22px] border p-4 ${
-        empty
-          ? "border-dashed border-[#30343b] bg-[#0f1114]"
-          : "border-[#4a3c1d] bg-[#17140d]"
-      }`}
-    >
-      <p className="field-label">{label}</p>
-      <h3 className="mt-3 text-lg font-semibold text-ink">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-muted">{detail}</p>
-    </div>
-  );
-}
+
 
 function SignalList({
   signals
@@ -717,194 +691,215 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
-            {commandDashboard.short_links.active_count > 0 ? (
-              <section className="panel overflow-hidden p-0">
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <details className="panel overflow-hidden p-0">
+              <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="field-label">Short links</p>
+                    <p className="field-label">Tracking audit</p>
                     <h2 className="mt-2 text-2xl font-semibold text-ink">
-                      Campaign handoff links
+                      Short links and ad-level match verification
                     </h2>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                      Branded redirects attached to this release, kept separate from deeper attribution math.
+                      Open to verify branded redirects and see which Meta ads matched first-party UTM tracking.
                     </p>
                   </div>
-                  <Link className="action-button-secondary" href="/admin/short-links">
-                    Manage Short Links
-                    <ArrowRight size={16} />
-                  </Link>
+                  <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                    Collapsed by default
+                  </span>
                 </div>
-                <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <FunnelStage
-                      helper="Clicks across active short links attached to this release."
-                      label="Total short-link clicks"
-                      value={formatNumber(commandDashboard.short_links.total_clicks)}
-                    />
-                    <FunnelStage
-                      helper="Active branded redirects connected to this release."
-                      label="Active short links"
-                      value={formatNumber(commandDashboard.short_links.active_count)}
-                    />
-                    <FunnelStage
-                      helper={
-                        commandDashboard.short_links.top_link
-                          ? commandDashboard.short_links.top_link.short_path
-                          : "Attach short links to this release to identify a top link."
-                      }
-                      label="Top short link"
-                      value={
-                        commandDashboard.short_links.top_link
-                          ? formatNumber(commandDashboard.short_links.top_link.click_count)
-                          : "0"
-                      }
-                    />
-                  </div>
+              </summary>
 
-                  <div className="overflow-x-auto rounded-[22px] border border-[#30343b]">
-                    <table className="w-full min-w-[720px] text-left text-sm">
+              <div className="space-y-6 p-4 sm:p-6">
+                <section className="panel overflow-hidden p-0">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                    <div>
+                      <p className="field-label">UTM creative matrix</p>
+                      <h2 className="mt-2 text-2xl font-semibold text-ink">
+                        Meta to /links Match Matrix
+                      </h2>
+                      <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                        Matches imported Meta rows to first-party `/links` behavior when
+                        exported UTMs line up, or when Meta omits URL params and the ad name
+                        matches first-party `utm_content`. Use this to decide which creative
+                        deserves more budget, a retest, or a landing-page fix.
+                      </p>
+                    </div>
+                    <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                      {commandDashboard.attribution.source_batch_type || "No batch"}
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[1400px] text-left text-sm">
                       <thead className="bg-[#171a1f] text-[#b8bec6]">
                         <tr>
-                          <th className="px-4 py-3 font-semibold">Short Link</th>
-                          <th className="px-4 py-3 font-semibold">Campaign / Content</th>
-                          <th className="px-4 py-3 font-semibold">Clicks</th>
-                          <th className="px-4 py-3 font-semibold">Destination</th>
+                          <th className="px-4 py-3 font-semibold">Creative / UTM</th>
+                          <th className="px-4 py-3 font-semibold">Status</th>
+                          <th className="px-4 py-3 font-semibold">Spend</th>
+                          <th className="px-4 py-3 font-semibold">Results</th>
+                          <th className="px-4 py-3 font-semibold">Meta Clicks</th>
+                          <th className="px-4 py-3 font-semibold">Meta LPV</th>
+                          <th className="px-4 py-3 font-semibold">/links Views</th>
+                          <th className="px-4 py-3 font-semibold">Stream Clicks</th>
+                          <th className="px-4 py-3 font-semibold">Click to LPV</th>
+                          <th className="px-4 py-3 font-semibold">LPV Tracked</th>
+                          <th className="px-4 py-3 font-semibold">View to Stream</th>
+                          <th className="px-4 py-3 font-semibold">Cost / Stream</th>
+                          <th className="px-4 py-3 font-semibold">Platform Split</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#252a31]">
-                        {commandDashboard.short_links.links.map((link) => (
-                          <tr className="align-top text-[#d9dee5]" key={link.id}>
-                            <td className="px-4 py-4">
-                              <Link
-                                className="font-semibold text-[#f1dfad] transition hover:text-[#d7b45e]"
-                                href={link.short_path}
-                                target="_blank"
-                              >
-                                {link.short_path}
-                              </Link>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-wrap gap-2">
-                                {link.campaign_label ? (
-                                  <span className="pill">Campaign: {link.campaign_label}</span>
+                        {commandDashboard.attribution.rows.length > 0 ? (
+                          commandDashboard.attribution.rows.map((row) => (
+                            <tr className="align-top text-[#d9dee5]" key={`${row.utm_campaign}-${row.utm_content}-${row.ad_name}`}>
+                              <td className="max-w-[300px] px-4 py-4">
+                                <p className="font-semibold text-ink">{row.label}</p>
+                                {row.ad_name ? (
+                                  <p className="mt-1 text-xs text-muted">{row.ad_name}</p>
                                 ) : null}
-                                {link.content_label ? (
-                                  <span className="pill">Content: {link.content_label}</span>
-                                ) : null}
-                                {!link.campaign_label && !link.content_label ? (
-                                  <span className="text-muted">No labels yet</span>
-                                ) : null}
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 font-semibold text-ink">
-                              {formatNumber(link.click_count)}
-                            </td>
-                            <td className="max-w-[300px] px-4 py-4">
-                              <p className="break-all text-muted">{link.destination_url}</p>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-4">
+                                <span className={getTrackingStatusClass(row.tracking_status)}>
+                                  {getTrackingStatusLabel(row.tracking_status)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4">{formatMoney(row.spend)}</td>
+                              <td className="px-4 py-4">{formatNumber(row.results)}</td>
+                              <td className="px-4 py-4">{formatNumber(row.meta_link_clicks)}</td>
+                              <td className="px-4 py-4">{formatNumber(row.meta_landing_page_views)}</td>
+                              <td className="px-4 py-4">{formatNumber(row.links_page_views)}</td>
+                              <td className="px-4 py-4">{formatNumber(row.streaming_clicks)}</td>
+                              <td className="px-4 py-4">{formatOptionalPercent(row.click_to_lpv_rate)}</td>
+                              <td className="px-4 py-4">{formatOptionalPercent(row.lpv_to_tracked_view_rate)}</td>
+                              <td className="px-4 py-4">{formatOptionalPercent(row.view_to_stream_rate)}</td>
+                              <td className="px-4 py-4">{formatOptionalMoney(row.cost_per_streaming_click)}</td>
+                              <td className="px-4 py-4 text-xs leading-5 text-muted">
+                                Spotify {formatNumber(row.spotify_clicks)} / Apple {formatNumber(row.apple_music_clicks)} / YouTube {formatNumber(row.youtube_clicks)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="px-4 py-7 text-center text-muted" colSpan={13}>
+                              No attribution rows yet. Import a Meta export and send campaign
+                              traffic to `/links` with `utm_campaign` and `utm_content`; if Meta
+                              omits URL params, matching ad names can still connect first-party data.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              </section>
-            ) : (
-              <section className="panel flex flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-                <div>
-                  <p className="field-label">Short links</p>
-                  <h2 className="mt-2 text-xl font-semibold text-ink">No release short links yet</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    No short links attached to this release. Create one to track branded redirects.
-                  </p>
-                </div>
-                <Link className="action-button-secondary" href="/admin/short-links">
-                  Create Short Link
-                  <ArrowRight size={16} />
-                </Link>
-              </section>
-            )}
+                </section>
 
-            <section className="panel overflow-hidden p-0">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
-                <div>
-                  <p className="field-label">UTM creative matrix</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-ink">
-                    Meta to /links Match Matrix
-                  </h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                    Matches imported Meta rows to first-party `/links` behavior when
-                    exported UTMs line up, or when Meta omits URL params and the ad name
-                    matches first-party `utm_content`. Use this to decide which creative
-                    deserves more budget, a retest, or a landing-page fix.
-                  </p>
-                </div>
-                <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-                  {commandDashboard.attribution.source_batch_type || "No batch"}
-                </div>
+                {commandDashboard.short_links.active_count > 0 ? (
+                  <section className="panel overflow-hidden p-0">
+                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                      <div>
+                        <p className="field-label">Short links</p>
+                        <h2 className="mt-2 text-2xl font-semibold text-ink">
+                          Campaign handoff links
+                        </h2>
+                        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                          Branded redirects attached to this release, kept separate from deeper attribution math.
+                        </p>
+                      </div>
+                      <Link className="action-button-secondary" href="/admin/short-links">
+                        Manage Short Links
+                        <ArrowRight size={16} />
+                      </Link>
+                    </div>
+                    <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                        <FunnelStage
+                          helper="Clicks across active short links attached to this release."
+                          label="Total short-link clicks"
+                          value={formatNumber(commandDashboard.short_links.total_clicks)}
+                        />
+                        <FunnelStage
+                          helper="Active branded redirects connected to this release."
+                          label="Active short links"
+                          value={formatNumber(commandDashboard.short_links.active_count)}
+                        />
+                        <FunnelStage
+                          helper={
+                            commandDashboard.short_links.top_link
+                              ? commandDashboard.short_links.top_link.short_path
+                              : "Attach short links to this release to identify a top link."
+                          }
+                          label="Top short link"
+                          value={
+                            commandDashboard.short_links.top_link
+                              ? formatNumber(commandDashboard.short_links.top_link.click_count)
+                              : "0"
+                          }
+                        />
+                      </div>
+
+                      <div className="overflow-x-auto rounded-[22px] border border-[#30343b]">
+                        <table className="w-full min-w-[720px] text-left text-sm">
+                          <thead className="bg-[#171a1f] text-[#b8bec6]">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">Short Link</th>
+                              <th className="px-4 py-3 font-semibold">Campaign / Content</th>
+                              <th className="px-4 py-3 font-semibold">Clicks</th>
+                              <th className="px-4 py-3 font-semibold">Destination</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#252a31]">
+                            {commandDashboard.short_links.links.map((link) => (
+                              <tr className="align-top text-[#d9dee5]" key={link.id}>
+                                <td className="px-4 py-4">
+                                  <Link
+                                    className="font-semibold text-[#f1dfad] transition hover:text-[#d7b45e]"
+                                    href={link.short_path}
+                                    target="_blank"
+                                  >
+                                    {link.short_path}
+                                  </Link>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex flex-wrap gap-2">
+                                    {link.campaign_label ? (
+                                      <span className="pill">Campaign: {link.campaign_label}</span>
+                                    ) : null}
+                                    {link.content_label ? (
+                                      <span className="pill">Content: {link.content_label}</span>
+                                    ) : null}
+                                    {!link.campaign_label && !link.content_label ? (
+                                      <span className="text-muted">No labels yet</span>
+                                    ) : null}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 font-semibold text-ink">
+                                  {formatNumber(link.click_count)}
+                                </td>
+                                <td className="max-w-[300px] px-4 py-4">
+                                  <p className="break-all text-muted">{link.destination_url}</p>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+                ) : (
+                  <section className="panel flex flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
+                    <div>
+                      <p className="field-label">Short links</p>
+                      <h2 className="mt-2 text-xl font-semibold text-ink">No release short links yet</h2>
+                      <p className="mt-2 text-sm leading-6 text-muted">
+                        No short links attached to this release. Create one to track branded redirects.
+                      </p>
+                    </div>
+                    <Link className="action-button-secondary" href="/admin/short-links">
+                      Create Short Link
+                      <ArrowRight size={16} />
+                    </Link>
+                  </section>
+                )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1400px] text-left text-sm">
-                  <thead className="bg-[#171a1f] text-[#b8bec6]">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Creative / UTM</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold">Spend</th>
-                      <th className="px-4 py-3 font-semibold">Results</th>
-                      <th className="px-4 py-3 font-semibold">Meta Clicks</th>
-                      <th className="px-4 py-3 font-semibold">Meta LPV</th>
-                      <th className="px-4 py-3 font-semibold">/links Views</th>
-                      <th className="px-4 py-3 font-semibold">Stream Clicks</th>
-                      <th className="px-4 py-3 font-semibold">Click to LPV</th>
-                      <th className="px-4 py-3 font-semibold">LPV Tracked</th>
-                      <th className="px-4 py-3 font-semibold">View to Stream</th>
-                      <th className="px-4 py-3 font-semibold">Cost / Stream</th>
-                      <th className="px-4 py-3 font-semibold">Platform Split</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#252a31]">
-                    {commandDashboard.attribution.rows.length > 0 ? (
-                      commandDashboard.attribution.rows.map((row) => (
-                        <tr className="align-top text-[#d9dee5]" key={`${row.utm_campaign}-${row.utm_content}-${row.ad_name}`}>
-                          <td className="max-w-[300px] px-4 py-4">
-                            <p className="font-semibold text-ink">{row.label}</p>
-                            {row.ad_name ? (
-                              <p className="mt-1 text-xs text-muted">{row.ad_name}</p>
-                            ) : null}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-4">
-                            <span className={getTrackingStatusClass(row.tracking_status)}>
-                              {getTrackingStatusLabel(row.tracking_status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4">{formatMoney(row.spend)}</td>
-                          <td className="px-4 py-4">{formatNumber(row.results)}</td>
-                          <td className="px-4 py-4">{formatNumber(row.meta_link_clicks)}</td>
-                          <td className="px-4 py-4">{formatNumber(row.meta_landing_page_views)}</td>
-                          <td className="px-4 py-4">{formatNumber(row.links_page_views)}</td>
-                          <td className="px-4 py-4">{formatNumber(row.streaming_clicks)}</td>
-                          <td className="px-4 py-4">{formatOptionalPercent(row.click_to_lpv_rate)}</td>
-                          <td className="px-4 py-4">{formatOptionalPercent(row.lpv_to_tracked_view_rate)}</td>
-                          <td className="px-4 py-4">{formatOptionalPercent(row.view_to_stream_rate)}</td>
-                          <td className="px-4 py-4">{formatOptionalMoney(row.cost_per_streaming_click)}</td>
-                          <td className="px-4 py-4 text-xs leading-5 text-muted">
-                            Spotify {formatNumber(row.spotify_clicks)} / Apple {formatNumber(row.apple_music_clicks)} / YouTube {formatNumber(row.youtube_clicks)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td className="px-4 py-7 text-center text-muted" colSpan={13}>
-                          No attribution rows yet. Import a Meta export and send campaign
-                          traffic to `/links` with `utm_campaign` and `utm_content`; if Meta
-                          omits URL params, matching ad names can still connect first-party data.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+            </details>
 
             <details className="panel overflow-hidden p-0">
               <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">

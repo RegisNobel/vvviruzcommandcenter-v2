@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-28 22:14 -04:00
+
+- **Attribution Operator View Compression**:
+  - Collapsed the Short Links and Meta ↔ /links Match Matrix sections into a new **Tracking Audit** `<details>` drawer, collapsed by default.
+  - Match Matrix is displayed first inside the drawer, followed by Short Links (including the empty state).
+  - Removed the unused `WinnerCard` component and its dead `Gauge`/`Radio` icon imports.
+  - Reduces visible Attribution sections from 8 always-open to 5 always-open + 2 collapsed drawers.
+
 ### 2026-05-28 21:52 -04:00
 
 - **Release Detail Performance Memory Consolidation v1**:
