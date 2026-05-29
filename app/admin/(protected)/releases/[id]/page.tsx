@@ -11,7 +11,7 @@ import {
   readAdPerformanceTimeline,
   readCopyPerformanceMemory
 } from "@/lib/repositories/ads";
-import {readActiveShortLinksByReleaseId} from "@/lib/repositories/short-links";
+import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
 import {prisma} from "@/lib/db/prisma";
@@ -40,7 +40,7 @@ export default async function AdminReleaseDetailPage({
       readLatestAdCampaignLearningForRelease(id),
       readReleaseAdMetrics(id),
       readReleaseCampaignHistory(id),
-      readActiveShortLinksByReleaseId(id),
+      readShortLinksByReleaseId(id),
       readCreativePerformanceMemory(id),
       readAdPerformanceTimeline(id),
       readCopyPerformanceMemory(id),

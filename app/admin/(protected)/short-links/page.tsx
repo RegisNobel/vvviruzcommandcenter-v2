@@ -3,7 +3,10 @@ import {headers} from "next/headers";
 
 import {ShortLinksAdminPage} from "@/components/short-links-admin-page";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
-import {readActiveShortLinks} from "@/lib/repositories/short-links";
+import {
+  readShortLinksForAdmin
+} from "@/lib/repositories/short-links";
+import type {ShortLinkAdminFilter} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +29,27 @@ async function getBaseUrl() {
   return `${protocol}://${host}`;
 }
 
-export default async function AdminShortLinksPage() {
+const shortLinkFilters = ["ACTIVE", "ARCHIVED", "PAUSED", "DELETED"] as const satisfies readonly ShortLinkAdminFilter[];
+
+function normalizeShortLinkFilter(value: string | string[] | undefined): ShortLinkAdminFilter {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const normalizedValue = rawValue?.toUpperCase();
+
+  return shortLinkFilters.includes(normalizedValue as ShortLinkAdminFilter)
+    ? (normalizedValue as ShortLinkAdminFilter)
+    : "ACTIVE";
+}
+
+export default async function AdminShortLinksPage({
+  searchParams
+}: {
+  searchParams: Promise<{status?: string | string[]}>;
+}) {
+  const params = await searchParams;
+  const statusFilter = normalizeShortLinkFilter(params.status);
   const [baseUrl, links, releases] = await Promise.all([
     getBaseUrl(),
-    readActiveShortLinks(),
+    readShortLinksForAdmin(statusFilter),
     readReleaseSummaries()
   ]);
 
@@ -38,6 +58,7 @@ export default async function AdminShortLinksPage() {
       baseUrl={baseUrl}
       initialLinks={links}
       releaseOptions={releases}
+      statusFilter={statusFilter}
     />
   );
 }

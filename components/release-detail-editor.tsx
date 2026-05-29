@@ -418,6 +418,18 @@ export function ReleaseDetailEditor({
     () => initialShortLinks.reduce((total, link) => total + link.click_count, 0),
     [initialShortLinks]
   );
+  const activeShortLinkCount = useMemo(
+    () => initialShortLinks.filter((link) => link.status === "ACTIVE").length,
+    [initialShortLinks]
+  );
+  const archivedShortLinkCount = useMemo(
+    () => initialShortLinks.filter((link) => link.status === "ARCHIVED").length,
+    [initialShortLinks]
+  );
+  const pausedShortLinkCount = useMemo(
+    () => initialShortLinks.filter((link) => link.status === "PAUSED").length,
+    [initialShortLinks]
+  );
   const openTasks = useMemo(
     () => release.tasks.filter((task) => !task.completed),
     [release.tasks]
@@ -1989,7 +2001,10 @@ export function ReleaseDetailEditor({
                   <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] px-4 py-3">
                     <p className={pageLabelClass}>Active Links</p>
                     <p className="mt-2 text-2xl font-semibold text-[#efe7db]">
-                      {formatNumber(initialShortLinks.length)}
+                      {formatNumber(activeShortLinkCount)}
+                    </p>
+                    <p className="mt-1 text-xs text-[#8a9098]">
+                      {formatNumber(archivedShortLinkCount)} archived / {formatNumber(pausedShortLinkCount)} paused
                     </p>
                   </div>
                   <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] px-4 py-3">
@@ -2630,7 +2645,7 @@ export function ReleaseDetailEditor({
 
           </div>
 
-          <aside className="scroll-mt-36 xl:sticky xl:top-[112px] xl:max-h-[calc(100vh-132px)] xl:self-start xl:overflow-y-auto xl:pr-1" id="release-actions">
+          <aside className="scroll-mt-36 xl:sticky xl:top-[112px] xl:self-start" id="release-actions">
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-5`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -2641,23 +2656,6 @@ export function ReleaseDetailEditor({
                 </div>
                 <span className={pageAccentPillClass}>{saveStatusLabel}</span>
               </div>
-
-              <nav className="grid grid-cols-2 gap-2" aria-label="Release detail quick jumps">
-                {[
-                  {href: "#overview", label: "Overview"},
-                  {href: "#discovery", label: "Discovery"},
-                  {href: "#media", label: "Media"},
-                  {href: "#promo-summary", label: "Promo"}
-                ].map((item) => (
-                  <a
-                    className="rounded-full border border-[#30343b] bg-[#121418] px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
-                    href={item.href}
-                    key={item.href}
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </nav>
 
               <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

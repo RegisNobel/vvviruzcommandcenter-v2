@@ -51,7 +51,7 @@ const dateFieldsByModel: Record<string, string[]> = {
   emailSendLog: ["sentAt", "createdAt"],
   analyticsEvent: ["createdAt"],
   backupRun: ["startedAt", "finishedAt", "createdAt"],
-  shortLink: ["createdAt", "updatedAt", "deletedAt"],
+  shortLink: ["createdAt", "updatedAt", "archivedAt", "pausedAt", "destinationUpdatedAt", "deletedAt"],
   adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
   adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
   adCreativeCopyLink: ["createdAt"],

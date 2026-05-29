@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-29 13:21 -04:00
+
+- **Short Link Lifecycle Management v1**:
+  - Added lifecycle status support to short links: `ACTIVE`, `ARCHIVED`, and `PAUSED`, while keeping existing `deletedAt` soft-delete behavior for rare destructive cleanup.
+  - Updated `/p/[slug]` redirects so active and archived links continue redirecting/tracking clicks, paused links return a safe stopped response, and deleted links remain non-redirecting.
+  - Added admin lifecycle controls for Archive, Pause, Restore, Update Destination, and Delete, plus Active/Archived/Paused/Deleted filters on `/admin/short-links`.
+  - Updated Release Detail and Attribution short-link readouts so archived/paused campaign links keep historical stats visible instead of disappearing from campaign context.
+
 ### 2026-05-29 11:57 -04:00
 
 - **Release Detail Action Dock Width Context Fix**:

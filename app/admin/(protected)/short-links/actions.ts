@@ -3,9 +3,12 @@
 import {
   createShortLink,
   softDeleteShortLink,
-  updateShortLinkContext
+  updateShortLinkContext,
+  updateShortLinkDestination,
+  updateShortLinkStatus
 } from "@/lib/repositories/short-links";
 import {buildDestinationUrlWithUtm, type UtmFields} from "@/lib/short-link-url";
+import type {ShortLinkStatus} from "@/lib/types";
 
 export async function createShortLinkAction(input: {
   customSlug?: string;
@@ -57,6 +60,48 @@ export async function updateShortLinkContextAction(input: {
     return {
       link: null,
       message: error instanceof Error ? error.message : "Short link context save failed.",
+      ok: false
+    };
+  }
+}
+
+export async function updateShortLinkDestinationAction(input: {
+  id: string;
+  destinationUrl: string;
+}) {
+  try {
+    const link = await updateShortLinkDestination(input);
+
+    return {
+      link,
+      message: "Short link destination updated. Future clicks use the new destination.",
+      ok: true
+    };
+  } catch (error) {
+    return {
+      link: null,
+      message: error instanceof Error ? error.message : "Short link destination update failed.",
+      ok: false
+    };
+  }
+}
+
+export async function updateShortLinkStatusAction(input: {
+  id: string;
+  status: ShortLinkStatus;
+}) {
+  try {
+    const link = await updateShortLinkStatus(input);
+
+    return {
+      link,
+      message: "Short link status updated.",
+      ok: true
+    };
+  } catch (error) {
+    return {
+      link: null,
+      message: error instanceof Error ? error.message : "Short link status update failed.",
       ok: false
     };
   }

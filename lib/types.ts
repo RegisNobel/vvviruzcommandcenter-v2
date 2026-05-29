@@ -736,17 +736,24 @@ export type AppearsOnRecord = {
   updated_at: string;
 };
 
+export type ShortLinkStatus = "ACTIVE" | "ARCHIVED" | "PAUSED";
+export type ShortLinkAdminFilter = ShortLinkStatus | "DELETED";
+
 export type ShortLinkRecord = {
   id: string;
   slug: string;
   destination_url: string;
   release_id: string;
   release_title: string;
+  status: ShortLinkStatus;
   click_count: number;
   campaign_label: string;
   content_label: string;
   created_at: string;
   updated_at: string;
+  archived_at: string | null;
+  paused_at: string | null;
+  destination_updated_at: string | null;
   deleted_at: string | null;
 };
 

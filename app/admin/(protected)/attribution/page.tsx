@@ -791,7 +791,7 @@ export default async function AdminAttributionPage({
                   </div>
                 </section>
 
-                {commandDashboard.short_links.active_count > 0 ? (
+                {commandDashboard.short_links.links.length > 0 ? (
                   <section className="panel overflow-hidden p-0">
                     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
                       <div>
@@ -800,7 +800,7 @@ export default async function AdminAttributionPage({
                           Campaign handoff links
                         </h2>
                         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                          Branded redirects attached to this release, kept separate from deeper attribution math.
+                          Branded redirects attached to this release. Active, archived, and paused links keep their stats visible here.
                         </p>
                       </div>
                       <Link className="action-button-secondary" href="/admin/short-links">
@@ -811,7 +811,7 @@ export default async function AdminAttributionPage({
                     <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                         <FunnelStage
-                          helper="Clicks across active short links attached to this release."
+                          helper="Clicks across non-deleted short links attached to this release."
                           label="Total short-link clicks"
                           value={formatNumber(commandDashboard.short_links.total_clicks)}
                         />
@@ -819,6 +819,11 @@ export default async function AdminAttributionPage({
                           helper="Active branded redirects connected to this release."
                           label="Active short links"
                           value={formatNumber(commandDashboard.short_links.active_count)}
+                        />
+                        <FunnelStage
+                          helper={`${formatNumber(commandDashboard.short_links.archived_count)} archived / ${formatNumber(commandDashboard.short_links.paused_count)} paused.`}
+                          label="Lifecycle history"
+                          value={`${formatNumber(commandDashboard.short_links.archived_count)} / ${formatNumber(commandDashboard.short_links.paused_count)}`}
                         />
                         <FunnelStage
                           helper={
@@ -840,6 +845,7 @@ export default async function AdminAttributionPage({
                           <thead className="bg-[#171a1f] text-[#b8bec6]">
                             <tr>
                               <th className="px-4 py-3 font-semibold">Short Link</th>
+                              <th className="px-4 py-3 font-semibold">Status</th>
                               <th className="px-4 py-3 font-semibold">Campaign / Content</th>
                               <th className="px-4 py-3 font-semibold">Clicks</th>
                               <th className="px-4 py-3 font-semibold">Destination</th>
@@ -856,6 +862,9 @@ export default async function AdminAttributionPage({
                                   >
                                     {link.short_path}
                                   </Link>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <span className="pill">{link.status.toLowerCase()}</span>
                                 </td>
                                 <td className="px-4 py-4">
                                   <div className="flex flex-wrap gap-2">

@@ -4,11 +4,12 @@ import type {ShortLink} from "@prisma/client";
 
 import {prisma} from "@/lib/db/prisma";
 import {buildDestinationUrlWithUtm} from "@/lib/short-link-url";
-import type {ShortLinkRecord} from "@/lib/types";
+import type {ShortLinkAdminFilter, ShortLinkRecord, ShortLinkStatus} from "@/lib/types";
 import {createId} from "@/lib/utils";
 
 const autoSlugLength = 7;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const shortLinkStatuses = ["ACTIVE", "ARCHIVED", "PAUSED"] as const satisfies readonly ShortLinkStatus[];
 const shortLinkInclude = {
   release: {
     select: {
@@ -29,6 +30,12 @@ function cleanOptionalString(value: string | null | undefined) {
   return value?.trim() ?? "";
 }
 
+function normalizeShortLinkStatus(value: string | null | undefined): ShortLinkStatus {
+  return shortLinkStatuses.includes(value as ShortLinkStatus)
+    ? (value as ShortLinkStatus)
+    : "ACTIVE";
+}
+
 function toShortLinkRecord(link: ShortLinkWithRelease): ShortLinkRecord {
   return {
     id: link.id,
@@ -36,11 +43,15 @@ function toShortLinkRecord(link: ShortLinkWithRelease): ShortLinkRecord {
     destination_url: link.destinationUrl,
     release_id: link.releaseId ?? "",
     release_title: link.release?.title ?? "",
+    status: normalizeShortLinkStatus(link.status),
     click_count: link.clickCount,
     campaign_label: link.campaignLabel,
     content_label: link.contentLabel,
     created_at: link.createdAt.toISOString(),
     updated_at: link.updatedAt.toISOString(),
+    archived_at: link.archivedAt?.toISOString() ?? null,
+    paused_at: link.pausedAt?.toISOString() ?? null,
+    destination_updated_at: link.destinationUpdatedAt?.toISOString() ?? null,
     deleted_at: link.deletedAt?.toISOString() ?? null
   };
 }
@@ -132,13 +143,41 @@ async function normalizeReleaseId(value: string | null | undefined) {
 }
 
 export async function readActiveShortLinks() {
+  return readShortLinksForAdmin("ACTIVE");
+}
+
+export async function readShortLinksForAdmin(filter: ShortLinkAdminFilter = "ACTIVE") {
+  const where = filter === "DELETED"
+    ? {
+        deletedAt: {
+          not: null
+        }
+      }
+    : {
+        deletedAt: null,
+        status: filter
+      };
+
   const links = await prisma.shortLink.findMany({
     include: shortLinkInclude,
     orderBy: {
       createdAt: "desc"
     },
+    where
+  });
+
+  return links.map(toShortLinkRecord);
+}
+
+export async function readShortLinksByReleaseId(releaseId: string) {
+  const links = await prisma.shortLink.findMany({
+    include: shortLinkInclude,
+    orderBy: {
+      clickCount: "desc"
+    },
     where: {
-      deletedAt: null
+      deletedAt: null,
+      releaseId
     }
   });
 
@@ -153,7 +192,8 @@ export async function readActiveShortLinksByReleaseId(releaseId: string) {
     },
     where: {
       deletedAt: null,
-      releaseId
+      releaseId,
+      status: "ACTIVE"
     }
   });
 
@@ -191,6 +231,7 @@ export async function createShortLink({
       releaseId: normalizedReleaseId,
       campaignLabel: cleanOptionalString(campaignLabel),
       contentLabel: cleanOptionalString(contentLabel),
+      status: "ACTIVE",
       clickCount: 0,
       createdAt: now,
       updatedAt: now
@@ -243,6 +284,86 @@ export async function updateShortLinkContext({
   return toShortLinkRecord(link);
 }
 
+export async function updateShortLinkDestination({
+  id,
+  destinationUrl
+}: {
+  id: string;
+  destinationUrl: string;
+}) {
+  const normalizedDestinationUrl = normalizeDestinationUrl(destinationUrl);
+  const existing = await prisma.shortLink.findFirst({
+    select: {
+      id: true
+    },
+    where: {
+      deletedAt: null,
+      id
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Short link not found.");
+  }
+
+  const now = new Date();
+  const link = await prisma.shortLink.update({
+    data: {
+      destinationUrl: normalizedDestinationUrl,
+      destinationUpdatedAt: now,
+      updatedAt: now
+    },
+    include: shortLinkInclude,
+    where: {
+      id: existing.id
+    }
+  });
+
+  return toShortLinkRecord(link);
+}
+
+export async function updateShortLinkStatus({
+  id,
+  status
+}: {
+  id: string;
+  status: ShortLinkStatus;
+}) {
+  if (!shortLinkStatuses.includes(status)) {
+    throw new Error("Select a valid lifecycle status.");
+  }
+
+  const existing = await prisma.shortLink.findFirst({
+    select: {
+      id: true
+    },
+    where: {
+      deletedAt: null,
+      id
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Short link not found.");
+  }
+
+  const now = new Date();
+  const link = await prisma.shortLink.update({
+    data: {
+      archivedAt: status === "ARCHIVED" ? now : null,
+      pausedAt: status === "PAUSED" ? now : null,
+      status,
+      updatedAt: now
+    },
+    include: shortLinkInclude,
+    where: {
+      id: existing.id
+    }
+  });
+
+  return toShortLinkRecord(link);
+}
+
 export async function softDeleteShortLink(id: string) {
   const now = new Date();
 
@@ -257,7 +378,7 @@ export async function softDeleteShortLink(id: string) {
   });
 }
 
-export async function resolveActiveShortLinkDestination(slug: string) {
+export async function resolveShortLinkRedirect(slug: string) {
   if (!slugPattern.test(slug)) {
     return null;
   }
@@ -273,6 +394,15 @@ export async function resolveActiveShortLinkDestination(slug: string) {
     return null;
   }
 
+  const status = normalizeShortLinkStatus(link.status);
+
+  if (status === "PAUSED") {
+    return {
+      destinationUrl: null,
+      status
+    };
+  }
+
   await prisma.shortLink.update({
     data: {
       clickCount: {
@@ -285,5 +415,14 @@ export async function resolveActiveShortLinkDestination(slug: string) {
     }
   });
 
-  return link.destinationUrl;
+  return {
+    destinationUrl: link.destinationUrl,
+    status
+  };
+}
+
+export async function resolveActiveShortLinkDestination(slug: string) {
+  const redirect = await resolveShortLinkRedirect(slug);
+
+  return redirect?.destinationUrl ?? null;
 }

@@ -368,7 +368,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         createdAt: true,
         destinationUrl: true,
         id: true,
-        slug: true
+        slug: true,
+        status: true
       },
       where: {
         deletedAt: null,
@@ -617,8 +618,12 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     destination_url: link.destinationUrl,
     id: link.id,
     short_path: `/p/${link.slug}`,
-    slug: link.slug
+    slug: link.slug,
+    status: link.status
   }));
+  const activeShortLinkRows = shortLinkRows.filter((link) => link.status === "ACTIVE");
+  const archivedShortLinkRows = shortLinkRows.filter((link) => link.status === "ARCHIVED");
+  const pausedShortLinkRows = shortLinkRows.filter((link) => link.status === "PAUSED");
   const shortLinkTotalClicks = shortLinkRows.reduce(
     (total, link) => total + link.click_count,
     0
@@ -754,8 +759,10 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       views_without_utm: Math.max(linksViews - viewsWithUtm, 0)
     },
     short_links: {
-      active_count: shortLinkRows.length,
+      active_count: activeShortLinkRows.length,
+      archived_count: archivedShortLinkRows.length,
       links: shortLinkRows.slice(0, 5),
+      paused_count: pausedShortLinkRows.length,
       top_link: shortLinkRows[0] ?? null,
       total_clicks: shortLinkTotalClicks
     },
