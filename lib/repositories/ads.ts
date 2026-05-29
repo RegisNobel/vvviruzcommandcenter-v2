@@ -163,6 +163,49 @@ function toDateInputOrNull(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+type AdBatchTimelineLike = {
+  createdAt: Date;
+  exportedAt: Date | null;
+  reportingEnd: Date | null;
+  reportingStart: Date | null;
+};
+
+function getBatchTimelineDate(batch: AdBatchTimelineLike) {
+  return new Date(batch.exportedAt ?? batch.reportingEnd ?? batch.createdAt).getTime();
+}
+
+function sortBatchesByTimeline<T extends AdBatchTimelineLike>(batchList: T[]) {
+  return [...batchList].sort((a, b) => {
+    const dateA = getBatchTimelineDate(a);
+    const dateB = getBatchTimelineDate(b);
+
+    if (dateA !== dateB) {
+      return dateA - dateB;
+    }
+
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+}
+
+function adBatchesHaveOverlap<T extends Pick<AdBatchTimelineLike, "reportingEnd" | "reportingStart">>(
+  batchList: T[]
+) {
+  return batchList.some((batch, index) =>
+    batchList.slice(index + 1).some((otherBatch) => {
+      const left = {
+        reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
+        reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
+      };
+      const right = {
+        reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
+        reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
+      };
+
+      return adDateRangesOverlap(left, right);
+    })
+  );
+}
+
 function toCopySummary(copy: CopyEntry): CopySummary {
   return summarizeCopy(
     hydrateCopy({
@@ -1767,19 +1810,7 @@ export async function readCreativePerformanceMemory(
     }
   });
 
-  const hasOverlappingSnapshots = batches.some((batch, index) =>
-    batches.slice(index + 1).some((otherBatch) => {
-      const left = {
-        reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
-        reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
-      };
-      const right = {
-        reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
-        reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
-      };
-      return adDateRangesOverlap(left, right);
-    })
-  );
+  const hasOverlappingSnapshots = adBatchesHaveOverlap(batches);
 
   type ReportWithBatch = {
     report: typeof batches[0]["reports"][0];
@@ -1823,28 +1854,11 @@ export async function readCreativePerformanceMemory(
       const activeBatchIds = Array.from(
         new Set(reportsWithBatch.map((rb) => rb.batch.id))
       );
-      const activeBatches = activeBatchIds.map((id) => batches.find((b) => b.id === id)!);
-
-      const isSpendOverlapping = activeBatches.some((batch, index) =>
-        activeBatches.slice(index + 1).some((otherBatch) => {
-          const left = {
-            reporting_start: batch.reportingStart ? batch.reportingStart.toISOString() : null,
-            reporting_end: batch.reportingEnd ? batch.reportingEnd.toISOString() : null
-          };
-          const right = {
-            reporting_start: otherBatch.reportingStart ? otherBatch.reportingStart.toISOString() : null,
-            reporting_end: otherBatch.reportingEnd ? otherBatch.reportingEnd.toISOString() : null
-          };
-          return adDateRangesOverlap(left, right);
-        })
+      const activeBatches = sortBatchesByTimeline(
+        activeBatchIds.map((id) => batches.find((b) => b.id === id)!)
       );
 
-      const totalSpend = sum(reportsWithBatch.map((rb) => rb.report.spend));
-      const totalResults = sum(reportsWithBatch.map((rb) => rb.report.results));
-      const totalImpressions = sum(reportsWithBatch.map((rb) => rb.report.impressions));
-      const totalLinkClicks = sum(reportsWithBatch.map((rb) => rb.report.linkClicks));
-
-      const averageCpr = cost(totalSpend, totalResults);
+      const isSpendOverlapping = adBatchesHaveOverlap(activeBatches);
 
       const reportsByBatch = new Map<string, typeof reportsWithBatch>();
       for (const rb of reportsWithBatch) {
@@ -1865,19 +1879,34 @@ export async function readCreativePerformanceMemory(
         });
       }
 
+      const latestBatch = activeBatches[activeBatches.length - 1];
+      const latestRbList = latestBatch ? (reportsByBatch.get(latestBatch.id) ?? []) : [];
+      const metricReports = isSpendOverlapping ? latestRbList : reportsWithBatch;
+      const metricBasis: ComponentPerformanceRow["metricBasis"] = isSpendOverlapping
+        ? "latest_snapshot"
+        : "combined_total";
+      const totalSpend = sum(metricReports.map((rb) => rb.report.spend));
+      const totalResults = sum(metricReports.map((rb) => rb.report.results));
+      const totalImpressions = sum(metricReports.map((rb) => rb.report.impressions));
+      const totalLinkClicks = sum(metricReports.map((rb) => rb.report.linkClicks));
+
+      const averageCpr = cost(totalSpend, totalResults);
+
       const batchesWithResults = batchCprs.filter((bc) => bc.results > 0 && bc.cpr !== null);
       const bestBatchCpr =
         batchesWithResults.length > 0
           ? Math.min(...batchesWithResults.map((bc) => bc.cpr!))
           : null;
 
-      const latestBatch = activeBatches[activeBatches.length - 1];
       const latestBatchData = batchCprs.find((bc) => bc.batchId === latestBatch.id);
       const latestBatchCpr = latestBatchData ? latestBatchData.cpr : null;
 
-      const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
-      const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
-      const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+      const backgroundReports = isSpendOverlapping
+        ? latestBatch.reports
+        : activeBatches.flatMap((b) => b.reports);
+      const bgResults = sum(backgroundReports.map((r) => r.results));
+      const bgImpressions = sum(backgroundReports.map((r) => r.impressions));
+      const bgLinkClicks = sum(backgroundReports.map((r) => r.linkClicks));
 
       const confidence = calculateConfidenceSignal({
         spend: totalSpend,
@@ -1896,9 +1925,12 @@ export async function readCreativePerformanceMemory(
         trendLabel = "Needs More Data";
       } else {
         const previousBatches = activeBatches.slice(0, -1);
-        const previousRbList = reportsWithBatch.filter((rb) =>
-          previousBatches.some((pb) => pb.id === rb.batch.id)
-        );
+        const previousSnapshotBatch = previousBatches[previousBatches.length - 1];
+        const previousRbList = isSpendOverlapping && previousSnapshotBatch
+          ? (reportsByBatch.get(previousSnapshotBatch.id) ?? [])
+          : reportsWithBatch.filter((rb) =>
+              previousBatches.some((pb) => pb.id === rb.batch.id)
+            );
         const previousSpend = sum(previousRbList.map((rb) => rb.report.spend));
         const previousResults = sum(previousRbList.map((rb) => rb.report.results));
 
@@ -1925,6 +1957,7 @@ export async function readCreativePerformanceMemory(
         batchCount,
         totalSpend,
         isSpendOverlapping,
+        metricBasis,
         totalResults,
         averageCpr,
         bestBatchCpr,
@@ -1953,7 +1986,9 @@ export async function readCreativePerformanceMemory(
       value: winner.value,
       cpr: winner.averageCpr,
       results: winner.totalResults,
-      warning: winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
+      warning: winner.isSpendOverlapping
+        ? "Rolling snapshot: latest batch only"
+        : winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
     };
   }
 
@@ -1968,7 +2003,9 @@ export async function readCreativePerformanceMemory(
       value: winner.value,
       cpr: winner.averageCpr,
       results: winner.totalResults,
-      warning: winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
+      warning: winner.isSpendOverlapping
+        ? "Rolling snapshot: latest batch only"
+        : winner.batchCount === 1 ? "Seen in only 1 batch" : undefined
     };
   }
 
@@ -2015,21 +2052,35 @@ export async function readCreativePerformanceMemory(
       ...(componentGroups.songSections.get(row.value) ?? []),
       ...(componentGroups.revisions.get(row.value) ?? [])
     ];
-    const spend = sum(rbList.map((rb) => rb.report.spend));
-    const impressions = sum(rbList.map((rb) => rb.report.impressions));
-    const results = sum(rbList.map((rb) => rb.report.results));
-    const linkClicks = sum(rbList.map((rb) => rb.report.linkClicks));
+    const activeBatches = sortBatchesByTimeline(Array.from(
+      new Set(rbList.map((rb) => rb.batch.id))
+    ).map((id) => batches.find((b) => b.id === id)!));
+    const confidenceRowsOverlap = adBatchesHaveOverlap(activeBatches);
+    const reportsByBatch = new Map<string, typeof rbList>();
+    for (const rb of rbList) {
+      const list = reportsByBatch.get(rb.batch.id) ?? [];
+      list.push(rb);
+      reportsByBatch.set(rb.batch.id, list);
+    }
+    const latestBatch = activeBatches[activeBatches.length - 1];
+    const confidenceReports = confidenceRowsOverlap && latestBatch
+      ? (reportsByBatch.get(latestBatch.id) ?? [])
+      : rbList;
+    const spend = sum(confidenceReports.map((rb) => rb.report.spend));
+    const impressions = sum(confidenceReports.map((rb) => rb.report.impressions));
+    const results = sum(confidenceReports.map((rb) => rb.report.results));
+    const linkClicks = sum(confidenceReports.map((rb) => rb.report.linkClicks));
 
     if (spend < 5.0 || impressions < 100) {
       continue;
     }
 
-    const activeBatches = Array.from(
-      new Set(rbList.map((rb) => rb.batch.id))
-    ).map((id) => batches.find((b) => b.id === id)!);
-    const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
-    const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
-    const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+    const backgroundReports = confidenceRowsOverlap && latestBatch
+      ? latestBatch.reports
+      : activeBatches.flatMap((b) => b.reports);
+    const bgResults = sum(backgroundReports.map((r) => r.results));
+    const bgImpressions = sum(backgroundReports.map((r) => r.impressions));
+    const bgLinkClicks = sum(backgroundReports.map((r) => r.linkClicks));
 
     let p1 = 0;
     let p0 = 0;
@@ -2362,13 +2413,20 @@ export async function readCopyPerformanceMemory(
     };
   });
 
+  const sortedBatches = sortBatchesByTimeline(batches);
+  const hasOverlappingSnapshots = adBatchesHaveOverlap(sortedBatches);
+  const latestOverallBatch = sortedBatches[sortedBatches.length - 1] ?? null;
+  const coverageItems = hasOverlappingSnapshots && latestOverallBatch
+    ? reportsWithData.filter((item) => item.batch.id === latestOverallBatch.id)
+    : reportsWithData;
+
   let totalSpend = 0;
   let linkedSpend = 0;
   let unlinkedSpend = 0;
 
   const adCopyStatus = new Map<string, boolean>();
 
-  for (const item of reportsWithData) {
+  for (const item of coverageItems) {
     const targetLinks = item.report.effectiveCopyLinks || item.report.copyLinks;
     const hasLink = targetLinks.length > 0;
     const normName = normalizeMetaAdName(item.report.adName);
@@ -2401,6 +2459,7 @@ export async function readCopyPerformanceMemory(
     totalSpend,
     linkedSpend,
     unlinkedSpend,
+    metricBasis: hasOverlappingSnapshots ? "latest_snapshot" : "combined_total",
     linkedSpendPercentage,
     unlinkedSpendPercentage,
     linkedAdCount,
@@ -2478,19 +2537,38 @@ export async function readCopyPerformanceMemory(
     hook?: string,
     caption?: string
   ): CopyPerformanceRow {
-    const totalSpend = sum(items.map((it) => it.report.spend));
-    const totalResults = sum(items.map((it) => it.report.results));
-    const totalImpressions = sum(items.map((it) => it.report.impressions));
-    const totalLinkClicks = sum(items.map((it) => it.report.linkClicks));
-    const totalLandingPageViews = sum(items.map((it) => it.report.landingPageViews));
-    const totalOutbound = sum(items.map((it) => it.outboundStreamingClicks));
-
     const activeBatchIds = Array.from(new Set(items.map((it) => it.batch.id)));
-    const activeBatches = activeBatchIds.map((id) => batches.find((b) => b.id === id)!);
+    const activeBatches = sortBatchesByTimeline(
+      activeBatchIds.map((id) => batches.find((b) => b.id === id)!)
+    );
+    const isSpendOverlapping = adBatchesHaveOverlap(activeBatches);
+    const itemsByBatch = new Map<string, ReportWithData[]>();
+    for (const item of items) {
+      const list = itemsByBatch.get(item.batch.id) ?? [];
+      list.push(item);
+      itemsByBatch.set(item.batch.id, list);
+    }
 
-    const bgResults = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.results)));
-    const bgImpressions = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.impressions)));
-    const bgLinkClicks = sum(activeBatches.flatMap((b) => b.reports.map((r) => r.linkClicks)));
+    const latestBatch = activeBatches[activeBatches.length - 1];
+    const metricItems = isSpendOverlapping && latestBatch
+      ? (itemsByBatch.get(latestBatch.id) ?? [])
+      : items;
+    const metricBasis: CopyPerformanceRow["metricBasis"] = isSpendOverlapping
+      ? "latest_snapshot"
+      : "combined_total";
+    const totalSpend = sum(metricItems.map((it) => it.report.spend));
+    const totalResults = sum(metricItems.map((it) => it.report.results));
+    const totalImpressions = sum(metricItems.map((it) => it.report.impressions));
+    const totalLinkClicks = sum(metricItems.map((it) => it.report.linkClicks));
+    const totalLandingPageViews = sum(metricItems.map((it) => it.report.landingPageViews));
+    const totalOutbound = sum(metricItems.map((it) => it.outboundStreamingClicks));
+
+    const backgroundReports = isSpendOverlapping && latestBatch
+      ? latestBatch.reports
+      : activeBatches.flatMap((b) => b.reports);
+    const bgResults = sum(backgroundReports.map((r) => r.results));
+    const bgImpressions = sum(backgroundReports.map((r) => r.impressions));
+    const bgLinkClicks = sum(backgroundReports.map((r) => r.linkClicks));
 
     const confidence = calculateConfidenceSignal({
       spend: totalSpend,
@@ -2508,6 +2586,8 @@ export async function readCopyPerformanceMemory(
       hook,
       caption,
       spend: totalSpend,
+      isSpendOverlapping,
+      metricBasis,
       results: totalResults,
       cpr: cost(totalSpend, totalResults),
       linkClicks: totalLinkClicks,
@@ -2557,20 +2637,30 @@ export async function readCopyPerformanceMemory(
 
   const unlinkedAds: UnlinkedAdSummaryRow[] = [];
   for (const [adName, items] of unlinkedAdsMap.entries()) {
-    const totalSpend = sum(items.map((it) => it.report.spend));
-    const totalResults = sum(items.map((it) => it.report.results));
-    const totalLinkClicks = sum(items.map((it) => it.report.linkClicks));
-    const totalLandingPageViews = sum(items.map((it) => it.report.landingPageViews));
-    const activeBatchIds = new Set(items.map((it) => it.batch.id));
+    const activeBatchIds = Array.from(new Set(items.map((it) => it.batch.id)));
+    const activeBatches = sortBatchesByTimeline(
+      activeBatchIds.map((id) => batches.find((b) => b.id === id)!)
+    );
+    const isSpendOverlapping = adBatchesHaveOverlap(activeBatches);
+    const latestBatch = activeBatches[activeBatches.length - 1];
+    const metricItems = isSpendOverlapping && latestBatch
+      ? items.filter((item) => item.batch.id === latestBatch.id)
+      : items;
+    const totalSpend = sum(metricItems.map((it) => it.report.spend));
+    const totalResults = sum(metricItems.map((it) => it.report.results));
+    const totalLinkClicks = sum(metricItems.map((it) => it.report.linkClicks));
+    const totalLandingPageViews = sum(metricItems.map((it) => it.report.landingPageViews));
 
     unlinkedAds.push({
       adName,
       spend: totalSpend,
+      isSpendOverlapping,
+      metricBasis: isSpendOverlapping ? "latest_snapshot" : "combined_total",
       results: totalResults,
       cpr: cost(totalSpend, totalResults),
       linkClicks: totalLinkClicks,
       landingPageViews: totalLandingPageViews,
-      batchCount: activeBatchIds.size
+      batchCount: activeBatchIds.length
     });
   }
   unlinkedAds.sort((a, b) => b.spend - a.spend);
@@ -2584,7 +2674,8 @@ export async function readCopyPerformanceMemory(
     return {
       label: winner.label,
       cpr: winner.cpr,
-      results: winner.results
+      results: winner.results,
+      warning: winner.isSpendOverlapping ? "Rolling snapshot: latest batch only" : undefined
     };
   }
 
@@ -2595,7 +2686,8 @@ export async function readCopyPerformanceMemory(
     return {
       label: winner.label,
       cpr: winner.cpr,
-      results: winner.results
+      results: winner.results,
+      warning: winner.isSpendOverlapping ? "Rolling snapshot: latest batch only" : undefined
     };
   }
 
@@ -2614,6 +2706,7 @@ export async function readCopyPerformanceMemory(
       songSections,
       combos,
       unlinkedAds,
+      hasOverlappingSnapshots,
       winners: {
         bestCopyPair,
         bestAngle,
@@ -2631,6 +2724,7 @@ export async function readCopyPerformanceMemory(
     songSections,
     combos,
     unlinkedAds,
+    hasOverlappingSnapshots,
     winners: {
       bestCopyPair,
       bestAngle,

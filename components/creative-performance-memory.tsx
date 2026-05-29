@@ -125,7 +125,7 @@ export function CreativePerformanceMemorySection({
           <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
             <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold text-amber-300">Overlapping Snapshot Warnings Active:</span> Due to overlapping batch date ranges, the summed metrics are marked as snapshot totals instead of absolute lifetime totals.
+              <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest snapshot for each component instead of summing duplicated Meta exports.
             </div>
           </div>
         )}
@@ -155,7 +155,7 @@ export function CreativePerformanceMemorySection({
         <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold text-amber-300">Overlapping Snapshot Warnings Active:</span> Due to overlapping batch date ranges, the summed metrics are marked as snapshot totals instead of absolute lifetime totals.
+            <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest snapshot for each component instead of summing duplicated Meta exports.
           </div>
         </div>
       )}
@@ -245,8 +245,8 @@ export function CreativePerformanceMemorySection({
               <tr className="border-b border-[#20242b] text-[10px] uppercase tracking-wider text-[#7f858d] bg-[#0f1216]/50">
                 <th className="py-2.5 px-4 font-semibold">Component</th>
                 <th className="py-2.5 px-4 font-semibold text-center">Batches</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Total Spend</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Total Results</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Spend</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Results</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Avg CPR</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Best Batch CPR</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Latest Batch CPR</th>
@@ -261,17 +261,17 @@ export function CreativePerformanceMemorySection({
                   <td className="py-3 px-4 text-center">{row.batchCount}</td>
                   <td className="py-3 px-4 text-right">
                     <span>{formatCurrency(row.totalSpend)}</span>
-                    {row.isSpendOverlapping && (
+                    {row.metricBasis === "latest_snapshot" && (
                       <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
-                        overlapping snapshot total
+                        latest snapshot
                       </span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span>{formatNumber(row.totalResults)}</span>
-                    {row.isSpendOverlapping && (
+                    {row.metricBasis === "latest_snapshot" && (
                       <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
-                        snapshot-based
+                        latest snapshot
                       </span>
                     )}
                   </td>

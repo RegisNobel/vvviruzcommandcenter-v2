@@ -38,6 +38,7 @@ export function CopyPerformanceMemorySection({
     songSections,
     combos,
     unlinkedAds,
+    hasOverlappingSnapshots,
     winners
   } = memory;
 
@@ -71,7 +72,7 @@ export function CopyPerformanceMemorySection({
 
   const renderSummaryCard = (
     title: string,
-    winner: { label: string; cpr: number | null; results: number } | null,
+    winner: { label: string; cpr: number | null; results: number; warning?: string } | null,
     icon: React.ReactNode
   ) => {
     const isNeedsData = !winner;
@@ -88,9 +89,17 @@ export function CopyPerformanceMemorySection({
         </div>
         <div className="mt-2">
           {winner ? (
-            <p className="text-xs text-[#8a9098]">
-              {formatNullableCurrency(winner.cpr)} CPR &middot; {winner.results} results
-            </p>
+            <>
+              <p className="text-xs text-[#8a9098]">
+                {formatNullableCurrency(winner.cpr)} CPR &middot; {winner.results} results
+              </p>
+              {winner.warning && (
+                <p className="mt-1 text-xs text-amber-400 flex items-center gap-1 font-medium">
+                  <AlertTriangle size={12} />
+                  {winner.warning}
+                </p>
+              )}
+            </>
           ) : (
             <p className="text-xs text-amber-400 flex items-center gap-1 font-medium">
               <Info size={12} />
@@ -102,16 +111,51 @@ export function CopyPerformanceMemorySection({
     );
   };
 
+  const renderSnapshotLabel = (
+    metricBasis?: "combined_total" | "latest_snapshot"
+  ) => metricBasis === "latest_snapshot" ? (
+    <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
+      latest snapshot
+    </span>
+  ) : null;
+
+  const renderSpendCell = (row: { metricBasis?: "combined_total" | "latest_snapshot"; spend: number }) => (
+    <td className="py-3 px-4 text-right">
+      {formatCurrency(row.spend)}
+      {renderSnapshotLabel(row.metricBasis)}
+    </td>
+  );
+
+  const renderResultsCell = (row: { metricBasis?: "combined_total" | "latest_snapshot"; results: number }) => (
+    <td className="py-3 px-4 text-right">
+      {formatNumber(row.results)}
+      {renderSnapshotLabel(row.metricBasis)}
+    </td>
+  );
+
+  const renderSnapshotNotice = () => hasOverlappingSnapshots ? (
+    <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
+      <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+      <div>
+        <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Copy spend/results use the latest snapshot for each row instead of summing duplicated overlapping Meta exports.
+      </div>
+    </div>
+  ) : null;
+
   if (hideSummaryCards) {
     return (
       <div className="space-y-6">
+        {renderSnapshotNotice()}
+
         {/* Coverage Section */}
         <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h4 className="text-sm font-semibold text-[#efe7db]">Copy Linking Coverage</h4>
               <p className="text-xs text-[#8a9098] mt-0.5">
-                Percentage of total spend and creative ads that have associated Copy Lab entries.
+                {coverage.metricBasis === "latest_snapshot"
+                  ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
+                  : "Percentage of total spend and creative ads that have associated Copy Lab entries."}
               </p>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">
@@ -177,8 +221,8 @@ export function CopyPerformanceMemorySection({
                   <div className="font-medium text-[#efe7db] truncate" title={row.hook}>{row.hook || row.label}</div>
                   {row.caption && <div className="text-[11px] text-[#7f858d] truncate mt-0.5" title={row.caption}>{row.caption}</div>}
                 </td>
-                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                {renderSpendCell(row)}
+                {renderResultsCell(row)}
                 <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -201,8 +245,8 @@ export function CopyPerformanceMemorySection({
                   {row.label}
                   {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
                 </td>
-                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                {renderSpendCell(row)}
+                {renderResultsCell(row)}
                 <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -225,8 +269,8 @@ export function CopyPerformanceMemorySection({
                   {row.label}
                   {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
                 </td>
-                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                {renderSpendCell(row)}
+                {renderResultsCell(row)}
                 <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -270,8 +314,8 @@ export function CopyPerformanceMemorySection({
                       </div>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                  <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                  {renderSpendCell(row)}
+                  {renderResultsCell(row)}
                   <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                   <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                   <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -292,8 +336,8 @@ export function CopyPerformanceMemorySection({
             (row: UnlinkedAdSummaryRow) => (
               <tr key={row.adName} className="hover:bg-[#141820]/30 transition-colors bg-[#18120c]/15">
                 <td className="py-3 px-4 font-mono text-xs text-amber-200/90 truncate max-w-[280px]" title={row.adName}>{row.adName}</td>
-                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                {renderSpendCell(row)}
+                {renderResultsCell(row)}
                 <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -318,13 +362,17 @@ export function CopyPerformanceMemorySection({
         </p>
       </div>
 
+      {renderSnapshotNotice()}
+
       {/* Coverage Section */}
       <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h4 className="text-sm font-semibold text-[#efe7db]">Copy Linking Coverage</h4>
             <p className="text-xs text-[#8a9098] mt-0.5">
-              Percentage of total spend and creative ads that have associated Copy Lab entries.
+              {coverage.metricBasis === "latest_snapshot"
+                ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
+                : "Percentage of total spend and creative ads that have associated Copy Lab entries."}
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium">
@@ -417,8 +465,8 @@ export function CopyPerformanceMemorySection({
                 <div className="font-medium text-[#efe7db] truncate" title={row.hook}>{row.hook || row.label}</div>
                 {row.caption && <div className="text-[11px] text-[#7f858d] truncate mt-0.5" title={row.caption}>{row.caption}</div>}
               </td>
-              <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+              {renderSpendCell(row)}
+              {renderResultsCell(row)}
               <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -441,8 +489,8 @@ export function CopyPerformanceMemorySection({
                 {row.label}
                 {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
               </td>
-              <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+              {renderSpendCell(row)}
+              {renderResultsCell(row)}
               <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -465,8 +513,8 @@ export function CopyPerformanceMemorySection({
                 {row.label}
                 {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
               </td>
-              <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+              {renderSpendCell(row)}
+              {renderResultsCell(row)}
               <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -510,8 +558,8 @@ export function CopyPerformanceMemorySection({
                     </div>
                   )}
                 </td>
-                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                {renderSpendCell(row)}
+                {renderResultsCell(row)}
                 <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
                 <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
@@ -532,8 +580,8 @@ export function CopyPerformanceMemorySection({
           (row: UnlinkedAdSummaryRow) => (
             <tr key={row.adName} className="hover:bg-[#141820]/30 transition-colors bg-[#18120c]/15">
               <td className="py-3 px-4 font-mono text-xs text-amber-200/90 truncate max-w-[280px]" title={row.adName}>{row.adName}</td>
-              <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
-              <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+              {renderSpendCell(row)}
+              {renderResultsCell(row)}
               <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
               <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>

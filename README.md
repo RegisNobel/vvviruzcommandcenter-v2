@@ -471,6 +471,21 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-29 11:57 -04:00
+
+- **Release Detail Action Dock Width Context Fix**:
+  - Added a `variant` prop to [`components/sticky-action-dock.tsx`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/sticky-action-dock.tsx) so wide settings pages can keep the full-width dock while editor pages use a narrower action surface.
+  - Updated Release Detail and Copy Detail to use `variant="editor"` (`max-w-[1100px]`) so the fixed bottom dock visually aligns with the main editor work area after the right-side sidebar cards scroll away.
+  - Kept Public Site Settings on the default wide dock behavior and did not change save, delete, autosave, route, or anchor logic.
+
+### 2026-05-29 00:30 -04:00
+
+- **Rolling Snapshot Spend Guard**:
+  - Updated Release Detail Creative Performance Memory and Copy Strategy Memory so overlapping Meta rolling snapshots no longer sum duplicated spend/results as if they were separate budget periods.
+  - Component and copy performance tables now show the latest snapshot for spend/results when batch date ranges overlap, while fixed-period batches can still use combined totals.
+  - Copy linking coverage now uses the latest snapshot in rolling mode, preventing linked/unlinked spend percentages from being inflated by repeated exports.
+  - Updated the warning copy from "overlapping snapshot total" to "latest snapshot" so the campaign memory readout does not imply inflated lifetime spend.
+
 ### 2026-05-28 23:40 -04:00
 
 - **Operator Mode Surface Cleanup v1**:

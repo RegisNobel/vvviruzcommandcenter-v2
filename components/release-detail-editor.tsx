@@ -418,6 +418,11 @@ export function ReleaseDetailEditor({
     () => initialShortLinks.reduce((total, link) => total + link.click_count, 0),
     [initialShortLinks]
   );
+  const openTasks = useMemo(
+    () => release.tasks.filter((task) => !task.completed),
+    [release.tasks]
+  );
+  const completedTaskCount = release.tasks.length - openTasks.length;
   const topShortLink = useMemo(
     () =>
       [...initialShortLinks].sort(
@@ -2625,16 +2630,36 @@ export function ReleaseDetailEditor({
 
           </div>
 
-          <aside className="scroll-mt-36 space-y-6 xl:sticky xl:top-[150px] xl:max-h-[calc(100vh-170px)] xl:self-start xl:overflow-y-auto xl:pr-1" id="release-actions">
-            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
-              <div>
-                <p className={pageLabelClass}>Release Planning</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
-                  Status Dock
-                </h2>
+          <aside className="scroll-mt-36 xl:sticky xl:top-[112px] xl:max-h-[calc(100vh-132px)] xl:self-start xl:overflow-y-auto xl:pr-1" id="release-actions">
+            <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-5`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className={pageLabelClass}>Release Control Panel</p>
+                  <h2 className="mt-2 text-xl font-semibold text-[#f0eadf]">
+                    At a glance
+                  </h2>
+                </div>
+                <span className={pageAccentPillClass}>{saveStatusLabel}</span>
               </div>
 
-              <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+              <nav className="grid grid-cols-2 gap-2" aria-label="Release detail quick jumps">
+                {[
+                  {href: "#overview", label: "Overview"},
+                  {href: "#discovery", label: "Discovery"},
+                  {href: "#media", label: "Media"},
+                  {href: "#promo-summary", label: "Promo"}
+                ].map((item) => (
+                  <a
+                    className="rounded-full border border-[#30343b] bg-[#121418] px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
+                    href={item.href}
+                    key={item.href}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Internal Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
@@ -2645,40 +2670,32 @@ export function ReleaseDetailEditor({
                     style={{width: `${progress}%`}}
                   />
                 </div>
-              </div>
-
-              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm">
-                <div>
-                  <p className={pageLabelClass}>Current stage</p>
-                  <p className="mt-2 font-semibold text-[#efe8db]">{snapshotStage}</p>
-                </div>
-                <div className="border-t border-[#2d3138] pt-3">
-                  <p className={pageLabelClass}>Next action</p>
-                  <p className="mt-2 leading-6 text-[#efe8db]">{snapshotNextAction}</p>
-                </div>
-                <div className="border-t border-[#2d3138] pt-3">
-                  <p className={pageLabelClass}>Public site</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className={release.is_published ? pageAccentPillClass : pagePillClass}>
-                      {release.is_published ? "Publicly Visible" : "Hidden"}
-                    </span>
-                    <span className={isPublishReady ? pageAccentPillClass : pagePillClass}>
-                      {isPublishReady ? "Public Publish Ready" : "Public Site Blocked"}
+                <div className="mt-3 grid gap-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#8a9098]">Stage</span>
+                    <span className="text-right font-semibold text-[#efe8db]">{snapshotStage}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#8a9098]">Tasks</span>
+                    <span className="font-semibold text-[#efe8db]">
+                      {openTasks.length} open / {completedTaskCount} done
                     </span>
                   </div>
-                  <p className="mt-3 break-all font-mono text-xs text-[#8a9098]">
-                    {publicUrlPreview}
-                  </p>
                 </div>
+              </div>
+
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm">
+                <p className={pageLabelClass}>Next Action</p>
+                <p className="mt-2 leading-6 text-[#efe8db]">{snapshotNextAction}</p>
               </div>
 
               {snapshotBlockers.length > 0 ? (
-                <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
+                <div className="rounded-[20px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
                   <p className={pageLabelClass}>Blockers</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {snapshotBlockers.map((blocker) => (
                       <span
-                        className="inline-flex items-center rounded-full border border-[#6c3934] bg-[#251515] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d4a7a0]"
+                        className="inline-flex items-center rounded-full border border-[#6c3934] bg-[#251515] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d4a7a0]"
                         key={blocker}
                       >
                         {blocker}
@@ -2687,168 +2704,158 @@ export function ReleaseDetailEditor({
                   </div>
                 </div>
               ) : null}
-            </section>
 
-            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
-              <div>
-                <p className={pageLabelClass}>Record Info</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Metadata</h2>
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className={pageLabelClass}>Public + Discovery</p>
+                  <span className={isPublishReady ? pageAccentPillClass : pagePillClass}>
+                    {isPublishReady ? "Publish Ready" : "Blocked"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className={release.is_published ? pageAccentPillClass : pagePillClass}>
+                    {release.is_published ? "Visible" : "Hidden"}
+                  </span>
+                  <span className={discoveryReadinessLabel === "Ready" ? pageAccentPillClass : pagePillClass}>
+                    Discovery: {discoveryReadinessLabel}
+                  </span>
+                </div>
+                <p className="mt-3 break-all font-mono text-xs text-[#8a9098]">
+                  {publicUrlPreview}
+                </p>
               </div>
 
-              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-[#aeb3bb]">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={pageLabelClass}>ID</span>
-                  <span className="font-mono text-xs text-[#f0eadf]">{release.id}</span>
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-[#aeb3bb]">
+                <p className={pageLabelClass}>Metadata</p>
+                <div className="mt-3 space-y-2">
+                  {[
+                    ["Type", formatReleaseType(release.type)],
+                    ["Release Date", release.release_date || "Not set"],
+                    ["Collaborator", release.collaborator ? release.collaborator_name || "Yes" : "No"],
+                    ["UPC", release.upc || "Not set"],
+                    ["ISRC", release.isrc || "Not set"],
+                    ["Updated", formatTimestamp(release.updated_on)]
+                  ].map(([label, value]) => (
+                    <div className="flex items-start justify-between gap-3" key={label}>
+                      <span className="text-xs uppercase tracking-[0.14em] text-[#7b8088]">{label}</span>
+                      <span className="text-right text-[#ebe4d8]">{value}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={pageLabelClass}>Created On</span>
-                  <span className="text-right text-[#ebe4d8]">
-                    {formatTimestamp(release.created_on)}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={pageLabelClass}>UPC</span>
-                  <span className="text-right text-[#ebe4d8]">
-                    {release.upc || "Not set"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={pageLabelClass}>ISRC</span>
-                  <span className="text-right text-[#ebe4d8]">
-                    {release.isrc || "Not set"}
-                  </span>
-                </div>
-                <div className="space-y-2 border-t border-[#2d3138] pt-3">
-                  <span className={pageLabelClass}>Streaming</span>
-                  <div className="grid gap-2">
-                    {streamingMetadataButtons.map((platform) => {
-                      const Icon = platform.icon;
-                      const buttonClassName = `inline-flex w-full rounded-2xl border px-3 py-3 text-sm font-semibold transition ${
-                        platform.href
-                          ? platform.activeClassName
-                          : platform.inactiveClassName
-                      }`;
+              </div>
 
-                      if (!platform.href) {
-                        return (
-                          <div
-                            className={`${buttonClassName} items-center justify-between gap-3`}
-                            key={platform.label}
-                          >
-                            <span className="flex flex-wrap items-center gap-3">
-                              <Icon className="h-5 w-5 shrink-0" />
-                              {platform.label}
-                            </span>
-                            <span className="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">
-                              Not set
-                            </span>
-                          </div>
-                        );
-                      }
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <p className={pageLabelClass}>Streaming</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {streamingMetadataButtons.map((platform) => {
+                    const Icon = platform.icon;
 
+                    if (!platform.href) {
                       return (
-                        <a
-                          className={`${buttonClassName} items-center gap-3`}
-                          href={platform.href}
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full border border-[#30343b] bg-[#101318] px-3 py-2 text-xs font-semibold text-[#727780]"
                           key={platform.label}
-                          rel="noreferrer"
-                          target="_blank"
                         >
-                          <Icon className="h-5 w-5 shrink-0" />
-                          {platform.label}
-                        </a>
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {platform.label}: Not set
+                        </span>
                       );
-                    })}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className={pageLabelClass}>Updated On</span>
-                  <span className="text-right text-[#ebe4d8]">
-                    {formatTimestamp(release.updated_on)}
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            <section className={`${pagePanelClass} space-y-5 px-4 py-5 sm:px-6 sm:py-6`}>
-              <div>
-                <p className={pageLabelClass}>Release Planning</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">Tasks</h2>
-              </div>
-
-              <div className="flex gap-3">
-                <input
-                  className={pageInputClass}
-                  onChange={(event) => setTaskText(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addTask();
                     }
-                  }}
-                  placeholder="Add a task"
-                  value={taskText}
-                />
-                <button className={pagePrimaryButtonClass} onClick={addTask} type="button">
-                  <Plus size={16} />
-                  Add
-                </button>
+
+                    return (
+                      <a
+                        className="inline-flex items-center gap-2 rounded-full border border-[#3f4637] bg-[#171a12] px-3 py-2 text-xs font-semibold text-[#f0d98b] transition hover:border-[#d7b45e]/50 hover:text-[#ffe2a5]"
+                        href={platform.href}
+                        key={platform.label}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {platform.label}
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {release.tasks.map((task) => (
-                  <div
-                    className={`flex items-center gap-3 rounded-[22px] border px-4 py-3 ${
-                      task.completed
-                        ? "border-[#353941] bg-[#121418]"
-                        : "border-[#31353b] bg-[#15181c]"
-                    }`}
-                    key={task.id}
-                  >
-                    <input
-                      checked={task.completed}
-                      className={pageCheckboxClass}
-                      onChange={(event) =>
-                        updateRelease((current) => ({
-                          ...current,
-                          tasks: current.tasks.map((item) =>
-                            item.id === task.id
-                              ? {
-                                  ...item,
-                                  completed: event.target.checked
-                                }
-                              : item
-                          )
-                        }))
-                      }
-                      type="checkbox"
-                    />
-                    <span
-                      className={`flex-1 text-sm ${
-                        task.completed
-                          ? "text-[#727780] line-through"
-                          : "text-[#e7e1d6]"
-                      }`}
-                    >
-                      {task.text}
-                    </span>
-                    <button
-                      className={pageDangerButtonClass}
-                      onClick={() => handleDeleteTask(task.id)}
-                      type="button"
-                    >
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
-                  </div>
-                ))}
+              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className={pageLabelClass}>Tasks</p>
+                  <span className={pagePillClass}>{release.tasks.length} total</span>
+                </div>
 
-                {release.tasks.length === 0 ? (
-                  <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">
-                    No tasks yet. Add the next concrete action to keep the release
-                    moving.
-                  </div>
-                ) : null}
+                <div className="mt-3 flex gap-2">
+                  <input
+                    className={`${pageInputClass} py-2.5`}
+                    onChange={(event) => setTaskText(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addTask();
+                      }
+                    }}
+                    placeholder="Add a task"
+                    value={taskText}
+                  />
+                  <button className={`${pagePrimaryButtonClass} px-3`} onClick={addTask} type="button">
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                <div className="mt-3 max-h-[260px] space-y-2 overflow-y-auto pr-1">
+                  {release.tasks.map((task) => (
+                    <div
+                      className={`flex items-start gap-2 rounded-[16px] border px-3 py-2 ${
+                        task.completed
+                          ? "border-[#353941] bg-[#101318]"
+                          : "border-[#31353b] bg-[#15181c]"
+                      }`}
+                      key={task.id}
+                    >
+                      <input
+                        checked={task.completed}
+                        className={`${pageCheckboxClass} mt-0.5 shrink-0`}
+                        onChange={(event) =>
+                          updateRelease((current) => ({
+                            ...current,
+                            tasks: current.tasks.map((item) =>
+                              item.id === task.id
+                                ? {
+                                    ...item,
+                                    completed: event.target.checked
+                                  }
+                                : item
+                            )
+                          }))
+                        }
+                        type="checkbox"
+                      />
+                      <span
+                        className={`min-w-0 flex-1 text-sm leading-5 ${
+                          task.completed
+                            ? "text-[#727780] line-through"
+                            : "text-[#e7e1d6]"
+                        }`}
+                      >
+                        {task.text}
+                      </span>
+                      <button
+                        aria-label={`Delete task: ${task.text}`}
+                        className="rounded-full border border-[#4a2b2b] bg-[#251515] p-1.5 text-[#d4a7a0] transition hover:border-[#7b3e3e] hover:bg-[#341919]"
+                        onClick={() => handleDeleteTask(task.id)}
+                        type="button"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {release.tasks.length === 0 ? (
+                    <div className="rounded-[16px] border border-dashed border-[#383c43] bg-[#101318] px-3 py-4 text-sm text-[#7f858d]">
+                      No tasks yet. Add the next concrete action here.
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </section>
           </aside>
@@ -2856,7 +2863,7 @@ export function ReleaseDetailEditor({
 
         <StickyActionDock
           isVisible={true}
-          maxWidth="max-w-[1450px]"
+          variant="editor"
           statusSlot={
             message ? (
               <span

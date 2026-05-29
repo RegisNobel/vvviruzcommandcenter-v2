@@ -855,6 +855,7 @@ export type ComponentPerformanceRow = {
   batchCount: number;
   totalSpend: number;
   isSpendOverlapping: boolean;
+  metricBasis: "combined_total" | "latest_snapshot";
   totalResults: number;
   averageCpr: number | null;
   bestBatchCpr: number | null;
@@ -926,6 +927,8 @@ export type CopyPerformanceRow = {
   hook?: string;
   caption?: string;
   spend: number;
+  isSpendOverlapping: boolean;
+  metricBasis: "combined_total" | "latest_snapshot";
   results: number;
   cpr: number | null;
   linkClicks: number;
@@ -940,6 +943,7 @@ export type CopyPerformanceCoverage = {
   totalSpend: number;
   linkedSpend: number;
   unlinkedSpend: number;
+  metricBasis: "combined_total" | "latest_snapshot";
   linkedSpendPercentage: number;
   unlinkedSpendPercentage: number;
   linkedAdCount: number;
@@ -956,6 +960,8 @@ export type CopyPerformanceMemoryWinner = {
 export type UnlinkedAdSummaryRow = {
   adName: string;
   spend: number;
+  isSpendOverlapping: boolean;
+  metricBasis: "combined_total" | "latest_snapshot";
   results: number;
   cpr: number | null;
   linkClicks: number;
@@ -970,6 +976,7 @@ export type CopyPerformanceMemory = {
   songSections: CopyPerformanceRow[];
   combos: CopyPerformanceRow[];
   unlinkedAds: UnlinkedAdSummaryRow[];
+  hasOverlappingSnapshots: boolean;
   winners: {
     bestCopyPair: CopyPerformanceMemoryWinner | null;
     bestAngle: CopyPerformanceMemoryWinner | null;
