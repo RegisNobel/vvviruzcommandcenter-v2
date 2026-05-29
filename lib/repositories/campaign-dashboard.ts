@@ -10,6 +10,7 @@ const streamingLinkTypes = new Set(["apple-music", "spotify", "youtube-music", "
 type CampaignDashboardInput = {
   releaseId?: string;
   days?: number;
+  trendDays?: number;
 };
 
 type Counter = {
@@ -238,8 +239,10 @@ function createProblemSignals(input: {
 
 export async function readCampaignCommandDashboard(input: CampaignDashboardInput = {}) {
   const safeDays = Math.min(Math.max(input.days ?? 30, 7), 120);
+  const requestedTrendDays = input.trendDays ?? 14;
+  const queryDays = Math.max(safeDays, requestedTrendDays);
   const startDate = startOfUtcDay(
-    new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - safeDays + 1))
+    new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - queryDays + 1))
   );
   const [releases, analyticsCounts, shortLinkCounts, siteSettings] = await Promise.all([
     prisma.release.findMany({
@@ -377,7 +380,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
   const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
   const allClicks = analyticsEvents.filter((event) => event.eventType === "links_link_click");
   const streamingClicks = allClicks.filter((event) => streamingLinkTypes.has(event.linkType));
-  const dailyBuckets = createDailyBuckets(Math.min(safeDays, 14));
+  const trendDaysLimit = Math.min(Math.max(input.trendDays ?? 14, 7), 90);
+  const dailyBuckets = createDailyBuckets(trendDaysLimit);
   const platformCounts = new Map<string, number>();
   const sourceCounts = new Map<string, number>();
   const utmCounts = new Map<string, number>();

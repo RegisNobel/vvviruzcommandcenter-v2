@@ -14,6 +14,7 @@ import {
 import {readActiveShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
+import {prisma} from "@/lib/db/prisma";
 
 export default async function AdminReleaseDetailPage({
   params
@@ -31,7 +32,8 @@ export default async function AdminReleaseDetailPage({
       shortLinks,
       creativePerformanceMemory,
       adPerformanceTimeline,
-      copyPerformanceMemory
+      copyPerformanceMemory,
+      analyticsEvents
     ] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
@@ -41,8 +43,21 @@ export default async function AdminReleaseDetailPage({
       readActiveShortLinksByReleaseId(id),
       readCreativePerformanceMemory(id),
       readAdPerformanceTimeline(id),
-      readCopyPerformanceMemory(id)
+      readCopyPerformanceMemory(id),
+      prisma.analyticsEvent.findMany({
+        where: {
+          page: "links",
+          releaseId: id
+        }
+      })
     ]);
+
+    const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
+    const streamingClicks = analyticsEvents.filter(
+      (event) => event.eventType === "links_link_click" && ["apple-music", "spotify", "youtube-music", "youtube-video"].includes(event.linkType)
+    );
+    const viewsWithUtm = views.filter((event) => event.utmCampaign || event.utmContent).length;
+    const utmCoverageRate = views.length > 0 ? (viewsWithUtm / views.length) * 100 : 0;
 
     return (
       <ReleaseDetailEditor
@@ -55,6 +70,8 @@ export default async function AdminReleaseDetailPage({
         creativePerformanceMemory={creativePerformanceMemory}
         adPerformanceTimeline={adPerformanceTimeline}
         copyPerformanceMemory={copyPerformanceMemory}
+        streamingClicksCount={streamingClicks.length}
+        utmCoverageRate={utmCoverageRate}
       />
     );
   } catch {

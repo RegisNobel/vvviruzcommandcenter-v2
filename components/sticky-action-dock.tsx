@@ -12,6 +12,7 @@ type StickyActionDockProps = {
   className?: string;
   isVisible: boolean;
   position?: "fixed" | "sticky";
+  maxWidth?: string;
 };
 
 export function StickyActionDock({
@@ -22,7 +23,8 @@ export function StickyActionDock({
   children,
   className,
   isVisible,
-  position = "fixed"
+  position = "fixed",
+  maxWidth
 }: StickyActionDockProps) {
   const isSticky = position === "sticky";
 
@@ -38,7 +40,7 @@ export function StickyActionDock({
         className
       )}
     >
-      <div className={cn("mx-auto w-full", isSticky ? "" : "max-w-[1600px]")}>
+      <div className={cn("mx-auto w-full", isSticky ? "" : (maxWidth ?? "max-w-[1600px]"))}>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[#30343b] bg-[#101215]/95 px-4 py-3 shadow-[0_18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:px-6">
           {label && (
             <div className="hidden text-base font-semibold text-ink lg:block">

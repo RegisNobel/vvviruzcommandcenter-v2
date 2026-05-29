@@ -556,7 +556,7 @@ export function CopyDetailEditor({
 
         <StickyActionDock
           isVisible={true}
-          position="sticky"
+          maxWidth="max-w-[1450px]"
           statusSlot={
             message ? (
               <span
