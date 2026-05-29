@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-28 23:40 -04:00
+
+- **Operator Mode Surface Cleanup v1**:
+  - Collapsed Promo/Ad Lab snapshot metrics, release filtering, and import history into an **Ad Lab Operations** drawer so Promo stays focused on campaign workflow.
+  - Collapsed Ad Lab creative diagnostics, strategy breakdown tables, and raw imported rows behind targeted drawers while keeping the Creative Leaderboard visible as the primary decision surface.
+  - Changed Release Detail campaign history into a **Campaign Memory Details** drawer so archived test cycles remain available without dominating the release workflow.
+
 ### 2026-05-28 22:14 -04:00
 
 - **Attribution Operator View Compression**:

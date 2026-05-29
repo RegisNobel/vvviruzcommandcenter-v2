@@ -1275,14 +1275,24 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         </section>
 
         {detail.creative_diagnostics && detail.creative_diagnostics.length > 0 ? (
-          <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
-            <div>
-              <p className="field-label">Campaign Ad Insights</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Creative Diagnostics</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                Deterministic, rule-based recommendations for immediate per-ad actions. Wording is correlation-based and suggests potential improvements.
-              </p>
-            </div>
+          <details className="panel overflow-hidden p-0">
+            <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="field-label">Campaign Ad Insights</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">Creative Diagnostics</h2>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">
+                    Open for deterministic per-ad action notes. The leaderboard stays
+                    visible as the primary decision surface.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  {detail.creative_diagnostics.length} checks
+                </span>
+              </div>
+            </summary>
+
+            <div className="space-y-5 px-4 py-5 sm:px-6 sm:py-6">
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {detail.creative_diagnostics.map((diag, index) => (
@@ -1337,7 +1347,8 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             <div className="rounded-[18px] border border-[#3a3324] bg-[#191713] p-4 text-xs text-[#d7b45e] leading-5">
               <strong>Causal Caveat:</strong> These recommendations are correlation-based. If multiple variables (visual, copy, song section, or budget) were changed at once, run the suggestion as a controlled test before making a final call.
             </div>
-          </section>
+            </div>
+          </details>
         ) : null}
 
         {message ? (
@@ -1593,30 +1604,50 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           ) : null}
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-2">
-          <StrategyTable
-            rows={detail.strategy_breakdowns.hook_type.map((row) => ({
-              ...row,
-              label: formatStrategyValue(row.label, "hook")
-            }))}
-            title="Performance by Copy Angle"
-          />
-          <StrategyTable
-            rows={detail.strategy_breakdowns.content_type.map((row) => ({
-              ...row,
-              label: formatStrategyValue(row.label, "content")
-            }))}
-            title="Performance by Content Type (Legacy)"
-          />
-          <StrategyTable
-            rows={detail.strategy_breakdowns.song_section.map((row) => ({
-              ...row,
-              label: formatStrategyValue(row.label, "section")
-            }))}
-            title="Performance by Song Section (Legacy)"
-          />
-          <StrategyTable rows={detail.strategy_breakdowns.combo} title="Performance by Combo" />
-        </section>
+        <details className="panel overflow-hidden p-0">
+          <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="field-label">Strategy Breakdowns</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">
+                  Copy and creative grouping tables
+                </h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                  Open when you need grouped hook, content type, song section, or
+                  combo diagnostics. Ad-level decisions stay in the leaderboard.
+                </p>
+              </div>
+              <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                Open breakdowns
+              </span>
+            </div>
+          </summary>
+
+          <section className="grid gap-4 p-4 sm:p-6 xl:grid-cols-2">
+            <StrategyTable
+              rows={detail.strategy_breakdowns.hook_type.map((row) => ({
+                ...row,
+                label: formatStrategyValue(row.label, "hook")
+              }))}
+              title="Performance by Copy Angle"
+            />
+            <StrategyTable
+              rows={detail.strategy_breakdowns.content_type.map((row) => ({
+                ...row,
+                label: formatStrategyValue(row.label, "content")
+              }))}
+              title="Performance by Content Type (Legacy)"
+            />
+            <StrategyTable
+              rows={detail.strategy_breakdowns.song_section.map((row) => ({
+                ...row,
+                label: formatStrategyValue(row.label, "section")
+              }))}
+              title="Performance by Song Section (Legacy)"
+            />
+            <StrategyTable rows={detail.strategy_breakdowns.combo} title="Performance by Combo" />
+          </section>
+        </details>
 
         <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div>
@@ -1869,19 +1900,31 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </section>
         </section>
 
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="field-label">Raw Imported Rows</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Debug table</h2>
+        <details className="panel overflow-hidden p-0">
+          <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="field-label">Raw Imported Rows</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">Debug table</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                  Original normalized Meta rows for troubleshooting imports and UTM
+                  fields. Keep collapsed during normal decision review.
+                </p>
+              </div>
+              <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                Open rows
+              </span>
             </div>
-            <Link className="action-button-tertiary" href="/admin/attribution">
-              Link-page attribution
-              <ExternalLink size={16} />
-            </Link>
-          </div>
+          </summary>
 
-          <div className="overflow-x-auto">
+          <div className="space-y-4 p-4 sm:p-6">
+            <div className="flex justify-end">
+              <Link className="action-button-tertiary" href="/admin/attribution">
+                Link-page attribution
+                <ExternalLink size={16} />
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className="bg-[#171a1f] text-[#b8bec6]">
                 <tr>
@@ -1916,8 +1959,9 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
-        </section>
+        </details>
 
         {showRenameDialog ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">

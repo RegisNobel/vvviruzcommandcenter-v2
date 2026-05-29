@@ -2017,24 +2017,29 @@ export function ReleaseDetailEditor({
                   releaseId={release.id}
                 />
 
-                <div
-                  className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 scroll-mt-28 sm:px-5"
+                <details
+                  className="rounded-[22px] border border-[#31353b] bg-[#121418] scroll-mt-28"
                   id="campaign-history"
                 >
+                  <summary className="cursor-pointer list-none px-4 py-5 sm:px-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className={pageLabelClass}>Campaign History</p>
                       <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
-                        Archived test cycles
+                        Campaign memory details
                       </h3>
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
-                        Locked campaign readouts stay immutable here, so you can compare old decisions against the current snapshot without summing overlapping Meta exports.
+                        Open the archived test-cycle timeline when you need previous
+                        decisions, winner comparisons, and immutable campaign context.
                       </p>
                     </div>
                     <span className={pagePillClass}>
                       {formatNumber(campaignHistory.archived_cycles.length)} archived
                     </span>
                   </div>
+                  </summary>
+
+                  <div className="border-t border-[#31353b] px-4 py-5 sm:px-5">
 
                   {campaignHistory.comparison ? (
                     <div className="mt-5 rounded-[20px] border border-[#3a3324] bg-[#191713] px-4 py-4">
@@ -2161,7 +2166,8 @@ export function ReleaseDetailEditor({
                       </div>
                     ) : null}
                   </div>
-                </div>
+                  </div>
+                </details>
 
                 {/* Next Test Suggestions Section */}
                 {copyPerformanceMemory.suggestions && copyPerformanceMemory.suggestions.length > 0 ? (

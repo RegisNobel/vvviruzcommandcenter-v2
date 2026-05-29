@@ -353,6 +353,27 @@ export default async function AdminAdLabPage({
           </div>
         </section>
 
+        <details className="panel overflow-hidden p-0">
+          <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="field-label">Ad Lab Operations</p>
+                <h2 className="mt-2 text-2xl font-semibold text-ink">
+                  Snapshot metrics and import history
+                </h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                  Open this when you need batch-level metrics, release filtering, or
+                  import cleanup. The main Promo view stays focused on workflow and
+                  current decision context.
+                </p>
+              </div>
+              <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                Open operations
+              </span>
+            </div>
+          </summary>
+
+          <div className="space-y-6 p-4 sm:p-6">
         <section className="space-y-4">
             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
               Snapshot Metrics
@@ -484,6 +505,8 @@ export default async function AdminAdLabPage({
             </div>
           ) : null}
         </section>
+          </div>
+        </details>
 
         <section className="panel px-4 py-5 sm:px-6">
           <div className="flex items-center gap-3">
