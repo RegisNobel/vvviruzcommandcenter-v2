@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-28 21:52 -04:00
+
+- **Release Detail Performance Memory Consolidation v1**:
+  - Implemented a unified [`components/performance-memory.tsx`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/performance-memory.tsx) wrapper component integrating Creative, Copy, and Timeline components.
+  - Added a horizontal tab navigation menu to switch active view state between Creative Component Memory, Copy Strategy Memory, and Ad Timeline.
+  - Positioned a top-level consolidated row of 5 summary cards: Best Control Ad, Best Visual, Best Song Section, Best Copy Angle, and Best Copy Pair.
+  - Added prop overrides to the sub-memory components to hide redundant inner summary cards and outer panel decorations when nested inside the tabs.
+
 ### 2026-05-28 21:42 -04:00
 
 - **Sticky Action Dock Right Overflow Alignment Fix**:
