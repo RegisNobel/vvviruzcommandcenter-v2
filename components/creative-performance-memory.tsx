@@ -25,9 +25,13 @@ function formatNumber(value: number) {
 
 interface CreativePerformanceMemorySectionProps {
   memory: CreativePerformanceMemory;
+  hideSummaryCards?: boolean;
 }
 
-export function CreativePerformanceMemorySection({ memory }: CreativePerformanceMemorySectionProps) {
+export function CreativePerformanceMemorySection({
+  memory,
+  hideSummaryCards = false
+}: CreativePerformanceMemorySectionProps) {
   const {
     visuals,
     songSections,
@@ -112,6 +116,27 @@ export function CreativePerformanceMemorySection({ memory }: CreativePerformance
 
   if (!hasAnyData) {
     return null;
+  }
+
+  if (hideSummaryCards) {
+    return (
+      <div className="space-y-6">
+        {hasOverlappingSnapshots && (
+          <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
+            <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold text-amber-300">Overlapping Snapshot Warnings Active:</span> Due to overlapping batch date ranges, the summed metrics are marked as snapshot totals instead of absolute lifetime totals.
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {renderGroupTable("Visual Performance", visuals)}
+          {renderGroupTable("Song Section Performance", songSections)}
+          {renderGroupTable("Revision Performance", revisions)}
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -86,9 +86,7 @@ import type {
   AdPerformanceTimeline,
   CopyPerformanceMemory
 } from "@/lib/types";
-import { CreativePerformanceMemorySection } from "./creative-performance-memory";
-import { AdPerformanceTimelineSection } from "./ad-performance-timeline";
-import { CopyPerformanceMemorySection } from "./copy-performance-memory";
+import { PerformanceMemorySection } from "./performance-memory";
 
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
@@ -2233,11 +2231,12 @@ export function ReleaseDetailEditor({
                   </div>
                 ) : null}
 
-                <CreativePerformanceMemorySection memory={creativePerformanceMemory} />
-
-                <CopyPerformanceMemorySection memory={copyPerformanceMemory} />
-
-                <AdPerformanceTimelineSection timeline={adPerformanceTimeline} />
+                <PerformanceMemorySection
+                  adMetrics={adMetrics}
+                  timeline={adPerformanceTimeline}
+                  creativeMemory={creativePerformanceMemory}
+                  copyMemory={copyPerformanceMemory}
+                />
 
                 {!adMetrics.has_data ? (
                   <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d]">

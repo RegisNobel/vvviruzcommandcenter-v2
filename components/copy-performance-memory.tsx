@@ -24,9 +24,13 @@ function formatNumber(value: number) {
 
 interface CopyPerformanceMemorySectionProps {
   memory: CopyPerformanceMemory;
+  hideSummaryCards?: boolean;
 }
 
-export function CopyPerformanceMemorySection({ memory }: CopyPerformanceMemorySectionProps) {
+export function CopyPerformanceMemorySection({
+  memory,
+  hideSummaryCards = false
+}: CopyPerformanceMemorySectionProps) {
   const {
     coverage,
     copyPairs,
@@ -97,6 +101,210 @@ export function CopyPerformanceMemorySection({ memory }: CopyPerformanceMemorySe
       </div>
     );
   };
+
+  if (hideSummaryCards) {
+    return (
+      <div className="space-y-6">
+        {/* Coverage Section */}
+        <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] p-4 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-semibold text-[#efe7db]">Copy Linking Coverage</h4>
+              <p className="text-xs text-[#8a9098] mt-0.5">
+                Percentage of total spend and creative ads that have associated Copy Lab entries.
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="text-[#efe7db]">Linked: {formatCurrency(coverage.linkedSpend)} ({coverage.linkedSpendPercentage.toFixed(1)}%)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span className="text-[#efe7db]">Unlinked: {formatCurrency(coverage.unlinkedSpend)} ({coverage.unlinkedSpendPercentage.toFixed(1)}%)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual Progress Bar */}
+          <div className="w-full bg-[#1b1f24] rounded-full h-2.5 overflow-hidden flex">
+            <div className="bg-emerald-500 h-full" style={{ width: `${coverage.linkedSpendPercentage}%` }}></div>
+            <div className="bg-amber-500 h-full" style={{ width: `${coverage.unlinkedSpendPercentage}%` }}></div>
+          </div>
+
+          {/* Coverage Counters */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center sm:text-left pt-2">
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7f858d]">Linked Ads</span>
+              <span className="text-lg font-bold text-[#efe7db]">{coverage.linkedAdCount}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7f858d]">Unlinked Ads</span>
+              <span className="text-lg font-bold text-[#efe7db]">{coverage.unlinkedAdCount}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7f858d]">Linked Spend</span>
+              <span className="text-lg font-bold text-[#efe7db]">{formatCurrency(coverage.linkedSpend)}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7f858d]">Unlinked Spend</span>
+              <span className="text-lg font-bold text-[#efe7db]">{formatCurrency(coverage.unlinkedSpend)}</span>
+            </div>
+          </div>
+
+          {/* Warning if unlinked spend > 10% */}
+          {coverage.unlinkedSpendPercentage > 10 && (
+            <div className="rounded-[12px] border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs leading-5 text-amber-200 flex items-start gap-2 mt-2">
+              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-amber-300">Copy Performance Incomplete:</span> Over 10% of promotional spend ({coverage.unlinkedSpendPercentage.toFixed(1)}%) is unlinked. Link these ads in Ad Lab to ensure analysis is complete and accurate.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Stacked Collapsible Tables */}
+        <div className="space-y-3">
+          {/* Copy Pair Performance */}
+          {renderCollapsibleTable(
+            "pairs",
+            "Copy Pair Performance",
+            copyPairs,
+            ["Copy Pair (Hook & Caption)", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
+            (row: CopyPerformanceRow) => (
+              <tr key={row.copyEntryId || row.label} className="hover:bg-[#141820]/30 transition-colors">
+                <td className="py-3 px-4 max-w-[300px]">
+                  <div className="font-medium text-[#efe7db] truncate" title={row.hook}>{row.hook || row.label}</div>
+                  {row.caption && <div className="text-[11px] text-[#7f858d] truncate mt-0.5" title={row.caption}>{row.caption}</div>}
+                </td>
+                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
+                <td className="py-3 px-4 text-center">{row.batchCount}</td>
+                <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
+              </tr>
+            )
+          )}
+
+          {/* Copy Angle Performance */}
+          {renderCollapsibleTable(
+            "angles",
+            "Copy Angle Performance",
+            copyAngles,
+            ["Copy Angle (Strategy Type)", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
+            (row: CopyPerformanceRow) => (
+              <tr key={row.label} className={`hover:bg-[#141820]/30 transition-colors ${row.label === "Unlinked" ? "bg-[#18120c]/25 border-l-2 border-amber-500/40" : ""}`}>
+                <td className="py-3 px-4 font-semibold text-[#efe7db]">
+                  {row.label}
+                  {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
+                </td>
+                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
+                <td className="py-3 px-4 text-center">{row.batchCount}</td>
+                <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
+              </tr>
+            )
+          )}
+
+          {/* Copy Song Section Performance */}
+          {renderCollapsibleTable(
+            "sections",
+            "Copy Song Section Performance",
+            songSections,
+            ["Song Section (Target Part)", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
+            (row: CopyPerformanceRow) => (
+              <tr key={row.label} className={`hover:bg-[#141820]/30 transition-colors ${row.label === "Unlinked" ? "bg-[#18120c]/25 border-l-2 border-amber-500/40" : ""}`}>
+                <td className="py-3 px-4 font-semibold text-[#efe7db]">
+                  {row.label}
+                  {row.label === "Unlinked" && <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>}
+                </td>
+                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
+                <td className="py-3 px-4 text-center">{row.batchCount}</td>
+                <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
+              </tr>
+            )
+          )}
+
+          {/* Copy + Song Section Combo Performance */}
+          {renderCollapsibleTable(
+            "combos",
+            "Copy + Song Section Combo Performance",
+            combos,
+            ["Copy + Song Section Combo", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Outbound Clicks", "Batches", "Confidence"],
+            (row: CopyPerformanceRow) => {
+              const isUnlinked = row.label === "Unlinked";
+              const plusIndex = row.label.lastIndexOf(" + ");
+              const hookText = plusIndex !== -1 ? row.label.slice(0, plusIndex) : row.label;
+              const songSec = plusIndex !== -1 ? row.label.slice(plusIndex + 3) : "";
+
+              return (
+                <tr key={row.copyEntryId ? `${row.copyEntryId}-${row.label}` : row.label} className={`hover:bg-[#141820]/30 transition-colors ${isUnlinked ? "bg-[#18120c]/25 border-l-2 border-amber-500/40" : ""}`}>
+                  <td className="py-3 px-4 text-xs max-w-[320px]">
+                    {isUnlinked ? (
+                      <>
+                        <span className="font-semibold text-[#efe7db]">Unlinked</span>
+                        <span className="ml-2 text-[10px] font-normal text-amber-400 italic">(requires linking)</span>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-[#efe7db] truncate block" title={hookText}>
+                          {hookText || "Untitled Copy"}
+                        </span>
+                        {songSec && (
+                          <span className="text-[10px] text-[#7f858d] uppercase tracking-wider block">
+                            {songSec}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                  <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                  <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                  <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                  <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                  <td className="py-3 px-4 text-right text-xs text-[#8a9098]">{formatNumber(row.outboundStreamingClicks)}</td>
+                  <td className="py-3 px-4 text-center">{row.batchCount}</td>
+                  <td className="py-3 px-4 text-xs font-semibold text-[#efe7db]">{row.confidenceScore}</td>
+                </tr>
+              );
+            }
+          )}
+
+          {/* Unlinked Ads Summary */}
+          {renderCollapsibleTable(
+            "unlinked",
+            `Unlinked Ads Summary (${unlinkedAds.length})`,
+            unlinkedAds,
+            ["Ad Name", "Spend", "Results", "CPR", "Link Clicks", "LP Views", "Batches"],
+            (row: UnlinkedAdSummaryRow) => (
+              <tr key={row.adName} className="hover:bg-[#141820]/30 transition-colors bg-[#18120c]/15">
+                <td className="py-3 px-4 font-mono text-xs text-amber-200/90 truncate max-w-[280px]" title={row.adName}>{row.adName}</td>
+                <td className="py-3 px-4 text-right">{formatCurrency(row.spend)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.results)}</td>
+                <td className="py-3 px-4 text-right font-medium text-[#efe7db]">{formatNullableCurrency(row.cpr)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.linkClicks)}</td>
+                <td className="py-3 px-4 text-right">{formatNumber(row.landingPageViews)}</td>
+                <td className="py-3 px-4 text-center">{row.batchCount}</td>
+              </tr>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5 space-y-6">
