@@ -33,7 +33,7 @@ export function StickyActionDock({
       className={cn(
         isSticky
           ? "sticky bottom-6 z-30 w-full transition-all duration-200"
-          : "fixed bottom-6 left-0 right-0 lg:left-64 z-30 transition-all duration-200 px-4 sm:px-6 lg:px-8",
+          : "fixed bottom-6 left-4 right-4 sm:left-6 sm:right-6 lg:left-[288px] lg:right-[32px] z-30 transition-all duration-200",
         isVisible
           ? "pointer-events-auto translate-y-0 opacity-100"
           : "pointer-events-none translate-y-3 opacity-0",

@@ -471,6 +471,12 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-28 21:42 -04:00
+
+- **Sticky Action Dock Right Overflow Alignment Fix**:
+  - Restructured `fixed` position layout classes in [`components/sticky-action-dock.tsx`](file:///c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/components/sticky-action-dock.tsx) to anchor to container padding offsets (`left-4 right-4 sm:left-6 sm:right-6 lg:left-[288px] lg:right-[32px]`) instead of `left-0 right-0 lg:left-64 px-4 sm:px-6 lg:px-8`.
+  - This guarantees that when the dock centers on desktop, tablet, or mobile, it aligns perfectly with the boundaries of page content cards, completely resolving the right-side border overflow glitch.
+
 ### 2026-05-28 21:18 -04:00
 
 - **Release Detail & Copy Detail Action Dock Visibility Fix**:
