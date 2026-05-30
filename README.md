@@ -471,6 +471,13 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-29 14:14 -04:00
+
+- **Release Detail Next Test Direction Cleanup**:
+  - Kept **Next Test Direction** as the primary strategic instruction and renamed the secondary suggestion area to **Contender Watchlist**.
+  - Reframed tactical cards as low-data/starved retest candidates under a **Testing Backlog** eyebrow, with shorter causal caveat copy.
+  - Added non-persistent copy-angle context so a watchlist contender can call out when it matches the current primary copy-angle direction.
+
 ### 2026-05-29 13:21 -04:00
 
 - **Short Link Lifecycle Management v1**:

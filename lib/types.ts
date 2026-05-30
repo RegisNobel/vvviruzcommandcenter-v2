@@ -931,6 +931,7 @@ export type AdPerformanceTimeline = {
 export type CopyPerformanceRow = {
   label: string;
   copyEntryId: string | null;
+  copyAngle?: string;
   hook?: string;
   caption?: string;
   spend: number;
@@ -1021,4 +1022,5 @@ export interface NextTestSuggestion {
   reason: string;
   confidence: "High" | "Moderate" | "Directional" | "Needs More Data";
   evidence: string;
+  alignmentNote?: string;
 }

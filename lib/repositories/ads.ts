@@ -2534,6 +2534,7 @@ export async function readCopyPerformanceMemory(
     label: string,
     copyEntryId: string | null,
     items: ReportWithData[],
+    copyAngle?: string,
     hook?: string,
     caption?: string
   ): CopyPerformanceRow {
@@ -2583,6 +2584,7 @@ export async function readCopyPerformanceMemory(
     return {
       label,
       copyEntryId,
+      copyAngle,
       hook,
       caption,
       spend: totalSpend,
@@ -2606,6 +2608,7 @@ export async function readCopyPerformanceMemory(
         grp.copyEntry.hook,
         grp.copyEntry.id,
         grp.items,
+        formatHookType(grp.copyEntry.hookType),
         grp.copyEntry.hook,
         grp.copyEntry.caption
       )
@@ -2616,7 +2619,7 @@ export async function readCopyPerformanceMemory(
   const copyAngles: CopyPerformanceRow[] = [];
   for (const [angle, items] of angleGroups.entries()) {
     if (angle === "Unlinked" && items.length === 0) continue;
-    copyAngles.push(aggregateRow(angle, null, items));
+    copyAngles.push(aggregateRow(angle, null, items, angle));
   }
   copyAngles.sort((a, b) => b.spend - a.spend);
 
@@ -2631,7 +2634,14 @@ export async function readCopyPerformanceMemory(
   for (const grp of comboGroups.values()) {
     if (grp.key === "Unlinked" && grp.items.length === 0) continue;
     const label = grp.key === "Unlinked" ? "Unlinked" : `${grp.copyEntry!.hook} + ${grp.songSection}`;
-    combos.push(aggregateRow(label, grp.copyEntry?.id ?? null, grp.items));
+    combos.push(
+      aggregateRow(
+        label,
+        grp.copyEntry?.id ?? null,
+        grp.items,
+        grp.copyEntry ? formatHookType(grp.copyEntry.hookType) : undefined
+      )
+    );
   }
   combos.sort((a, b) => b.spend - a.spend);
 

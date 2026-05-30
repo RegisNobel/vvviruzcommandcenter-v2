@@ -167,6 +167,24 @@ function formatReleaseType(value: ReleaseType) {
   return value === "mainstream" ? "Mainstream" : "Nerdcore";
 }
 
+function getContenderLabel(
+  suggestion: NonNullable<CopyPerformanceMemory["suggestions"]>[number]
+) {
+  return suggestion.type === "data-quality-warning" ? "Data Quality" : "Retest Candidate";
+}
+
+function getContenderBadge(
+  suggestion: NonNullable<CopyPerformanceMemory["suggestions"]>[number]
+) {
+  if (suggestion.type === "data-quality-warning") {
+    return "Setup gap";
+  }
+
+  return suggestion.reason.toLowerCase().includes("starved")
+    ? "Starved signal"
+    : "Low-data contender";
+}
+
 function normalizeExternalUrl(value: string) {
   const trimmedValue = value.trim();
 
@@ -2189,70 +2207,85 @@ export function ReleaseDetailEditor({
                   </div>
                 </details>
 
-                {/* Next Test Suggestions Section */}
+                {/* Contender Watchlist Section */}
                 {copyPerformanceMemory.suggestions && copyPerformanceMemory.suggestions.length > 0 ? (
                   <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5">
                     <div>
-                      <p className={pageLabelClass}>Release Strategy</p>
+                      <p className={pageLabelClass}>Testing Backlog</p>
                       <h3 className="mt-2 text-xl font-semibold text-[#efe7db] flex items-center gap-1.5">
                         <Sparkles size={18} className="text-amber-400" />
-                        Next Test Suggestions
+                        Contender Watchlist
                       </h3>
                       <p className="mt-1 text-sm leading-6 text-[#8a9098]">
-                        Deterministic, rule-based recommendations for future testing cycles. Wording is correlation-based and suggests potential creative synergies.
+                        Low-data or starved candidates worth retesting after the primary direction is set.
                       </p>
                     </div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      {copyPerformanceMemory.suggestions.map((suggest, index) => (
-                        <div
-                          key={`${suggest.type}-${index}`}
-                          className={`rounded-[20px] border p-4 flex flex-col justify-between ${
-                            suggest.type === "data-quality-warning"
-                              ? "border-amber-800/40 bg-amber-950/10 text-[#f2e5d1]"
-                              : "border-emerald-800/40 bg-emerald-950/10 text-[#d1f2e5]"
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="text-[10px] uppercase font-bold tracking-wider opacity-90 truncate">
-                                {suggest.type === "data-quality-warning" ? "Data Quality" : "Test Synergy"}
-                              </span>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                                  suggest.confidence === "High"
-                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                                    : suggest.confidence === "Moderate"
-                                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                                    : suggest.confidence === "Directional"
-                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                    : "bg-[#252a31] text-muted border border-muted/20"
-                                }`}
-                              >
-                                {suggest.confidence}
-                              </span>
+                      {copyPerformanceMemory.suggestions.map((suggest, index) => {
+                        const contenderBadge = getContenderBadge(suggest);
+                        const contenderLabel = getContenderLabel(suggest);
+
+                        return (
+                          <div
+                            key={`${suggest.type}-${index}`}
+                            className={`rounded-[20px] border p-4 flex flex-col justify-between ${
+                              suggest.type === "data-quality-warning"
+                                ? "border-amber-800/40 bg-amber-950/10 text-[#f2e5d1]"
+                                : "border-emerald-800/40 bg-emerald-950/10 text-[#d1f2e5]"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div className="flex flex-wrap gap-2">
+                                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-90">
+                                    {contenderLabel}
+                                  </span>
+                                  <span className="rounded-full border border-[#3f4650] bg-[#161a20] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#c4cad2]">
+                                    {contenderBadge}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                                    suggest.confidence === "High"
+                                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                      : suggest.confidence === "Moderate"
+                                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                      : suggest.confidence === "Directional"
+                                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                      : "bg-[#252a31] text-muted border border-muted/20"
+                                  }`}
+                                >
+                                  {suggest.confidence}
+                                </span>
+                              </div>
+
+                              <h4 className="mt-3 text-base font-semibold leading-5 text-[#efe7db]">
+                                {suggest.action}
+                              </h4>
+                              <p className="mt-2 text-xs leading-5 text-[#8a9098] opacity-85">
+                                {suggest.reason}
+                              </p>
+                              {suggest.alignmentNote ? (
+                                <p className="mt-3 rounded-[14px] border border-[#3b4d3f] bg-[#122018] px-3 py-2 text-xs font-semibold leading-5 text-[#9be3b8]">
+                                  {suggest.alignmentNote}
+                                </p>
+                              ) : null}
                             </div>
 
-                            <h4 className="mt-3 text-base font-semibold leading-5 text-[#efe7db]">
-                              {suggest.action}
-                            </h4>
-                            <p className="mt-2 text-xs leading-5 text-[#8a9098] opacity-85">
-                              {suggest.reason}
-                            </p>
+                            <div className="mt-4 pt-3 border-t border-[#31353b]/40 flex justify-between items-center text-[10px] opacity-75">
+                              <span className="font-mono truncate max-w-[200px]" title={suggest.evidence}>
+                                {suggest.evidence}
+                              </span>
+                              <span className="italic">Backlog: {suggest.type.replace(/-/g, " ")}</span>
+                            </div>
                           </div>
-
-                          <div className="mt-4 pt-3 border-t border-[#31353b]/40 flex justify-between items-center text-[10px] opacity-75">
-                            <span className="font-mono truncate max-w-[200px]" title={suggest.evidence}>
-                              {suggest.evidence}
-                            </span>
-                            <span className="italic">Type: {suggest.type.replace(/-/g, " ")}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <div className="mt-4 rounded-[18px] border border-[#3a3324] bg-[#191713] p-4 text-xs text-[#d7b45e] leading-5">
-                      <strong>Causal Caveat:</strong> These recommendations are correlation-based. If multiple variables (visual, copy, song section, or budget) were changed at once, run the suggestion as a controlled test before making a final call.
+                      <strong>Causal Caveat:</strong> Correlation-only. Run these as controlled retests, not proof.
                     </div>
                   </div>
                 ) : null}

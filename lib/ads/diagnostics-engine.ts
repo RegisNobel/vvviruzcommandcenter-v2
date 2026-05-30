@@ -438,13 +438,20 @@ export function calculateReleaseComboSuggestions(
   const lowDataContenders = [...copyMemory.copyPairs]
     .filter((c) => c.spend > 0 && c.spend < 10.0 && c.linkClicks >= 5 && (c.cpr !== null && c.cpr < (topCopyRow?.cpr ?? 5.0)))
     .slice(0, 1);
+  const primaryCopyAngle = copyMemory.winners.bestAngle?.label;
 
   for (const c of lowDataContenders) {
+    const alignmentNote =
+      c.copyAngle && primaryCopyAngle && c.copyAngle === primaryCopyAngle
+        ? `Matches the current ${c.copyAngle} direction.`
+        : undefined;
+
     suggestions.push({
       type: "combo-test",
-      action: `Retest promising Copy Pair contender: "${c.hook?.slice(0, 40)}..."`,
+      action: `Retest Starved Copy Pair: "${c.hook?.slice(0, 40)}..."`,
       reason: "Suggests early efficiency that has been starved of delivery. CTR and click parameters are strong, but spend is too low. Retest in a new isolated test batch.",
       confidence: "Directional",
+      alignmentNote,
       evidence: `Spend: $${c.spend.toFixed(2)} · Clicks: ${c.linkClicks} · Early CPR: ${c.cpr ? `$${c.cpr.toFixed(2)}` : "N/A"}`
     });
   }
