@@ -13,6 +13,7 @@ import {prisma} from "@/lib/db/prisma";
 import {CopyLabFilters} from "@/components/copy-lab-filters";
 import {readCopySummaries} from "@/lib/server/copies";
 import {readReleaseSummaries} from "@/lib/server/releases";
+import {resolveEffectiveCopyLinksForRelease} from "@/lib/repositories/ads";
 import type {CopySummary} from "@/lib/types";
 
 type CopyGroupBy = "release" | "hook-type" | "content-type" | "song-section" | "flat";
@@ -339,11 +340,13 @@ function groupCopies(
 function CopyRow({
   copy,
   copyNumber,
-  releaseTitle
+  releaseTitle,
+  linkageStatus
 }: {
   copy: CopySummary;
   copyNumber: number;
   releaseTitle: string;
+  linkageStatus: "direct" | "carryover" | "unused";
 }) {
   return (
     <Link
@@ -359,6 +362,25 @@ function CopyRow({
             {truncate(copy.caption, "No caption written yet.")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 items-center text-xs text-muted/50">
+            {/* Linkage Status Badge */}
+            {linkageStatus === "direct" && (
+              <span className="rounded border border-[#1b3a24] bg-[#142318]/50 px-2 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                Direct Link
+              </span>
+            )}
+            {linkageStatus === "carryover" && (
+              <span className="rounded border border-[#5b4920] bg-[#1a1710]/40 px-2 py-0.5 text-[10px] font-bold text-[#d7b45e] uppercase tracking-wider">
+                Carried Link
+              </span>
+            )}
+            {linkageStatus === "unused" && (
+              <span className="rounded border border-[#30343b] bg-[#151820]/40 px-2 py-0.5 text-[10px] font-bold text-muted/60 uppercase tracking-wider">
+                Unused
+              </span>
+            )}
+
+            <span>•</span>
+
             <span className="font-mono uppercase tracking-wider text-[10px] bg-[#1a1d24]/60 px-2 py-0.5 rounded border border-[#252a31] text-muted/70">
               {formatContentType(copy.content_type)}
             </span>
@@ -396,11 +418,13 @@ function CopyRow({
 function CopyVariantRow({
   copyNumberById,
   releaseTitle,
-  variantSet
+  variantSet,
+  getLinkageStatus
 }: {
   copyNumberById: Map<string, number>;
   releaseTitle: string;
   variantSet: CopyVariantSet;
+  getLinkageStatus: (id: string) => "direct" | "carryover" | "unused";
 }) {
   const {representative} = variantSet;
 
@@ -418,16 +442,25 @@ function CopyVariantRow({
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5 items-center">
             <span className="text-[10px] uppercase font-bold tracking-wider text-muted/40 mr-1">Variants:</span>
-            {variantSet.copies.map((copy) => (
-              <Link
-                className="rounded-md border border-[#252a31] bg-[#151820]/40 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted/60 transition hover:border-[#d7b45e]/50 hover:bg-[#1a1710] hover:text-[#f1dfad]"
-                href={`/admin/copy-lab/${copy.id}`}
-                key={copy.id}
-                title={`Open copy #${copyNumberById.get(copy.id) ?? "?"}`}
-              >
-                {formatContentType(copy.content_type)}
-              </Link>
-            ))}
+            {variantSet.copies.map((copy) => {
+              const status = getLinkageStatus(copy.id);
+              let statusClasses = "border-[#252a31] bg-[#151820]/40 text-muted/60 hover:border-[#d7b45e]/50";
+              if (status === "direct") {
+                statusClasses = "border-emerald-950/60 bg-emerald-950/10 text-emerald-400/80 hover:border-emerald-400";
+              } else if (status === "carryover") {
+                statusClasses = "border-[#5b4920]/60 bg-[#1a1710]/20 text-[#d7b45e]/80 hover:border-[#d7b45e]";
+              }
+              return (
+                <Link
+                  className={`rounded-md border px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition ${statusClasses}`}
+                  href={`/admin/copy-lab/${copy.id}`}
+                  key={copy.id}
+                  title={`Open copy #${copyNumberById.get(copy.id) ?? "?"} (${status.toUpperCase()})`}
+                >
+                  {formatContentType(copy.content_type)}
+                </Link>
+              );
+            })}
             <span className="text-muted/30 mx-1">•</span>
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted/50">
               {formatSongSection(representative.song_section)}
@@ -471,11 +504,10 @@ export default async function AdminCopyLabPage({
     statusFilter?: string;
   }>;
 }) {
-  const [{groupBy, releaseId, statusFilter}, copies, releases, copyLinkages] = await Promise.all([
+  const [{groupBy, releaseId, statusFilter}, copies, releases] = await Promise.all([
     searchParams,
     readCopySummaries(),
-    readReleaseSummaries(),
-    prisma.adCreativeCopyLink.findMany({ select: { copyEntryId: true } })
+    readReleaseSummaries()
   ]);
 
   const selectedGroupBy = normalizeGroupBy(groupBy);
@@ -487,19 +519,90 @@ export default async function AdminCopyLabPage({
     : null;
   const activeReleaseId = selectedRelease ? selectedRelease.id : null;
 
-  const linkedCopyIds = new Set(copyLinkages.map((l) => l.copyEntryId));
+  // 1. Fetch batches and reports for active release or all releases
+  const batches = await prisma.adImportBatch.findMany({
+    where: activeReleaseId ? { releaseId: activeReleaseId } : undefined,
+    include: {
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "asc"
+    }
+  });
 
-  // Filter copy summaries
+  // 2. Group reports by releaseId and resolve effective copy links
+  const reportsByRelease = new Map<string | null, any[]>();
+  for (const b of batches) {
+    const rid = b.releaseId;
+    if (!reportsByRelease.has(rid)) {
+      reportsByRelease.set(rid, []);
+    }
+    reportsByRelease.get(rid)!.push(...b.reports);
+  }
+
+  for (const [rid, rpts] of reportsByRelease.entries()) {
+    await resolveEffectiveCopyLinksForRelease(rid, rpts);
+  }
+
+  const allReports = Array.from(reportsByRelease.values()).flat();
+
+  // 3. Build sets of direct linked copy IDs and carried linked copy IDs
+  const directLinkedCopyIds = new Set<string>();
+  const carriedLinkedCopyIds = new Set<string>();
+
+  for (const report of allReports) {
+    for (const link of report.effectiveCopyLinks || []) {
+      const copyId = link.copyEntryId;
+      if (report.copyLinkSource === "direct") {
+        directLinkedCopyIds.add(copyId);
+      } else if (report.copyLinkSource === "carryover") {
+        carriedLinkedCopyIds.add(copyId);
+      }
+    }
+  }
+
+  // 4. Helper to determine the linkage status of a copy entry
+  const getLinkageStatus = (copyId: string): "direct" | "carryover" | "unused" => {
+    if (directLinkedCopyIds.has(copyId)) {
+      return "direct";
+    }
+    if (carriedLinkedCopyIds.has(copyId)) {
+      return "carryover";
+    }
+    return "unused";
+  };
+
+  // 5. Filter copy summaries based on the activeStatusFilter
   const filteredCopies = copies.filter((copy) => {
+    // Release context filter
     if (activeReleaseId && copy.release_id !== activeReleaseId) {
       return false;
     }
-    if (activeStatusFilter === "linked" && !linkedCopyIds.has(copy.id)) {
+
+    const status = getLinkageStatus(copy.id);
+
+    // Linkage status filter
+    if (activeStatusFilter === "linked" && status === "unused") {
       return false;
     }
-    if (activeStatusFilter === "unlinked" && linkedCopyIds.has(copy.id)) {
+    if (activeStatusFilter === "direct" && status !== "direct") {
       return false;
     }
+    if (activeStatusFilter === "carryover" && status !== "carryover") {
+      return false;
+    }
+    if (activeStatusFilter === "unused" && status !== "unused") {
+      return false;
+    }
+
     return true;
   });
 
@@ -683,6 +786,7 @@ export default async function AdminCopyLabPage({
                         key={variantSet.key}
                         releaseTitle={releaseTitle}
                         variantSet={variantSet}
+                        getLinkageStatus={getLinkageStatus}
                       />
                     );
                   }
@@ -693,6 +797,7 @@ export default async function AdminCopyLabPage({
                       copyNumber={copyNumberById.get(copy.id) ?? 0}
                       key={copy.id}
                       releaseTitle={releaseTitle}
+                      linkageStatus={getLinkageStatus(copy.id)}
                     />
                   ));
                 })}
@@ -751,6 +856,7 @@ export default async function AdminCopyLabPage({
                             key={variantSet.key}
                             releaseTitle={releaseTitle}
                             variantSet={variantSet}
+                            getLinkageStatus={getLinkageStatus}
                           />
                         );
                       }
@@ -761,6 +867,7 @@ export default async function AdminCopyLabPage({
                           copyNumber={copyNumberById.get(copy.id) ?? 0}
                           key={copy.id}
                           releaseTitle={releaseTitle}
+                          linkageStatus={getLinkageStatus(copy.id)}
                         />
                       ));
                     })}

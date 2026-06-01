@@ -1310,6 +1310,13 @@ After applying RLS changes:
 [ ] Admin dashboard still works through protected server-side routes
 [ ] Supabase service role key is only used server-side
 
+### 2026-05-31 23:25 -04:00
+
+- Implemented Copy Lab vs Ad Lab Linkage Consistency Pass to resolve the unlinked status discrepancy.
+- Integrated the unified chronological carryover resolver `resolveEffectiveCopyLinksForRelease` in-memory in a read-only manner (no database writes) grouped strictly by release context to isolate copy linkages.
+- Expanded Copy Lab filter controls to: All, Linked (Direct + Carried), Direct Link, Carried Link, and Unused.
+- Added styled inline badges ("Direct Link", "Carried Link", and "Unused") on copy list rows, and color-coded variant set pills (emerald for direct, gold for carried, gray for unused) for visual clarity.
+
 ### 2026-05-31 23:05 -04:00
 
 - Implemented Copy Lab Release Filter and Focused Release View v1.

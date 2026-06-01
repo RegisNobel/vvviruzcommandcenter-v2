@@ -68,8 +68,10 @@ export function CopyLabFilters({
         <div className="flex rounded-full border border-[#252a31] bg-[#0e1116] p-1">
           {[
             { key: "all", label: "All" },
-            { key: "linked", label: "Linked" },
-            { key: "unlinked", label: "Unlinked" }
+            { key: "linked", label: "Linked (Direct + Carried)" },
+            { key: "direct", label: "Direct Link" },
+            { key: "carryover", label: "Carried Link" },
+            { key: "unused", label: "Unused" }
           ].map((item) => {
             const isActive = activeStatusFilter === item.key;
             return (
