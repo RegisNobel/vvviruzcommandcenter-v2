@@ -96,7 +96,8 @@ function normalizeGroupBy(value: string | undefined): CopyGroupBy {
 function getGroupHref(
   groupBy: CopyGroupBy,
   releaseId?: string,
-  statusFilter?: string
+  statusFilter?: string,
+  archiveFilter?: string
 ) {
   const params = new URLSearchParams();
   if (groupBy !== "release") {
@@ -107,6 +108,9 @@ function getGroupHref(
   }
   if (statusFilter && statusFilter !== "all") {
     params.set("statusFilter", statusFilter);
+  }
+  if (archiveFilter && archiveFilter !== "active") {
+    params.set("archiveFilter", archiveFilter);
   }
   const queryString = params.toString();
   return queryString ? `/admin/copy-lab?${queryString}` : "/admin/copy-lab";
@@ -362,6 +366,18 @@ function CopyRow({
             {truncate(copy.caption, "No caption written yet.")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 items-center text-xs text-muted/50">
+            {/* Archive State Badge */}
+            {copy.archived_at && (
+              <span className="rounded border border-amber-950 bg-amber-950/20 px-2 py-0.5 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                Archived
+              </span>
+            )}
+            {copy.archived_at && copy.archive_reason?.toLowerCase().includes("legacy duplicate") && (
+              <span className="rounded border border-red-950 bg-red-950/10 px-2 py-0.5 text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                Legacy Duplicate
+              </span>
+            )}
+
             {/* Linkage Status Badge */}
             {linkageStatus === "direct" && (
               <span className="rounded border border-[#1b3a24] bg-[#142318]/50 px-2 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
@@ -445,7 +461,9 @@ function CopyVariantRow({
             {variantSet.copies.map((copy) => {
               const status = getLinkageStatus(copy.id);
               let statusClasses = "border-[#252a31] bg-[#151820]/40 text-muted/60 hover:border-[#d7b45e]/50";
-              if (status === "direct") {
+              if (copy.archived_at) {
+                statusClasses = "border-red-950/60 bg-red-950/10 text-red-400/60 line-through hover:border-red-400";
+              } else if (status === "direct") {
                 statusClasses = "border-emerald-950/60 bg-emerald-950/10 text-emerald-400/80 hover:border-emerald-400";
               } else if (status === "carryover") {
                 statusClasses = "border-[#5b4920]/60 bg-[#1a1710]/20 text-[#d7b45e]/80 hover:border-[#d7b45e]";
@@ -502,13 +520,16 @@ export default async function AdminCopyLabPage({
     groupBy?: string;
     releaseId?: string;
     statusFilter?: string;
+    archiveFilter?: string;
   }>;
 }) {
-  const [{groupBy, releaseId, statusFilter}, copies, releases] = await Promise.all([
+  const [{groupBy, releaseId, statusFilter, archiveFilter}, copies, releases] = await Promise.all([
     searchParams,
     readCopySummaries(),
     readReleaseSummaries()
   ]);
+
+  const activeArchiveFilter = archiveFilter || "active";
 
   const selectedGroupBy = normalizeGroupBy(groupBy);
   const activeStatusFilter = statusFilter || "all";
@@ -580,10 +601,18 @@ export default async function AdminCopyLabPage({
     return "unused";
   };
 
-  // 5. Filter copy summaries based on the activeStatusFilter
+  // 5. Filter copy summaries based on the activeStatusFilter and activeArchiveFilter
   const filteredCopies = copies.filter((copy) => {
     // Release context filter
     if (activeReleaseId && copy.release_id !== activeReleaseId) {
+      return false;
+    }
+
+    // Archive status filter
+    if (activeArchiveFilter === "active" && copy.archived_at) {
+      return false;
+    }
+    if (activeArchiveFilter === "archived" && !copy.archived_at) {
       return false;
     }
 
@@ -663,6 +692,11 @@ export default async function AdminCopyLabPage({
                   {selectedGroupOption?.description}
                 </span>
               </p>
+              {activeArchiveFilter !== "active" && (
+                <p className="mt-2 text-xs text-amber-500 font-semibold">
+                  Archived legacy copy records are hidden from the active planning workspace but preserved for history.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
@@ -671,6 +705,7 @@ export default async function AdminCopyLabPage({
                 activeReleaseId={activeReleaseId}
                 activeGroupBy={selectedGroupBy}
                 activeStatusFilter={activeStatusFilter}
+                activeArchiveFilter={activeArchiveFilter}
               />
 
               <div className="flex flex-col gap-1.5">
@@ -694,7 +729,8 @@ export default async function AdminCopyLabPage({
                           href={getGroupHref(
                             option.key,
                             activeReleaseId || undefined,
-                            activeStatusFilter !== "all" ? activeStatusFilter : undefined
+                            activeStatusFilter !== "all" ? activeStatusFilter : undefined,
+                            activeArchiveFilter !== "active" ? activeArchiveFilter : undefined
                           )}
                           key={option.key}
                         >
@@ -760,7 +796,8 @@ export default async function AdminCopyLabPage({
                   href={getGroupHref(
                     selectedGroupBy,
                     undefined,
-                    activeStatusFilter !== "all" ? activeStatusFilter : undefined
+                    activeStatusFilter !== "all" ? activeStatusFilter : undefined,
+                    activeArchiveFilter !== "active" ? activeArchiveFilter : undefined
                   )}
                 >
                   <XCircle size={16} />

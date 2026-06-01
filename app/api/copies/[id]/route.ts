@@ -31,7 +31,9 @@ const updateCopySchema = z.object({
   song_section: z.string().default("hook"),
   creative_notes: z.string().default(""),
   created_on: z.string(),
-  updated_on: z.string()
+  updated_on: z.string(),
+  archived_at: z.string().trim().nullable().optional(),
+  archive_reason: z.string().trim().nullable().optional()
 });
 
 export async function GET(

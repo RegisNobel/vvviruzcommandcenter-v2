@@ -1501,7 +1501,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                         <option value="">No linked copy</option>
                         {detail.available_copies.map((copy) => (
                           <option key={copy.id} value={copy.id}>
-                            {copy.hook.trim() || `Copy ${copy.id.slice(0, 8)}`}
+                            {copy.archived_at ? "[Archived] " : ""}{copy.hook.trim() || `Copy ${copy.id.slice(0, 8)}`}
                           </option>
                         ))}
                       </select>
@@ -1512,9 +1512,24 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                               Carried Link
                             </span>
                           ) : null}
+                          {report.linked_copy.archived_at ? (
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
+                              Archived
+                            </span>
+                          ) : null}
+                          {report.linked_copy.archived_at && report.linked_copy.archive_reason?.toLowerCase().includes("legacy duplicate") ? (
+                            <span className="text-[9px] font-semibold uppercase tracking-wider text-red-400 bg-red-400/10 border border-red-400/20 rounded px-1.5 py-0.5">
+                              Legacy Duplicate
+                            </span>
+                          ) : null}
                           {report.linked_copy.hook ? (
                             <p className="w-full text-xs font-medium text-ink italic bg-[#14171c]/50 p-2 rounded border border-[#2a2f37] leading-relaxed">
                               &quot;{report.linked_copy.hook}&quot;
+                            </p>
+                          ) : null}
+                          {report.linked_copy.caption ? (
+                            <p className="w-full text-xs text-muted bg-[#14171c]/30 p-2 rounded border border-[#20242b]/60 leading-relaxed whitespace-pre-wrap">
+                              {report.linked_copy.caption}
                             </p>
                           ) : null}
                           <span className="pill">

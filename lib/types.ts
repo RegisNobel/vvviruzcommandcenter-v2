@@ -493,6 +493,8 @@ export type CopyRecord = {
   creative_notes: string;
   created_on: string;
   updated_on: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
 };
 
 export type CopySummary = {
@@ -506,6 +508,8 @@ export type CopySummary = {
   creative_notes: string;
   created_on: string;
   updated_on: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
 };
 
 /**

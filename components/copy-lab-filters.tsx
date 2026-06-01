@@ -6,29 +6,37 @@ export function CopyLabFilters({
   releases,
   activeReleaseId,
   activeGroupBy,
-  activeStatusFilter
+  activeStatusFilter,
+  activeArchiveFilter
 }: {
   releases: Array<{ id: string; title: string }>;
   activeReleaseId: string | null;
   activeGroupBy: string;
   activeStatusFilter: string;
+  activeArchiveFilter: string;
 }) {
   const router = useRouter();
 
   function handleReleaseChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const val = event.target.value;
-    updateFilters(val || null, activeStatusFilter);
+    updateFilters(val || null, activeStatusFilter, activeArchiveFilter);
   }
 
   function handleStatusChange(status: string) {
-    updateFilters(activeReleaseId, status);
+    updateFilters(activeReleaseId, status, activeArchiveFilter);
   }
 
-  function updateFilters(releaseId: string | null, statusFilter: string | null) {
+  function handleArchiveChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    updateFilters(activeReleaseId, activeStatusFilter, event.target.value);
+  }
+
+  function updateFilters(
+    releaseId: string | null,
+    statusFilter: string | null,
+    archiveFilter: string | null
+  ) {
     const params = new URLSearchParams();
-    if (activeGroupBy && activeGroupBy !== "release") {
-      params.set("groupBy", activeGroupBy);
-    } else if (activeGroupBy) {
+    if (activeGroupBy) {
       params.set("groupBy", activeGroupBy);
     }
     if (releaseId) {
@@ -37,13 +45,16 @@ export function CopyLabFilters({
     if (statusFilter && statusFilter !== "all") {
       params.set("statusFilter", statusFilter);
     }
+    if (archiveFilter && archiveFilter !== "active") {
+      params.set("archiveFilter", archiveFilter);
+    }
 
     router.push(`/admin/copy-lab?${params.toString()}`);
   }
 
   return (
     <div className="flex flex-wrap items-center gap-5">
-      <div className="flex flex-col gap-1.5 min-w-[240px]">
+      <div className="flex flex-col gap-1.5 min-w-[200px]">
         <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
           Release Context
         </span>
@@ -58,6 +69,21 @@ export function CopyLabFilters({
               {release.title}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1.5 min-w-[160px]">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
+          Archive State
+        </span>
+        <select
+          className="field-input w-full bg-[#151820] border-[#30343b] text-ink focus:border-[#d7b45e]"
+          onChange={handleArchiveChange}
+          value={activeArchiveFilter}
+        >
+          <option value="active">Active Only</option>
+          <option value="archived">Archived Only</option>
+          <option value="all">Show All</option>
         </select>
       </div>
 

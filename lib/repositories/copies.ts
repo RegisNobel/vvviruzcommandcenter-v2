@@ -16,7 +16,9 @@ function toCopyRecord(copy: PrismaCopyEntry): CopyRecord {
     songSection: copy.songSection,
     creativeNotes: copy.creativeNotes,
     created_on: copy.createdOn.toISOString(),
-    updated_on: copy.updatedOn.toISOString()
+    updated_on: copy.updatedOn.toISOString(),
+    archived_at: copy.archivedAt ? copy.archivedAt.toISOString() : null,
+    archive_reason: copy.archiveReason
   });
 }
 
@@ -106,7 +108,9 @@ export async function saveCopy(copy: CopyRecord) {
       songSection: normalizedCopy.song_section,
       creativeNotes: normalizedCopy.creative_notes,
       createdOn: toDate(normalizedCopy.created_on),
-      updatedOn: toDate(normalizedCopy.updated_on)
+      updatedOn: toDate(normalizedCopy.updated_on),
+      archivedAt: normalizedCopy.archived_at ? toDate(normalizedCopy.archived_at) : null,
+      archiveReason: normalizedCopy.archive_reason
     },
     update: {
       releaseId,
@@ -118,7 +122,9 @@ export async function saveCopy(copy: CopyRecord) {
       songSection: normalizedCopy.song_section,
       creativeNotes: normalizedCopy.creative_notes,
       createdOn: toDate(normalizedCopy.created_on),
-      updatedOn: toDate(normalizedCopy.updated_on)
+      updatedOn: toDate(normalizedCopy.updated_on),
+      archivedAt: normalizedCopy.archived_at ? toDate(normalizedCopy.archived_at) : null,
+      archiveReason: normalizedCopy.archive_reason
     }
   });
 

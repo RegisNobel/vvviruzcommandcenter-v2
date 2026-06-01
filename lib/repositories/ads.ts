@@ -218,7 +218,9 @@ function toCopySummary(copy: CopyEntry): CopySummary {
       songSection: copy.songSection,
       creativeNotes: copy.creativeNotes,
       created_on: copy.createdOn.toISOString(),
-      updated_on: copy.updatedOn.toISOString()
+      updated_on: copy.updatedOn.toISOString(),
+      archived_at: copy.archivedAt ? copy.archivedAt.toISOString() : null,
+      archive_reason: copy.archiveReason
     })
   );
 }
@@ -1233,19 +1235,30 @@ export async function readAdImportBatchDetail(batchId: string): Promise<AdImport
   const batch = await readBatchWithReports(batchId);
   const averages = createBatchAverages(batch.reports);
   const reports = batch.reports.map((report) => toReportRecord(report, averages));
+
+  const linkedCopyIds = new Set<string>();
+  for (const report of batch.reports) {
+    for (const link of report.copyLinks) {
+      linkedCopyIds.add(link.copyEntry.id);
+    }
+  }
+
   const availableCopies = await prisma.copyEntry.findMany({
-    where: batch.releaseId
-      ? {
-          OR: [
-            {
-              releaseId: batch.releaseId
-            },
-            {
-              releaseId: null
-            }
-          ]
+    where: {
+      OR: [
+        {
+          archivedAt: null,
+          releaseId: batch.releaseId || null
+        },
+        {
+          archivedAt: null,
+          releaseId: null
+        },
+        {
+          id: { in: Array.from(linkedCopyIds) }
         }
-      : undefined,
+      ]
+    },
     orderBy: [
       {
         releaseId: "desc"

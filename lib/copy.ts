@@ -47,6 +47,10 @@ type LegacyCopyShape = Partial<CopyRecord> & {
   song_section?: string;
   creativeNotes?: string;
   creative_notes?: string;
+  archivedAt?: string | null;
+  archived_at?: string | null;
+  archiveReason?: string | null;
+  archive_reason?: string | null;
 };
 
 export function normalizeHookType(value: string | undefined): HookType {
@@ -216,6 +220,8 @@ export function createEmptyCopy(
       | "song_section"
       | "creative_notes"
       | "release_id"
+      | "archived_at"
+      | "archive_reason"
     >
   > & {type?: string}
 ): CopyRecord {
@@ -231,7 +237,9 @@ export function createEmptyCopy(
     song_section: normalizeSongSection(values?.song_section),
     creative_notes: values?.creative_notes?.trim() || "",
     created_on: now,
-    updated_on: now
+    updated_on: now,
+    archived_at: values?.archived_at ?? null,
+    archive_reason: values?.archive_reason ?? null
   };
 }
 
@@ -269,6 +277,18 @@ export function hydrateCopy(input: LegacyCopyShape): CopyRecord {
       : typeof input.creativeNotes === "string"
         ? input.creativeNotes
         : "";
+  const archivedAt =
+    typeof input.archived_at === "string" || input.archived_at === null
+      ? input.archived_at
+      : typeof input.archivedAt === "string" || input.archivedAt === null
+        ? input.archivedAt
+        : null;
+  const archiveReason =
+    typeof input.archive_reason === "string" || input.archive_reason === null
+      ? input.archive_reason
+      : typeof input.archiveReason === "string" || input.archiveReason === null
+        ? input.archiveReason
+        : null;
 
   return {
     ...fallback,
@@ -282,7 +302,9 @@ export function hydrateCopy(input: LegacyCopyShape): CopyRecord {
     song_section: normalizeSongSection(songSection),
     creative_notes: creativeNotes.trim(),
     created_on: input.created_on ?? fallback.created_on,
-    updated_on: input.updated_on ?? fallback.updated_on
+    updated_on: input.updated_on ?? fallback.updated_on,
+    archived_at: archivedAt,
+    archive_reason: archiveReason
   };
 }
 
@@ -306,6 +328,8 @@ export function summarizeCopy(copy: CopyRecord): CopySummary {
     song_section: normalizedCopy.song_section,
     creative_notes: normalizedCopy.creative_notes,
     created_on: normalizedCopy.created_on,
-    updated_on: normalizedCopy.updated_on
+    updated_on: normalizedCopy.updated_on,
+    archived_at: normalizedCopy.archived_at,
+    archive_reason: normalizedCopy.archive_reason
   };
 }

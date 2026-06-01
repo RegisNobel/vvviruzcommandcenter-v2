@@ -471,6 +471,15 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-01 00:00 -04:00
+
+- **Implemented Copy Lab Legacy Duplicate Archive System v1**:
+  - Added optional `archivedAt` (DateTime) and `archiveReason` (String) fields to the `CopyEntry` model in both SQLite and PostgreSQL schemas.
+  - Created `scripts/archive-duplicates.ts` (with `.js` wrapper) to safely verify and soft-archive target duplicate families without mutating ad report links or carryover logic.
+  - Added a dedicated "Archive State" filter dropdown (Active Only, Archived Only, Show All) in the Copy Lab library filters context.
+  - Integrated "Archive Copy" and "Unarchive Copy" buttons and warning banners into `CopyDetailEditor`'s `StickyActionDock`.
+  - Refined Ad Lab copy linkage dropdowns and leaderboards to support and badge linked archived copies cleanly, while filtering out unused archived copy candidates.
+
 ### 2026-05-31 22:25 -04:00
 
 - **Release Detail Meta Snapshot Removal & Campaign Readout Polish**:
@@ -1309,6 +1318,15 @@ After applying RLS changes:
 [ ] Subscriber emails are not readable from the public client
 [ ] Admin dashboard still works through protected server-side routes
 [ ] Supabase service role key is only used server-side
+
+### 2026-05-31 23:35 -04:00
+
+- Implemented Copy Lab Legacy Duplicate Archive System v1.
+- Updated database schemas (both SQLite and PostgreSQL) to support soft archiving via `archivedAt` and `archiveReason` fields.
+- Implemented dedicated Archive Copy and Unarchive Copy actions in the Copy Detail editor.
+- Integrated the Archive State filter (Active Only, Archived Only, Show All) into the Copy Lab list.
+- Displayed styled `Archived` and `Legacy Duplicate` badges on copy row lists and prefixed linked archived copies with `[Archived]` in dropdown selections.
+- Developed the `scripts/archive-duplicates.ts` cleanup script to verify and archive verified duplicate families for Mad Bunny, leaving canonical copies active.
 
 ### 2026-05-31 23:25 -04:00
 

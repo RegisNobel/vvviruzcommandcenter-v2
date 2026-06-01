@@ -23,7 +23,9 @@ const createCopySchema = z.object({
   content_type: z.string().default("amv-lyric-edit"),
   song_section: z.string().default("hook"),
   creative_notes: z.string().trim().default(""),
-  release_id: z.string().trim().min(1).nullable().default(null)
+  release_id: z.string().trim().min(1).nullable().default(null),
+  archived_at: z.string().trim().nullable().optional(),
+  archive_reason: z.string().trim().nullable().optional()
 });
 
 export async function GET(request: Request) {

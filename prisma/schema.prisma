@@ -156,6 +156,8 @@ model CopyEntry {
   creativeNotes String               @default("")
   createdOn     DateTime
   updatedOn     DateTime
+  archivedAt    DateTime?
+  archiveReason String?
   release       Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
   adLinks       AdCreativeCopyLink[]
 

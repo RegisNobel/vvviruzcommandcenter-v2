@@ -206,6 +206,39 @@ export function CopyDetailEditor({
     }
   }
 
+  async function handleArchive() {
+    const reason = window.prompt(
+      "Enter archive reason:",
+      "Legacy duplicate from previous Copy Lab system"
+    );
+    if (reason === null) return;
+
+    const updated = {
+      ...copy,
+      archived_at: new Date().toISOString(),
+      archive_reason: reason.trim() || "Legacy duplicate from previous Copy Lab system"
+    };
+    setCopy(updated);
+    setHasPendingChanges(true);
+    await persistCopy(updated, { successMessage: "Copy archived." });
+    router.refresh();
+  }
+
+  async function handleRestore() {
+    const shouldRestore = window.confirm("Unarchive/restore this copy to the active workspace?");
+    if (!shouldRestore) return;
+
+    const updated = {
+      ...copy,
+      archived_at: null,
+      archive_reason: null
+    };
+    setCopy(updated);
+    setHasPendingChanges(true);
+    await persistCopy(updated, { successMessage: "Copy restored." });
+    router.refresh();
+  }
+
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8 pb-36">
       <div className="mx-auto max-w-[1450px] space-y-6">
@@ -227,6 +260,28 @@ export function CopyDetailEditor({
                 Build and refine hook and caption pairs, then attach them to a release
                 when they belong in a rollout.
               </p>
+              {copy.archived_at && (
+                <div className="mt-4 p-4 rounded-[22px] border border-amber-950/60 bg-amber-950/10 text-sm text-[#f1dfad] space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded border border-amber-950 bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-[#d7b45e] uppercase tracking-wider">
+                      Archived
+                    </span>
+                    {copy.archive_reason?.toLowerCase().includes("legacy duplicate") && (
+                      <span className="rounded border border-red-950 bg-red-950/30 px-2 py-0.5 text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                        Legacy Duplicate
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Archived legacy copy records are hidden from the active planning workspace but preserved for history.
+                  </p>
+                  {copy.archive_reason && (
+                    <p className="text-xs text-muted">
+                      <span className="font-semibold">Reason:</span> {copy.archive_reason}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
@@ -584,6 +639,23 @@ export function CopyDetailEditor({
                   Open Release
                 </Link>
               ) : null}
+              {copy.archived_at ? (
+                <button
+                  className="action-button-secondary border-[#5b4920]/40 bg-[#1a1710]/40 text-[#d7b45e] hover:bg-[#2c2215]"
+                  onClick={() => void handleRestore()}
+                  type="button"
+                >
+                  Unarchive Copy
+                </button>
+              ) : (
+                <button
+                  className="action-button-secondary border-[#252a31] bg-[#151820]/40 text-muted/60 hover:border-[#d7b45e]/50"
+                  onClick={() => void handleArchive()}
+                  type="button"
+                >
+                  Archive Copy
+                </button>
+              )}
               <button
                 className="action-button-danger"
                 disabled={isDeleting}
