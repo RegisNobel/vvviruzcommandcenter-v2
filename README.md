@@ -1310,6 +1310,16 @@ After applying RLS changes:
 [ ] Admin dashboard still works through protected server-side routes
 [ ] Supabase service role key is only used server-side
 
+### 2026-05-31 23:05 -04:00
+
+- Implemented Copy Lab Release Filter and Focused Release View v1.
+- Added a `releaseId` query parameter that propagates and filters copy entries across Release, Copy Angle, and Flat view modes.
+- Created `CopyLabFilters` client-side component containing a Release Context dropdown and a Linkage Status filter (All, Linked, Unlinked).
+- Handled invalid/missing `releaseId` query parameter safely, falling back to showing all release groups.
+- Designed a premium, gold-bordered Focused Release Header when a release filter is active, displaying title, copy count, unique copy angles count, an "Open Release" link, a "New Copy for this Release" button, and a "Clear Filter" button.
+- Cleaned up copy row list layouts (`CopyRow` and `CopyVariantRow`) by de-emphasizing legacy metadata (Content Type, Song Section) inline as tiny muted pills.
+- Switched single-release view in `groupBy=release` mode to render as a focused panel rather than a collapsible accordion.
+
 ### 2026-05-21 16:45 -04:00
 
 - Implemented Ad Lab Batch Rename Support to allow operators to clean up human-readable batch names (e.g. metadata correction) after import without mutating imported CSV metrics, release associations, or campaign learnings.

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, ChevronDown, PlusCircle} from "lucide-react";
+import {ArrowRight, ChevronDown, PlusCircle, XCircle} from "lucide-react";
 
 import {
   formatContentType,
@@ -9,6 +9,8 @@ import {
   formatSongSection,
   getCopyHeading
 } from "@/lib/copy";
+import {prisma} from "@/lib/db/prisma";
+import {CopyLabFilters} from "@/components/copy-lab-filters";
 import {readCopySummaries} from "@/lib/server/copies";
 import {readReleaseSummaries} from "@/lib/server/releases";
 import type {CopySummary} from "@/lib/types";
@@ -90,8 +92,23 @@ function normalizeGroupBy(value: string | undefined): CopyGroupBy {
     : "release";
 }
 
-function getGroupHref(groupBy: CopyGroupBy) {
-  return groupBy === "release" ? "/admin/copy-lab" : `/admin/copy-lab?groupBy=${groupBy}`;
+function getGroupHref(
+  groupBy: CopyGroupBy,
+  releaseId?: string,
+  statusFilter?: string
+) {
+  const params = new URLSearchParams();
+  if (groupBy !== "release") {
+    params.set("groupBy", groupBy);
+  }
+  if (releaseId) {
+    params.set("releaseId", releaseId);
+  }
+  if (statusFilter && statusFilter !== "all") {
+    params.set("statusFilter", statusFilter);
+  }
+  const queryString = params.toString();
+  return queryString ? `/admin/copy-lab?${queryString}` : "/admin/copy-lab";
 }
 
 function formatCopyCount(count: number) {
@@ -333,7 +350,7 @@ function CopyRow({
       className="block cursor-pointer px-4 py-5 transition hover:bg-panel-subtle sm:px-6 sm:py-6"
       href={`/admin/copy-lab/${copy.id}`}
     >
-      <div className="grid gap-5 lg:grid-cols-[80px_minmax(0,1.1fr)_0.9fr_0.9fr_1fr_120px] lg:items-start">
+      <div className="grid gap-5 lg:grid-cols-[110px_minmax(0,1.5fr)_1fr_1.2fr_120px] lg:items-start">
         <div className="pill w-fit">{copyNumber}</div>
 
         <div className="min-w-0">
@@ -341,6 +358,15 @@ function CopyRow({
           <p className="mt-2 text-sm leading-6 text-muted">
             {truncate(copy.caption, "No caption written yet.")}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 items-center text-xs text-muted/50">
+            <span className="font-mono uppercase tracking-wider text-[10px] bg-[#1a1d24]/60 px-2 py-0.5 rounded border border-[#252a31] text-muted/70">
+              {formatContentType(copy.content_type)}
+            </span>
+            <span>•</span>
+            <span className="font-mono uppercase tracking-wider text-[10px] bg-[#1a1d24]/60 px-2 py-0.5 rounded border border-[#252a31] text-muted/70">
+              {formatSongSection(copy.song_section)}
+            </span>
+          </div>
         </div>
 
         <div>
@@ -351,24 +377,14 @@ function CopyRow({
         </div>
 
         <div>
-          <p className="field-label">Legacy Metadata</p>
-          <p className="mt-2 text-sm font-semibold text-muted/80">
-            {formatContentType(copy.content_type)}
-          </p>
-          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted/60">
-            {formatSongSection(copy.song_section)}
-          </p>
-        </div>
-
-        <div>
           <p className="field-label">Release</p>
-          <p className="mt-2 text-sm font-semibold text-ink">{releaseTitle}</p>
-          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-muted">
+          <p className="mt-2 text-sm font-semibold text-ink truncate">{releaseTitle}</p>
+          <p className="mt-2.5 text-[10px] uppercase tracking-[0.14em] text-muted">
             Updated {formatTimestamp(copy.updated_on)}
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-2 text-sm font-semibold text-ink">
+        <div className="flex items-center justify-end gap-2 text-sm font-semibold text-ink transition hover:text-[#d7b45e]">
           Open
           <ArrowRight size={16} />
         </div>
@@ -390,7 +406,7 @@ function CopyVariantRow({
 
   return (
     <div className="bg-[#101319]/60 px-4 py-5 sm:px-6 sm:py-6">
-      <div className="grid gap-5 lg:grid-cols-[120px_minmax(0,1.05fr)_0.8fr_1.25fr_1fr_120px] lg:items-start">
+      <div className="grid gap-5 lg:grid-cols-[110px_minmax(0,1.5fr)_1fr_1.2fr_120px] lg:items-start">
         <div className="pill w-fit">{variantSet.copies.length} variants</div>
 
         <div className="min-w-0">
@@ -400,9 +416,23 @@ function CopyVariantRow({
           <p className="mt-2 text-sm leading-6 text-muted">
             {truncate(representative.caption, "No caption written yet.")}
           </p>
-          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-[#d7b45e]">
-            Same copy idea, different content executions
-          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5 items-center">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted/40 mr-1">Variants:</span>
+            {variantSet.copies.map((copy) => (
+              <Link
+                className="rounded-md border border-[#252a31] bg-[#151820]/40 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted/60 transition hover:border-[#d7b45e]/50 hover:bg-[#1a1710] hover:text-[#f1dfad]"
+                href={`/admin/copy-lab/${copy.id}`}
+                key={copy.id}
+                title={`Open copy #${copyNumberById.get(copy.id) ?? "?"}`}
+              >
+                {formatContentType(copy.content_type)}
+              </Link>
+            ))}
+            <span className="text-muted/30 mx-1">•</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted/50">
+              {formatSongSection(representative.song_section)}
+            </span>
+          </div>
         </div>
 
         <div>
@@ -413,28 +443,9 @@ function CopyVariantRow({
         </div>
 
         <div>
-          <p className="field-label">Content Variants (Legacy)</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {variantSet.copies.map((copy) => (
-              <Link
-                className="rounded-full border border-[#30343b] bg-[#151820] px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-muted transition hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
-                href={`/admin/copy-lab/${copy.id}`}
-                key={copy.id}
-                title={`Open copy #${copyNumberById.get(copy.id) ?? "?"}`}
-              >
-                {formatContentType(copy.content_type)}
-              </Link>
-            ))}
-          </div>
-          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-muted/60">
-            {formatSongSection(representative.song_section)}
-          </p>
-        </div>
-
-        <div>
           <p className="field-label">Release</p>
-          <p className="mt-2 text-sm font-semibold text-ink">{releaseTitle}</p>
-          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-muted">
+          <p className="mt-2 text-sm font-semibold text-ink truncate">{releaseTitle}</p>
+          <p className="mt-2.5 text-[10px] uppercase tracking-[0.14em] text-muted">
             Updated {formatTimestamp(representative.updated_on)}
           </p>
         </div>
@@ -454,18 +465,55 @@ function CopyVariantRow({
 export default async function AdminCopyLabPage({
   searchParams
 }: {
-  searchParams: Promise<{groupBy?: string}>;
+  searchParams: Promise<{
+    groupBy?: string;
+    releaseId?: string;
+    statusFilter?: string;
+  }>;
 }) {
-  const [{groupBy}, copies, releases] = await Promise.all([
+  const [{groupBy, releaseId, statusFilter}, copies, releases, copyLinkages] = await Promise.all([
     searchParams,
     readCopySummaries(),
-    readReleaseSummaries()
+    readReleaseSummaries(),
+    prisma.adCreativeCopyLink.findMany({ select: { copyEntryId: true } })
   ]);
+
   const selectedGroupBy = normalizeGroupBy(groupBy);
+  const activeStatusFilter = statusFilter || "all";
+
+  // Validate releaseId
+  const selectedRelease = releaseId
+    ? (releases.find((r) => r.id === releaseId) || null)
+    : null;
+  const activeReleaseId = selectedRelease ? selectedRelease.id : null;
+
+  const linkedCopyIds = new Set(copyLinkages.map((l) => l.copyEntryId));
+
+  // Filter copy summaries
+  const filteredCopies = copies.filter((copy) => {
+    if (activeReleaseId && copy.release_id !== activeReleaseId) {
+      return false;
+    }
+    if (activeStatusFilter === "linked" && !linkedCopyIds.has(copy.id)) {
+      return false;
+    }
+    if (activeStatusFilter === "unlinked" && linkedCopyIds.has(copy.id)) {
+      return false;
+    }
+    return true;
+  });
+
   const releaseTitleById = new Map(releases.map((release) => [release.id, release.title]));
   const copyNumberById = new Map(copies.map((copy, index) => [copy.id, index + 1]));
-  const groupedCopies = groupCopies(copies, selectedGroupBy, releaseTitleById);
+  const groupedCopies = groupCopies(filteredCopies, selectedGroupBy, releaseTitleById);
   const selectedGroupOption = copyGroupOptions.find((option) => option.key === selectedGroupBy);
+
+  // Build release options list for the filter select dropdown:
+  // Shows only releases with copies, plus the currently selected release if valid.
+  const releasesWithCopiesIds = new Set(copies.map((c) => c.release_id).filter(Boolean));
+  const filteredReleasesForDropdown = releases
+    .filter((r) => releasesWithCopiesIds.has(r.id) || r.id === activeReleaseId)
+    .map((r) => ({ id: r.id, title: r.title }));
 
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
@@ -488,7 +536,14 @@ export default async function AdminCopyLabPage({
               </p>
             </div>
 
-            <Link className="action-button-primary" href="/admin/copy-lab/new">
+            <Link
+              className="action-button-primary"
+              href={
+                activeReleaseId
+                  ? `/admin/copy-lab/new?releaseId=${activeReleaseId}`
+                  : "/admin/copy-lab/new"
+              }
+            >
               <PlusCircle size={16} />
               Create Copy
             </Link>
@@ -507,67 +562,119 @@ export default async function AdminCopyLabPage({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 rounded-full border border-[#252a31] bg-[#0e1116] p-1.5">
-              {copyGroupOptions
-                .filter((option) => option.key !== "content-type" && option.key !== "song-section")
-                .map((option) => {
-                  const isActive = option.key === selectedGroupBy;
+            <div className="flex flex-wrap items-center gap-6">
+              <CopyLabFilters
+                releases={filteredReleasesForDropdown}
+                activeReleaseId={activeReleaseId}
+                activeGroupBy={selectedGroupBy}
+                activeStatusFilter={activeStatusFilter}
+              />
 
-                  return (
-                    <Link
-                      aria-current={isActive ? "page" : undefined}
-                      className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
-                        isActive
-                          ? "border-[#d7b45e] bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
-                          : "border-[#30343b] bg-[#151820] text-[#d9dee5] hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
-                      }`}
-                      href={getGroupHref(option.key)}
-                      key={option.key}
-                    >
-                      {option.label}
-                    </Link>
-                  );
-                })}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
+                  Group By
+                </span>
+                <div className="flex flex-wrap gap-2 rounded-full border border-[#252a31] bg-[#0e1116] p-1.5">
+                  {copyGroupOptions
+                    .filter((option) => option.key !== "content-type" && option.key !== "song-section")
+                    .map((option) => {
+                      const isActive = option.key === selectedGroupBy;
+
+                      return (
+                        <Link
+                          aria-current={isActive ? "page" : undefined}
+                          className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] transition ${
+                            isActive
+                              ? "border-[#d7b45e] bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
+                              : "border-[#30343b] bg-[#151820] text-[#d9dee5] hover:border-[#d7b45e]/70 hover:bg-[#1a1710] hover:text-[#f1dfad]"
+                          }`}
+                          href={getGroupHref(
+                            option.key,
+                            activeReleaseId || undefined,
+                            activeStatusFilter !== "all" ? activeStatusFilter : undefined
+                          )}
+                          key={option.key}
+                        >
+                          {option.label}
+                        </Link>
+                      );
+                    })}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
+        {selectedRelease && (
+          <section className="panel overflow-hidden border border-[#d7b45e]/30 bg-gradient-to-r from-[#1b1912] to-[#12141a] px-4 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d7b45e]">
+                  Active Release Context
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+                  {selectedRelease.title}
+                </h2>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+                  <span className="flex items-center gap-1.5">
+                    <span className="font-semibold text-ink">
+                      {copies.filter((c) => c.release_id === selectedRelease.id).length}
+                    </span>{" "}
+                    copy entries
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="font-semibold text-ink">
+                      {
+                        new Set(
+                          copies
+                            .filter((c) => c.release_id === selectedRelease.id)
+                            .map((c) => c.hook_type)
+                        ).size
+                      }
+                    </span>{" "}
+                    angles active
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  className="action-button-secondary border-[#d7b45e]/30 hover:border-[#d7b45e] hover:bg-[#1a1710]"
+                  href={`/admin/releases/${selectedRelease.id}`}
+                >
+                  Open Release
+                </Link>
+                <Link
+                  className="action-button-primary"
+                  href={`/admin/copy-lab/new?releaseId=${selectedRelease.id}`}
+                >
+                  <PlusCircle size={16} />
+                  New Copy for this Release
+                </Link>
+                <Link
+                  className="action-button-secondary flex items-center gap-2 border-red-950 bg-[#1f1010]/20 text-red-300 hover:bg-[#2c1515] hover:text-red-200"
+                  href={getGroupHref(
+                    selectedGroupBy,
+                    undefined,
+                    activeStatusFilter !== "all" ? activeStatusFilter : undefined
+                  )}
+                >
+                  <XCircle size={16} />
+                  Clear Filter
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="space-y-4">
-          {groupedCopies.map((group, groupIndex) => (
-            <details
-              className="group panel overflow-hidden"
-              key={group.key}
-              open={selectedGroupBy === "flat" || groupIndex === 0}
-            >
-              <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
-                <div>
-                  <p className="field-label">{group.eyebrow}</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
-                    {group.label}
-                  </h2>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="pill">{formatCopyCount(group.copies.length)}</span>
-                  <ChevronDown
-                    className="text-muted transition group-open:rotate-180"
-                    size={18}
-                  />
-                </div>
-              </summary>
-
-              <div className="divide-y divide-[#252a31] border-t border-[#252a31]">
-                {(selectedGroupBy === "content-type"
-                  ? group.copies.map((copy) => ({
-                      key: copy.id,
-                      copies: [copy],
-                      representative: copy
-                    }))
-                  : groupCopyVariants(group.copies)
-                ).map((variantSet) => {
-                  const releaseTitle = variantSet.representative.release_id
-                    ? (releaseTitleById.get(variantSet.representative.release_id) ?? "Linked Release")
-                    : "Standalone";
+          {activeReleaseId && selectedGroupBy === "release" ? (
+            /* Focused single-release list: show copies directly inside a panel, no details wrapper */
+            filteredCopies.length > 0 ? (
+              <div className="panel divide-y divide-[#252a31] overflow-hidden">
+                {groupCopyVariants(filteredCopies).map((variantSet) => {
+                  const releaseTitle = selectedRelease ? selectedRelease.title : "Standalone";
 
                   if (hasContentVariants(variantSet)) {
                     return (
@@ -590,18 +697,87 @@ export default async function AdminCopyLabPage({
                   ));
                 })}
               </div>
-            </details>
-          ))}
+            ) : (
+              <div className="panel px-4 py-7 sm:px-6 sm:py-8">
+                <p className="text-lg font-semibold text-ink">No copy pairs found for this release</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Create your first copy pair for {selectedRelease?.title} using the button above to get started.
+                </p>
+              </div>
+            )
+          ) : (
+            /* Default grouped or flat view layout */
+            <>
+              {groupedCopies.map((group, groupIndex) => (
+                <details
+                  className="group panel overflow-hidden"
+                  key={group.key}
+                  open={Boolean(activeReleaseId) || selectedGroupBy === "flat" || groupIndex === 0}
+                >
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6 [&::-webkit-details-marker]:hidden">
+                    <div>
+                      <p className="field-label">{group.eyebrow}</p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink">
+                        {group.label}
+                      </h2>
+                    </div>
 
-          {copies.length === 0 ? (
-            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
-              <p className="text-lg font-semibold text-ink">No copy pairs yet</p>
-              <p className="mt-2 text-sm leading-6 text-muted">
-                Create your first hook and caption pair to start building a release
-                library and standalone copy bank.
-              </p>
-            </div>
-          ) : null}
+                    <div className="flex items-center gap-3">
+                      <span className="pill">{formatCopyCount(group.copies.length)}</span>
+                      <ChevronDown
+                        className="text-muted transition group-open:rotate-180"
+                        size={18}
+                      />
+                    </div>
+                  </summary>
+
+                  <div className="divide-y divide-[#252a31] border-t border-[#252a31]">
+                    {(selectedGroupBy === "content-type"
+                      ? group.copies.map((copy) => ({
+                          key: copy.id,
+                          copies: [copy],
+                          representative: copy
+                        }))
+                      : groupCopyVariants(group.copies)
+                    ).map((variantSet) => {
+                      const releaseTitle = variantSet.representative.release_id
+                        ? (releaseTitleById.get(variantSet.representative.release_id) ?? "Linked Release")
+                        : "Standalone";
+
+                      if (hasContentVariants(variantSet)) {
+                        return (
+                          <CopyVariantRow
+                            copyNumberById={copyNumberById}
+                            key={variantSet.key}
+                            releaseTitle={releaseTitle}
+                            variantSet={variantSet}
+                          />
+                        );
+                      }
+
+                      return variantSet.copies.map((copy) => (
+                        <CopyRow
+                          copy={copy}
+                          copyNumber={copyNumberById.get(copy.id) ?? 0}
+                          key={copy.id}
+                          releaseTitle={releaseTitle}
+                        />
+                      ));
+                    })}
+                  </div>
+                </details>
+              ))}
+
+              {filteredCopies.length === 0 ? (
+                <div className="panel px-4 py-7 sm:px-6 sm:py-8">
+                  <p className="text-lg font-semibold text-ink">No copy pairs found</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    No copy pairs match the active filters.
+                  </p>
+                </div>
+              ) : null}
+            </>
+          )}
         </section>
       </div>
     </main>
