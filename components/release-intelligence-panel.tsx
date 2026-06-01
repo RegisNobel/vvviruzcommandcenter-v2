@@ -196,39 +196,6 @@ export default function ReleaseIntelligencePanel({
         </div>
       )}
 
-      {adMetrics.has_data && (adMetrics.best_ad || adMetrics.best_hook) && (
-        <div className="space-y-2">
-          {adMetrics.best_ad && (
-            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#272b31] bg-[#14171b] px-3 py-2.5">
-              <span className="text-xs text-[#7f858d]">Best Creative</span>
-              <span className="text-right text-xs font-medium text-[#ede7dc]">
-                {adMetrics.best_ad.ad_name}
-                {adMetrics.best_ad.cpr !== null && (
-                  <span className="ml-2 text-emerald-400">{formatCurrency(adMetrics.best_ad.cpr)} CPR</span>
-                )}
-              </span>
-            </div>
-          )}
-          {adMetrics.best_hook && (
-            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#272b31] bg-[#14171b] px-3 py-2.5">
-              <span className="text-xs text-[#7f858d]">Best Copy Angle</span>
-              <span className="text-right text-xs font-medium text-[#ede7dc]">
-                {formatHookType(adMetrics.best_hook.label as any)}
-                {adMetrics.best_hook.cpr !== null && (
-                  <span className="ml-2 text-sky-400">{formatCurrency(adMetrics.best_hook.cpr)} CPR</span>
-                )}
-              </span>
-            </div>
-          )}
-          {promoContentTypeHint && (
-            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#272b31] bg-[#14171b] px-3 py-2.5">
-              <span className="text-xs text-[#7f858d]">Top Signal</span>
-              <span className="text-right text-xs font-medium text-[#ede7dc]">{promoContentTypeHint}</span>
-            </div>
-          )}
-        </div>
-      )}
-
       {adMetrics.has_data && (
         <div className="space-y-4">
           <div className="rounded-[16px] border border-[#5b4920]/40 bg-[#1a1710] px-4 py-3.5 text-sm leading-6 text-[#d7b45e]">
@@ -239,6 +206,11 @@ export default function ReleaseIntelligencePanel({
           <div className={`rounded-[16px] border px-4 py-3.5 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
             <p className="text-[10px] uppercase font-bold tracking-wider opacity-90 mb-1">Next Test Direction</p>
             <p className="font-semibold text-sm">{recommendation.nextTestDirection}</p>
+            {recommendation.controlAd ? (
+              <p className="mt-1 text-[10px] font-mono opacity-80">
+                Reference Creative: {recommendation.controlAd}
+              </p>
+            ) : null}
           </div>
         </div>
       )}

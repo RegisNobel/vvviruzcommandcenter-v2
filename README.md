@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-05-31 22:25 -04:00
+
+- **Release Detail Meta Snapshot Removal & Campaign Readout Polish**:
+  - Removed the Meta snapshot summary metrics grid, overlapping snapshot warnings, and diagnostics highlights panel entirely from the Release Detail page, keeping raw metrics isolated inside Ad Lab.
+  - Retained the Campaign Learning form and the Import History accordion (collapsed by default).
+  - Polished the Strategic Campaign Intelligence panel by pruning the duplicated performer rows (Best Creative, Best Copy Angle, and Top Signal) which are already displayed in the Performance Memory summary cards.
+  - Added a compact inline `Reference Creative` line under the Next Test Direction card displaying the active control ad name if populated.
+
 ### 2026-05-29 14:14 -04:00
 
 - **Release Detail Next Test Direction Cleanup**:
