@@ -9,7 +9,8 @@ import {
   readReleaseCampaignHistory,
   readCreativePerformanceMemory,
   readAdPerformanceTimeline,
-  readCopyPerformanceMemory
+  readCopyPerformanceMemory,
+  readReleaseAdReports
 } from "@/lib/repositories/ads";
 import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
@@ -33,7 +34,8 @@ export default async function AdminReleaseDetailPage({
       creativePerformanceMemory,
       adPerformanceTimeline,
       copyPerformanceMemory,
-      analyticsEvents
+      analyticsEvents,
+      reports
     ] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
@@ -49,7 +51,8 @@ export default async function AdminReleaseDetailPage({
           page: "links",
           releaseId: id
         }
-      })
+      }),
+      readReleaseAdReports(id)
     ]);
 
     const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
@@ -72,6 +75,7 @@ export default async function AdminReleaseDetailPage({
         copyPerformanceMemory={copyPerformanceMemory}
         streamingClicksCount={streamingClicks.length}
         utmCoverageRate={utmCoverageRate}
+        reports={reports}
       />
     );
   } catch {

@@ -2757,3 +2757,22 @@ export async function readCopyPerformanceMemory(
     suggestions
   };
 }
+
+export async function readReleaseAdReports(releaseId: string): Promise<any[]> {
+  const reports = await prisma.adCreativeReport.findMany({
+    where: {
+      importBatch: {
+        releaseId
+      }
+    },
+    include: {
+      copyLinks: {
+        include: {
+          copyEntry: true
+        }
+      }
+    }
+  });
+  await resolveEffectiveCopyLinksForRelease(releaseId, reports);
+  return reports;
+}

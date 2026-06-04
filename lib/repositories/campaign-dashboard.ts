@@ -1,7 +1,7 @@
 import {normalizeMetaAdName} from "@/lib/ads/meta-csv";
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
-import {readReleaseAdMetrics, readLatestAdCampaignLearningForRelease} from "@/lib/repositories/ads";
+import {readReleaseAdMetrics, readLatestAdCampaignLearningForRelease, resolveEffectiveCopyLinksForRelease} from "@/lib/repositories/ads";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {getUnifiedCampaignRecommendation} from "@/lib/ads/recommendations";
 
@@ -462,7 +462,15 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       releaseId: selectedRelease.id
     },
     include: {
-      reports: true
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
     },
     orderBy: {
       createdAt: "desc"
@@ -472,6 +480,10 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     attributionBatches.find((batch) => batch.batchType === "Release-to-Date" || batch.batchType === "Full Campaign") ??
     attributionBatches[0] ??
     null;
+
+  if (preferredAttributionBatch && selectedRelease) {
+    await resolveEffectiveCopyLinksForRelease(selectedRelease.id, preferredAttributionBatch.reports);
+  }
   const attributionRowsByKey = new Map<
     string,
     {
@@ -746,7 +758,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         decision: latestLearning.decision,
         next_test: latestLearning.next_test,
         updated_at: latestLearning.updated_at
-      } : null
+      } : null,
+      reports: preferredAttributionBatch?.reports
     }).funnelVerdict,
     daily_trend: Array.from(dailyBuckets.values()).reverse(),
     tracking_health: {

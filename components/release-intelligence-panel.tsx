@@ -73,13 +73,30 @@ function getReleasePromoVerdict(
   return "Testing";
 }
 
+function getStatusBadgeClass(status: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested") {
+  switch (status) {
+    case "Strong":
+      return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+    case "Weak":
+      return "bg-red-500/10 text-red-400 border border-red-500/20";
+    case "Neutral":
+      return "bg-[#272b31] text-[#ede7dc] border border-[#31353b]";
+    case "Low Data":
+      return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+    case "Untested":
+    default:
+      return "bg-[#181b20] text-[#7f858d] border border-[#2d3138]";
+  }
+}
+
 export default function ReleaseIntelligencePanel({
   adMetrics,
   latestAdLearning,
   releaseTitle,
   streamingClicksCount = 0,
   utmCoverageRate = 0,
-  releaseId
+  releaseId,
+  reports = []
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   latestAdLearning: AdCampaignLearningRecord | null;
@@ -87,6 +104,7 @@ export default function ReleaseIntelligencePanel({
   streamingClicksCount?: number;
   utmCoverageRate?: number;
   releaseId: string;
+  reports?: any[];
 }) {
   const promoVerdict = useMemo(() => getReleasePromoVerdict(adMetrics, latestAdLearning), [adMetrics, latestAdLearning]);
   const promoStyle = useMemo(() => getVerdictStyle(promoVerdict), [promoVerdict]);
@@ -138,9 +156,10 @@ export default function ReleaseIntelligencePanel({
         decision: latestAdLearning.decision,
         next_test: latestAdLearning.next_test,
         updated_at: latestAdLearning.updated_at
-      } : null
+      } : null,
+      reports
     });
-  }, [adMetrics, latestAdLearning]);
+  }, [adMetrics, latestAdLearning, reports]);
 
   return (
     <div className="rounded-[22px] border border-[#31353b] bg-[#121418] p-5 space-y-5">
@@ -212,6 +231,119 @@ export default function ReleaseIntelligencePanel({
               </p>
             ) : null}
           </div>
+
+          {recommendation.componentDiagnosis && (
+            <div className="rounded-[16px] border border-[#2d3138] bg-[#0f1216] p-4 space-y-4">
+              <div>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-[#7f858d] mb-2">Component Diagnosis</p>
+                {recommendation.componentDiagnosis.controlAd ? (
+                  <div className="inline-flex items-center gap-1.5 rounded bg-[#1c1e22] px-2.5 py-1 text-xs text-[#ede7dc] border border-[#2d3138]">
+                    <span className="font-bold text-[#c9a347]">Control Ad:</span>
+                    <span className="font-mono">{recommendation.componentDiagnosis.controlAd}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-[#7f858d]">No Control Ad identified yet.</span>
+                )}
+              </div>
+
+              {recommendation.componentDiagnosis.controlAd && (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 pt-2 border-t border-[#1c1e22]">
+                  <div>
+                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Visual Format</p>
+                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlVisual || "N/A"}</p>
+                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.visualStatus)}`}>
+                      {recommendation.componentDiagnosis.visualStatus}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Song Section</p>
+                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlSongSection || "N/A"}</p>
+                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.songSectionStatus)}`}>
+                      {recommendation.componentDiagnosis.songSectionStatus}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Angle</p>
+                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlCopyAngle || "N/A"}</p>
+                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyAngleStatus)}`}>
+                      {recommendation.componentDiagnosis.copyAngleStatus}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Pair</p>
+                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5 truncate max-w-full" title={recommendation.componentDiagnosis.controlCopyPair || ""}>{recommendation.componentDiagnosis.controlCopyPair || "N/A"}</p>
+                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyPairStatus)}`}>
+                      {recommendation.componentDiagnosis.copyPairStatus}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#1c1e22] text-xs">
+                {recommendation.componentDiagnosis.preserveComponents && recommendation.componentDiagnosis.preserveComponents.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-emerald-400">Preserve:</span>
+                    <span className="text-[#aeb3bb]">{recommendation.componentDiagnosis.preserveComponents.join(", ")}</span>
+                  </div>
+                )}
+                {recommendation.componentDiagnosis.testComponent && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-amber-400">Test Next:</span>
+                    <span className="text-[#aeb3bb]">{recommendation.componentDiagnosis.testComponent}</span>
+                  </div>
+                )}
+                {recommendation.componentDiagnosis.coverageWarnings && recommendation.componentDiagnosis.coverageWarnings.length > 0 && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <span className="font-bold text-[#d7b45e] text-[10px] uppercase tracking-wider">Coverage Gaps:</span>
+                    {recommendation.componentDiagnosis.coverageWarnings.map((warning, idx) => (
+                      <div key={idx} className="text-amber-300 flex items-center gap-1 text-[11px]">
+                        <span>⚠️ {warning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {recommendation.componentDiagnosis && recommendation.componentDiagnosis.iterationCandidates && recommendation.componentDiagnosis.iterationCandidates.length > 0 && (
+            <div className="space-y-3 pt-3 border-t border-[#2d3138]">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-[#7f858d]">Iteration Candidates</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {recommendation.componentDiagnosis.iterationCandidates.map((cand, idx) => (
+                  <div key={idx} className="rounded-[16px] border border-[#2d3138] bg-[#14171b] p-4 flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-semibold text-[#c9a347] truncate max-w-[80%]" title={cand.suggestedPattern}>
+                          {cand.suggestedPattern}
+                        </span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          cand.confidence === "High"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : cand.confidence === "Moderate"
+                            ? "bg-sky-500/10 text-sky-400"
+                            : "bg-[#272b31] text-[#ede7dc]"
+                        }`}>
+                          {cand.confidence}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-[#aeb3bb]">
+                        <p>
+                          <strong className="text-[#ede7dc]">What changes:</strong> {cand.whatChanges}
+                        </p>
+                        <p>
+                          <strong className="text-[#ede7dc]">What stays same:</strong> {cand.whatStaysSame}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#7f858d] leading-5 border-t border-[#1c1e22] pt-2">
+                      {cand.whyMatters}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

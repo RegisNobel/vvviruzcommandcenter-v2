@@ -365,6 +365,7 @@ type CampaignReadout = {
   topCreative: string;
   worstCreative: string;
   worstHook: string;
+  coverageWarning: string | null;
 };
 
 function getMostCommonValue(values: string[]) {
@@ -745,7 +746,8 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
       decision: detail.learning.decision,
       next_test: detail.learning.next_test,
       updated_at: detail.learning.updated_at ? new Date(detail.learning.updated_at).toISOString() : null
-    } : null
+    } : null,
+    reports: detail.reports
   });
 
   return {
@@ -768,7 +770,8 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     streamingOutboundClickQuality,
     topCreative: topCreativeName,
     worstCreative: worstCreative?.ad_name || "No weak creative isolated yet",
-    worstHook: worstHookLabel
+    worstHook: worstHookLabel,
+    coverageWarning: recommendation.componentDiagnosis?.coverageWarnings?.[0] || null
   };
 }
 
@@ -1257,6 +1260,19 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <div className="mt-4 rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
             <p className="field-label text-[#d7b45e]">Batch Action</p>
             <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
+            {campaignReadout.coverageWarning && (
+              <div className="mt-3 border-t border-[#5b4920]/30 pt-3 text-sm text-amber-300 flex flex-wrap gap-1 items-center">
+                <span>{campaignReadout.coverageWarning}</span>
+                {detail.release_id && (
+                  <Link
+                    href={`/admin/releases/${detail.release_id}`}
+                    className="underline text-amber-100 hover:text-white font-medium"
+                  >
+                    Go to Release Detail for strategic iteration planning
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
           {campaignReadout.attributionConfidence.warnings.length > 0 ? (

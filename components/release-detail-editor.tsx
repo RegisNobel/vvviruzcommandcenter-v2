@@ -392,7 +392,8 @@ export function ReleaseDetailEditor({
   adPerformanceTimeline,
   copyPerformanceMemory,
   streamingClicksCount = 0,
-  utmCoverageRate = 0
+  utmCoverageRate = 0,
+  reports = []
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -405,6 +406,7 @@ export function ReleaseDetailEditor({
   copyPerformanceMemory: CopyPerformanceMemory;
   streamingClicksCount?: number;
   utmCoverageRate?: number;
+  reports?: any[];
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -2053,6 +2055,7 @@ export function ReleaseDetailEditor({
                   streamingClicksCount={streamingClicksCount}
                   utmCoverageRate={utmCoverageRate}
                   releaseId={release.id}
+                  reports={reports}
                 />
 
                 <details

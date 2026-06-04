@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-03 21:50 -04:00
+
+- **Implemented Creative Component Diagnosis & Iteration Recommendations v1**:
+  - Implemented `readReleaseAdReports(releaseId)` query helper inside the repository layer to load raw ad reports with copy links and resolve effective copy links read-only on the fly.
+  - Added a deterministic component diagnosis engine in `lib/ads/recommendations.ts` to evaluate component-level performance across Visual Format, Song Section, Copy Angle, and Copy Pair, determining statuses (Strong, Weak, Neutral, Low Data, Untested) and composing `nextTestDirection` automatically.
+  - Integrated Component Diagnosis cards displaying Control Ad components, strongest/weakest elements, and narrow coverage warnings, alongside structured Iteration Candidates cards inside `ReleaseIntelligencePanel`.
+  - Exposed coverage alerts in Ad Lab's Batch Action card linking to the Release Detail view for planning.
+
 ### 2026-06-01 00:00 -04:00
 
 - **Implemented Copy Lab Legacy Duplicate Archive System v1**:
