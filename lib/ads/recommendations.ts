@@ -641,12 +641,58 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
 
     const iterationCandidates: IterationCandidate[] = [];
 
+    const normalizeSongSectionToken = (section: string | null): string => {
+      if (!section) return "chorus";
+      const clean = section.trim().toLowerCase();
+      if (clean === "verse 1" || clean === "verse1") return "verse1";
+      if (clean === "verse 2" || clean === "verse2") return "verse2";
+      if (clean === "verse 3" || clean === "verse3") return "verse3";
+      if (clean === "hook") return "hook";
+      if (clean === "chorus") return "chorus";
+      return clean.replace(/\s+/g, "");
+    };
+
+    const isCopyLinkageWeak = copyLinkagePercentage < 70;
+    const isCopyPairStaysSameAllowed = !isCopyLinkageWeak && !!controlCopyPair;
+
+    const buildStaysSame = (components: string[]): string => {
+      let list = [...components];
+      if (!isCopyPairStaysSameAllowed) {
+        list = list.filter(c => c !== "Copy Pair");
+      }
+      return list.join(", ");
+    };
+
+    // Calculate if an alternate copy pair exists inside the same copy angle
+    const sameAngleCopyPairs = Array.from(new Set(
+      normalizedReports
+        .filter(r => r.copyAngle === controlCopyAngle && r.copyPairHook !== null)
+        .map(r => r.copyPairHook)
+    ));
+    const alternateSameAngleCopyPairExists = controlCopyPair
+      ? sameAngleCopyPairs.filter(cp => cp !== controlCopyPair).length > 0
+      : false;
+
+    const getSuggestedPattern = (
+      releaseSlug: string,
+      visual: string | null,
+      section: string | null,
+      rev: string = "revX"
+    ): string => {
+      const normVis = visual ? visual.toLowerCase().replace(/\s+/g, "") : "[new_visual]";
+      const normSec = section ? normalizeSongSectionToken(section) : "[current_songsection]";
+      return `${releaseSlug}_${normVis}_${normSec}_${rev}`;
+    };
+
     const formatSuggestedPattern = (pattern: string): string => {
       if (pattern.includes("[") || pattern.includes("]")) {
         let clean = pattern
           .replace(/\[visual\]/g, "[new_visual]")
           .replace(/\[songsection\]/g, "[current_songsection]");
-        return `Suggested Template: ${clean}`;
+        if (!clean.startsWith("Suggested Template:")) {
+          clean = `Suggested Template: ${clean}`;
+        }
+        return clean;
       }
       return pattern;
     };
@@ -685,60 +731,65 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     const alternateSection = currentSec?.toLowerCase() === "chorus" ? "verse1" : "chorus";
 
     if (meaningfulVisuals.length < 2) {
+      const pattern = getSuggestedPattern(releaseSlug, currentVis ? alternateVisual : null, currentSec);
       addCandidate(
-        currentVis ? `${releaseSlug}_${alternateVisual}_${(currentSec || "chorus").toLowerCase()}_revX` : `${releaseSlug}_[visual]_${(currentSec || "chorus").toLowerCase()}_revX`,
+        pattern,
         `Visual Format: Test format ${currentVis ? alternateVisual : "[new_visual]"}`,
-        "Song Section, Copy Angle, Copy Pair",
+        buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
         `Only one visual format (${currentVis || "none"}) has meaningful spend. Test a new visual format while keeping other components the same to check scroll-stop engagement.`,
         "Moderate"
       );
     }
 
     if (meaningfulSections.length < 2) {
+      const pattern = getSuggestedPattern(releaseSlug, currentVis, currentSec ? alternateSection : null);
       addCandidate(
-        currentSec ? `${releaseSlug}_${currentVis || "2screens"}_${alternateSection.toLowerCase()}_revX` : `${releaseSlug}_${currentVis || "2screens"}_[songsection]_revX`,
+        pattern,
         `Song Section: Test section ${currentSec ? alternateSection : "[new_songsection]"}`,
-        "Visual Format, Copy Angle, Copy Pair",
+        buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
         `Only one song section (${currentSec || "none"}) has meaningful spend. Test a new song section while keeping other components the same to optimize retention.`,
         "Moderate"
       );
     }
 
     if (meaningfulAngles.length < 2) {
+      const pattern = getSuggestedPattern(releaseSlug, currentVis, currentSec);
       addCandidate(
-        `${releaseSlug}_${currentVis || "2screens"}_${(currentSec || "chorus").toLowerCase()}_revX`,
-        "Copy Angle: Test a new challenger copy angle",
-        "Visual Format, Song Section, Copy Pair",
+        pattern,
+        "Copy Angle + Copy Pair. Test a new challenger message.",
+        buildStaysSame(["Visual Format", "Song Section"]),
         `Only one copy angle (${currentAngle || "none"}) has meaningful spend. Test a new copy angle while keeping other components the same to drive higher click intent.`,
         "Moderate"
       );
     }
 
     if (controlAd && iterationCandidates.length === 0) {
-      const staysSameAll = ["Visual Format", "Song Section", "Copy Angle", "Copy Pair"];
       if (visualStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(songSectionStatus) && controlVisual && controlSongSection) {
+        const pattern = getSuggestedPattern(releaseSlug, controlVisual, alternateSection);
         addCandidate(
-          `${releaseSlug}_${controlVisual}_${alternateSection.toLowerCase()}_revX`,
+          pattern,
           `Song Section: Test alternate section ${alternateSection} instead of ${controlSongSection}`,
-          staysSameAll.filter(c => c !== "Song Section").join(", "),
+          buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
           `The visual format is strong but the song section shows weak retention. Test ${alternateSection} to improve hold times.`,
           "High"
         );
       }
       if (songSectionStatus === "Strong" && copyAngleStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(visualStatus) && controlVisual && controlSongSection) {
+        const pattern = getSuggestedPattern(releaseSlug, alternateVisual, controlSongSection);
         addCandidate(
-          `${releaseSlug}_${alternateVisual}_${controlSongSection.toLowerCase()}_revX`,
+          pattern,
           `Visual Format: Test alternate format ${alternateVisual} instead of ${controlVisual}`,
-          staysSameAll.filter(c => c !== "Visual Format").join(", "),
+          buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
           `Visual format underperformed but song section and copy are strong. Iterate with ${alternateVisual}.`,
           "High"
         );
       }
       if (visualStatus === "Strong" && songSectionStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(copyAngleStatus) && controlVisual && controlSongSection) {
+        const pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
         addCandidate(
-          `${releaseSlug}_${controlVisual}_${controlSongSection.toLowerCase()}_revX`,
-          `Copy Angle: Test a new Copy Angle challenger`,
-          staysSameAll.filter(c => c !== "Copy Angle").join(", "),
+          pattern,
+          "Copy Angle + Copy Pair. Test a new challenger message.",
+          buildStaysSame(["Visual Format", "Song Section"]),
           `The creative structure is converting well but copy engagement is weak. Test a new Copy Angle to drive clicks.`,
           "High"
         );
@@ -746,36 +797,69 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     }
 
     if (controlAd && iterationCandidates.length === 0 && (visualStatus === "Strong" || visualStatus === "Neutral")) {
-      const staysSameAll = ["Visual Format", "Song Section", "Copy Angle", "Copy Pair"];
-      let targetComp = "Copy Angle";
-      let whatChanges = "Copy Angle: Test a new challenger angle";
-      let pattern = `${releaseSlug}_${controlVisual || "2screens"}_${(controlSongSection || "chorus").toLowerCase()}_revX`;
+      let whatChanges = "";
+      let staysSameComponents: string[] = [];
+      let pattern = "";
+      let confidence: "High" | "Moderate" | "Directional" = "High";
+      let whyMatters = "";
 
       if (testComponent === "Visual Format") {
-        targetComp = "Visual Format";
-        whatChanges = `Visual Format: Test ${alternateVisual} instead of ${controlVisual || "2screens"}`;
-        pattern = `${releaseSlug}_${alternateVisual}_${(controlSongSection || "chorus").toLowerCase()}_revX`;
+        whatChanges = `Visual Format: Test alternate format ${alternateVisual} instead of ${controlVisual || "2screens"}`;
+        staysSameComponents = ["Song Section", "Copy Angle", "Copy Pair"];
+        pattern = getSuggestedPattern(releaseSlug, alternateVisual, controlSongSection);
+        whyMatters = `The current control is working. Duplicate it and test a new Visual Format challenger.`;
       } else if (testComponent === "Song Section") {
-        targetComp = "Song Section";
-        whatChanges = `Song Section: Test ${alternateSection} instead of ${controlSongSection || "chorus"}`;
-        pattern = `${releaseSlug}_${controlVisual || "2screens"}_${alternateSection.toLowerCase()}_revX`;
+        whatChanges = `Song Section: Test alternate section ${alternateSection} instead of ${controlSongSection || "chorus"}`;
+        staysSameComponents = ["Visual Format", "Copy Angle", "Copy Pair"];
+        pattern = getSuggestedPattern(releaseSlug, controlVisual, alternateSection);
+        whyMatters = `The current control is working. Duplicate it and test a new Song Section challenger.`;
+      } else if (testComponent === "Copy Angle") {
+        whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
+        staysSameComponents = ["Visual Format", "Song Section"];
+        pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
+        whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
+      } else if (testComponent === "Copy Pair") {
+        if (alternateSameAngleCopyPairExists) {
+          whatChanges = "Copy Pair: Test alternate copy pair/hook.";
+          staysSameComponents = ["Visual Format", "Song Section", "Copy Angle"];
+          pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
+          whyMatters = `The current control is working. Duplicate it and test a new Copy Pair challenger within the same Copy Angle.`;
+        } else {
+          whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
+          staysSameComponents = ["Visual Format", "Song Section"];
+          pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
+          whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
+        }
+      } else {
+        whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
+        staysSameComponents = ["Visual Format", "Song Section"];
+        pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
+        whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
       }
 
       addCandidate(
         pattern,
         whatChanges,
-        staysSameAll.filter(c => c !== targetComp).join(", "),
-        `The current control is working. Duplicate it and test a new ${targetComp} challenger.`,
-        "High"
+        buildStaysSame(staysSameComponents),
+        whyMatters,
+        confidence
       );
     }
 
     if (iterationCandidates.length === 0) {
       addCandidate(
-        `${releaseSlug}_[visual]_[songsection]_revX`,
-        "Controlled Coverage Test: Test new visuals or sections",
-        "Visual Format, Song Section, Copy Angle, Copy Pair",
-        "No strong control exists and test coverage is narrow. Run a controlled test across untested dimensions to establish a baseline.",
+        getSuggestedPattern(releaseSlug, null, currentSec),
+        "Visual Format: Test alternate format",
+        buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
+        "No strong control exists and visual coverage is narrow. Run a controlled test with an alternate visual format to establish a baseline.",
+        "Directional"
+      );
+
+      addCandidate(
+        getSuggestedPattern(releaseSlug, currentVis, null),
+        "Song Section: Test alternate section",
+        buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
+        "No strong control exists and song section coverage is narrow. Run a controlled test with an alternate song section to establish a baseline.",
         "Directional"
       );
     }

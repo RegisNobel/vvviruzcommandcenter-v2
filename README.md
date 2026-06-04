@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-04 12:51 -04:00
+
+- **Implemented Component Iteration Candidate Consistency Fixes**:
+  - Implemented `normalizeSongSectionToken` mapping song section names (like "Verse 1", "Chorus") case-insensitively to lowercase/space-free tokens (like `"verse1"`, `"chorus"`).
+  - Implemented `getSuggestedPattern` to construct recommended patterns or template structures, ensuring template patterns (containing bracketed placeholders like `[new_visual]` or `[current_songsection]`) are explicitly labeled with a `"Suggested Template: "` prefix.
+  - Refactored `Copy Angle` testing cards so that `whatChanges` lists both `Copy Angle + Copy Pair` and stays-same list does not include `Copy Pair`.
+  - Refactored `Copy Pair` testing cards to only allow `Copy Angle` to stay the same if an alternate copy pair exists inside the same copy angle. If no alternate same-angle copy pair exists, it automatically recommends `Copy Angle + Copy Pair` challenger instead.
+  - Added `buildStaysSame` helper that automatically filters out `"Copy Pair"` from the "What stays same" lists if copy linkage coverage is weak (under 70%) or the control copy pair is unknown.
+  - Split the catch-all coverage test block from a single combined suggestion into two separate candidates: Candidate 1 (Test Visual Format), Candidate 2 (Test Song Section).
+
 ### 2026-06-03 21:50 -04:00
 
 - **Implemented Creative Component Diagnosis & Iteration Recommendations v1**:
