@@ -73,12 +73,18 @@ function getReleasePromoVerdict(
   return "Testing";
 }
 
-function getStatusBadgeClass(status: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested") {
+function getStatusBadgeClass(status: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage") {
   switch (status) {
     case "Strong":
       return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
     case "Weak":
       return "bg-red-500/10 text-red-400 border border-red-500/20";
+    case "Below Average":
+      return "bg-orange-500/10 text-orange-400 border border-orange-500/20";
+    case "Needs Challenger":
+      return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+    case "Narrow Coverage":
+      return "bg-[#181b20] text-amber-200 border border-amber-500/10";
     case "Neutral":
       return "bg-[#272b31] text-[#ede7dc] border border-[#31353b]";
     case "Low Data":
@@ -246,6 +252,12 @@ export default function ReleaseIntelligencePanel({
                 )}
               </div>
 
+              {recommendation.componentDiagnosis.diagnosisComment && (
+                <div className="rounded-[12px] border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200 mt-2">
+                  💡 {recommendation.componentDiagnosis.diagnosisComment}
+                </div>
+              )}
+
               {recommendation.componentDiagnosis.controlAd && (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 pt-2 border-t border-[#1c1e22]">
                   <div>
@@ -254,6 +266,7 @@ export default function ReleaseIntelligencePanel({
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.visualStatus)}`}>
                       {recommendation.componentDiagnosis.visualStatus}
                     </span>
+                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.visualReason}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Song Section</p>
@@ -261,6 +274,7 @@ export default function ReleaseIntelligencePanel({
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.songSectionStatus)}`}>
                       {recommendation.componentDiagnosis.songSectionStatus}
                     </span>
+                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.songSectionReason}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Angle</p>
@@ -268,6 +282,7 @@ export default function ReleaseIntelligencePanel({
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyAngleStatus)}`}>
                       {recommendation.componentDiagnosis.copyAngleStatus}
                     </span>
+                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.copyAngleReason}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Pair</p>
@@ -275,6 +290,7 @@ export default function ReleaseIntelligencePanel({
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyPairStatus)}`}>
                       {recommendation.componentDiagnosis.copyPairStatus}
                     </span>
+                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.copyPairReason}</p>
                   </div>
                 </div>
               )}
@@ -302,6 +318,10 @@ export default function ReleaseIntelligencePanel({
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="text-xs text-[#8a9098] italic border-t border-[#1c1e22] pt-2 mt-2">
+                <span className="font-bold text-[#ede7dc]">Why this diagnosis?</span> {recommendation.componentDiagnosis.diagnosisRead}
               </div>
             </div>
           )}

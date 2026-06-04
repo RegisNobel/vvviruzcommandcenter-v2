@@ -15,16 +15,22 @@ export interface ComponentDiagnosis {
   controlSongSection: string | null;
   controlCopyAngle: string | null;
   controlCopyPair: string | null;
-  visualStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested";
-  songSectionStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested";
-  copyAngleStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested";
-  copyPairStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested";
+  visualStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage";
+  songSectionStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage";
+  copyAngleStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage";
+  copyPairStatus: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage";
+  visualReason: string;
+  songSectionReason: string;
+  copyAngleReason: string;
+  copyPairReason: string;
   strongestComponent: string | null;
   weakestComponent: string | null;
   preserveComponents: string[];
   testComponent: string | null;
   coverageWarnings: string[];
   iterationCandidates: IterationCandidate[];
+  diagnosisRead: string;
+  diagnosisComment: string | null;
 }
 
 export interface UnifiedRecommendationInput {
@@ -380,10 +386,28 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       addToMap(copyAngleAggs, copyAngleVal, r);
       addToMap(copyPairAggs, copyPairVal, r);
     }
+    interface ComponentAggregate {
+      value: string;
+      spend: number;
+      results: number;
+      impressions: number;
+      linkClicks: number;
+      threeSecondPlays: number;
+      thruPlays: number;
+      video50: number;
+    }
 
-    const getStatus = (agg: ComponentAggregate | undefined): "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" => {
-      if (!agg || agg.spend === 0) return "Untested";
-      if (agg.spend < 10 && agg.results < 5) return "Low Data";
+    const evaluateComponentStatus = (
+      agg: ComponentAggregate | undefined,
+      alternatives: ComponentAggregate[]
+    ): { status: "Strong" | "Weak" | "Below Average" | "Needs Challenger" | "Narrow Coverage" | "Low Data" | "Untested" | "Neutral"; reason: string } => {
+      if (!agg || agg.spend === 0) {
+        return { status: "Untested", reason: "No tested alternative yet" };
+      }
+
+      if (agg.spend < 10 || agg.results < 5) {
+        return { status: "Low Data", reason: "Low spend/results, not enough data" };
+      }
 
       const cpr = agg.results > 0 ? agg.spend / agg.results : null;
       const ssr = agg.impressions > 0 ? (agg.threeSecondPlays / agg.impressions) * 100 : 0;
@@ -394,17 +418,23 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       const isWeakCTR = agg.impressions >= 100 && ssr >= 22.0 && ctr < 0.8;
       const isWeakVHR = agg.impressions >= 100 && ssr >= 22.0 && vhr < 15.0;
 
-      let isWeakCpr = false;
+      let isWorseThanBenchmark = false;
+      let isClearlyWorse = false;
+      let benchmarkLabel = "release average";
+
       if (targetCpr !== null && targetCpr !== undefined && targetCpr > 0) {
-        isWeakCpr = cpr === null || cpr >= 1.5 * targetCpr;
+        benchmarkLabel = "target CPR";
+        isWorseThanBenchmark = cpr === null || cpr > targetCpr;
+        isClearlyWorse = cpr === null || cpr >= 1.5 * targetCpr;
       } else if (averageCpr !== null && averageCpr > 0) {
-        isWeakCpr = cpr === null || cpr >= 1.25 * averageCpr;
+        isWorseThanBenchmark = cpr === null || cpr > averageCpr;
+        isClearlyWorse = cpr === null || cpr >= 1.25 * averageCpr;
       } else {
-        isWeakCpr = cpr === null;
+        isWorseThanBenchmark = cpr === null;
+        isClearlyWorse = cpr === null;
       }
 
-      if (isWeakCpr || isWeakSSR || isWeakCTR || isWeakVHR) return "Weak";
-
+      // Strong check
       let isStrongCpr = false;
       if (targetCpr !== null && targetCpr !== undefined && targetCpr > 0) {
         isStrongCpr = cpr !== null && cpr <= targetCpr;
@@ -427,9 +457,32 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         }
       }
 
-      if (isStrongCpr && agg.results >= 5 && isConfidenceNotLow) return "Strong";
+      const isStrong = isStrongCpr && agg.results >= 5 && isConfidenceNotLow && !isWeakSSR && !isWeakCTR && !isWeakVHR;
+      if (isStrong) {
+        return { status: "Strong", reason: `Strong CPR vs ${benchmarkLabel}` };
+      }
 
-      return "Neutral";
+      const hasUnderperformed = isClearlyWorse || isWorseThanBenchmark || isWeakSSR || isWeakCTR || isWeakVHR;
+      if (hasUnderperformed) {
+        const alternativesWithSpend = alternatives.filter(alt => alt.spend >= 10);
+        const hasAlternativeWithSpend = alternativesWithSpend.length > 0;
+
+        if (!hasAlternativeWithSpend) {
+          return { status: "Narrow Coverage", reason: "Only one option tested with meaningful spend" };
+        }
+
+        if (isClearlyWorse) {
+          return { status: "Weak", reason: `Clearly worse than ${benchmarkLabel} alternatives` };
+        }
+
+        if (isWorseThanBenchmark) {
+          return { status: "Below Average", reason: `Below average CPR vs ${benchmarkLabel}` };
+        }
+
+        return { status: "Needs Challenger", reason: "Retaining audience or click rates are underperforming" };
+      }
+
+      return { status: "Neutral", reason: "Performance is average or mixed" };
     };
 
     let controlVisual: string | null = null;
@@ -449,10 +502,51 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       }
     }
 
-    const visualStatus = controlVisual ? getStatus(visualAggs.get(controlVisual)) : "Untested";
-    const songSectionStatus = controlSongSection ? getStatus(songSectionAggs.get(controlSongSection)) : "Untested";
-    const copyAngleStatus = controlCopyAngle ? getStatus(copyAngleAggs.get(controlCopyAngle)) : "Untested";
-    const copyPairStatus = controlCopyPair ? getStatus(copyPairAggs.get(controlCopyPair)) : "Untested";
+    const getAlternatives = (map: Map<string, ComponentAggregate>, controlVal: string | null): ComponentAggregate[] => {
+      if (!controlVal) return [];
+      return Array.from(map.values()).filter(v => v.value !== controlVal);
+    };
+
+    const visEval = evaluateComponentStatus(controlVisual ? visualAggs.get(controlVisual) : undefined, getAlternatives(visualAggs, controlVisual));
+    const songEval = evaluateComponentStatus(controlSongSection ? songSectionAggs.get(controlSongSection) : undefined, getAlternatives(songSectionAggs, controlSongSection));
+    const angleEval = evaluateComponentStatus(controlCopyAngle ? copyAngleAggs.get(controlCopyAngle) : undefined, getAlternatives(copyAngleAggs, controlCopyAngle));
+    const pairEval = evaluateComponentStatus(controlCopyPair ? copyPairAggs.get(controlCopyPair) : undefined, getAlternatives(copyPairAggs, controlCopyPair));
+
+    let visualStatus = visEval.status;
+    let visualReason = visEval.reason;
+
+    let songSectionStatus = songEval.status;
+    let songSectionReason = songEval.reason;
+
+    let copyAngleStatus = angleEval.status;
+    let copyAngleReason = angleEval.reason;
+
+    let copyPairStatus = pairEval.status;
+    let copyPairReason = pairEval.reason;
+
+    let diagnosisComment: string | null = null;
+    const activeStatuses = [visualStatus, songSectionStatus, copyAngleStatus, copyPairStatus].filter(s => s !== "Untested" && s !== "Low Data");
+    const allBad = activeStatuses.length > 0 && activeStatuses.every(s => ["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(s));
+
+    if (controlAd && allBad) {
+      diagnosisComment = "Control is current best, but no component has enough comparative proof yet.";
+      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(visualStatus)) {
+        visualStatus = "Neutral";
+        visualReason = "Control is current best, but no component has enough comparative proof yet.";
+      }
+      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(songSectionStatus)) {
+        songSectionStatus = "Neutral";
+        songSectionReason = "Control is current best, but no component has enough comparative proof yet.";
+      }
+      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyAngleStatus)) {
+        copyAngleStatus = "Neutral";
+        copyAngleReason = "Control is current best, but no component has enough comparative proof yet.";
+      }
+      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyPairStatus)) {
+        copyPairStatus = "Neutral";
+        copyPairReason = "Control is current best, but no component has enough comparative proof yet.";
+      }
+    }
 
     const componentsList = [
       { name: "Visual Format", value: controlVisual, status: visualStatus, agg: controlVisual ? visualAggs.get(controlVisual) : undefined },
@@ -475,16 +569,13 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       strongestComponent = strongComponents[0].name;
     }
 
-    const weakComponents = componentsList.filter(c => c.status === "Weak");
+    const weakComponents = componentsList.filter(c => ["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(c.status));
     let weakestComponent: string | null = null;
     if (weakComponents.length > 0) {
       weakComponents.sort((a, b) => {
         const cprA = a.agg ? (a.agg.results > 0 ? a.agg.spend / a.agg.results : Infinity) : Infinity;
         const cprB = b.agg ? (b.agg.results > 0 ? b.agg.spend / b.agg.results : Infinity) : Infinity;
-        if (cprB !== cprA) return cprB - cprA;
-        const resA = a.agg?.results ?? 0;
-        const resB = b.agg?.results ?? 0;
-        return resA - resB;
+        return cprB - cprA;
       });
       weakestComponent = weakComponents[0].name;
     }
@@ -505,6 +596,17 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         }
       }
     }
+
+    const mapTestComponent = (name: string | null): string | null => {
+      if (!name) return null;
+      if (name === "Visual Format") return "Test Visual Format";
+      if (name === "Song Section") return "Test Song Section";
+      if (name === "Copy Angle") return "Test Copy Angle";
+      if (name === "Copy Pair") return "Test Copy Angle";
+      return `Test ${name}`;
+    };
+
+    const specificTestComponent = mapTestComponent(testComponent);
 
     const coverageWarnings: string[] = [];
     const meaningfulVisuals = Array.from(visualAggs.values()).filter(v => v.spend >= 10);
@@ -530,7 +632,24 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       coverageWarnings.push("Copy pair diagnosis is unavailable because copy linkage coverage is weak (under 70% of spend is linked).");
     }
 
+    let diagnosisRead = "System has isolated a control and calculated component proof. Proceed with controlled tests.";
+    if (coverageWarnings.length > 0) {
+      diagnosisRead = "Coverage is narrow, so this is a testing direction, not a final verdict.";
+    } else if (totalSpend > 0 && totalSpend < 25) {
+      diagnosisRead = "Low sample size or results, treat recommendations as directional.";
+    }
+
     const iterationCandidates: IterationCandidate[] = [];
+
+    const formatSuggestedPattern = (pattern: string): string => {
+      if (pattern.includes("[") || pattern.includes("]")) {
+        let clean = pattern
+          .replace(/\[visual\]/g, "[new_visual]")
+          .replace(/\[songsection\]/g, "[current_songsection]");
+        return `Suggested Template: ${clean}`;
+      }
+      return pattern;
+    };
 
     const addCandidate = (
       suggestedPattern: string,
@@ -541,7 +660,7 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     ) => {
       if (iterationCandidates.length >= 2) return;
       iterationCandidates.push({
-        suggestedPattern,
+        suggestedPattern: formatSuggestedPattern(suggestedPattern),
         whatChanges,
         whatStaysSame,
         whyMatters,
@@ -558,96 +677,94 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       if (parsed.release && parsed.release !== "Unparsed") releaseSlug = parsed.release;
     }
 
-    const alternateVisual = controlVisual?.startsWith("amv") ? "2screens" : "amv916";
-    const alternateSection = controlSongSection?.toLowerCase() === "chorus" ? "verse1" : "chorus";
+    const currentVis = controlVisual || (meaningfulVisuals[0]?.value) || null;
+    const currentSec = controlSongSection || (meaningfulSections[0]?.value) || null;
+    const currentAngle = controlCopyAngle || (meaningfulAngles[0]?.value) || null;
 
-    if (meaningfulVisuals.length === 1 && getStatus(meaningfulVisuals[0]) === "Weak") {
-      const currentVis = meaningfulVisuals[0].value;
-      const altVis = currentVis.startsWith("amv") ? "2screens" : "amv916";
+    const alternateVisual = currentVis?.startsWith("amv") ? "2screens" : "amv916";
+    const alternateSection = currentSec?.toLowerCase() === "chorus" ? "verse1" : "chorus";
+
+    if (meaningfulVisuals.length < 2) {
       addCandidate(
-        `${releaseSlug}_${altVis}_[songsection]_rev1`,
-        `Visual Format: Test ${altVis} instead of ${currentVis}`,
-        `Song Section & Copy Angle: Keep existing hooks/sections`,
-        `Only one visual format (${currentVis}) has spend and it underperformed. Test ${altVis} before judging the release.`,
+        currentVis ? `${releaseSlug}_${alternateVisual}_${(currentSec || "chorus").toLowerCase()}_revX` : `${releaseSlug}_[visual]_${(currentSec || "chorus").toLowerCase()}_revX`,
+        `Visual Format: Test format ${currentVis ? alternateVisual : "[new_visual]"}`,
+        "Song Section, Copy Angle, Copy Pair",
+        `Only one visual format (${currentVis || "none"}) has meaningful spend. Test a new visual format while keeping other components the same to check scroll-stop engagement.`,
         "Moderate"
       );
     }
 
-    if (meaningfulSections.length === 1 && getStatus(meaningfulSections[0]) === "Weak") {
-      const currentSec = meaningfulSections[0].value;
-      const altSec = currentSec.toLowerCase() === "chorus" ? "verse1" : "chorus";
+    if (meaningfulSections.length < 2) {
       addCandidate(
-        `${releaseSlug}_[visual]_${altSec.toLowerCase()}_rev1`,
-        `Song Section: Test ${altSec} instead of ${currentSec}`,
-        `Visual Format & Copy: Keep existing visuals/copy`,
-        `Only one song section (${currentSec}) has spend and it underperformed. Test ${altSec} before judging the release.`,
+        currentSec ? `${releaseSlug}_${currentVis || "2screens"}_${alternateSection.toLowerCase()}_revX` : `${releaseSlug}_${currentVis || "2screens"}_[songsection]_revX`,
+        `Song Section: Test section ${currentSec ? alternateSection : "[new_songsection]"}`,
+        "Visual Format, Copy Angle, Copy Pair",
+        `Only one song section (${currentSec || "none"}) has meaningful spend. Test a new song section while keeping other components the same to optimize retention.`,
         "Moderate"
       );
     }
 
-    if (meaningfulAngles.length === 1 && getStatus(meaningfulAngles[0]) === "Weak") {
-      const currentAngle = meaningfulAngles[0].value;
+    if (meaningfulAngles.length < 2) {
       addCandidate(
-        `${releaseSlug}_[visual]_[songsection]_rev1`,
-        `Copy Angle: Test a different Copy Angle instead of ${currentAngle}`,
-        `Visual & Song Section: Keep creative structure`,
-        `Only one copy angle (${currentAngle}) has spend and it underperformed. Test another angle to check click intent.`,
+        `${releaseSlug}_${currentVis || "2screens"}_${(currentSec || "chorus").toLowerCase()}_revX`,
+        "Copy Angle: Test a new challenger copy angle",
+        "Visual Format, Song Section, Copy Pair",
+        `Only one copy angle (${currentAngle || "none"}) has meaningful spend. Test a new copy angle while keeping other components the same to drive higher click intent.`,
         "Moderate"
       );
     }
 
-    if (controlAd) {
-      if (visualStatus === "Strong" && songSectionStatus === "Weak" && controlVisual && controlSongSection) {
+    if (controlAd && iterationCandidates.length === 0) {
+      const staysSameAll = ["Visual Format", "Song Section", "Copy Angle", "Copy Pair"];
+      if (visualStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(songSectionStatus) && controlVisual && controlSongSection) {
         addCandidate(
-          `${releaseSlug}_${controlVisual}_${alternateSection.toLowerCase()}_rev1`,
-          `Song Section: Test ${alternateSection} instead of ${controlSongSection}`,
-          `Visual & Copy: Keep ${controlVisual} and current Copy Angle`,
+          `${releaseSlug}_${controlVisual}_${alternateSection.toLowerCase()}_revX`,
+          `Song Section: Test alternate section ${alternateSection} instead of ${controlSongSection}`,
+          staysSameAll.filter(c => c !== "Song Section").join(", "),
           `The visual format is strong but the song section shows weak retention. Test ${alternateSection} to improve hold times.`,
           "High"
         );
       }
-      if (songSectionStatus === "Strong" && copyAngleStatus === "Strong" && visualStatus === "Weak" && controlVisual && controlSongSection) {
+      if (songSectionStatus === "Strong" && copyAngleStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(visualStatus) && controlVisual && controlSongSection) {
         addCandidate(
-          `${releaseSlug}_${alternateVisual}_${controlSongSection.toLowerCase()}_rev1`,
-          `Visual Format: Test ${alternateVisual} instead of ${controlVisual}`,
-          `Song & Copy: Keep ${controlSongSection} and current Copy Angle`,
+          `${releaseSlug}_${alternateVisual}_${controlSongSection.toLowerCase()}_revX`,
+          `Visual Format: Test alternate format ${alternateVisual} instead of ${controlVisual}`,
+          staysSameAll.filter(c => c !== "Visual Format").join(", "),
           `Visual format underperformed but song section and copy are strong. Iterate with ${alternateVisual}.`,
           "High"
         );
       }
-      if (visualStatus === "Strong" && songSectionStatus === "Strong" && copyAngleStatus === "Weak" && controlVisual && controlSongSection) {
+      if (visualStatus === "Strong" && songSectionStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(copyAngleStatus) && controlVisual && controlSongSection) {
         addCandidate(
-          `${releaseSlug}_${controlVisual}_${controlSongSection.toLowerCase()}_rev1`,
-          `Copy Angle: Test a new Copy Angle challengers`,
-          `Creative Structure: Keep winning ${controlVisual} + ${controlSongSection}`,
-          `The creative is converting well but copy engagement is weak. Test a new Copy Angle to drive clicks.`,
+          `${releaseSlug}_${controlVisual}_${controlSongSection.toLowerCase()}_revX`,
+          `Copy Angle: Test a new Copy Angle challenger`,
+          staysSameAll.filter(c => c !== "Copy Angle").join(", "),
+          `The creative structure is converting well but copy engagement is weak. Test a new Copy Angle to drive clicks.`,
           "High"
         );
       }
     }
 
     if (controlAd && iterationCandidates.length === 0 && (visualStatus === "Strong" || visualStatus === "Neutral")) {
+      const staysSameAll = ["Visual Format", "Song Section", "Copy Angle", "Copy Pair"];
       let targetComp = "Copy Angle";
       let whatChanges = "Copy Angle: Test a new challenger angle";
-      let pattern = `${releaseSlug}_${controlVisual || "[visual]"}_${(controlSongSection || "[songsection]").toLowerCase()}_rev1`;
+      let pattern = `${releaseSlug}_${controlVisual || "2screens"}_${(controlSongSection || "chorus").toLowerCase()}_revX`;
 
       if (testComponent === "Visual Format") {
         targetComp = "Visual Format";
-        whatChanges = `Visual Format: Test ${alternateVisual} instead of ${controlVisual}`;
-        pattern = `${releaseSlug}_${alternateVisual}_${(controlSongSection || "[songsection]").toLowerCase()}_rev1`;
+        whatChanges = `Visual Format: Test ${alternateVisual} instead of ${controlVisual || "2screens"}`;
+        pattern = `${releaseSlug}_${alternateVisual}_${(controlSongSection || "chorus").toLowerCase()}_revX`;
       } else if (testComponent === "Song Section") {
         targetComp = "Song Section";
-        whatChanges = `Song Section: Test ${alternateSection} instead of ${controlSongSection}`;
-        pattern = `${releaseSlug}_${controlVisual || "[visual]"}_${alternateSection.toLowerCase()}_rev1`;
+        whatChanges = `Song Section: Test ${alternateSection} instead of ${controlSongSection || "chorus"}`;
+        pattern = `${releaseSlug}_${controlVisual || "2screens"}_${alternateSection.toLowerCase()}_revX`;
       }
-
-      const visStr = controlVisual || "[visual]";
-      const secStr = controlSongSection || "[songsection]";
 
       addCandidate(
         pattern,
         whatChanges,
-        `Other Components: Preserve winning structure (${visStr} + ${secStr})`,
+        staysSameAll.filter(c => c !== targetComp).join(", "),
         `The current control is working. Duplicate it and test a new ${targetComp} challenger.`,
         "High"
       );
@@ -655,10 +772,10 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
 
     if (iterationCandidates.length === 0) {
       addCandidate(
-        `${releaseSlug}_[visual]_[songsection]_rev1`,
-        `Controlled Coverage Test: Test new visuals/sections`,
-        `Structure: Keep variables aligned`,
-        `No strong control exists and test coverage is narrow. Run a controlled test across untested dimensions to establish a baseline.`,
+        `${releaseSlug}_[visual]_[songsection]_revX`,
+        "Controlled Coverage Test: Test new visuals or sections",
+        "Visual Format, Song Section, Copy Angle, Copy Pair",
+        "No strong control exists and test coverage is narrow. Run a controlled test across untested dimensions to establish a baseline.",
         "Directional"
       );
     }
@@ -673,13 +790,19 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       songSectionStatus,
       copyAngleStatus,
       copyPairStatus,
+      visualReason,
+      songSectionReason,
+      copyAngleReason,
+      copyPairReason,
       strongestComponent,
       weakestComponent,
       preserveComponents,
-      testComponent,
+      testComponent: specificTestComponent,
       coverageWarnings,
-      iterationCandidates
-    };
+      iterationCandidates,
+      diagnosisRead,
+      diagnosisComment
+    };;
 
     if (!latestLearning?.next_test?.trim()) {
       const isStrongDiagnosis = preserveComponents.length > 0 || weakestComponent !== null;
