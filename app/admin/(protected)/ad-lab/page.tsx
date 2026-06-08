@@ -1,57 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {ArrowRight, BarChart3, Camera} from "lucide-react";
+import {ArrowRight, BarChart3} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
 import {ReleaseFilterSelect} from "@/components/release-filter-select";
 import {readAdsHomeStats} from "@/lib/repositories/ads";
 import {readReleaseSummaries} from "@/lib/server/releases";
-import {prisma} from "@/lib/db/prisma";
-
-function getReleaseStatusText(release: {
-  conceptComplete: boolean;
-  beatMade: boolean;
-  lyricsFinished: boolean;
-  recorded: boolean;
-  mixMastered: boolean;
-  published: boolean;
-}) {
-  if (release.published) return "Published";
-  if (release.mixMastered) return "Mix/Master Done";
-  if (release.recorded) return "Recorded";
-  if (release.lyricsFinished) return "Lyrics Finished";
-  if (release.beatMade) return "Beat Made";
-  if (release.conceptComplete) return "Concept Complete";
-  return "Concept Phase";
-}
-
-const promoWorkflowSteps = [
-  {
-    label: "1. Write",
-    title: "Copy Lab",
-    body: "Build hooks, captions, and strategy tags before traffic starts.",
-    href: "/admin/copy-lab"
-  },
-  {
-    label: "2. Track",
-    title: "Short Links",
-    body: "Create campaign URLs with UTMs so traffic can be traced cleanly.",
-    href: "/admin/short-links"
-  },
-  {
-    label: "3. Import",
-    title: "Meta CSV",
-    body: "Upload snapshots into Ad Lab without summing rolling windows.",
-    href: "/admin/ad-lab/import"
-  },
-  {
-    label: "4. Decide",
-    title: "Attribution",
-    body: "Compare Meta signals against first-party /links behavior.",
-    href: "/admin/attribution"
-  }
-];
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
@@ -141,243 +96,47 @@ export default async function AdminAdLabPage({
     ? `/admin/ad-lab?releaseId=${encodeURIComponent(activeReleaseId)}&deleted=1`
     : "/admin/ad-lab?deleted=1";
 
-  const latestImport = await prisma.adImportBatch.findFirst({
-    where: activeReleaseId ? { releaseId: activeReleaseId } : undefined,
-    orderBy: { createdAt: "desc" },
-    include: { release: { select: { title: true } } }
-  });
-
-  const latestArchivedDecision = await prisma.adCampaignLearning.findFirst({
-    where: {
-      reviewedAt: { not: null },
-      ...(activeReleaseId ? { releaseId: activeReleaseId } : {})
-    },
-    orderBy: { reviewedAt: "desc" },
-    include: {
-      release: { select: { title: true } },
-      importBatch: { select: { id: true, name: true } }
-    }
-  });
-
-  const activeRelease = activeReleaseId
-    ? await prisma.release.findUnique({
-        where: { id: activeReleaseId }
-      })
-    : await prisma.release.findFirst({
-        orderBy: { updatedOn: "desc" }
-      });
-  const latestDecisionLabel =
-    latestArchivedDecision?.finalDecision || latestArchivedDecision?.decision || "";
-
-
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
+        {/* Header Block */}
         <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">
                 <BarChart3 size={12} />
-                Promo
+                Promo / Ad Lab
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
-                Promo
+                Ad Lab
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                Plan, track, and learn from release campaigns.
+                Manage imported Meta ad performance reports.
               </p>
             </div>
-          </div>
-        </section>
- 
-        <section className="panel overflow-hidden px-4 py-5 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="field-label">Operator Flow</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Promo workflow strip</h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                Use this as the campaign loop: write the idea, create the tracked link,
-                import the Meta snapshot, then decide what earns the next test.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {promoWorkflowSteps.map((step) => (
               <Link
-                className="group rounded-[24px] border border-[#30343b] bg-[#101216] px-4 py-4 transition hover:-translate-y-0.5 hover:border-[#d7b45e]/45 hover:bg-[#15181c]"
-                href={step.href}
-                key={step.title}
+                className="action-button-primary"
+                href="/admin/ad-lab/import"
               >
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  {step.label}
-                </p>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
-                  <ArrowRight className="text-muted transition group-hover:text-[#d7b45e]" size={16} />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-muted">{step.body}</p>
+                Import Meta CSV
+                <ArrowRight size={16} />
               </Link>
-            ))}
+            </div>
           </div>
         </section>
 
+        {deleted === "1" ? (
+          <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
+            Ad import batch deleted. Releases, Copy Lab entries, public data, and other batches were left untouched.
+          </div>
+        ) : null}
+
+        {/* Snapshot Metrics */}
         <section className="panel overflow-hidden px-4 py-5 sm:px-6">
-          <div>
-            <p className="field-label">Campaign Intelligence</p>
-            <h2 className="mt-2 text-2xl font-semibold text-ink">Intelligence summary</h2>
-          </div>
-
-          <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex flex-col justify-between rounded-[20px] border border-[#30343b] bg-[#121418] p-5">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  {activeReleaseId ? "Campaign Release" : "Release Context"}
-                </p>
-                {activeRelease ? (
-                  <div className="mt-3">
-                    <h4 className="text-base font-semibold text-ink line-clamp-2">
-                      {activeRelease.title}
-                    </h4>
-                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#4a3c1d] bg-[#1a1710] px-2.5 py-0.5 text-xs font-medium text-[#d7b45e]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#d7b45e] animate-pulse" />
-                      {getReleaseStatusText(activeRelease)}
-                    </div>
-                    {!activeReleaseId ? (
-                      <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-muted">
-                        Most recently updated
-                      </p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">No release context available</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-[20px] border border-[#30343b] bg-[#121418] p-5">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  Latest Import
-                </p>
-                {latestImport ? (
-                  <div className="mt-3">
-                    <Link
-                      href={`/admin/ad-lab/${latestImport.id}`}
-                      className="text-base font-semibold text-ink line-clamp-2 hover:text-[#d7b45e] transition"
-                    >
-                      {latestImport.name || "Imported Meta Report"}
-                    </Link>
-                    <p className="mt-2 text-xs leading-5 text-muted">
-                      {latestImport.release?.title || "No linked release"}
-                    </p>
-                    <p className="text-[10px] text-muted">
-                      {formatDate(latestImport.reportingStart?.toISOString() ?? null)} to {formatDate(latestImport.reportingEnd?.toISOString() ?? null)}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">No imports recorded</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-[20px] border border-[#30343b] bg-[#121418] p-5">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  Latest Decision
-                </p>
-                {latestArchivedDecision ? (
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-semibold text-ink capitalize">
-                        {latestDecisionLabel.replace(/-/g, " ")}
-                      </h4>
-                      {latestArchivedDecision.reviewedAt && (
-                        <span className="text-[10px] text-muted">
-                          {formatDate(latestArchivedDecision.reviewedAt.toISOString())}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-muted line-clamp-2">
-                      {latestArchivedDecision.release?.title || "No release"}
-                    </p>
-                    {latestArchivedDecision.importBatch && (
-                      <p className="text-[10px] text-muted">
-                        Batch:{" "}
-                        <Link
-                          href={`/admin/ad-lab/${latestArchivedDecision.importBatchId}`}
-                          className="text-[#d7b45e] hover:underline"
-                        >
-                          {latestArchivedDecision.importBatch.name || "Meta Report"}
-                        </Link>
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted">No archived decisions</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-between rounded-[20px] border border-[#30343b] bg-[#121418] p-5">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d7b45e]">
-                  Naming + UTM Convention
-                </p>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted block">Ad Name Pattern</span>
-                    <div className="mt-1 rounded-lg border border-[#342e1f] bg-[#1a1710] px-3 py-1.5 text-xs font-mono text-[#d7b45e] break-all">
-                      release_visual_songsection_revision
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted block">UTM Mapping</span>
-                    <div className="mt-1 rounded-lg border border-[#30343b] bg-[#171a21] px-3 py-1.5 text-xs font-mono text-[#8cb4f5] space-y-1">
-                      <div>utm_source=meta</div>
-                      <div>utm_medium=paid_social</div>
-                      <div>utm_campaign=release</div>
-                      <div>utm_content=release_visual_songsection_revision</div>
-                    </div>
-                  </div>
-                  <p className="text-[10px] leading-4 text-muted border-t border-[#25282f] pt-2">
-                    <strong>Example (Mahoraga):</strong>
-                    <br />
-                    Ad: <code className="text-ink font-mono text-[10px]">mahoraga_amv916_chorus_rev1</code>
-                    <br />
-                    UTM content: <code className="text-[#8cb4f5] font-mono text-[10px]">mahoraga_amv916_chorus_rev1</code>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <details className="panel overflow-hidden p-0">
-          <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="field-label">Ad Lab Operations</p>
-                <h2 className="mt-2 text-2xl font-semibold text-ink">
-                  Snapshot metrics and import history
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                  Open this when you need batch-level metrics, release filtering, or
-                  import cleanup. The main Promo view stays focused on workflow and
-                  current decision context.
-                </p>
-              </div>
-              <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-                Open operations
-              </span>
-            </div>
-          </summary>
-
-          <div className="space-y-6 p-4 sm:p-6">
-        <section className="space-y-4">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
-              Snapshot Metrics
-            </h2>
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-4">
+            Snapshot Metrics
+          </h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             <MetricCard label="Imports" note="CSV batches in this view." value={formatNumber(overview.import_count)} />
             <MetricCard label="Ad Rows" note={overview.metric_scope} value={formatNumber(overview.report_count)} />
@@ -398,12 +157,7 @@ export default async function AdminAdLabPage({
           </div>
         ) : null}
 
-        {deleted === "1" ? (
-          <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
-            Ad import batch deleted. Releases, Copy Lab entries, public data, and other batches were left untouched.
-          </div>
-        ) : null}
-
+        {/* Campaign Scope Filter */}
         <section className="panel space-y-4 px-4 py-5 sm:px-6 sm:py-6" id="campaign-scope">
           <div>
             <p className="field-label">Release Filter</p>
@@ -416,6 +170,7 @@ export default async function AdminAdLabPage({
           />
         </section>
 
+        {/* Import History / Batch List */}
         <section className="space-y-4" id="batch-list">
           {batches.map((batch) => (
             <article
@@ -504,45 +259,6 @@ export default async function AdminAdLabPage({
               </p>
             </div>
           ) : null}
-        </section>
-          </div>
-        </details>
-
-        <section className="panel px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
-              Future Tools
-            </h2>
-          </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="group rounded-[20px] border border-[#25282e] bg-[#0e1013] px-4 py-4 transition hover:border-[#30343b]">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="rounded-xl border border-[#342e1f] bg-[#1a1710] p-2 text-[#d7b45e]">
-                    <Camera size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                      Photo Lab
-                      <span className="rounded-full border border-[#4a3c1d] bg-[#1a1710] px-2 py-0.5 text-[10px] font-semibold text-[#d7b45e]">
-                        Coming Soon
-                      </span>
-                    </h3>
-                    <p className="mt-1 text-xs text-muted">
-                      Create and manage promo visuals, cover assets, and image-based creative.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  className="rounded-full border border-[#30343b] bg-transparent p-1.5 text-muted transition hover:border-[#d7b45e]/50 hover:bg-[#16191d] hover:text-[#d7b45e]"
-                  href="/admin/photo-lab"
-                  title="Preview Photo Lab"
-                >
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          </div>
         </section>
       </div>
     </main>

@@ -471,6 +471,17 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-08 15:02 -04:00
+
+- **Implemented Promo Workflow Dropdown Navigation and Ad Lab Route Ownership Cleanup**:
+  - Restructured navigation to implement a collapsible Promo dropdown menu with submenus for desktop (sidebar) and mobile (horizontal nav bar horizontal scroll).
+  - Submenu links point to: Promo Home (`/admin/promo`), Copy Lab (`/admin/copy-lab`), Short Links (`/admin/short-links`), Ad Lab (`/admin/ad-lab`), and Attribution (`/admin/attribution`).
+  - Added state track hook for `isPromoExpanded` which initializes to expanded state if user is currently browsing any of the five Promo routes or sub-routes.
+  - Rendered nested submenu cards on desktop displaying the route title and its short description microcopy.
+  - Created the Promo Home dashboard displaying the title "Promo Home", the campaign release/decision/import intelligence grid, and naming + UTM conventions guide.
+  - Restructured the Ad Lab page to focus purely on Ad Lab operations, showing snapshot metrics, campaign scope filters, and batch lists always open and visible.
+  - Added an "Import Meta CSV" primary CTA button pointing to `/admin/ad-lab/import`.
+
 ### 2026-06-04 12:51 -04:00
 
 - **Implemented Component Iteration Candidate Consistency Fixes**:
