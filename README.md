@@ -471,6 +471,15 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-09 13:35 -04:00
+
+- **Ad Lab Creative Diagnostics Noise Removal Pass**:
+  - Removed batch-level UTM tracking coverage warnings and overlapping snapshot range warnings from the Creative Diagnostics card grid.
+  - Assigned these non-actionable campaign-level warnings to a new, non-rendered `data_warnings` metadata array inside the `AdImportBatchDetail` type definition to keep them query-accessible without cluttering the UI diagnostics cards.
+  - Preserved first-party UTM tracking quality checks on the Attribution page.
+  - Retained compact snapshot date warnings and source context information panels on the Ad Lab batch dashboard.
+  - Ensured zero changes to calculations, dynamic import/merge logic, or underlying schemas.
+
 ### 2026-06-09 13:06 -04:00
 
 - **Ad Timeline Winner/Movement Label Clarity Pass**:

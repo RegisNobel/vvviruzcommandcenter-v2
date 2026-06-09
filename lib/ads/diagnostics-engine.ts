@@ -36,6 +36,7 @@ export function calculateBatchDiagnostics(
   }
 ): CreativeDiagnostic[] {
   const diagnostics: CreativeDiagnostic[] = [];
+  const dataWarnings: CreativeDiagnostic[] = [];
   const batchCountMap = options?.batchCountMap;
   const hasOverlappingSnapshots = options?.hasOverlappingSnapshots;
 
@@ -73,7 +74,7 @@ export function calculateBatchDiagnostics(
 
   // Batch-level UTM tracking coverage warning
   if (isWeakUtmCoverage && totalReportsCount >= 3) {
-    diagnostics.push({
+    dataWarnings.push({
       adName: "Campaign Overview",
       type: "data-quality-warning",
       action: "Weak UTM tracking coverage.",
@@ -86,7 +87,7 @@ export function calculateBatchDiagnostics(
 
   // Batch-level overlapping snapshots warning
   if (hasOverlappingSnapshots) {
-    diagnostics.push({
+    dataWarnings.push({
       adName: "Campaign Overview",
       type: "data-quality-warning",
       action: "Overlapping snapshot ranges detected.",
@@ -348,6 +349,8 @@ export function calculateBatchDiagnostics(
     adDiagnostics.sort((a, b) => DIAGNOSTIC_PRIORITIES[a.type] - DIAGNOSTIC_PRIORITIES[b.type]);
     diagnostics.push(...adDiagnostics.slice(0, 2));
   }
+
+  detail.data_warnings = dataWarnings;
 
   return diagnostics;
 }

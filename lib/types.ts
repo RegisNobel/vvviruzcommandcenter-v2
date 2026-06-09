@@ -681,6 +681,7 @@ export type AdImportBatchDetail = AdImportBatchSummary & {
   link_follow_through: AdLinkFollowThroughRecord[];
   learning: AdCampaignLearningRecord | null;
   creative_diagnostics?: CreativeDiagnostic[];
+  data_warnings?: CreativeDiagnostic[];
 };
 
 export type CampaignHistoryCreative = {
