@@ -903,7 +903,7 @@ export type AdPerformanceCell = {
   spend: number;
   confidenceScore: string;
   confidenceType: "conversion" | "ctr" | "none";
-  movementLabel: "New Winner" | "Held Lead" | "Rebounded" | "New Entrant" | "Needs More Data" | null;
+  movementLabel: "Took Lead" | "Kept Lead" | "Rebounded" | "Lost Lead" | "New Entrant" | "No Change" | "Underperforming" | "Needs More Data" | null;
   isSnapshotWinner: boolean;
   isPresent: boolean;
 };

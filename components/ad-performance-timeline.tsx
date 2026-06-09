@@ -1,6 +1,7 @@
 import React from "react";
 import type { AdPerformanceTimeline, AdPerformanceSnapshot, AdPerformanceRow, AdPerformanceCell } from "@/lib/types";
-import { AlertTriangle, TrendingUp, HelpCircle, Award, ArrowRight, UserMinus } from "lucide-react";
+import { AlertTriangle, HelpCircle, Award, UserMinus } from "lucide-react";
+import { normalizeMetaAdName } from "@/lib/ads/meta-csv";
 
 // Formatting helpers
 function formatCurrency(value: number) {
@@ -33,11 +34,29 @@ function formatTimestamp(isoString: string | null) {
   }
 }
 
-interface AdPerformanceTimelineSectionProps {
-  timeline: AdPerformanceTimeline;
+function formatConfidenceLabel(score: string): string {
+  const clean = score.trim();
+  if (clean.includes("95% Confidence") || clean.includes("90% Confidence")) {
+    return "High Confidence";
+  }
+  if (clean.includes("80% Confidence") || clean === "Directional Only") {
+    return "Directional Only";
+  }
+  if (clean.includes("Underperforming")) {
+    return clean.includes("95%") ? "High Confidence" : "Directional Only";
+  }
+  if (clean === "Insufficient Data") {
+    return "Insufficient Data";
+  }
+  return clean;
 }
 
-export function AdPerformanceTimelineSection({ timeline }: AdPerformanceTimelineSectionProps) {
+interface AdPerformanceTimelineSectionProps {
+  timeline: AdPerformanceTimeline;
+  campaignControlAd?: string | null;
+}
+
+export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: AdPerformanceTimelineSectionProps) {
   const { snapshots, rows, hasOverlappingSnapshots } = timeline;
 
   const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
@@ -65,16 +84,16 @@ export function AdPerformanceTimelineSection({ timeline }: AdPerformanceTimeline
     if (!label) return null;
 
     switch (label) {
-      case "New Winner":
+      case "Took Lead":
         return (
           <span className="inline-flex items-center gap-1 rounded-[6px] border border-emerald-500/40 bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-            New Winner
+            Took Lead
           </span>
         );
-      case "Held Lead":
+      case "Kept Lead":
         return (
           <span className="inline-flex items-center gap-1 rounded-[6px] border border-blue-500/40 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-300 uppercase tracking-wider">
-            Held Lead
+            Kept Lead
           </span>
         );
       case "Rebounded":
@@ -83,10 +102,28 @@ export function AdPerformanceTimelineSection({ timeline }: AdPerformanceTimeline
             Rebounded
           </span>
         );
+      case "Lost Lead":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-[6px] border border-amber-500/40 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+            Lost Lead
+          </span>
+        );
       case "New Entrant":
         return (
           <span className="inline-flex items-center gap-1 rounded-[6px] border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
             New Entrant
+          </span>
+        );
+      case "Underperforming":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-[6px] border border-rose-500/40 bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-bold text-rose-300 uppercase tracking-wider">
+            Underperforming
+          </span>
+        );
+      case "No Change":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-[6px] border border-zinc-700 bg-zinc-800/40 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+            No Change
           </span>
         );
       case "Needs More Data":
@@ -171,18 +208,34 @@ export function AdPerformanceTimelineSection({ timeline }: AdPerformanceTimeline
                   Snapshot Summary
                 </th>
                 {snapshots.map((snapshot) => {
+                  const isControl = campaignControlAd && snapshot.winnerAdName && normalizeMetaAdName(snapshot.winnerAdName) === normalizeMetaAdName(campaignControlAd);
                   return (
                     <th key={snapshot.id} className="py-3 px-4 font-normal text-left align-top space-y-1">
                       {snapshot.winnerAdName ? (
-                        <div>
-                          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
-                            Winner: {snapshot.winnerAdName.length > 20 ? snapshot.winnerAdName.slice(0, 18) + "..." : snapshot.winnerAdName}
-                          </span>
+                        <div className="space-y-1">
+                          <div>
+                            <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
+                              Snapshot Leader: {snapshot.winnerAdName.length > 20 ? snapshot.winnerAdName.slice(0, 18) + "..." : snapshot.winnerAdName}
+                            </span>
+                          </div>
+                          {campaignControlAd && (
+                            isControl ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1 rounded bg-green-500/20 border border-green-500/40 px-1 py-0.5 text-[9px] font-bold text-green-300 uppercase tracking-wide">
+                                  Campaign Control
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-[9px] text-amber-400 font-medium leading-tight">
+                                Differs from Campaign Control
+                              </div>
+                            )
+                          )}
                         </div>
                       ) : (
                         <div>
                           <span className="inline-flex items-center gap-1 rounded bg-slate-500/15 border border-slate-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-[#8a9098] uppercase">
-                            No Reliable Winner
+                            No Reliable Leader
                           </span>
                         </div>
                       )}
@@ -242,7 +295,7 @@ export function AdPerformanceTimelineSection({ timeline }: AdPerformanceTimeline
                         {/* Confidence score */}
                         {cell.confidenceScore !== "No Signal" && (
                           <div className="text-[10px] text-purple-400 font-semibold leading-none">
-                            {cell.confidenceScore}
+                            {formatConfidenceLabel(cell.confidenceScore)}
                           </div>
                         )}
 

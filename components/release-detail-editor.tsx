@@ -87,6 +87,7 @@ import type {
   CopyPerformanceMemory
 } from "@/lib/types";
 import { PerformanceMemorySection } from "./performance-memory";
+import { getUnifiedCampaignRecommendation } from "@/lib/ads/recommendations";
 
 
 const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
@@ -434,6 +435,54 @@ export function ReleaseDetailEditor({
   const [isSavingLearning, setIsSavingLearning] = useState(false);
 
   const progress = useMemo(() => calculateReleaseProgress(release), [release]);
+  const recommendation = useMemo(() => {
+    return getUnifiedCampaignRecommendation({
+      adMetrics: {
+        totalSpend: adMetrics.total_spend,
+        totalResults: adMetrics.total_results,
+        totalImpressions: adMetrics.total_impressions,
+        totalLinkClicks: adMetrics.total_link_clicks,
+        totalLandingPageViews: adMetrics.total_landing_page_views,
+        clickToLandingRate: adMetrics.click_to_landing_rate,
+        cpr: adMetrics.cpr,
+        bestAd: adMetrics.best_ad ? {
+          ad_name: adMetrics.best_ad.ad_name,
+          spend: adMetrics.best_ad.spend,
+          results: adMetrics.best_ad.results,
+          cpr: adMetrics.best_ad.cpr,
+          ctr: adMetrics.best_ad.ctr,
+          signals: adMetrics.best_ad.signals
+        } : null,
+        bestHook: adMetrics.best_hook ? {
+          label: adMetrics.best_hook.label,
+          spend: adMetrics.best_hook.spend,
+          results: adMetrics.best_hook.results,
+          cpr: adMetrics.best_hook.cpr,
+          ctr: adMetrics.best_hook.ctr
+        } : null,
+        worstAd: adMetrics.worst_ad ? {
+          ad_name: adMetrics.worst_ad.ad_name,
+          spend: adMetrics.worst_ad.spend,
+          results: adMetrics.worst_ad.results,
+          cpr: adMetrics.worst_ad.cpr
+        } : null,
+        worstHook: adMetrics.worst_hook ? {
+          label: adMetrics.worst_hook.label,
+          spend: adMetrics.worst_hook.spend,
+          results: adMetrics.worst_hook.results,
+          cpr: adMetrics.worst_hook.cpr
+        } : null,
+        batchCount: adMetrics.batch_count
+      },
+      funnel: null,
+      latestLearning: latestAdLearning ? {
+        decision: latestAdLearning.decision,
+        next_test: latestAdLearning.next_test,
+        updated_at: latestAdLearning.updated_at
+      } : null,
+      reports: reports ?? []
+    });
+  }, [adMetrics, latestAdLearning, reports]);
   const shortLinkTotalClicks = useMemo(
     () => initialShortLinks.reduce((total, link) => total + link.click_count, 0),
     [initialShortLinks]
@@ -2298,6 +2347,7 @@ export function ReleaseDetailEditor({
                   timeline={adPerformanceTimeline}
                   creativeMemory={creativePerformanceMemory}
                   copyMemory={copyPerformanceMemory}
+                  campaignControlAd={recommendation.controlAd}
                 />
 
                 {!adMetrics.has_data ? (

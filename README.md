@@ -471,6 +471,21 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-09 13:06 -04:00
+
+- **Ad Timeline Winner/Movement Label Clarity Pass**:
+  - Renamed snapshot-level column "Winner" headers to "Snapshot Leader".
+  - Renamed row-level movement badges to use clearer terminology:
+    - `"New Winner"` -> `"Took Lead"`
+    - `"Held Lead"` -> `"Kept Lead"`
+    - `"Underperforming"` -> Only used when the ad meets spend/result thresholds ($spend \ge \$10$, $results \ge 5$), has a valid CPR, and its CPR is worse than the batch average CPR (benchmark).
+    - `"Lost Lead"` -> Used when an ad lost first place but is still performing acceptably.
+    - Added `"No Change"` for stable, non-leading performance.
+  - Separated raw statistical outcomes from movement. Raw confidence indicators (e.g. `"95% Confidence"`, `"90% Confidence"`, `"Directional Only"`, `"Insufficient Data"`) are formatted as confidence labels (`"High Confidence"`, `"Directional Only"`, `"Insufficient Data"`).
+  - Explicitly compared the snapshot-level winner against the overall campaign control creative (computed via `getUnifiedCampaignRecommendation`). If they match, a green `"Campaign Control"` badge is rendered; otherwise, a warning note `"Differs from Campaign Control"` is displayed.
+  - Set the `"Ad Timeline"` tab as the default active view in the Performance Memory section.
+  - Enforced strict read-only safety, fully preserving existing schemas and calculations.
+
 ### 2026-06-08 15:02 -04:00
 
 - **Implemented Promo Workflow Dropdown Navigation and Ad Lab Route Ownership Cleanup**:

@@ -2325,19 +2325,38 @@ export async function readAdPerformanceTimeline(
 
       const wasWinner = i > 0 && snapshots[i - 1].winnerAdName === norm;
 
+      const batchAverageCpr = snapshots[i].totalResults > 0
+        ? snapshots[i].totalSpend / snapshots[i].totalResults
+        : null;
+
+      const meetsThreshold = data.spend >= 10 && data.results >= 5;
+      const isUnderperforming = meetsThreshold && data.cpr !== null && batchAverageCpr !== null && data.cpr > batchAverageCpr;
+
       if (isSnapshotWinner) {
         if (wasWinner) {
-          movementLabel = "Held Lead";
+          movementLabel = "Kept Lead";
         } else if (hasWonBefore) {
           movementLabel = "Rebounded";
         } else {
-          movementLabel = "New Winner";
+          movementLabel = "Took Lead";
         }
       } else {
-        if (!isPresentBefore) {
-          movementLabel = "New Entrant";
-        } else if (data.spend < 10 || data.results < 5) {
-          movementLabel = "Needs More Data";
+        if (wasWinner) {
+          if (isUnderperforming) {
+            movementLabel = "Underperforming";
+          } else {
+            movementLabel = "Lost Lead";
+          }
+        } else {
+          if (!isPresentBefore) {
+            movementLabel = "New Entrant";
+          } else if (!meetsThreshold) {
+            movementLabel = "Needs More Data";
+          } else if (isUnderperforming) {
+            movementLabel = "Underperforming";
+          } else {
+            movementLabel = "No Change";
+          }
         }
       }
 

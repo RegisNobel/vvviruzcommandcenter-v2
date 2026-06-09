@@ -35,15 +35,17 @@ interface PerformanceMemorySectionProps {
   timeline: AdPerformanceTimeline;
   creativeMemory: CreativePerformanceMemory;
   copyMemory: CopyPerformanceMemory;
+  campaignControlAd?: string | null;
 }
 
 export function PerformanceMemorySection({
   adMetrics,
   timeline,
   creativeMemory,
-  copyMemory
+  copyMemory,
+  campaignControlAd
 }: PerformanceMemorySectionProps) {
-  const [activeTab, setActiveTab] = useState<"creative" | "copy" | "timeline">("creative");
+  const [activeTab, setActiveTab] = useState<"creative" | "copy" | "timeline">("timeline");
 
   const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
 
@@ -203,6 +205,7 @@ export function PerformanceMemorySection({
         {activeTab === "timeline" && (
           <AdPerformanceTimelineSection
             timeline={timeline}
+            campaignControlAd={campaignControlAd}
           />
         )}
       </div>
