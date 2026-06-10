@@ -383,6 +383,17 @@ export async function getPublishedReleases(options?: {
   return getCachedPublishedReleases(normalizedCategorySlug || "", type, limit);
 }
 
+export async function getRandomPublishedReleases(limit: number = 3): Promise<PublicReleaseRecord[]> {
+  const releases = await prisma.release.findMany({
+    where: {
+      isPublished: true
+    },
+    select: publicReleaseSelect
+  });
+  const mapped = await Promise.all(releases.map(toPublicRelease));
+  return shuffleItems(mapped).slice(0, limit);
+}
+
 const getCachedPublicReleaseCategories = unstable_cache(
   async () => listPublicReleaseCategories(),
   ["public-release-categories"],

@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-09 23:05 -04:00
+
+- **Public Nav Label and Random Homepage Release Picks**:
+  - Changed the default navigation label for the primary `/links` hub from `"Links"` to `"New Release"` in site settings and link hubs seed configurations.
+  - Implemented dynamic normalization in the site settings merge step to map any existing settings with the label `"Links"` to `"New Release"` automatically.
+  - Renamed the homepage showcase section header from `"Latest drops"` to `"Pick a Glitch"`.
+  - Added a new dynamic catalog randomizer `getRandomPublishedReleases` to query and shuffle all published releases server-side per request, dynamically rendering 3 random releases on every page load.
+  - Added helper/description text underneath the showcase section header: *“Three random tracks from the vvviruz catalog. Refresh for a new signal.”*
+  - Ensured no impact to existing catalog layout ordering, detail pages, or admin workspace release lists.
+
 ### 2026-06-09 22:40 -04:00
 
 - **Link Hubs UI Polish and Legacy Links Page Settings Cleanup Pass**:

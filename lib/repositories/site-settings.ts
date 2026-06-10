@@ -117,7 +117,7 @@ function createDefaultSiteContent(): SiteContentSettings {
       nav_home_label: "Home",
       nav_music_label: "Music",
       nav_about_label: "About",
-      nav_links_label: "Links",
+      nav_links_label: "New Release",
       nav_exclusive_label: "Exclusives",
       footer_copyright_text: `Copyright ${new Date().getFullYear()} vvviruz. All rights reserved.`
     },
@@ -130,7 +130,7 @@ function createDefaultSiteContent(): SiteContentSettings {
         "Select up to three releases from Public Site settings to feature them here.",
       featured_release_ids: [],
       recent_releases_eyebrow: "Recent Releases",
-      recent_releases_heading: "Latest drops",
+      recent_releases_heading: "Pick a Glitch",
       recent_releases_view_all_label: "View all",
       brand_pillars_eyebrow: "Brand Pillars",
       brand_pillars_heading: "What the catalog is built around",
@@ -350,7 +350,12 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
         !normalizedExclusiveNavLabel ||
         normalizedExclusiveNavLabel.toLowerCase() === "exclusive"
           ? defaults.chrome.nav_exclusive_label
-          : normalizedExclusiveNavLabel
+          : normalizedExclusiveNavLabel,
+      nav_links_label:
+        !input?.chrome?.nav_links_label ||
+        input.chrome.nav_links_label === "Links"
+          ? defaults.chrome.nav_links_label
+          : input.chrome.nav_links_label
     },
     home: {
       ...defaults.home,
@@ -360,6 +365,11 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           ?.map((value) => value.trim())
           .filter(Boolean)
           .slice(0, 3) || defaults.home.featured_release_ids,
+      recent_releases_heading:
+        !input?.home?.recent_releases_heading ||
+        input.home.recent_releases_heading === "Latest drops"
+          ? defaults.home.recent_releases_heading
+          : input.home.recent_releases_heading,
       brand_pillars: defaults.home.brand_pillars.map((defaultPillar, index) => {
         const inputPillar = input?.home?.brand_pillars?.[index];
 

@@ -6,7 +6,7 @@ import {Sparkles} from "lucide-react";
 
 import {
   getHomepageFeaturedReleases,
-  getPublishedReleases,
+  getRandomPublishedReleases,
   getSiteSettings
 } from "@/lib/repositories/public-site";
 import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
@@ -20,7 +20,7 @@ export default async function PublicHomePage() {
   const siteSettings = await getSiteSettings();
   const [heroFeaturedReleases, recentReleases, exclusiveOfferState] = await Promise.all([
     getHomepageFeaturedReleases(siteSettings.site_content.home.featured_release_ids),
-    getPublishedReleases({limit: 3}),
+    getRandomPublishedReleases(3),
     readPublicExclusiveOffer()
   ]);
   const content = siteSettings.site_content.home;
@@ -186,6 +186,9 @@ export default async function PublicHomePage() {
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#f4eedf]">
                 {content.recent_releases_heading}
               </h2>
+              <p className="mt-2 text-sm text-[#98a0a8]">
+                Three random tracks from the vvviruz catalog. Refresh for a new signal.
+              </p>
             </div>
             <Link
               className="text-sm font-semibold text-[#d5b15b] transition hover:text-[#eccd7d]"
