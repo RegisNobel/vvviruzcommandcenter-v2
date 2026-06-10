@@ -471,6 +471,15 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-09 22:40 -04:00
+
+- **Link Hubs UI Polish and Legacy Links Page Settings Cleanup Pass**:
+  - Renamed the old Section 8 in the admin site settings editor to `"Link Hub Defaults"` and removed the redundant `"Campaign Release"` selector from the UI.
+  - Retained the legacy `selected_release_id` database field in the backend settings object for backward-compatible fallback resolution.
+  - Updated `/links` to check the `LinkHub` database record first, falling back to the legacy `selected_release_id` if no release is assigned, and then falling back to the latest featured release.
+  - Added clear helper text under the primary `/links` hub row: *“If no release is assigned, /links falls back to the legacy/default featured release.”*
+  - Polished Assigned Release dropdown selectors inside the Link Hubs settings panel with custom dark-mode background and text styling (`bg-[#121418] text-[#ece6da]`) on both select and option elements to ensure full readability.
+
 ### 2026-06-09 22:15 -04:00
 
 - **Implemented Multi Link Hub Pages v1**:

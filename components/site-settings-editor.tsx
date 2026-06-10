@@ -315,7 +315,7 @@ export function SiteSettingsEditor({
           {href: "#music-page", label: "Music"},
           {href: "#about-page", label: "About"},
           {href: "#platform-labels", label: "Platforms"},
-          {href: "#links-page", label: "Links"},
+          {href: "#links-page", label: "Link Hub Defaults"},
           {href: "#exclusives-settings", label: "Exclusives"},
           {href: "#tracking-settings", label: "Tracking"},
           {href: "#release-page", label: "Release"},
@@ -1322,10 +1322,13 @@ export function SiteSettingsEditor({
         <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="links-page">
           <div>
             <p className="field-label">Section 8</p>
-            <h3 className="mt-3 text-2xl font-semibold text-ink">Links Page</h3>
+            <h3 className="mt-3 text-2xl font-semibold text-ink">Link Hub Defaults</h3>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Global default fallback texts for campaign landing pages.
+            </p>
           </div>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
+          <div className="mt-5 grid gap-5 md:grid-cols-3">
             <label className="space-y-2">
               <span className="field-label">Badge Text</span>
               <input
@@ -1335,24 +1338,6 @@ export function SiteSettingsEditor({
                 }
                 value={settings.site_content.links.badge_text}
               />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Campaign Release</span>
-              <select
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("links", "selected_release_id", event.target.value)
-                }
-                value={settings.site_content.links.selected_release_id}
-              >
-                <option value="">Auto-select featured/latest published release</option>
-                {releaseOptions.map((release) => (
-                  <option key={release.id} value={release.id}>
-                    {release.title}
-                  </option>
-                ))}
-              </select>
             </label>
 
             <label className="space-y-2">

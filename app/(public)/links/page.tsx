@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 
 import {getLinksPageRelease, getSiteSettings} from "@/lib/repositories/public-site";
+import {readLinkHubByPath} from "@/lib/repositories/link-hubs";
 import {
   getPublicReleaseDiscoveryMetadata,
   createPassthroughParams,
@@ -11,8 +12,13 @@ import {PublicLinkHubView} from "@/components/public-link-hub-view";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteSettings = await getSiteSettings();
-  const selectedRelease = await getLinksPageRelease(siteSettings.site_content.links.selected_release_id);
+  const [siteSettings, hub] = await Promise.all([
+    getSiteSettings(),
+    readLinkHubByPath("links")
+  ]);
+  const content = siteSettings.site_content.links;
+  const releaseId = hub?.releaseId || content.selected_release_id || "";
+  const selectedRelease = await getLinksPageRelease(releaseId);
   const releaseMetadata = selectedRelease
     ? getPublicReleaseDiscoveryMetadata(selectedRelease)
     : null;
@@ -54,10 +60,15 @@ export default async function PublicLinksPage({
 }: {
   searchParams: Promise<LinksSearchParams>;
 }) {
-  const [siteSettings, rawSearchParams] = await Promise.all([getSiteSettings(), searchParams]);
+  const [siteSettings, rawSearchParams, hub] = await Promise.all([
+    getSiteSettings(),
+    searchParams,
+    readLinkHubByPath("links")
+  ]);
   const content = siteSettings.site_content.links;
   const passthroughParams = createPassthroughParams(rawSearchParams);
-  const selectedRelease = await getLinksPageRelease(content.selected_release_id);
+  const releaseId = hub?.releaseId || content.selected_release_id || "";
+  const selectedRelease = await getLinksPageRelease(releaseId);
 
   return (
     <PublicLinkHubView
