@@ -85,6 +85,7 @@ model Release {
   adCreativeReports AdCreativeReport[]
   adCampaignLearnings AdCampaignLearning[]
   shortLinks       ShortLink[]
+  linkHubs         LinkHub[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -379,6 +380,7 @@ model AnalyticsEvent {
   eventType   String
   page        String
   path        String   @default("")
+  hubPath     String   @default("")
   releaseId   String?
   linkType    String   @default("")
   linkLabel   String   @default("")
@@ -508,4 +510,19 @@ model CommissionRequest {
   updatedAt        DateTime
 
   @@index([status, createdAt])
+}
+
+model LinkHub {
+  id              String   @id
+  path            String   @unique
+  releaseId       String?
+  isEnabled       Boolean  @default(true)
+  showInPublicNav Boolean  @default(false)
+  label           String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  release         Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+  @@index([releaseId])
 }

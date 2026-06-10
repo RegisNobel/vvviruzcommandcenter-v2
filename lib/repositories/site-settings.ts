@@ -504,6 +504,7 @@ function createDefaultSiteSettings(): SiteSettingsRecord {
       "vvviruz is building a catalog where music, identity, and execution move together. The focus is sharp releases, strong world-building, and a direct connection between the song and the visual brand around it.",
     links_page_items: [],
     site_content: createDefaultSiteContent(),
+    nav_hubs: [],
     created_on: now,
     updated_on: now
   };
@@ -572,12 +573,48 @@ export async function readSiteSettings(): Promise<SiteSettingsRecord> {
     }
   });
 
+  const hubs = await prisma.linkHub.findMany({
+    where: {
+      isEnabled: true,
+      showInPublicNav: true
+    },
+    orderBy: [
+      { sortOrder: "asc" },
+      { path: "asc" }
+    ]
+  });
+
+  const hasLinks = hubs.some((h) => h.path === "links");
+  let finalHubs = hubs;
+  if (!hasLinks) {
+    const { readLinkHubs } = await import("./link-hubs");
+    await readLinkHubs();
+    finalHubs = await prisma.linkHub.findMany({
+      where: {
+        isEnabled: true,
+        showInPublicNav: true
+      },
+      orderBy: [
+        { sortOrder: "asc" },
+        { path: "asc" }
+      ]
+    });
+  }
+
+  const nav_hubs = finalHubs.map((h) => ({
+    path: h.path,
+    label: h.label || "Links"
+  }));
+
   if (!existing) {
     const defaults = createDefaultSiteSettings();
 
     await writeSiteSettings(defaults);
 
-    return defaults;
+    return {
+      ...defaults,
+      nav_hubs
+    };
   }
 
   const record = toSiteSettingsRecord(existing);
@@ -585,6 +622,7 @@ export async function readSiteSettings(): Promise<SiteSettingsRecord> {
 
   return {
     ...record,
+    nav_hubs,
     site_content: {
       ...record.site_content,
       about: {

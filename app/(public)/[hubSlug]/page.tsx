@@ -1,5 +1,7 @@
 import type {Metadata} from "next";
+import {notFound, redirect} from "next/navigation";
 
+import {readLinkHubByPath} from "@/lib/repositories/link-hubs";
 import {getLinksPageRelease, getSiteSettings} from "@/lib/repositories/public-site";
 import {
   getPublicReleaseDiscoveryMetadata,
@@ -10,9 +12,21 @@ import {PublicLinkHubView} from "@/components/public-link-hub-view";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{hubSlug: string}>;
+}): Promise<Metadata> {
+  const {hubSlug} = await params;
+  if (!/^links[0-9]*$/.test(hubSlug)) {
+    return {};
+  }
+  const hub = await readLinkHubByPath(hubSlug);
+  if (!hub || !hub.isEnabled || !hub.releaseId) {
+    return {};
+  }
   const siteSettings = await getSiteSettings();
-  const selectedRelease = await getLinksPageRelease(siteSettings.site_content.links.selected_release_id);
+  const selectedRelease = await getLinksPageRelease(hub.releaseId);
   const releaseMetadata = selectedRelease
     ? getPublicReleaseDiscoveryMetadata(selectedRelease)
     : null;
@@ -49,22 +63,56 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function PublicLinksPage({
+export default async function PublicDynamicLinkHubPage({
+  params,
   searchParams
 }: {
+  params: Promise<{hubSlug: string}>;
   searchParams: Promise<LinksSearchParams>;
 }) {
-  const [siteSettings, rawSearchParams] = await Promise.all([getSiteSettings(), searchParams]);
-  const content = siteSettings.site_content.links;
+  const {hubSlug} = await params;
+
+  // Rule 1: V1 only supports paths matching ^links[0-9]*$
+  if (!/^links[0-9]*$/.test(hubSlug)) {
+    notFound();
+  }
+
+  // Look up hub from database
+  const hub = await readLinkHubByPath(hubSlug);
+
+  // Unknown hub path returns notFound()
+  if (!hub) {
+    notFound();
+  }
+
+  // Known disabled hub redirects to /links
+  if (!hub.isEnabled) {
+    redirect("/links");
+  }
+
+  // Known hub with no assigned release redirects to /links
+  if (!hub.releaseId) {
+    redirect("/links");
+  }
+
+  const [siteSettings, rawSearchParams] = await Promise.all([
+    getSiteSettings(),
+    searchParams
+  ]);
+
+  const selectedRelease = await getLinksPageRelease(hub.releaseId);
+  if (!selectedRelease) {
+    redirect("/links");
+  }
+
   const passthroughParams = createPassthroughParams(rawSearchParams);
-  const selectedRelease = await getLinksPageRelease(content.selected_release_id);
 
   return (
     <PublicLinkHubView
       selectedRelease={selectedRelease}
       siteSettings={siteSettings}
       passthroughParams={passthroughParams}
-      hubPath="/links"
+      hubPath={`/${hub.path}`}
     />
   );
 }

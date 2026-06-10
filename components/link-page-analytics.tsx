@@ -5,6 +5,7 @@ import {useEffect} from "react";
 type LinkPageAnalyticsProps = {
   releaseId: string;
   releaseTitle: string;
+  hubPath?: string;
 };
 
 type MetaPixelValue = number | string | string[];
@@ -103,7 +104,7 @@ function track(payload: Record<string, string | undefined>) {
   });
 }
 
-export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsProps) {
+export function LinkPageAnalytics({releaseId, releaseTitle, hubPath = "/links"}: LinkPageAnalyticsProps) {
   useEffect(() => {
     const utmParams = getUtmParams();
     const viewContentEventId = createMetaEventId("links-view-content");
@@ -113,7 +114,8 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       metaEventId: viewContentEventId,
       metaEventName: "ViewContent",
       releaseId,
-      releaseTitle
+      releaseTitle,
+      hubPath
     });
 
     trackMetaPixel("track", "ViewContent", {
@@ -121,6 +123,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
       content_name: releaseTitle,
       content_type: "music_release",
       page: "links",
+      hub_path: hubPath,
       ...toMetaUtmParams(utmParams)
     }, viewContentEventId);
 
@@ -149,7 +152,8 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
         metaEventId: leadEventId,
         metaEventName: shouldTrackMetaConversion ? "Lead" : undefined,
         releaseTitle,
-        targetUrl
+        targetUrl,
+        hubPath
       });
 
       if (!shouldTrackMetaConversion || !leadEventId) {
@@ -163,6 +167,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
         content_type: "music_release",
         link_label: linkLabel,
         page: "links",
+        hub_path: hubPath,
         platform: linkType,
         target_url: targetUrl,
         ...toMetaUtmParams(getUtmParams())
@@ -183,7 +188,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle}: LinkPageAnalyticsPr
     document.addEventListener("click", handleClick);
 
     return () => document.removeEventListener("click", handleClick);
-  }, [releaseId, releaseTitle]);
+  }, [releaseId, releaseTitle, hubPath]);
 
   return null;
 }

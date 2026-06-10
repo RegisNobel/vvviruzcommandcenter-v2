@@ -5,6 +5,8 @@ import {BarChart3, Camera, ArrowRight} from "lucide-react";
 
 import {readReleaseSummaries} from "@/lib/server/releases";
 import {prisma} from "@/lib/db/prisma";
+import {readLinkHubs} from "@/lib/repositories/link-hubs";
+import {ActiveLinkHubs} from "@/components/active-link-hubs";
 
 function getReleaseStatusText(release: {
   conceptComplete: boolean;
@@ -46,7 +48,11 @@ export default async function AdminPromoPage({
 }: {
   searchParams: Promise<{releaseId?: string}>;
 }) {
-  const [{releaseId}, releases] = await Promise.all([searchParams, readReleaseSummaries()]);
+  const [{releaseId}, releases, linkHubs] = await Promise.all([
+    searchParams,
+    readReleaseSummaries(),
+    readLinkHubs()
+  ]);
   const activeReleaseId =
     releases.some((release) => release.id === releaseId) && releaseId ? releaseId : null;
 
@@ -232,43 +238,50 @@ export default async function AdminPromoPage({
           </div>
         </section>
 
-        {/* Future Tools Section */}
-        <section className="panel px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
-              Future Tools
-            </h2>
-          </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="group rounded-[20px] border border-[#25282e] bg-[#0e1013] px-4 py-4 transition hover:border-[#30343b]">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="rounded-xl border border-[#342e1f] bg-[#1a1710] p-2 text-[#d7b45e]">
-                    <Camera size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                      Photo Lab
-                      <span className="rounded-full border border-[#4a3c1d] bg-[#1a1710] px-2 py-0.5 text-[10px] font-semibold text-[#d7b45e]">
-                        Coming Soon
-                      </span>
-                    </h3>
-                    <p className="mt-1 text-xs text-muted">
-                      Create and manage promo visuals, cover assets, and image-based creative.
-                    </p>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {/* Future Tools Section */}
+            <section className="panel h-full px-4 py-5 sm:px-6">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-[#d7b45e]">
+                  Future Tools
+                </h2>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="group rounded-[20px] border border-[#25282e] bg-[#0e1013] px-4 py-4 transition hover:border-[#30343b]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="rounded-xl border border-[#342e1f] bg-[#1a1710] p-2 text-[#d7b45e]">
+                        <Camera size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                          Photo Lab
+                          <span className="rounded-full border border-[#4a3c1d] bg-[#1a1710] px-2 py-0.5 text-[10px] font-semibold text-[#d7b45e]">
+                            Coming Soon
+                          </span>
+                        </h3>
+                        <p className="mt-1 text-xs text-muted">
+                          Create and manage promo visuals, cover assets, and image-based creative.
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      className="rounded-full border border-[#30343b] bg-transparent p-1.5 text-muted transition hover:border-[#d7b45e]/50 hover:bg-[#16191d] hover:text-[#d7b45e]"
+                      href="/admin/photo-lab"
+                      title="Preview Photo Lab"
+                    >
+                      <ArrowRight size={14} />
+                    </Link>
                   </div>
                 </div>
-                <Link
-                  className="rounded-full border border-[#30343b] bg-transparent p-1.5 text-muted transition hover:border-[#d7b45e]/50 hover:bg-[#16191d] hover:text-[#d7b45e]"
-                  href="/admin/photo-lab"
-                  title="Preview Photo Lab"
-                >
-                  <ArrowRight size={14} />
-                </Link>
               </div>
-            </div>
+            </section>
           </div>
-        </section>
+          <div>
+            <ActiveLinkHubs hubs={linkHubs} />
+          </div>
+        </div>
       </div>
     </main>
   );

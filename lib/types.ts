@@ -368,7 +368,22 @@ export type SiteSettingsRecord = {
   site_content: SiteContentSettings;
   created_on: string;
   updated_on: string;
+  nav_hubs?: Array<{path: string; label: string}>;
 };
+
+export type LinkHubRecord = {
+  id: string;
+  path: string;
+  releaseId: string | null;
+  isEnabled: boolean;
+  showInPublicNav: boolean;
+  label: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  release_title?: string;
+};
+
 
 export type SubscriberRecord = {
   id: string;

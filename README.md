@@ -471,6 +471,20 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-09 22:15 -04:00
+
+- **Implemented Multi Link Hub Pages v1**:
+  - Created dynamic root routing `[hubSlug]/page.tsx` that supports campaign-specific link landing hubs (e.g. `/links2`, `/links3`) while maintaining `/links` as the primary public page.
+  - Implemented regex validation (`^links[0-9]*$`) on the dynamic root path to avoid interfering with `/about`, `/music`, `/vault`, or other static public pages.
+  - Added the `LinkHub` model and database migrations (SQLite & Postgres client generation), automatically seeding the primary `/links` hub if missing.
+  - Enforced protections on the primary `/links` hub: path renaming is disabled, it cannot be deleted, and its visibility toggle is locked to active.
+  - Refactored `/links` layout into a reusable `<PublicLinkHubView />` component for shared rendering across all hubs.
+  - Dynamically resolved and rendered enabled and visible campaign hubs (such as `/links` and `/links2`) in the public header menu.
+  - Updated first-party analytics tracking, recording page view and outbound click intent events under `"page": "links"` while logging the unique `hubPath` (e.g. `/links2`).
+  - Added a "Link Hub" segmentation breakdown tab on the Attribution dashboard showing views, clicks, and CTR per hub path.
+  - Implemented the Link Hubs Settings panel in the admin Public Site configuration allowing full management of slug paths, release mapping, sort orders, and URL copy/open actions.
+  - Added an "Active Link Hubs" widget to the Promo Home page displaying release title, slug, and copy/open buttons.
+
 ### 2026-06-09 13:35 -04:00
 
 - **Ad Lab Creative Diagnostics Noise Removal Pass**:

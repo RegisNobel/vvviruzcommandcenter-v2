@@ -7,6 +7,7 @@ export type PublicAnalyticsEventInput = {
   eventType: "links_page_view" | "links_link_click" | "vault_page_view" | "vault_cta_click";
   page: "links" | "vault";
   path?: string;
+  hubPath?: string;
   releaseId?: string | null;
   linkType?: string;
   linkLabel?: string;
@@ -23,7 +24,7 @@ export type PublicAnalyticsEventInput = {
   country?: string;
 };
 
-export type AnalyticsBreakdownKind = "country" | "source" | "link" | "utm";
+export type AnalyticsBreakdownKind = "country" | "source" | "link" | "utm" | "hub";
 
 export type AnalyticsBreakdownItem = {
   label: string;
@@ -61,6 +62,7 @@ export async function recordPublicAnalyticsEvent(input: PublicAnalyticsEventInpu
       eventType: input.eventType,
       page: input.page,
       path: normalize(input.path),
+      hubPath: normalize(input.hubPath),
       releaseId: normalize(input.releaseId) || null,
       linkType: normalize(input.linkType),
       linkLabel: normalize(input.linkLabel),
@@ -195,7 +197,8 @@ function createBreakdownMaps() {
     country: new Map<string, {views: number; conversions: number}>(),
     source: new Map<string, {views: number; conversions: number}>(),
     link: new Map<string, {views: number; conversions: number}>(),
-    utm: new Map<string, {views: number; conversions: number}>()
+    utm: new Map<string, {views: number; conversions: number}>(),
+    hub: new Map<string, {views: number; conversions: number}>()
   };
 }
 
@@ -235,6 +238,7 @@ export async function readLinkPageAnalytics(days = 30) {
   const sourceBreakdowns = new Map<string, {views: number; conversions: number}>();
   const linkBreakdowns = new Map<string, {views: number; conversions: number}>();
   const utmBreakdowns = new Map<string, {views: number; conversions: number}>();
+  const hubBreakdowns = new Map<string, {views: number; conversions: number}>();
 
   for (let offset = 0; offset < safeDays; offset += 1) {
     const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset));
@@ -255,6 +259,7 @@ export async function readLinkPageAnalytics(days = 30) {
     const countryLabel = getCountryLabel(event.country);
     const utmLabel = getUtmLabel(event);
     const linkLabel = getLinkLabel(event);
+    const hubLabel = event.hubPath?.trim() || "/links";
 
     if (bucket) {
       if (event.eventType === "links_page_view") {
@@ -268,6 +273,7 @@ export async function readLinkPageAnalytics(days = 30) {
       pushBreakdownMetric(bucket.breakdownMaps.country, countryLabel, event.eventType);
       pushBreakdownMetric(bucket.breakdownMaps.source, sourceLabel, event.eventType);
       pushBreakdownMetric(bucket.breakdownMaps.utm, utmLabel, event.eventType);
+      pushBreakdownMetric(bucket.breakdownMaps.hub, hubLabel, event.eventType);
 
       if (event.eventType === "links_link_click") {
         pushBreakdownMetric(bucket.breakdownMaps.link, linkLabel, event.eventType);
@@ -288,6 +294,7 @@ export async function readLinkPageAnalytics(days = 30) {
     pushBreakdownMetric(countryBreakdowns, countryLabel, event.eventType);
     pushBreakdownMetric(sourceBreakdowns, sourceLabel, event.eventType);
     pushBreakdownMetric(utmBreakdowns, utmLabel, event.eventType);
+    pushBreakdownMetric(hubBreakdowns, hubLabel, event.eventType);
   }
 
   const daily = Array.from(dayBuckets.values()).map((bucket) => ({
@@ -303,7 +310,8 @@ export async function readLinkPageAnalytics(days = 30) {
         views: bucket.views,
         ctr: getCtr(bucket.views, item.conversions)
       })),
-      utm: toBreakdownList(bucket.breakdownMaps.utm)
+      utm: toBreakdownList(bucket.breakdownMaps.utm),
+      hub: toBreakdownList(bucket.breakdownMaps.hub)
     }
   }));
   const uniqueVisitors = countUnique(views.map((event) => event.visitorId));
@@ -332,7 +340,8 @@ export async function readLinkPageAnalytics(days = 30) {
         views: views.length,
         ctr: getCtr(views.length, item.conversions)
       })),
-      utm: toBreakdownList(utmBreakdowns)
+      utm: toBreakdownList(utmBreakdowns),
+      hub: toBreakdownList(hubBreakdowns)
     }
   };
 }

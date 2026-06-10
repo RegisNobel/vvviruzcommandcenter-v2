@@ -25,7 +25,8 @@ const breakdownOptions: Array<{kind: AnalyticsBreakdownKind; label: string; link
   {kind: "country", label: "Country", linkLabel: "by country"},
   {kind: "source", label: "Source", linkLabel: "source"},
   {kind: "link", label: "By link", linkLabel: "by link"},
-  {kind: "utm", label: "UTM", linkLabel: "utm"}
+  {kind: "utm", label: "UTM", linkLabel: "utm"},
+  {kind: "hub", label: "Link Hub", linkLabel: "by link hub"}
 ];
 
 function formatNumber(value: number) {
@@ -1112,6 +1113,11 @@ export default async function AdminAttributionPage({
                     title="Breakdown by UTM"
                     wrapLabels
                   />
+                  <BreakdownList
+                    emptyText="No Link Hub data recorded yet."
+                    items={analytics.breakdowns.hub}
+                    title="Breakdown by link hub"
+                  />
                 </section>
               </div>
             </details>
@@ -1284,6 +1290,11 @@ export default async function AdminAttributionPage({
                 items={analytics.breakdowns.utm}
                 title="Breakdown by UTM"
                 wrapLabels
+              />
+              <BreakdownList
+                emptyText="No Link Hub data recorded yet."
+                items={analytics.breakdowns.hub}
+                title="Breakdown by link hub"
               />
             </section>
           </div>

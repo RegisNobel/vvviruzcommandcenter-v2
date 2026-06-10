@@ -2,10 +2,12 @@
 import {ReleaseCategorySettingsPanel} from "@/components/release-category-settings-panel";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
 import {AppearsOnSettingsPanel} from "@/components/appears-on-settings-panel";
+import {LinkHubsSettingsPanel} from "@/components/link-hubs-settings-panel";
 import {listReleaseCategories} from "@/lib/repositories/release-categories";
 import {readAllAppearsOn} from "@/lib/repositories/appears-on";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
+import {readLinkHubs} from "@/lib/repositories/link-hubs";
 import {
   listExclusiveArtFiles,
   listExclusiveTrackFiles,
@@ -20,7 +22,8 @@ export default async function AdminSitePage() {
     siteIconOptions,
     exclusiveTrackFileOptions,
     exclusiveTrackArtOptions,
-    appearsOnRecords
+    appearsOnRecords,
+    linkHubs
   ] = await Promise.all([
     readSiteSettings(),
     readReleaseSummaries(),
@@ -28,7 +31,8 @@ export default async function AdminSitePage() {
     listSiteIconFiles(),
     listExclusiveTrackFiles(),
     listExclusiveArtFiles(),
-    readAllAppearsOn()
+    readAllAppearsOn(),
+    readLinkHubs()
   ]);
 
   return (
@@ -40,6 +44,11 @@ export default async function AdminSitePage() {
           initialSiteSettings={siteSettings}
           releaseOptions={releaseSummaries}
           siteIconOptions={siteIconOptions}
+        />
+
+        <LinkHubsSettingsPanel
+          initialHubs={linkHubs}
+          releaseOptions={releaseSummaries}
         />
 
         <ReleaseCategorySettingsPanel

@@ -140,3 +140,36 @@ export function getPublicReleaseDiscoveryMetadata(
     socialShareTitle
   };
 }
+
+export type LinksSearchParams = Record<string, string | string[] | undefined>;
+
+function shouldPassthroughParam(key: string) {
+  const normalizedKey = key.toLowerCase();
+
+  return (
+    normalizedKey.startsWith("utm_") ||
+    normalizedKey === "fbclid" ||
+    normalizedKey === "gclid" ||
+    normalizedKey === "msclkid"
+  );
+}
+
+export function createPassthroughParams(searchParams: LinksSearchParams) {
+  const passthroughParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!shouldPassthroughParam(key)) {
+      continue;
+    }
+
+    const values = Array.isArray(value) ? value : [value];
+
+    for (const item of values) {
+      if (item) {
+        passthroughParams.append(key, item);
+      }
+    }
+  }
+
+  return passthroughParams;
+}

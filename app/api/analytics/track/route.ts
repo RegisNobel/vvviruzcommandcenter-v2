@@ -17,6 +17,7 @@ const analyticsEventSchema = z.object({
   ]),
   page: z.enum(["links", "vault"]),
   path: z.string().default(""),
+  hubPath: z.string().default(""),
   releaseId: z.string().nullish(),
   linkType: z.string().default(""),
   linkLabel: z.string().default(""),
