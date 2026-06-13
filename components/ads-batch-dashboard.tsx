@@ -656,9 +656,7 @@ function getAttributionConfidence(detail: AdImportBatchDetail): ConfidenceReadou
 function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
   const followThroughByReportId = getFollowThroughMap(detail);
   const topCreative = getTopCreative(detail.reports, followThroughByReportId);
-  const worstCreative = getWorstCreative(detail, followThroughByReportId);
   const bestHook = getBestStrategy(detail.strategy_breakdowns.hook_type);
-  const worstHook = getWorstStrategy(detail.strategy_breakdowns.hook_type);
   const bestContentType = getBestStrategy(detail.strategy_breakdowns.content_type);
   const landingPageViewQuality = getLandingPageViewQuality(detail);
   const streamingOutboundClickQuality = getStreamingOutboundClickQuality(detail);
@@ -668,6 +666,31 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     getMostCommonValue(detail.reports.map((report) => report.campaign_name)) ||
     "Imported Meta campaign";
   const topCreativeName = topCreative?.ad_name || "No creative signal yet";
+
+  const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const meaningfulCreativesCount = detail.reports.filter(
+    (r) => (r.spend ?? 0) >= 10.0 || (r.results ?? 0) >= 5
+  ).length;
+
+  let worstCreative: AdCreativeReportRecord | null = getWorstCreative(detail, followThroughByReportId);
+  let worstCreativeName = "";
+  if (meaningfulCreativesCount < 2) {
+    worstCreativeName = "Not enough comparable creatives yet";
+    worstCreative = null;
+  } else if (!worstCreative) {
+    worstCreativeName = "No weak creative isolated yet";
+  } else if (topCreative && normalizeName(worstCreative.ad_name) === normalizeName(topCreative.ad_name)) {
+    worstCreativeName = "No weak creative isolated yet";
+    worstCreative = null;
+  } else {
+    worstCreativeName = worstCreative.ad_name;
+  }
+
+  let worstHook: AdStrategyBreakdownRow | null = getWorstStrategy(detail.strategy_breakdowns.hook_type);
+  if (worstHook && bestHook && normalizeName(worstHook.label) === normalizeName(bestHook.label)) {
+    worstHook = null;
+  }
 
   const isHookLowData = (row: AdStrategyBreakdownRow) => {
     return row.spend < 5.0 || row.link_clicks < 5;
@@ -769,7 +792,7 @@ function createCampaignReadout(detail: AdImportBatchDetail): CampaignReadout {
     spend: formatMoney(detail.spend),
     streamingOutboundClickQuality,
     topCreative: topCreativeName,
-    worstCreative: worstCreative?.ad_name || "No weak creative isolated yet",
+    worstCreative: worstCreativeName,
     worstHook: worstHookLabel,
     coverageWarning: recommendation.componentDiagnosis?.coverageWarnings?.[0] || null
   };
@@ -1212,7 +1235,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <ReadoutItem label="Top Creative" value={campaignReadout.topCreative} />
             <ReadoutItem label="Best Copy Angle" value={campaignReadout.bestHook} />
-            <ReadoutItem label="Worst Creative" value={campaignReadout.worstCreative} />
+            <ReadoutItem label="Weak Creative" value={campaignReadout.worstCreative} />
             <ReadoutItem label="Worst Copy Angle" value={campaignReadout.worstHook} />
             <ReadoutItem label="Spend" value={campaignReadout.spend} />
           </div>

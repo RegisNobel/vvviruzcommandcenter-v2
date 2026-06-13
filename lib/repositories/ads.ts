@@ -1759,6 +1759,17 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
     }
   }
 
+  const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const meaningfulCreativesCount = reportRecords.filter(
+    (r) => (r.spend ?? 0) >= 10.0 || (r.results ?? 0) >= 5
+  ).length;
+
+  const showWorstAd = worstAdReport &&
+    worstAdReport.id !== bestAdReport?.id &&
+    (!bestAdReport || normalizeName(worstAdReport.ad_name) !== normalizeName(bestAdReport.ad_name)) &&
+    meaningfulCreativesCount >= 2;
+
   return {
     has_data: true,
     source_label: sourceLabel,
@@ -1788,7 +1799,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
           signals: bestAdReport.performance_signals
         }
       : null,
-    worst_ad: worstAdReport && worstAdReport.id !== bestAdReport?.id
+    worst_ad: showWorstAd
       ? {
           ad_name: worstAdReport.ad_name,
           spend: worstAdReport.spend ?? 0,
@@ -1799,7 +1810,7 @@ export async function readReleaseAdMetrics(releaseId: string): Promise<ReleaseAd
         }
       : null,
     best_hook: bestHook,
-    worst_hook: worstHook && worstHook.label !== bestHook?.label ? worstHook : null,
+    worst_hook: worstHook && (!bestHook || normalizeName(worstHook.label) !== normalizeName(bestHook.label)) ? worstHook : null,
     batches: batches.map((batch) => ({
       id: batch.id,
       name: batch.name,

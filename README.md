@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-13 16:10 -04:00
+
+- **Campaign Readout Best/Worst Creative Guardrail Pass**:
+  - Implemented best/worst creative and hook angle duplication guards in `createCampaignReadout` inside `ads-batch-dashboard.tsx`.
+  - Used normalized alphanumeric name comparisons (`toLowerCase().replace(/[^a-z0-9]/g, "")`) to prevent matching creatives or copy angles from appearing as both best/top and worst/weak.
+  - Implemented a meaningful-data data-volume guard ensuring a worst creative is not computed (displaying `"Not enough comparable creatives yet"`) if fewer than 2 creatives in the batch have meaningful data (spend $\ge \$10$ or results $\ge 5$).
+  - Added a defensive check to output `"No weak hook isolated yet"` when the worst copy angle matches the best copy angle.
+  - Renamed the dashboard display label from `"Worst Creative"` to `"Weak Creative"`.
+  - Propagated the duplication and sample-size guards to the release-level campaign metrics resolver in `ads.ts` to ensure consistent intelligence reporting across Release Detail and intelligence panels.
+
 ### 2026-06-09 23:05 -04:00
 
 - **Public Nav Label and Random Homepage Release Picks**:
