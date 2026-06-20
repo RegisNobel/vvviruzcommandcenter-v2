@@ -4,7 +4,9 @@ function isVisual(token: string): boolean {
     /^amv\d*$/.test(t) ||
     t === "2screens" ||
     t === "perf" ||
-    t === "performance"
+    t === "performance" ||
+    t === "cover" ||
+    t === "static"
   );
 }
 
@@ -15,6 +17,7 @@ function getSongSection(token: string): string | null {
   if (t === "verse1" || t === "v1") return "verse1";
   if (t === "verse2" || t === "v2") return "verse2";
   if (t === "verse3" || t === "v3") return "verse3";
+  if (t === "verse4" || t === "v4") return "verse4";
   if (t === "intro") return "intro";
   if (t === "bridge") return "bridge";
   if (t === "outro") return "outro";
@@ -24,11 +27,8 @@ function getSongSection(token: string): string | null {
 function isRevision(token: string): boolean {
   const t = token.toLowerCase();
   return (
-    t === "rev1" ||
-    t === "rev2" ||
-    t === "rev3" ||
-    t === "edit1" ||
-    t === "edit2"
+    /^rev\d+$/.test(t) ||
+    /^edit\d+$/.test(t)
   );
 }
 
@@ -52,6 +52,23 @@ export function parseAdName(adName: string): ParsedAdName {
   const normalized = adName.trim();
   // Split using primary delimiters: _ and | and spaces. Keep hyphens intact.
   const tokens = normalized.split(/[ _|]+/).map((t) => t.trim()).filter(Boolean);
+
+  // Fallback Check: if the name suffix matches the convention: ..._visual_songsection_revision
+  if (tokens.length >= 4) {
+    const lastToken = tokens[tokens.length - 1];
+    const secondToLastToken = tokens[tokens.length - 2];
+    const thirdToLastToken = tokens[tokens.length - 3];
+
+    if (isRevision(lastToken) && getSongSection(secondToLastToken)) {
+      const resolvedSongSection = getSongSection(secondToLastToken)!;
+      return {
+        release: tokens.slice(0, tokens.length - 3).join("_"),
+        visual: thirdToLastToken,
+        songSection: resolvedSongSection,
+        revision: lastToken
+      };
+    }
+  }
 
   let visual = "Unparsed";
   let songSection = "Unparsed";

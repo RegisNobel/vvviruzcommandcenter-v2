@@ -471,6 +471,14 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-20 15:30 -04:00
+
+- **Ad Name Parser Visual Vocabulary and Fallback Fix Pass**:
+  - Expanded the allowlist in `naming-parser.ts` to include `"cover"` and `"static"` as recognized visual formats, resolving `"Unparsed"` Creative Leaderboard errors for cover art and static video creatives.
+  - Added `"verse4"` (and `"v4"`) to the song section recognition mappings.
+  - Generified the revision format checker to support any generic `rev[0-9]+` and `edit[0-9]+` patterns (matching `rev1`, `rev2`, `rev3`, `rev4`, etc.).
+  - Implemented a fallback convention-matching parser that checks if an ad name conforms to the `release_visual_songsection_revision` suffix structure. If a valid song section and revision are identified at the end of the name, it dynamically extracts the middle token as the visual format, allowing custom visuals to parse successfully without showing as `"Unparsed"`.
+
 ### 2026-06-13 16:10 -04:00
 
 - **Campaign Readout Best/Worst Creative Guardrail Pass**:
