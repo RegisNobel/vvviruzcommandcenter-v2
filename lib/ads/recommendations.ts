@@ -335,6 +335,9 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     const totalResults = normalizedReports.reduce((sum, r) => sum + r.results, 0);
     const totalImpressions = normalizedReports.reduce((sum, r) => sum + r.impressions, 0);
     const averageCpr = totalResults > 0 ? totalSpend / totalResults : null;
+    const linkedSpend = normalizedReports.filter(r => r.copyPairHook !== null).reduce((sum, r) => sum + r.spend, 0);
+    const copyLinkagePercentage = totalSpend > 0 ? (linkedSpend / totalSpend) * 100 : 0;
+    const isCopyLinkageWeak = copyLinkagePercentage < 70;
 
     interface ComponentAggregate {
       value: string;
@@ -511,18 +514,17 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     const songEval = evaluateComponentStatus(controlSongSection ? songSectionAggs.get(controlSongSection) : undefined, getAlternatives(songSectionAggs, controlSongSection));
     const angleEval = evaluateComponentStatus(controlCopyAngle ? copyAngleAggs.get(controlCopyAngle) : undefined, getAlternatives(copyAngleAggs, controlCopyAngle));
     const pairEval = evaluateComponentStatus(controlCopyPair ? copyPairAggs.get(controlCopyPair) : undefined, getAlternatives(copyPairAggs, controlCopyPair));
-
     let visualStatus = visEval.status;
     let visualReason = visEval.reason;
 
     let songSectionStatus = songEval.status;
     let songSectionReason = songEval.reason;
 
-    let copyAngleStatus = angleEval.status;
-    let copyAngleReason = angleEval.reason;
+    let copyAngleStatus = isCopyLinkageWeak ? "Low Data" : angleEval.status;
+    let copyAngleReason = isCopyLinkageWeak ? "Copy angle diagnosis unavailable: copy linkage coverage is weak." : angleEval.reason;
 
-    let copyPairStatus = pairEval.status;
-    let copyPairReason = pairEval.reason;
+    let copyPairStatus = isCopyLinkageWeak ? "Low Data" : pairEval.status;
+    let copyPairReason = isCopyLinkageWeak ? "Copy pair diagnosis unavailable: copy linkage coverage is weak." : pairEval.reason;
 
     let diagnosisComment: string | null = null;
     const activeStatuses = [visualStatus, songSectionStatus, copyAngleStatus, copyPairStatus].filter(s => s !== "Untested" && s !== "Low Data");
@@ -538,11 +540,11 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         songSectionStatus = "Neutral";
         songSectionReason = "Control is current best, but no component has enough comparative proof yet.";
       }
-      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyAngleStatus)) {
+      if (!isCopyLinkageWeak && ["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyAngleStatus)) {
         copyAngleStatus = "Neutral";
         copyAngleReason = "Control is current best, but no component has enough comparative proof yet.";
       }
-      if (["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyPairStatus)) {
+      if (!isCopyLinkageWeak && ["Weak", "Below Average", "Needs Challenger", "Narrow Coverage"].includes(copyPairStatus)) {
         copyPairStatus = "Neutral";
         copyPairReason = "Control is current best, but no component has enough comparative proof yet.";
       }
@@ -553,7 +555,7 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       { name: "Song Section", value: controlSongSection, status: songSectionStatus, agg: controlSongSection ? songSectionAggs.get(controlSongSection) : undefined },
       { name: "Copy Angle", value: controlCopyAngle, status: copyAngleStatus, agg: controlCopyAngle ? copyAngleAggs.get(controlCopyAngle) : undefined },
       { name: "Copy Pair", value: controlCopyPair, status: copyPairStatus, agg: controlCopyPair ? copyPairAggs.get(controlCopyPair) : undefined }
-    ].filter(c => c.value !== null);
+    ].filter(c => c.value !== null && (!isCopyLinkageWeak || (c.name !== "Copy Angle" && c.name !== "Copy Pair")));
 
     const strongComponents = componentsList.filter(c => c.status === "Strong");
     let strongestComponent: string | null = null;
@@ -614,22 +616,31 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     const meaningfulAngles = Array.from(copyAngleAggs.values()).filter(a => a.spend >= 10);
 
     if (meaningfulVisuals.length < 2) {
-      const existing = meaningfulVisuals[0]?.value || "none";
-      coverageWarnings.push(`Coverage is narrow: only ${existing} has meaningful spend.`);
+      if (meaningfulVisuals[0]?.value) {
+        coverageWarnings.push(`Visual coverage is narrow: only ${meaningfulVisuals[0].value} has meaningful spend.`);
+      } else {
+        coverageWarnings.push("Visual coverage is narrow: no visual format has meaningful spend.");
+      }
     }
     if (meaningfulSections.length < 2) {
-      const existing = meaningfulSections[0]?.value || "none";
-      coverageWarnings.push(`Coverage is narrow: only ${existing} has meaningful spend.`);
-    }
-    if (meaningfulAngles.length < 2) {
-      const existing = meaningfulAngles[0]?.value || "none";
-      coverageWarnings.push(`Coverage is narrow: only ${existing} has meaningful spend.`);
+      if (meaningfulSections[0]?.value) {
+        coverageWarnings.push(`Song section coverage is narrow: only ${meaningfulSections[0].value} has meaningful spend.`);
+      } else {
+        coverageWarnings.push("Song section coverage is narrow: no song section has meaningful spend.");
+      }
     }
 
-    const linkedSpend = normalizedReports.filter(r => r.copyPairHook !== null).reduce((sum, r) => sum + r.spend, 0);
-    const copyLinkagePercentage = totalSpend > 0 ? (linkedSpend / totalSpend) * 100 : 0;
-    if (copyLinkagePercentage < 70 && totalSpend >= 10) {
-      coverageWarnings.push("Copy pair diagnosis is unavailable because copy linkage coverage is weak (under 70% of spend is linked).");
+    if (isCopyLinkageWeak) {
+      coverageWarnings.push("Copy angle diagnosis unavailable: copy linkage coverage is weak.");
+      coverageWarnings.push("Copy pair diagnosis unavailable: copy linkage coverage is weak.");
+    } else {
+      if (meaningfulAngles.length < 2) {
+        if (meaningfulAngles[0]?.value) {
+          coverageWarnings.push(`Copy angle coverage is narrow: only ${meaningfulAngles[0].value} has meaningful spend.`);
+        } else {
+          coverageWarnings.push("Copy angle coverage is narrow: no copy angle has meaningful spend.");
+        }
+      }
     }
 
     let diagnosisRead = "System has isolated a control and calculated component proof. Proceed with controlled tests.";
@@ -652,11 +663,14 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       return clean.replace(/\s+/g, "");
     };
 
-    const isCopyLinkageWeak = copyLinkagePercentage < 70;
-    const isCopyPairStaysSameAllowed = !isCopyLinkageWeak && !!controlCopyPair;
+    const isCopyAngleStaysSameAllowed = !isCopyLinkageWeak && !!controlCopyAngle && controlCopyAngle !== "Unavailable";
+    const isCopyPairStaysSameAllowed = !isCopyLinkageWeak && !!controlCopyPair && controlCopyPair !== "Unavailable";
 
     const buildStaysSame = (components: string[]): string => {
       let list = [...components];
+      if (!isCopyAngleStaysSameAllowed) {
+        list = list.filter(c => c !== "Copy Angle");
+      }
       if (!isCopyPairStaysSameAllowed) {
         list = list.filter(c => c !== "Copy Pair");
       }
@@ -736,7 +750,9 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         pattern,
         `Visual Format: Test format ${currentVis ? alternateVisual : "[new_visual]"}`,
         buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
-        `Only one visual format (${currentVis || "none"}) has meaningful spend. Test a new visual format while keeping other components the same to check scroll-stop engagement.`,
+        currentVis
+          ? `Only one visual format (${currentVis}) has meaningful spend. Test a new visual format while keeping other components the same to check scroll-stop engagement.`
+          : `No visual format has meaningful spend. Test a new visual format while keeping other components the same to check scroll-stop engagement.`,
         "Moderate"
       );
     }
@@ -747,18 +763,22 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         pattern,
         `Song Section: Test section ${currentSec ? alternateSection : "[new_songsection]"}`,
         buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
-        `Only one song section (${currentSec || "none"}) has meaningful spend. Test a new song section while keeping other components the same to optimize retention.`,
+        currentSec
+          ? `Only one song section (${currentSec}) has meaningful spend. Test a new song section while keeping other components the same to optimize retention.`
+          : `No song section has meaningful spend. Test a new song section while keeping other components the same to optimize retention.`,
         "Moderate"
       );
     }
 
-    if (meaningfulAngles.length < 2) {
+    if (!isCopyLinkageWeak && meaningfulAngles.length < 2) {
       const pattern = getSuggestedPattern(releaseSlug, currentVis, currentSec);
       addCandidate(
         pattern,
         "Copy Angle + Copy Pair. Test a new challenger message.",
         buildStaysSame(["Visual Format", "Song Section"]),
-        `Only one copy angle (${currentAngle || "none"}) has meaningful spend. Test a new copy angle while keeping other components the same to drive higher click intent.`,
+        currentAngle
+          ? `Only one copy angle (${currentAngle}) has meaningful spend. Test a new copy angle while keeping other components the same to drive higher click intent.`
+          : `No copy angle has meaningful spend. Test a new copy angle while keeping other components the same to drive higher click intent.`,
         "Moderate"
       );
     }
@@ -774,7 +794,7 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
           "High"
         );
       }
-      if (songSectionStatus === "Strong" && copyAngleStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(visualStatus) && controlVisual && controlSongSection) {
+      if (songSectionStatus === "Strong" && (!isCopyLinkageWeak && copyAngleStatus === "Strong") && ["Weak", "Below Average", "Needs Challenger"].includes(visualStatus) && controlVisual && controlSongSection) {
         const pattern = getSuggestedPattern(releaseSlug, alternateVisual, controlSongSection);
         addCandidate(
           pattern,
@@ -784,7 +804,7 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
           "High"
         );
       }
-      if (visualStatus === "Strong" && songSectionStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(copyAngleStatus) && controlVisual && controlSongSection) {
+      if (!isCopyLinkageWeak && visualStatus === "Strong" && songSectionStatus === "Strong" && ["Weak", "Below Average", "Needs Challenger"].includes(copyAngleStatus) && controlVisual && controlSongSection) {
         const pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
         addCandidate(
           pattern,
@@ -813,12 +833,12 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         staysSameComponents = ["Visual Format", "Copy Angle", "Copy Pair"];
         pattern = getSuggestedPattern(releaseSlug, controlVisual, alternateSection);
         whyMatters = `The current control is working. Duplicate it and test a new Song Section challenger.`;
-      } else if (testComponent === "Copy Angle") {
+      } else if (testComponent === "Copy Angle" && !isCopyLinkageWeak) {
         whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
         staysSameComponents = ["Visual Format", "Song Section"];
         pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
         whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
-      } else if (testComponent === "Copy Pair") {
+      } else if (testComponent === "Copy Pair" && !isCopyLinkageWeak) {
         if (alternateSameAngleCopyPairExists) {
           whatChanges = "Copy Pair: Test alternate copy pair/hook.";
           staysSameComponents = ["Visual Format", "Song Section", "Copy Angle"];
@@ -831,10 +851,24 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
           whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
         }
       } else {
-        whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
-        staysSameComponents = ["Visual Format", "Song Section"];
-        pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
-        whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
+        if (isCopyLinkageWeak) {
+          if (visualStatus !== "Strong") {
+            whatChanges = `Visual Format: Test alternate format ${alternateVisual} instead of ${controlVisual || "2screens"}`;
+            staysSameComponents = ["Song Section"];
+            pattern = getSuggestedPattern(releaseSlug, alternateVisual, controlSongSection);
+            whyMatters = `Copy diagnosis is unavailable due to weak copy linkage. Test a new Visual Format challenger.`;
+          } else {
+            whatChanges = `Song Section: Test alternate section ${alternateSection} instead of ${controlSongSection || "chorus"}`;
+            staysSameComponents = ["Visual Format"];
+            pattern = getSuggestedPattern(releaseSlug, controlVisual, alternateSection);
+            whyMatters = `Copy diagnosis is unavailable due to weak copy linkage. Test a new Song Section challenger.`;
+          }
+        } else {
+          whatChanges = "Copy Angle + Copy Pair. Test a new challenger message.";
+          staysSameComponents = ["Visual Format", "Song Section"];
+          pattern = getSuggestedPattern(releaseSlug, controlVisual, controlSongSection);
+          whyMatters = `The current control is working. Duplicate it and test a new Copy Angle challenger.`;
+        }
       }
 
       addCandidate(
@@ -868,8 +902,8 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       controlAd,
       controlVisual,
       controlSongSection,
-      controlCopyAngle,
-      controlCopyPair,
+      controlCopyAngle: isCopyLinkageWeak ? "Unavailable" : (controlCopyAngle || "Unavailable"),
+      controlCopyPair: isCopyLinkageWeak ? "Unavailable" : (controlCopyPair || "Unavailable"),
       visualStatus,
       songSectionStatus,
       copyAngleStatus,
@@ -886,13 +920,42 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       iterationCandidates,
       diagnosisRead,
       diagnosisComment
-    };;
+    };
 
     if (!latestLearning?.next_test?.trim()) {
-      const isStrongDiagnosis = preserveComponents.length > 0 || weakestComponent !== null;
-      if (isStrongDiagnosis && iterationCandidates.length > 0) {
-        const primary = iterationCandidates[0];
-        nextTestDirection = `Component Iteration recommendation (System Diagnosis): Duplicate control ${controlAd || ""}, preserve ${preserveComponents.join(" and ") || "creative structure"}, and test ${primary.whatChanges.toLowerCase()}. Reason: ${primary.whyMatters}`;
+      if (isCopyLinkageWeak) {
+        const isVisualNarrowOrChallenger = visualStatus === "Narrow Coverage" ||
+                                           visualStatus === "Needs Challenger" ||
+                                           visualStatus === "Untested" ||
+                                           meaningfulVisuals.length < 2;
+        const isSectionNarrowOrChallenger = songSectionStatus === "Narrow Coverage" ||
+                                            songSectionStatus === "Needs Challenger" ||
+                                            songSectionStatus === "Untested" ||
+                                            meaningfulSections.length < 2;
+
+        const target = controlAd || "the winning creative";
+
+        if (isVisualNarrowOrChallenger) {
+          if (controlAd) {
+            nextTestDirection = `Protect ${target} as the control and test a new visual format.`;
+          } else {
+            nextTestDirection = "Test a new visual format to establish a baseline.";
+          }
+        } else if (isSectionNarrowOrChallenger) {
+          if (controlAd) {
+            nextTestDirection = `Protect ${target} as the control and test a new song section.`;
+          } else {
+            nextTestDirection = "Test a new song section to establish a baseline.";
+          }
+        } else {
+          nextTestDirection = "Gather more data or link Copy Lab entries before diagnosing copy.";
+        }
+      } else {
+        const isStrongDiagnosis = preserveComponents.length > 0 || weakestComponent !== null;
+        if (isStrongDiagnosis && iterationCandidates.length > 0) {
+          const primary = iterationCandidates[0];
+          nextTestDirection = `Component Iteration recommendation (System Diagnosis): Duplicate control ${controlAd || ""}, preserve ${preserveComponents.join(" and ") || "creative structure"}, and test ${primary.whatChanges.toLowerCase()}. Reason: ${primary.whyMatters}`;
+        }
       }
     }
   }
