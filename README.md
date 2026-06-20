@@ -471,6 +471,16 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-06-20 15:40 -04:00
+
+- **Component Diagnosis Copy-Linkage Priority Guardrail Pass**:
+  - Implemented a copy linkage coverage threshold check in the recommendation engine (`getUnifiedCampaignRecommendation`).
+  - If copy linkage spend coverage is below 70%, Copy Angle and Copy Pair diagnosis are marked as `"Unavailable"` (showing as `"Unavailable"` in the UI instead of `"N/A"`), and their statuses are set to `"Low Data"` with descriptive weak linkage warnings.
+  - Suppressed all Copy Angle and Copy Pair iteration candidate cards and primary Next Test Direction recommendations when copy linkage coverage is weak.
+  - Updated Next Test Direction to prioritize Visual Format first (if narrow or needs challenger), followed by Song Section (if narrow or needs challenger), falling back to a recommendation to gather more data or link Copy Lab entries before diagnosing copy.
+  - Removed all user-facing `"none"` fallback strings from coverage gaps, iteration candidates, and details descriptions, replacing them with clean fallback messages.
+  - Constrained Visual Format and Song Section test candidates' `"What stays same"` descriptions to only list Copy Angle or Copy Pair components when they are explicitly known and copy linkage is reliable.
+
 ### 2026-06-20 15:30 -04:00
 
 - **Ad Name Parser Visual Vocabulary and Fallback Fix Pass**:
