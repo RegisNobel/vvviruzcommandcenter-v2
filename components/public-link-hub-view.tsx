@@ -5,7 +5,8 @@ import {ArrowUpRight, Disc3, Music2, PlaySquare} from "lucide-react";
 import {LinkPageAnalytics} from "@/components/link-page-analytics";
 import {
   getPublicReleaseDiscoveryMetadata,
-  normalizeExternalUrl
+  normalizeExternalUrl,
+  formatCollaboratorsList
 } from "@/lib/public-utils";
 import type {PublicReleaseRecord, SiteSettingsRecord} from "@/lib/types";
 
@@ -160,7 +161,7 @@ export function PublicLinkHubView({
             </h1>
             {selectedRelease.collaborator && selectedRelease.collaborator_name.trim() ? (
               <p className="mt-2 text-sm font-semibold text-[#d7b45e]">
-                with {selectedRelease.collaborator_name.trim()}
+                with {formatCollaboratorsList(selectedRelease.collaborator_name)}
               </p>
             ) : null}
 

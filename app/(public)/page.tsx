@@ -9,7 +9,7 @@ import {
   getRandomPublishedReleases,
   getSiteSettings
 } from "@/lib/repositories/public-site";
-import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
+import {getPublicReleaseDiscoveryMetadata, formatCollaboratorsList} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 
 import {BrandPillarsCarousel} from "@/components/brand-pillars-carousel";
@@ -136,7 +136,7 @@ export default async function PublicHomePage() {
                           </Link>
                           {release.collaborator && release.collaborator_name.trim() ? (
                             <p className="mt-1 text-xs font-semibold text-[#d7b45e]">
-                              with {release.collaborator_name.trim()}
+                              with {formatCollaboratorsList(release.collaborator_name)}
                             </p>
                           ) : null}
                           <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#98a0a8]">

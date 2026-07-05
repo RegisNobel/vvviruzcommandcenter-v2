@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import {
   formatPublicReleaseDate,
-  getPublicReleaseDiscoveryMetadata
+  getPublicReleaseDiscoveryMetadata,
+  formatCollaboratorsList
 } from "@/lib/public-utils";
 import type {PublicReleaseRecord} from "@/lib/types";
 
@@ -24,7 +25,7 @@ export function PublicReleaseCard({
   priority?: boolean;
   release: PublicReleaseRecord;
 }) {
-  const collaboratorName = release.collaborator ? release.collaborator_name.trim() : "";
+  const collaboratorName = release.collaborator ? formatCollaboratorsList(release.collaborator_name) : "";
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
 
   return (

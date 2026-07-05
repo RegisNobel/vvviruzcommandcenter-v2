@@ -6,6 +6,7 @@ import {ArrowLeft, PlusCircle} from "lucide-react";
 import Link from "next/link";
 
 import type {ReleaseType} from "@/lib/types";
+import {parseCollaborators} from "@/lib/public-utils";
 
 type CreateFormState = {
   title: string;
@@ -28,6 +29,7 @@ export function ReleaseCreateForm() {
     upc: "",
     isrc: ""
   });
+  const [collaborators, setCollaborators] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -36,13 +38,19 @@ export function ReleaseCreateForm() {
     setIsSubmitting(true);
     setMessage(null);
 
+    const parsed = parseCollaborators(form.collaborator_name);
+    const sanitizedForm = {
+      ...form,
+      collaborator_name: parsed.join(", ")
+    };
+
     try {
       const response = await fetch("/api/releases", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(sanitizedForm)
       });
       const payload = (await response.json()) as {
         release?: {id: string};
@@ -137,17 +145,22 @@ export function ReleaseCreateForm() {
             </label>
 
             <label className="space-y-2">
-              <span className="field-label">Collaborator</span>
+              <span className="field-label">Collaborators</span>
               <select
                 className="field-input"
-                onChange={(event) =>
+                onChange={(event) => {
+                  const isYes = event.target.value === "yes";
+                  if (!isYes) {
+                    setCollaborators([]);
+                  } else {
+                    setCollaborators([""]);
+                  }
                   setForm((current) => ({
                     ...current,
-                    collaborator: event.target.value === "yes",
-                    collaborator_name:
-                      event.target.value === "yes" ? current.collaborator_name : ""
-                  }))
-                }
+                    collaborator: isYes,
+                    collaborator_name: ""
+                  }));
+                }}
                 value={form.collaborator ? "yes" : "no"}
               >
                 <option value="no">No</option>
@@ -156,20 +169,61 @@ export function ReleaseCreateForm() {
             </label>
 
             {form.collaborator ? (
-              <label className="space-y-2">
-                <span className="field-label">Collaborator Name</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      collaborator_name: event.target.value
-                    }))
-                  }
-                  placeholder="Who are you working with?"
-                  value={form.collaborator_name}
-                />
-              </label>
+              <div className="space-y-3 pb-2">
+                <span className="field-label block">Collaborators List</span>
+                <div className="space-y-2">
+                  {collaborators.map((name, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        className="field-input flex-1"
+                        onChange={(event) => {
+                          const updated = [...collaborators];
+                          updated[index] = event.target.value;
+                          setCollaborators(updated);
+                          setForm((current) => ({
+                            ...current,
+                            collaborator_name: updated.join(",")
+                          }));
+                        }}
+                        placeholder={`Collaborator #${index + 1}`}
+                        value={name}
+                      />
+                      {collaborators.length > 1 && (
+                        <button
+                          type="button"
+                          className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-900/30 transition"
+                          onClick={() => {
+                            const updated = collaborators.filter((_, i) => i !== index);
+                            setCollaborators(updated);
+                            setForm((current) => ({
+                              ...current,
+                              collaborator_name: updated.join(",")
+                            }));
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {collaborators.length < 10 && (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a347]/30 bg-[#c9a347]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#d7b45e] hover:bg-[#c9a347]/20 transition"
+                      onClick={() => {
+                        const updated = [...collaborators, ""];
+                        setCollaborators(updated);
+                        setForm((current) => ({
+                          ...current,
+                          collaborator_name: updated.join(",")
+                        }));
+                      }}
+                    >
+                      + Add Collaborator
+                    </button>
+                  )}
+                </div>
+              </div>
             ) : null}
 
             <label className="space-y-2">

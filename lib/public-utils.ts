@@ -173,3 +173,36 @@ export function createPassthroughParams(searchParams: LinksSearchParams) {
 
   return passthroughParams;
 }
+
+/**
+ * Parses a collaborator name string into a list of unique, non-empty, trimmed names.
+ * Limits the number of collaborators to a maximum of 10.
+ */
+export function parseCollaborators(collaboratorName: string | null | undefined): string[] {
+  if (typeof collaboratorName !== "string") return [];
+  const names: string[] = [];
+  const rawNames = collaboratorName.split(",");
+  for (const raw of rawNames) {
+    const trimmed = raw.trim();
+    if (trimmed && !names.includes(trimmed)) {
+      names.push(trimmed);
+      if (names.length >= 10) {
+        break; // Cap at 10 collaborators
+      }
+    }
+  }
+  return names;
+}
+
+/**
+ * Formats a list of collaborator names into a human-readable string.
+ * Example: ["Dominion KC", "Alice", "Bob"] -> "Dominion KC, Alice & Bob"
+ */
+export function formatCollaboratorsList(names: string[] | string | null | undefined): string {
+  const parsedNames = Array.isArray(names) ? names : parseCollaborators(names);
+  if (parsedNames.length === 0) return "";
+  if (parsedNames.length === 1) return parsedNames[0];
+  if (parsedNames.length === 2) return `${parsedNames[0]} & ${parsedNames[1]}`;
+  return `${parsedNames.slice(0, -1).join(", ")} & ${parsedNames[parsedNames.length - 1]}`;
+}
+

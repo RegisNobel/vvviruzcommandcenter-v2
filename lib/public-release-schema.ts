@@ -4,7 +4,8 @@ import type {PublicReleaseRecord} from "@/lib/types";
 
 import {
   getPublicReleaseDiscoveryMetadata,
-  normalizeExternalUrl
+  normalizeExternalUrl,
+  parseCollaborators
 } from "@/lib/public-utils";
 
 type JsonObject = Record<string, unknown>;
@@ -99,7 +100,7 @@ export function buildPublicReleaseJsonLd({
     )
   );
   const image = getHttpUrl(release.cover_art_path, baseUrl);
-  const collaboratorName = release.collaborator_name.trim();
+  const collaborators = parseCollaborators(release.collaborator_name);
   const hasPublicLyrics =
     release.public_lyrics_enabled && release.lyrics.trim().length > 0;
 
@@ -124,11 +125,13 @@ export function buildPublicReleaseJsonLd({
       url: baseUrl
     }),
     contributor:
-      release.collaborator && collaboratorName
-        ? compactObject({
-            "@type": "Person",
-            name: collaboratorName
-          })
+      release.collaborator && collaborators.length > 0
+        ? collaborators.map((name) =>
+            compactObject({
+              "@type": "Person",
+              name
+            })
+          )
         : undefined,
     genre: [release.type, ...release.categories.map((category) => category.name)],
     isPartOf: categoryWorks,

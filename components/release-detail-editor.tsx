@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 
 import {AUTOSAVE_INTERVAL_MS} from "@/lib/constants";
+import {parseCollaborators, formatCollaboratorsList} from "@/lib/public-utils";
 import {
   calculateReleaseProgress,
   createReleaseTask,
@@ -411,6 +412,9 @@ export function ReleaseDetailEditor({
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
+  const [collaborators, setCollaborators] = useState<string[]>(() =>
+    parseCollaborators(initialRelease.collaborator_name)
+  );
   const [linkedCopies, setLinkedCopies] = useState(initialLinkedCopies);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
@@ -635,7 +639,13 @@ export function ReleaseDetailEditor({
     releaseToSave: ReleaseRecord,
     options?: {successMessage?: string | null}
   ) => {
-    const snapshot = serializeRelease(releaseToSave);
+    // Sanitize collaborators before saving
+    const parsed = parseCollaborators(releaseToSave.collaborator_name);
+    const sanitizedRelease = {
+      ...releaseToSave,
+      collaborator_name: parsed.join(", ")
+    };
+    const snapshot = serializeRelease(sanitizedRelease);
     const previousSnapshot = lastSavedSnapshotRef.current;
 
     if (autosaveTimerRef.current) {
@@ -665,6 +675,7 @@ export function ReleaseDetailEditor({
 
       lastSavedSnapshotRef.current = serializeRelease(payload.release);
       setRelease(payload.release);
+      setCollaborators(parseCollaborators(payload.release.collaborator_name));
       setSaveState("saved");
       setHasPendingChanges(latestDraftSnapshotRef.current !== snapshot);
 
@@ -1049,10 +1060,10 @@ export function ReleaseDetailEditor({
                     <span className="font-semibold text-[#efe8db]">{currentStage}</span>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span>Collaborator</span>
+                    <span>Collaborators</span>
                     <span className="font-semibold text-[#efe8db]">
                       {release.collaborator
-                        ? release.collaborator_name || "Yes"
+                        ? formatCollaboratorsList(release.collaborator_name) || "Yes"
                         : "No"}
                     </span>
                   </div>
@@ -1133,19 +1144,22 @@ export function ReleaseDetailEditor({
                 </label>
 
                 <label className="space-y-2">
-                  <span className={pageLabelClass}>Collaborator / Featured Artist</span>
+                  <span className={pageLabelClass}>Collaborators</span>
                   <select
                     className={pageInputClass}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const isYes = event.target.value === "yes";
+                      if (!isYes) {
+                        setCollaborators([]);
+                      } else {
+                        setCollaborators([""]);
+                      }
                       updateRelease((current) => ({
                         ...current,
-                        collaborator: event.target.value === "yes",
-                        collaborator_name:
-                          event.target.value === "yes"
-                            ? current.collaborator_name
-                            : ""
-                      }))
-                    }
+                        collaborator: isYes,
+                        collaborator_name: ""
+                      }));
+                    }}
                     value={release.collaborator ? "yes" : "no"}
                   >
                     <option value="no">No</option>
@@ -1154,20 +1168,61 @@ export function ReleaseDetailEditor({
                 </label>
 
                 {release.collaborator ? (
-                  <label className="space-y-2">
-                    <span className={pageLabelClass}>Collaborator / Featured Artist Name</span>
-                    <input
-                      className={pageInputClass}
-                      onChange={(event) =>
-                        updateRelease((current) => ({
-                          ...current,
-                          collaborator_name: event.target.value
-                        }))
-                      }
-                      placeholder="Who is the collaborator?"
-                      value={release.collaborator_name}
-                    />
-                  </label>
+                  <div className="space-y-3 pb-2">
+                    <span className={`${pageLabelClass} block`}>Collaborators List</span>
+                    <div className="space-y-2">
+                      {collaborators.map((name, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input
+                            className={`${pageInputClass} flex-1`}
+                            onChange={(event) => {
+                              const updated = [...collaborators];
+                              updated[index] = event.target.value;
+                              setCollaborators(updated);
+                              updateRelease((current) => ({
+                                ...current,
+                                collaborator_name: updated.join(",")
+                              }));
+                            }}
+                            placeholder={`Collaborator #${index + 1}`}
+                            value={name}
+                          />
+                          {collaborators.length > 1 && (
+                            <button
+                              type="button"
+                              className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-900/30 transition"
+                              onClick={() => {
+                                const updated = collaborators.filter((_, i) => i !== index);
+                                setCollaborators(updated);
+                                updateRelease((current) => ({
+                                  ...current,
+                                  collaborator_name: updated.join(",")
+                                }));
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      {collaborators.length < 10 && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a347]/30 bg-[#c9a347]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#d7b45e] hover:bg-[#c9a347]/20 transition"
+                          onClick={() => {
+                            const updated = [...collaborators, ""];
+                            setCollaborators(updated);
+                            updateRelease((current) => ({
+                              ...current,
+                              collaborator_name: updated.join(",")
+                            }));
+                          }}
+                        >
+                          + Add Collaborator
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ) : null}
 
                 <label className="space-y-2">
@@ -2571,7 +2626,7 @@ export function ReleaseDetailEditor({
                   {[
                     ["Type", formatReleaseType(release.type)],
                     ["Release Date", release.release_date || "Not set"],
-                    ["Collaborator", release.collaborator ? release.collaborator_name || "Yes" : "No"],
+                    ["Collaborators", release.collaborator ? formatCollaboratorsList(release.collaborator_name) || "Yes" : "No"],
                     ["UPC", release.upc || "Not set"],
                     ["ISRC", release.isrc || "Not set"],
                     ["Updated", formatTimestamp(release.updated_on)]

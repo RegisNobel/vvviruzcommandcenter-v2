@@ -19,7 +19,8 @@ import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
   getSpotifyEmbedUrl,
-  getYouTubeEmbedUrl
+  getYouTubeEmbedUrl,
+  formatCollaboratorsList
 } from "@/lib/public-utils";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
@@ -162,7 +163,7 @@ export default async function PublicReleaseDetailPage({
 
               {release.collaborator && release.collaborator_name.trim() ? (
                 <p className="mt-3 text-sm font-semibold text-[#d7b45e]">
-                  with {release.collaborator_name.trim()}
+                  with {formatCollaboratorsList(release.collaborator_name)}
                 </p>
               ) : null}
 
