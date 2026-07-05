@@ -226,6 +226,18 @@ const getCachedLinksPageRelease = unstable_cache(
     }
   }
 
+  const latestRelease = await prisma.release.findFirst({
+    where: {
+      isPublished: true
+    },
+    select: publicReleaseSelect,
+    orderBy: newestPublicReleaseOrder
+  });
+
+  if (latestRelease) {
+    return toPublicRelease(latestRelease);
+  }
+
   return getCachedFeaturedRelease();
   },
   ["public-links-page-release"],
