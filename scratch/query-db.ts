@@ -19,12 +19,11 @@ async function main() {
 
   console.log('--- RELEASES ---');
   const releases = await prisma.release.findMany({
-    where: { isPublished: true },
-    take: 5
+    orderBy: { releaseDate: 'desc' }
   });
-  console.log(`Found ${releases.length} published releases.`);
+  console.log(`Found ${releases.length} releases in database.`);
   for (const r of releases) {
-    console.log(`- Slug: ${r.slug}, CoverArtPath: ${r.coverArtPath}, Title: ${r.title}`);
+    console.log(`- Slug: ${r.slug}\n  Title: ${r.title}\n  Published: ${r.isPublished}\n  Featured: ${r.isFeatured}\n  Date: ${r.releaseDate}\n  Updated: ${r.updatedOn}`);
   }
 
   console.log('--- APPEARS ON ---');

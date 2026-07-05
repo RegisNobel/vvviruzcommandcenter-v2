@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     readLinkHubByPath("links")
   ]);
   const content = siteSettings.site_content.links;
-  const releaseId = hub?.releaseId || content.selected_release_id || "";
+  const releaseId = hub ? (hub.releaseId ?? "") : (content.selected_release_id || "");
   const selectedRelease = await getLinksPageRelease(releaseId);
   const releaseMetadata = selectedRelease
     ? getPublicReleaseDiscoveryMetadata(selectedRelease)
@@ -67,7 +67,7 @@ export default async function PublicLinksPage({
   ]);
   const content = siteSettings.site_content.links;
   const passthroughParams = createPassthroughParams(rawSearchParams);
-  const releaseId = hub?.releaseId || content.selected_release_id || "";
+  const releaseId = hub ? (hub.releaseId ?? "") : (content.selected_release_id || "");
   const selectedRelease = await getLinksPageRelease(releaseId);
 
   return (
