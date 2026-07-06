@@ -40,6 +40,11 @@ const promoSubItems = [
     href: "/admin/attribution",
     label: "Attribution",
     description: "Compare Meta traffic against first-party link behavior."
+  },
+  {
+    href: "/admin/promo/playlists",
+    label: "Playlists",
+    description: "Manage streaming playlists and campaign landing pages."
   }
 ];
 

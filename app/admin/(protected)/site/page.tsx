@@ -3,11 +3,13 @@ import {ReleaseCategorySettingsPanel} from "@/components/release-category-settin
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
 import {AppearsOnSettingsPanel} from "@/components/appears-on-settings-panel";
 import {LinkHubsSettingsPanel} from "@/components/link-hubs-settings-panel";
+import {PlaylistsSettingsPanel} from "@/components/playlists-settings-panel";
 import {listReleaseCategories} from "@/lib/repositories/release-categories";
 import {readAllAppearsOn} from "@/lib/repositories/appears-on";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {readLinkHubs} from "@/lib/repositories/link-hubs";
+import {readPlaylists} from "@/lib/repositories/playlists";
 import {
   listExclusiveArtFiles,
   listExclusiveTrackFiles,
@@ -23,7 +25,8 @@ export default async function AdminSitePage() {
     exclusiveTrackFileOptions,
     exclusiveTrackArtOptions,
     appearsOnRecords,
-    linkHubs
+    linkHubs,
+    playlists
   ] = await Promise.all([
     readSiteSettings(),
     readReleaseSummaries(),
@@ -32,7 +35,8 @@ export default async function AdminSitePage() {
     listExclusiveTrackFiles(),
     listExclusiveArtFiles(),
     readAllAppearsOn(),
-    readLinkHubs()
+    readLinkHubs(),
+    readPlaylists({ archiveStatus: "active" })
   ]);
 
   return (
@@ -49,6 +53,10 @@ export default async function AdminSitePage() {
         <LinkHubsSettingsPanel
           initialHubs={linkHubs}
           releaseOptions={releaseSummaries}
+        />
+
+        <PlaylistsSettingsPanel
+          initialPlaylists={playlists}
         />
 
         <ReleaseCategorySettingsPanel

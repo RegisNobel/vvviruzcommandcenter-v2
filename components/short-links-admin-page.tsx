@@ -120,20 +120,34 @@ export function ShortLinksAdminPage({
   baseUrl,
   initialLinks,
   releaseOptions,
-  statusFilter
+  statusFilter,
+  prefill
 }: {
   baseUrl: string;
   initialLinks: ShortLinkRecord[];
   releaseOptions: ReleaseSummary[];
   statusFilter: ShortLinkAdminFilter;
+  prefill?: {
+    destinationUrl: string;
+    releaseId: string;
+    campaignLabel: string;
+    contentLabel: string;
+    utmSource: string;
+    utmMedium: string;
+    utmCampaign: string;
+  };
 }) {
   const router = useRouter();
-  const [destinationUrl, setDestinationUrl] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState(prefill?.destinationUrl || "");
   const [customSlug, setCustomSlug] = useState("");
-  const [releaseId, setReleaseId] = useState("");
-  const [campaignLabel, setCampaignLabel] = useState("");
-  const [contentLabel, setContentLabel] = useState("");
-  const [utmFields, setUtmFields] = useState<UtmFields>({});
+  const [releaseId, setReleaseId] = useState(prefill?.releaseId || "");
+  const [campaignLabel, setCampaignLabel] = useState(prefill?.campaignLabel || "");
+  const [contentLabel, setContentLabel] = useState(prefill?.contentLabel || "");
+  const [utmFields, setUtmFields] = useState<UtmFields>(() => ({
+    utm_source: prefill?.utmSource || "",
+    utm_medium: prefill?.utmMedium || "",
+    utm_campaign: prefill?.utmCampaign || ""
+  }));
   const [contextDrafts, setContextDrafts] = useState(() =>
     createContextDrafts(initialLinks)
   );

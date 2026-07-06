@@ -383,6 +383,45 @@ export type LinkHubRecord = {
   updatedAt: string;
   release_title?: string;
 };
+export type PlaylistRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  coverImageUrl: string;
+  spotifyPlaylistUrl: string;
+  applePlaylistUrl: string;
+  youtubePlaylistUrl: string;
+  primaryPlatform: string;
+  featuredReleaseId: string | null;
+  isPublic: boolean;
+  isArchived: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  featuredRelease_title?: string;
+  activeReleaseCount?: number;
+};
+
+export type PlaylistReleaseRecord = {
+  playlistId: string;
+  releaseId: string;
+  position: number;
+  spotifyTargetUrl: string;
+  appleTargetUrl: string;
+  youtubeTargetUrl: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  release_title?: string;
+  release_slug?: string;
+  release_cover_art_path?: string;
+  release_type?: string;
+  release_collaborator?: boolean;
+  release_collaborator_name?: string;
+  release_public_description?: string;
+  release_is_published?: boolean;
+};
 
 
 export type SubscriberRecord = {

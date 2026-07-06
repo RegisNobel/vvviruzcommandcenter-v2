@@ -13,9 +13,12 @@ const analyticsEventSchema = z.object({
     "links_page_view",
     "links_link_click",
     "vault_page_view",
-    "vault_cta_click"
+    "vault_cta_click",
+    "playlist_page_view",
+    "playlist_track_click",
+    "playlist_follow_click"
   ]),
-  page: z.enum(["links", "vault"]),
+  page: z.enum(["links", "vault", "playlist"]),
   path: z.string().default(""),
   hubPath: z.string().default(""),
   releaseId: z.string().nullish(),
@@ -37,8 +40,13 @@ const analyticsEventSchema = z.object({
   const isVaultEvent =
     event.page === "vault" &&
     (event.eventType === "vault_page_view" || event.eventType === "vault_cta_click");
+  const isPlaylistEvent =
+    event.page === "playlist" &&
+    (event.eventType === "playlist_page_view" ||
+     event.eventType === "playlist_track_click" ||
+     event.eventType === "playlist_follow_click");
 
-  if (!isLinksEvent && !isVaultEvent) {
+  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Unsupported analytics event for page."

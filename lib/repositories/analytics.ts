@@ -4,8 +4,15 @@ import {prisma} from "@/lib/db/prisma";
 import {createId} from "@/lib/utils";
 
 export type PublicAnalyticsEventInput = {
-  eventType: "links_page_view" | "links_link_click" | "vault_page_view" | "vault_cta_click";
-  page: "links" | "vault";
+  eventType: 
+    | "links_page_view" 
+    | "links_link_click" 
+    | "vault_page_view" 
+    | "vault_cta_click"
+    | "playlist_page_view"
+    | "playlist_track_click"
+    | "playlist_follow_click";
+  page: "links" | "vault" | "playlist";
   path?: string;
   hubPath?: string;
   releaseId?: string | null;

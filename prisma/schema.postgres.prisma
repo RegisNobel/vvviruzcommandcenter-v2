@@ -86,6 +86,8 @@ model Release {
   adCampaignLearnings AdCampaignLearning[]
   shortLinks       ShortLink[]
   linkHubs         LinkHub[]
+  featuredPlaylists Playlist[]        @relation("PlaylistFeaturedRelease")
+  playlists         PlaylistRelease[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -526,3 +528,48 @@ model LinkHub {
 
   @@index([releaseId])
 }
+
+model Playlist {
+  id                 String            @id
+  name               String
+  slug               String            @unique
+  description        String            @default("")
+  coverImageUrl      String            @default("")
+  spotifyPlaylistUrl String            @default("")
+  applePlaylistUrl   String            @default("")
+  youtubePlaylistUrl   String            @default("")
+  primaryPlatform    String            @default("spotify")
+  featuredReleaseId  String?
+  isPublic           Boolean           @default(false)
+  isArchived         Boolean           @default(false)
+  sortOrder          Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  featuredRelease    Release?          @relation("PlaylistFeaturedRelease", fields: [featuredReleaseId], references: [id], onDelete: SetNull)
+  releases           PlaylistRelease[]
+
+  @@index([featuredReleaseId])
+  @@index([isPublic, isArchived])
+  @@index([sortOrder])
+}
+
+model PlaylistRelease {
+  playlistId       String
+  releaseId        String
+  position         Int      @default(0)
+  spotifyTargetUrl String   @default("")
+  appleTargetUrl   String   @default("")
+  youtubeTargetUrl String   @default("")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  release  Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, releaseId])
+  @@index([playlistId, position])
+  @@index([releaseId])
+}
+

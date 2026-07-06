@@ -1,0 +1,484 @@
+"use client";
+
+import {useEffect, useState, useTransition} from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Disc,
+  Play,
+  Mail,
+  CheckCircle,
+  Plus,
+  ChevronRight,
+  Loader2
+} from "lucide-react";
+import type {
+  PlaylistRecord,
+  PlaylistReleaseRecord,
+  SiteSettingsRecord
+} from "@/lib/types";
+import {formatCollaboratorsList} from "@/lib/public-utils";
+
+function getUtmParams() {
+  if (typeof window === "undefined") {
+    return {
+      utmSource: "",
+      utmMedium: "",
+      utmCampaign: "",
+      utmContent: "",
+      utmTerm: ""
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return {
+    utmSource: params.get("utm_source") || "",
+    utmMedium: params.get("utm_medium") || "",
+    utmCampaign: params.get("utm_campaign") || "",
+    utmContent: params.get("utm_content") || "",
+    utmTerm: params.get("utm_term") || ""
+  };
+}
+
+function trackEvent(playlistSlug: string, releaseId: string, payload: Record<string, any>) {
+  const utm = getUtmParams();
+  const body = JSON.stringify({
+    page: "playlist",
+    path: `${window.location.pathname}${window.location.search}`,
+    hubPath: `/listen/${playlistSlug}`,
+    releaseId,
+    ...utm,
+    ...payload
+  });
+
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon("/api/analytics/track", new Blob([body], {type: "application/json"}));
+    return;
+  }
+
+  void fetch("/api/analytics/track", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body,
+    keepalive: true
+  });
+}
+
+function resolvePrimaryTrackTarget(
+  membership: PlaylistReleaseRecord,
+  preferredPlatform: string
+) {
+  const spotify = membership.spotifyTargetUrl?.trim() || "";
+  const apple = membership.appleTargetUrl?.trim() || "";
+  const youtube = membership.youtubeTargetUrl?.trim() || "";
+
+  const platformLower = preferredPlatform.toLowerCase();
+  if (platformLower === "spotify" && spotify) {
+    return { platform: "spotify", url: spotify, label: "Spotify" };
+  }
+  if (platformLower === "apple" && apple) {
+    return { platform: "apple", url: apple, label: "Apple Music" };
+  }
+  if (platformLower === "youtube" && youtube) {
+    return { platform: "youtube", url: youtube, label: "YouTube Music" };
+  }
+
+  // Fallbacks in priority order
+  if (spotify) return { platform: "spotify", url: spotify, label: "Spotify" };
+  if (apple) return { platform: "apple", url: apple, label: "Apple Music" };
+  if (youtube) return { platform: "youtube", url: youtube, label: "YouTube Music" };
+
+  return null;
+}
+
+function getSecondaryTrackTargets(
+  membership: PlaylistReleaseRecord,
+  primaryPlatform: string
+) {
+  const targets = [];
+  const spotify = membership.spotifyTargetUrl?.trim() || "";
+  const apple = membership.appleTargetUrl?.trim() || "";
+  const youtube = membership.youtubeTargetUrl?.trim() || "";
+
+  if (primaryPlatform !== "spotify" && spotify) {
+    targets.push({ platform: "spotify", url: spotify, label: "Spotify" });
+  }
+  if (primaryPlatform !== "apple" && apple) {
+    targets.push({ platform: "apple", url: apple, label: "Apple Music" });
+  }
+  if (primaryPlatform !== "youtube" && youtube) {
+    targets.push({ platform: "youtube", url: youtube, label: "YouTube Music" });
+  }
+
+  return targets;
+}
+
+export function PublicPlaylistCampaignView({
+  playlist,
+  focusedMembership,
+  previewMemberships,
+  siteSettings
+}: {
+  playlist: PlaylistRecord;
+  focusedMembership: PlaylistReleaseRecord;
+  previewMemberships: PlaylistReleaseRecord[];
+  siteSettings: SiteSettingsRecord;
+}) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [signupState, setSignupState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [signupMsg, setSignupMsg] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  // Log page view on mount
+  useEffect(() => {
+    trackEvent(playlist.slug, focusedMembership.releaseId, {
+      eventType: "playlist_page_view"
+    });
+  }, [playlist.slug, focusedMembership.releaseId]);
+
+  // Track click handler
+  const handleTrackClick = (platform: string, targetUrl: string) => {
+    trackEvent(playlist.slug, focusedMembership.releaseId, {
+      eventType: "playlist_track_click",
+      linkType: "track",
+      linkLabel: platform,
+      targetUrl
+    });
+  };
+
+  // Follow click handler
+  const handleFollowClick = (platform: string, playlistUrl: string) => {
+    trackEvent(playlist.slug, focusedMembership.releaseId, {
+      eventType: "playlist_follow_click",
+      linkType: "playlist",
+      linkLabel: platform,
+      targetUrl: playlistUrl
+    });
+  };
+
+  // Newsletter submit
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !name.trim()) {
+      setSignupState("error");
+      setSignupMsg("Name and email are required.");
+      return;
+    }
+    if (!consentGiven) {
+      setSignupState("error");
+      setSignupMsg("Please check the consent box to continue.");
+      return;
+    }
+
+    setSignupState("loading");
+    setSignupMsg("");
+
+    const utm = getUtmParams();
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/exclusive/claim", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            name,
+            email,
+            consent_given: consentGiven,
+            bot_test_field: "",
+            source_utm_source: utm.utmSource,
+            source_utm_medium: utm.utmMedium,
+            source_utm_campaign: utm.utmCampaign,
+            source_utm_content: utm.utmContent,
+            source_utm_term: utm.utmTerm,
+            source_referrer: typeof document !== "undefined" ? document.referrer : "",
+            source_landing_page: window.location.pathname
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to subscribe.");
+        }
+
+        setSignupState("success");
+        setSignupMsg("You're in. I'll send the preview/update when it's ready.");
+      } catch (err) {
+        setSignupState("error");
+        setSignupMsg(err instanceof Error ? err.message : "Failed to join newsletter.");
+      }
+    });
+  };
+
+  // Resolve platform buttons
+  const primaryTarget = resolvePrimaryTrackTarget(focusedMembership, playlist.primaryPlatform);
+  const secondaryTargets = primaryTarget
+    ? getSecondaryTrackTargets(focusedMembership, primaryTarget.platform)
+    : [];
+
+  const artistDisplay = focusedMembership.release_collaborator
+    ? `${siteSettings.artist_name} feat. ${formatCollaboratorsList(focusedMembership.release_collaborator_name)}`
+    : siteSettings.artist_name;
+
+  return (
+    <main className="relative min-h-screen bg-[#090b0e] text-[#ebe5d9] overflow-x-hidden font-sans pb-24">
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-[#c9a347]/10 via-[#c9a347]/0 to-transparent blur-[120px]" />
+
+      <div className="relative mx-auto max-w-[540px] px-4 pt-10 sm:pt-14 space-y-10">
+        
+        {/* 1. Focused Release Hero */}
+        <section className="text-center space-y-6">
+          {/* Playlist Context Pill */}
+          <div className="inline-flex rounded-full border border-[#c9a347]/20 bg-[#c9a347]/5 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#d8b864] shadow-sm">
+            Part of {playlist.name}
+          </div>
+
+          {/* Artwork Container */}
+          <div className="relative mx-auto aspect-square w-[320px] sm:w-[360px] rounded-3xl overflow-hidden shadow-2xl border border-white/5 bg-[#12141a]">
+            {focusedMembership.release_cover_art_path ? (
+              <Image
+                alt={`${focusedMembership.release_title} Cover Art`}
+                className="object-cover transition-transform duration-700 hover:scale-105"
+                fill
+                priority
+                src={focusedMembership.release_cover_art_path}
+                unoptimized
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[#171a21]">
+                <Disc className="animate-spin text-muted" size={48} />
+              </div>
+            )}
+          </div>
+
+          {/* Text block */}
+          <div className="space-y-2 px-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#f3ede2]">
+              {focusedMembership.release_title}
+            </h1>
+            <p className="text-sm font-semibold text-[#b8bdc5] tracking-wide">
+              {artistDisplay}
+            </p>
+            {focusedMembership.release_public_description && (
+              <p className="mt-3 text-sm leading-6 text-[#9ca2ad] max-w-sm mx-auto">
+                {focusedMembership.release_public_description}
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* 2. Primary Track CTA */}
+        {primaryTarget && (
+          <section className="px-2">
+            <a
+              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-[#c9a347] py-4 px-6 font-bold text-[#090b0e] shadow-[0_0_40px_rgba(201,163,71,0.18)] transition-all duration-300 hover:bg-[#d8b864] hover:shadow-[0_0_50px_rgba(201,163,71,0.28)] hover:-translate-y-[1px]"
+              href={primaryTarget.url}
+              onClick={() => handleTrackClick(primaryTarget.platform, primaryTarget.url)}
+              target="_blank"
+            >
+              <Play className="fill-current text-[#090b0e]" size={16} />
+              <span className="text-center leading-none">
+                Listen to {focusedMembership.release_title} on {primaryTarget.label}
+              </span>
+            </a>
+          </section>
+        )}
+
+        {/* 3. Secondary Track Platform Links */}
+        {secondaryTargets.length > 0 && (
+          <section className="text-center text-xs text-[#969ca5] font-semibold tracking-wide space-x-1">
+            {secondaryTargets.map((target, idx) => (
+              <span key={target.platform}>
+                <a
+                  className="hover:text-[#ebe5d9] transition px-1"
+                  href={target.url}
+                  onClick={() => handleTrackClick(target.platform, target.url)}
+                  target="_blank"
+                >
+                  {target.label}
+                </a>
+                {idx < secondaryTargets.length - 1 && <span className="opacity-40">·</span>}
+              </span>
+            ))}
+          </section>
+        )}
+
+        {/* 4. Compact Inline Newsletter Signup */}
+        <section className="rounded-3xl border border-white/10 bg-[#0e1015]/60 p-6 backdrop-blur-2xl shadow-xl space-y-4">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+            <Mail className="text-[#c9a347]" size={18} />
+            <h3 className="text-sm font-bold text-[#f3ede2]">Join the Inner Circle</h3>
+          </div>
+
+          {signupState === "success" ? (
+            <div className="flex items-start gap-2.5 rounded-xl border border-emerald-950/40 bg-emerald-950/20 px-3.5 py-3 text-xs text-emerald-400">
+              <CheckCircle className="shrink-0 mt-0.5" size={16} />
+              <p>{signupMsg}</p>
+            </div>
+          ) : (
+            <form className="space-y-3" onSubmit={handleNewsletterSubmit}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-xs text-[#ebe5d9] placeholder-[#5f656e] focus:border-[#c9a347]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a347]/50"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your Name"
+                  required
+                  type="text"
+                  value={name}
+                />
+                <input
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-xs text-[#ebe5d9] placeholder-[#5f656e] focus:border-[#c9a347]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a347]/50"
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Your Email"
+                  required
+                  type="email"
+                  value={email}
+                />
+              </div>
+
+              <label className="flex items-start gap-2 cursor-pointer pt-1">
+                <input
+                  checked={consentGiven}
+                  className="mt-0.5 rounded border-white/10 bg-black/40 text-[#c9a347] focus:ring-[#c9a347]"
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  type="checkbox"
+                />
+                <span className="text-[10px] leading-4 text-[#8b919b]">
+                  {siteSettings.site_content.exclusive.consent_label || "I consent to receive marketing emails and release updates."}
+                </span>
+              </label>
+
+              {signupState === "error" && (
+                <p className="text-[10px] text-rose-400 font-semibold">{signupMsg}</p>
+              )}
+
+              <button
+                className="w-full rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/15 hover:border-white/20 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                disabled={signupState === "loading"}
+                type="submit"
+              >
+                {signupState === "loading" ? (
+                  <Loader2 className="animate-spin" size={14} />
+                ) : (
+                  "Subscribe for Updates"
+                )}
+              </button>
+            </form>
+          )}
+        </section>
+
+        {/* 5. Compact Playlist Preview */}
+        {previewMemberships.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xs uppercase tracking-widest font-bold text-[#868c96] px-1">
+              Up Next on Playlist
+            </h3>
+
+            <div className="rounded-3xl border border-white/10 bg-[#0e1015]/60 overflow-hidden backdrop-blur-2xl divide-y divide-white/5">
+              {previewMemberships.map((m) => {
+                const previewArtist = m.release_collaborator
+                  ? `${siteSettings.artist_name} feat. ${formatCollaboratorsList(m.release_collaborator_name)}`
+                  : siteSettings.artist_name;
+
+                return (
+                  <Link
+                    className="group flex items-center gap-4 p-4 hover:bg-white/[0.03] transition-colors"
+                    href={`/listen/${playlist.slug}/${m.release_slug}`}
+                    key={m.releaseId}
+                  >
+                    <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-black/40 border border-white/5">
+                      {m.release_cover_art_path ? (
+                        <Image
+                          alt=""
+                          className="object-cover"
+                          fill
+                          src={m.release_cover_art_path}
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-muted">
+                          <Disc size={16} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <h4 className="font-bold text-sm text-[#f3ede2] group-hover:text-[#c9a347] transition truncate">
+                        {m.release_title}
+                      </h4>
+                      <p className="text-[11px] text-[#8b919b] truncate">
+                        {previewArtist}
+                      </p>
+                    </div>
+
+                    <ChevronRight className="text-[#565b63] group-hover:text-[#ebe5d9] group-hover:translate-x-0.5 transition" size={16} />
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 6. Playlist Follow CTA */}
+        {(playlist.spotifyPlaylistUrl || playlist.applePlaylistUrl || playlist.youtubePlaylistUrl) && (
+          <section className="rounded-3xl border border-white/10 bg-[#0e1015]/60 p-6 backdrop-blur-2xl shadow-xl space-y-4">
+            <div className="text-center">
+              <h3 className="text-sm font-bold text-[#f3ede2]">Grow the Asset</h3>
+              <p className="text-[11px] text-[#8b919b] mt-1">
+                Save the playlist to your library for offline listening & updates.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              {playlist.spotifyPlaylistUrl && (
+                <a
+                  className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 px-4 py-3 text-xs font-semibold text-emerald-100 hover:border-emerald-500/40 transition"
+                  href={playlist.spotifyPlaylistUrl}
+                  onClick={() => handleFollowClick("spotify", playlist.spotifyPlaylistUrl)}
+                  target="_blank"
+                >
+                  <span>Follow Playlist on Spotify</span>
+                  <Plus size={14} />
+                </a>
+              )}
+
+              {playlist.applePlaylistUrl && (
+                <a
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-4 py-3 text-xs font-semibold text-[#f3ede2] hover:border-white/20 transition"
+                  href={playlist.applePlaylistUrl}
+                  onClick={() => handleFollowClick("apple", playlist.applePlaylistUrl)}
+                  target="_blank"
+                >
+                  <span>Follow Playlist on Apple Music</span>
+                  <Plus size={14} />
+                </a>
+              )}
+
+              {playlist.youtubePlaylistUrl && (
+                <a
+                  className="flex items-center justify-between rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-100 hover:border-rose-500/40 transition"
+                  href={playlist.youtubePlaylistUrl}
+                  onClick={() => handleFollowClick("youtube", playlist.youtubePlaylistUrl)}
+                  target="_blank"
+                >
+                  <span>Follow Playlist on YouTube Music</span>
+                  <Plus size={14} />
+                </a>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* 7. Minimal Footer */}
+        <footer className="text-center pt-8 text-[10px] text-[#5c616b] font-medium tracking-wider space-y-1.5">
+          <p>© {new Date().getFullYear()} {siteSettings.artist_name}. All rights reserved.</p>
+          <p className="opacity-75">POWERED BY COMMAND CENTER</p>
+        </footer>
+
+      </div>
+    </main>
+  );
+}

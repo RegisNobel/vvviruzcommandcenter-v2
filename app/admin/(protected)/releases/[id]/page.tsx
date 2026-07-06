@@ -15,6 +15,7 @@ import {
 import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
+import {readPlaylists} from "@/lib/repositories/playlists";
 import {prisma} from "@/lib/db/prisma";
 
 export default async function AdminReleaseDetailPage({
@@ -35,7 +36,9 @@ export default async function AdminReleaseDetailPage({
       adPerformanceTimeline,
       copyPerformanceMemory,
       analyticsEvents,
-      reports
+      reports,
+      playlists,
+      playlistMemberships
     ] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
@@ -52,7 +55,11 @@ export default async function AdminReleaseDetailPage({
           releaseId: id
         }
       }),
-      readReleaseAdReports(id)
+      readReleaseAdReports(id),
+      readPlaylists({ archiveStatus: "active" }),
+      prisma.playlistRelease.findMany({
+        where: { releaseId: id }
+      })
     ]);
 
     const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
@@ -76,6 +83,8 @@ export default async function AdminReleaseDetailPage({
         streamingClicksCount={streamingClicks.length}
         utmCoverageRate={utmCoverageRate}
         reports={reports}
+        initialPlaylists={playlists}
+        initialPlaylistMemberships={playlistMemberships}
       />
     );
   } catch {

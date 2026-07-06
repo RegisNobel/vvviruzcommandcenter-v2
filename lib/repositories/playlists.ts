@@ -1,0 +1,543 @@
+import {prisma} from "@/lib/db/prisma";
+import {createId} from "@/lib/utils";
+import {validateExternalUrl} from "@/lib/validation";
+import type {Playlist, PlaylistRelease, Release} from "@prisma/client";
+import type {PlaylistRecord, PlaylistReleaseRecord} from "@/lib/types";
+
+// Mapping helpers
+function toPlaylistRecord(
+  playlist: Playlist & {
+    _count?: { releases: number };
+    featuredRelease?: { title: string } | null;
+  }
+): PlaylistRecord {
+  return {
+    id: playlist.id,
+    name: playlist.name,
+    slug: playlist.slug,
+    description: playlist.description,
+    coverImageUrl: playlist.coverImageUrl,
+    spotifyPlaylistUrl: playlist.spotifyPlaylistUrl,
+    applePlaylistUrl: playlist.applePlaylistUrl,
+    youtubePlaylistUrl: playlist.youtubePlaylistUrl,
+    primaryPlatform: playlist.primaryPlatform,
+    featuredReleaseId: playlist.featuredReleaseId,
+    isPublic: playlist.isPublic,
+    isArchived: playlist.isArchived,
+    sortOrder: playlist.sortOrder,
+    createdAt: playlist.createdAt.toISOString(),
+    updatedAt: playlist.updatedAt.toISOString(),
+    featuredRelease_title: playlist.featuredRelease?.title ?? undefined,
+    activeReleaseCount: playlist._count?.releases ?? undefined
+  };
+}
+
+function toPlaylistReleaseRecord(
+  membership: PlaylistRelease & {
+    release?: Release | null;
+  }
+): PlaylistReleaseRecord {
+  return {
+    playlistId: membership.playlistId,
+    releaseId: membership.releaseId,
+    position: membership.position,
+    spotifyTargetUrl: membership.spotifyTargetUrl,
+    appleTargetUrl: membership.appleTargetUrl,
+    youtubeTargetUrl: membership.youtubeTargetUrl,
+    isActive: membership.isActive,
+    createdAt: membership.createdAt.toISOString(),
+    updatedAt: membership.updatedAt.toISOString(),
+    release_title: membership.release?.title ?? undefined,
+    release_slug: membership.release?.slug ?? undefined,
+    release_cover_art_path: membership.release?.coverArtPath ?? undefined,
+    release_type: membership.release?.type ?? undefined,
+    release_collaborator: membership.release?.collaborator ?? undefined,
+    release_collaborator_name: membership.release?.collaboratorName ?? undefined,
+    release_public_description: membership.release?.publicDescription ?? undefined,
+    release_is_published: membership.release?.isPublished ?? undefined
+  };
+}
+
+// Read options
+export async function readPlaylists(options?: { archiveStatus?: "active" | "archived" | "all" }) {
+  const archiveFilter = options?.archiveStatus ?? "active";
+  
+  const whereClause = 
+    archiveFilter === "active" ? { isArchived: false } :
+    archiveFilter === "archived" ? { isArchived: true } : {};
+
+  const playlists = await prisma.playlist.findMany({
+    where: whereClause,
+    orderBy: [
+      { sortOrder: "asc" },
+      { createdAt: "desc" }
+    ],
+    include: {
+      _count: {
+        select: { releases: { where: { isActive: true } } }
+      },
+      featuredRelease: {
+        select: { title: true }
+      }
+    }
+  });
+
+  return playlists.map(toPlaylistRecord);
+}
+
+export async function readPlaylist(id: string): Promise<PlaylistRecord | null> {
+  const playlist = await prisma.playlist.findUnique({
+    where: { id },
+    include: {
+      featuredRelease: { select: { title: true } }
+    }
+  });
+  if (!playlist) return null;
+  return toPlaylistRecord(playlist);
+}
+
+export async function readPlaylistWithMemberships(id: string) {
+  const playlist = await prisma.playlist.findUnique({
+    where: { id },
+    include: {
+      featuredRelease: { select: { title: true } },
+      releases: {
+        orderBy: { position: "asc" },
+        include: { release: true }
+      }
+    }
+  });
+  if (!playlist) return null;
+  
+  return {
+    playlist: toPlaylistRecord(playlist),
+    memberships: playlist.releases.map(toPlaylistReleaseRecord)
+  };
+}
+
+export async function createPlaylist(data: {
+  name: string;
+  slug: string;
+  description?: string;
+  coverImageUrl?: string;
+  spotifyPlaylistUrl?: string;
+  applePlaylistUrl?: string;
+  youtubePlaylistUrl?: string;
+  primaryPlatform?: string;
+  isPublic?: boolean;
+  sortOrder?: number;
+}): Promise<PlaylistRecord> {
+  if (!data.name.trim()) {
+    throw new Error("Playlist name cannot be empty.");
+  }
+  if (!data.slug.trim()) {
+    throw new Error("Playlist slug cannot be empty.");
+  }
+
+  const playlist = await prisma.playlist.create({
+    data: {
+      id: createId(),
+      name: data.name.trim(),
+      slug: data.slug.trim(),
+      description: data.description?.trim() ?? "",
+      coverImageUrl: data.coverImageUrl?.trim() ?? "",
+      spotifyPlaylistUrl: data.spotifyPlaylistUrl?.trim() ?? "",
+      applePlaylistUrl: data.applePlaylistUrl?.trim() ?? "",
+      youtubePlaylistUrl: data.youtubePlaylistUrl?.trim() ?? "",
+      primaryPlatform: data.primaryPlatform?.trim() ?? "spotify",
+      isPublic: data.isPublic ?? false,
+      sortOrder: data.sortOrder ?? 0
+    }
+  });
+
+  return toPlaylistRecord(playlist);
+}
+
+export async function updatePlaylist(
+  id: string,
+  data: {
+    name: string;
+    slug: string;
+    description?: string;
+    coverImageUrl?: string;
+    spotifyPlaylistUrl?: string;
+    applePlaylistUrl?: string;
+    youtubePlaylistUrl?: string;
+    primaryPlatform?: string;
+    isPublic?: boolean;
+    sortOrder?: number;
+    featuredReleaseId?: string | null;
+  }
+): Promise<PlaylistRecord> {
+  if (!data.name.trim()) {
+    throw new Error("Playlist name cannot be empty.");
+  }
+  if (!data.slug.trim()) {
+    throw new Error("Playlist slug cannot be empty.");
+  }
+
+  // Validate playlist URLs if provided
+  if (data.spotifyPlaylistUrl && !validateExternalUrl(data.spotifyPlaylistUrl)) {
+    throw new Error("Spotify playlist URL must be a valid HTTPS link.");
+  }
+  if (data.applePlaylistUrl && !validateExternalUrl(data.applePlaylistUrl)) {
+    throw new Error("Apple playlist URL must be a valid HTTPS link.");
+  }
+  if (data.youtubePlaylistUrl && !validateExternalUrl(data.youtubePlaylistUrl)) {
+    throw new Error("YouTube playlist URL must be a valid HTTPS link.");
+  }
+
+  const playlist = await prisma.playlist.update({
+    where: { id },
+    data: {
+      name: data.name.trim(),
+      slug: data.slug.trim(),
+      description: data.description?.trim() ?? "",
+      coverImageUrl: data.coverImageUrl?.trim() ?? "",
+      spotifyPlaylistUrl: data.spotifyPlaylistUrl?.trim() ?? "",
+      applePlaylistUrl: data.applePlaylistUrl?.trim() ?? "",
+      youtubePlaylistUrl: data.youtubePlaylistUrl?.trim() ?? "",
+      primaryPlatform: data.primaryPlatform?.trim() ?? "spotify",
+      isPublic: data.isPublic ?? false,
+      sortOrder: data.sortOrder ?? 0,
+      featuredReleaseId: data.featuredReleaseId
+    }
+  });
+
+  return toPlaylistRecord(playlist);
+}
+
+export async function archivePlaylist(id: string): Promise<PlaylistRecord> {
+  const playlist = await prisma.playlist.update({
+    where: { id },
+    data: { isArchived: true }
+  });
+  return toPlaylistRecord(playlist);
+}
+
+export async function restorePlaylist(id: string): Promise<PlaylistRecord> {
+  const playlist = await prisma.playlist.update({
+    where: { id },
+    data: { isArchived: false }
+  });
+  return toPlaylistRecord(playlist);
+}
+
+export async function togglePlaylistPublicVisibility(id: string, isPublic: boolean): Promise<PlaylistRecord> {
+  const playlist = await prisma.playlist.update({
+    where: { id },
+    data: { isPublic }
+  });
+  return toPlaylistRecord(playlist);
+}
+
+export async function setPlaylistFeaturedRelease(playlistId: string, releaseId: string | null): Promise<PlaylistRecord> {
+  if (releaseId) {
+    const isMember = await prisma.playlistRelease.findFirst({
+      where: { playlistId, releaseId, isActive: true }
+    });
+    if (!isMember) {
+      throw new Error("Featured release must be an active member of this playlist.");
+    }
+  }
+
+  const playlist = await prisma.playlist.update({
+    where: { id: playlistId },
+    data: { featuredReleaseId: releaseId }
+  });
+  return toPlaylistRecord(playlist);
+}
+
+// Transactional memberships sync
+export async function syncPlaylistMemberships(
+  playlistId: string,
+  memberships: Array<{
+    releaseId: string;
+    position: number;
+    spotifyTargetUrl: string;
+    appleTargetUrl: string;
+    youtubeTargetUrl: string;
+    isActive: boolean;
+  }>
+) {
+  // Reject duplicates
+  const releaseIds = memberships.map((m) => m.releaseId);
+  if (new Set(releaseIds).size !== releaseIds.length) {
+    throw new Error("Duplicate release memberships are not allowed.");
+  }
+
+  // Validate URLs
+  for (const m of memberships) {
+    if (m.spotifyTargetUrl && !validateExternalUrl(m.spotifyTargetUrl)) {
+      throw new Error("Spotify track URL must be a valid HTTPS link.");
+    }
+    if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
+      throw new Error("Apple track URL must be a valid HTTPS link.");
+    }
+    if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
+      throw new Error("YouTube track URL must be a valid HTTPS link.");
+    }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Delete existing
+    await tx.playlistRelease.deleteMany({
+      where: { playlistId }
+    });
+
+    // Sort to normalize positions
+    const sorted = [...memberships].sort((a, b) => a.position - b.position);
+
+    // Recreate with normalized consecutive positions starting from 0
+    const created = await Promise.all(
+      sorted.map((m, idx) =>
+        tx.playlistRelease.create({
+          data: {
+            playlistId,
+            releaseId: m.releaseId,
+            position: idx,
+            spotifyTargetUrl: m.spotifyTargetUrl.trim(),
+            appleTargetUrl: m.appleTargetUrl.trim(),
+            youtubeTargetUrl: m.youtubeTargetUrl.trim(),
+            isActive: m.isActive
+          }
+        })
+      )
+    );
+
+    // Validate featuredReleaseId
+    const playlist = await tx.playlist.findUnique({
+      where: { id: playlistId }
+    });
+
+    if (playlist?.featuredReleaseId) {
+      const activeFeaturedMember = created.find(
+        (m) =>
+          m.releaseId === playlist.featuredReleaseId &&
+          m.isActive &&
+          (m.spotifyTargetUrl || m.appleTargetUrl || m.youtubeTargetUrl)
+      );
+
+      if (!activeFeaturedMember) {
+        await tx.playlist.update({
+          where: { id: playlistId },
+          data: { featuredReleaseId: null }
+        });
+      }
+    }
+
+    return created;
+  });
+}
+
+// Scoped release-membership mutations
+export async function syncReleasePlaylistMemberships(
+  releaseId: string,
+  memberships: Array<{
+    playlistId: string;
+    position: number;
+    spotifyTargetUrl: string;
+    appleTargetUrl: string;
+    youtubeTargetUrl: string;
+    isActive: boolean;
+  }>
+) {
+  // Validate URLs
+  for (const m of memberships) {
+    if (m.spotifyTargetUrl && !validateExternalUrl(m.spotifyTargetUrl)) {
+      throw new Error("Spotify track URL must be a valid HTTPS link.");
+    }
+    if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
+      throw new Error("Apple track URL must be a valid HTTPS link.");
+    }
+    if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
+      throw new Error("YouTube track URL must be a valid HTTPS link.");
+    }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Find all playlists this release was previously in
+    const previous = await tx.playlistRelease.findMany({
+      where: { releaseId },
+      select: { playlistId: true }
+    });
+    const previousPlaylistIds = previous.map((m) => m.playlistId);
+
+    // Delete memberships for this release only
+    await tx.playlistRelease.deleteMany({
+      where: { releaseId }
+    });
+
+    // Create new memberships
+    for (const m of memberships) {
+      await tx.playlistRelease.create({
+        data: {
+          playlistId: m.playlistId,
+          releaseId,
+          position: m.position,
+          spotifyTargetUrl: m.spotifyTargetUrl.trim(),
+          appleTargetUrl: m.appleTargetUrl.trim(),
+          youtubeTargetUrl: m.youtubeTargetUrl.trim(),
+          isActive: m.isActive
+        }
+      });
+    }
+
+    // Collect all affected playlists to normalize positions and check featured status
+    const currentPlaylistIds = memberships.map((m) => m.playlistId);
+    const affectedPlaylistIds = Array.from(
+      new Set([...previousPlaylistIds, ...currentPlaylistIds])
+    );
+
+    for (const pId of affectedPlaylistIds) {
+      const listMembers = await tx.playlistRelease.findMany({
+        where: { playlistId: pId },
+        orderBy: { position: "asc" }
+      });
+
+      // Write normalized positions
+      for (let i = 0; i < listMembers.length; i++) {
+        await tx.playlistRelease.update({
+          where: {
+            playlistId_releaseId: {
+              playlistId: pId,
+              releaseId: listMembers[i].releaseId
+            }
+          },
+          data: { position: i }
+        });
+      }
+
+      // Check featuredReleaseId validation
+      const playlist = await tx.playlist.findUnique({
+        where: { id: pId }
+      });
+
+      if (playlist?.featuredReleaseId) {
+        const activeFeatured = listMembers.find(
+          (m) =>
+            m.releaseId === playlist.featuredReleaseId &&
+            m.isActive &&
+            (m.releaseId === releaseId
+              ? memberships.some(
+                  (nm) =>
+                    nm.playlistId === pId &&
+                    nm.isActive &&
+                    (nm.spotifyTargetUrl || nm.appleTargetUrl || nm.youtubeTargetUrl)
+                )
+              : (m.spotifyTargetUrl || m.appleTargetUrl || m.youtubeTargetUrl))
+        );
+
+        if (!activeFeatured) {
+          await tx.playlist.update({
+            where: { id: pId },
+            data: { featuredReleaseId: null }
+          });
+        }
+      }
+    }
+    return affectedPlaylistIds;
+  });
+}
+
+// Public Resolvers
+export async function readPublicPlaylistLanding(playlistSlug: string) {
+  const playlist = await prisma.playlist.findFirst({
+    where: {
+      slug: playlistSlug,
+      isPublic: true,
+      isArchived: false
+    },
+    include: {
+      releases: {
+        where: {
+          isActive: true,
+          release: {
+            isPublished: true
+          },
+          OR: [
+            { spotifyTargetUrl: { not: "" } },
+            { appleTargetUrl: { not: "" } },
+            { youtubeTargetUrl: { not: "" } }
+          ]
+        },
+        orderBy: {
+          position: "asc"
+        },
+        include: {
+          release: true
+        }
+      },
+      featuredRelease: true
+    }
+  });
+
+  if (!playlist) return null;
+
+  return {
+    playlist: toPlaylistRecord(playlist),
+    memberships: playlist.releases.map(toPlaylistReleaseRecord)
+  };
+}
+
+export async function readPublicPlaylistCampaign(playlistSlug: string, releaseSlug: string) {
+  const playlist = await prisma.playlist.findFirst({
+    where: {
+      slug: playlistSlug,
+      isPublic: true,
+      isArchived: false
+    }
+  });
+
+  if (!playlist) return null;
+
+  const focusedMembership = await prisma.playlistRelease.findFirst({
+    where: {
+      playlistId: playlist.id,
+      isActive: true,
+      release: {
+        slug: releaseSlug,
+        isPublished: true
+      },
+      OR: [
+        { spotifyTargetUrl: { not: "" } },
+        { appleTargetUrl: { not: "" } },
+        { youtubeTargetUrl: { not: "" } }
+      ]
+    },
+    include: {
+      release: true
+    }
+  });
+
+  if (!focusedMembership) return null;
+
+  const previewMemberships = await prisma.playlistRelease.findMany({
+    where: {
+      playlistId: playlist.id,
+      isActive: true,
+      releaseId: { not: focusedMembership.releaseId },
+      release: {
+        isPublished: true
+      },
+      OR: [
+        { spotifyTargetUrl: { not: "" } },
+        { appleTargetUrl: { not: "" } },
+        { youtubeTargetUrl: { not: "" } }
+      ]
+    },
+    orderBy: {
+      position: "asc"
+    },
+    take: 5,
+    include: {
+      release: true
+    }
+  });
+
+  return {
+    playlist: toPlaylistRecord(playlist),
+    focusedMembership: toPlaylistReleaseRecord(focusedMembership),
+    previewMemberships: previewMemberships.map(toPlaylistReleaseRecord)
+  };
+}

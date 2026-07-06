@@ -40,10 +40,24 @@ function normalizeShortLinkFilter(value: string | string[] | undefined): ShortLi
     : "ACTIVE";
 }
 
+function getStringParam(val: string | string[] | undefined): string {
+  if (Array.isArray(val)) return val[0] || "";
+  return val || "";
+}
+
 export default async function AdminShortLinksPage({
   searchParams
 }: {
-  searchParams: Promise<{status?: string | string[]}>;
+  searchParams: Promise<{
+    status?: string | string[];
+    destinationUrl?: string | string[];
+    releaseId?: string | string[];
+    campaignLabel?: string | string[];
+    contentLabel?: string | string[];
+    utmSource?: string | string[];
+    utmMedium?: string | string[];
+    utmCampaign?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const statusFilter = normalizeShortLinkFilter(params.status);
@@ -53,12 +67,23 @@ export default async function AdminShortLinksPage({
     readReleaseSummaries()
   ]);
 
+  const prefill = {
+    destinationUrl: getStringParam(params.destinationUrl),
+    releaseId: getStringParam(params.releaseId),
+    campaignLabel: getStringParam(params.campaignLabel),
+    contentLabel: getStringParam(params.contentLabel),
+    utmSource: getStringParam(params.utmSource),
+    utmMedium: getStringParam(params.utmMedium),
+    utmCampaign: getStringParam(params.utmCampaign)
+  };
+
   return (
     <ShortLinksAdminPage
       baseUrl={baseUrl}
       initialLinks={links}
       releaseOptions={releases}
       statusFilter={statusFilter}
+      prefill={prefill}
     />
   );
 }

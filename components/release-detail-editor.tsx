@@ -395,7 +395,9 @@ export function ReleaseDetailEditor({
   copyPerformanceMemory,
   streamingClicksCount = 0,
   utmCoverageRate = 0,
-  reports = []
+  reports = [],
+  initialPlaylists = [],
+  initialPlaylistMemberships = []
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -409,6 +411,8 @@ export function ReleaseDetailEditor({
   streamingClicksCount?: number;
   utmCoverageRate?: number;
   reports?: any[];
+  initialPlaylists?: any[];
+  initialPlaylistMemberships?: any[];
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -428,6 +432,95 @@ export function ReleaseDetailEditor({
   const lastSavedSnapshotRef = useRef<string>(serializeRelease(initialRelease));
   const autosaveTimerRef = useRef<number | null>(null);
   const latestDraftSnapshotRef = useRef<string>(serializeRelease(initialRelease));
+
+  // Playlist Memberships State
+  const [playlistMemberships, setPlaylistMemberships] = useState(() =>
+    initialPlaylistMemberships.map((m) => ({
+      playlistId: m.playlistId,
+      position: m.position,
+      spotifyTargetUrl: m.spotifyTargetUrl,
+      appleTargetUrl: m.appleTargetUrl,
+      youtubeTargetUrl: m.youtubeTargetUrl,
+      isActive: m.isActive
+    }))
+  );
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
+  const [isSavingPlaylists, setIsSavingPlaylists] = useState(false);
+  const [playlistMessage, setPlaylistMessage] = useState("");
+  const [playlistError, setPlaylistError] = useState("");
+
+  const handleAddPlaylistMembership = () => {
+    setPlaylistError("");
+    if (!selectedPlaylistId) return;
+
+    if (playlistMemberships.some((m) => m.playlistId === selectedPlaylistId)) {
+      setPlaylistError("This release is already a member of this playlist.");
+      return;
+    }
+
+    const newMembership = {
+      playlistId: selectedPlaylistId,
+      position: playlistMemberships.length,
+      spotifyTargetUrl: "",
+      appleTargetUrl: "",
+      youtubeTargetUrl: "",
+      isActive: true
+    };
+
+    setPlaylistMemberships([...playlistMemberships, newMembership]);
+    setSelectedPlaylistId("");
+  };
+
+  const handleRemovePlaylistMembership = (playlistId: string) => {
+    setPlaylistError("");
+    const filtered = playlistMemberships.filter((m) => m.playlistId !== playlistId);
+    const normalized = filtered.map((m, idx) => ({...m, position: idx}));
+    setPlaylistMemberships(normalized);
+  };
+
+  const handleTogglePlaylistActive = (playlistId: string) => {
+    setPlaylistMemberships((current) =>
+      current.map((m) => (m.playlistId === playlistId ? {...m, isActive: !m.isActive} : m))
+    );
+  };
+
+  const handleUpdatePlaylistTargetUrl = (
+    playlistId: string,
+    field: "spotifyTargetUrl" | "appleTargetUrl" | "youtubeTargetUrl",
+    value: string
+  ) => {
+    setPlaylistMemberships((current) =>
+      current.map((m) => (m.playlistId === playlistId ? {...m, [field]: value} : m))
+    );
+  };
+
+  const handleSavePlaylistMemberships = async () => {
+    setPlaylistMessage("");
+    setPlaylistError("");
+    setIsSavingPlaylists(true);
+
+    try {
+      const response = await fetch(`/api/releases/${release.id}/playlists`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          memberships: playlistMemberships
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save playlist memberships.");
+      }
+
+      setPlaylistMessage("Playlist memberships updated successfully!");
+      router.refresh();
+    } catch (err) {
+      setPlaylistError(err instanceof Error ? err.message : "Failed to save playlist memberships.");
+    } finally {
+      setIsSavingPlaylists(false);
+    }
+  };
 
   const [learningDraft, setLearningDraft] = useState({
     summary: latestAdLearning?.summary ?? "",
@@ -2540,6 +2633,155 @@ export function ReleaseDetailEditor({
               </>
             </section>
 
+            <section className={`${pagePanelClass} scroll-mt-36 space-y-6 px-4 py-5 sm:px-6 sm:py-6`} id="playlists">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#272b31] pb-4">
+                <div>
+                  <p className={pageLabelClass}>Playlist Campaigns</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                    Playlist Memberships
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+                    Configure which streaming playlists this release belongs to, target destination links, and order positions.
+                  </p>
+                </div>
+                {/* Select playlist to add */}
+                <div className="flex items-center gap-2">
+                  <select
+                    className="field-input py-1.5 px-3 bg-[#101215] text-sm text-[#ece6da]"
+                    onChange={(e) => setSelectedPlaylistId(e.target.value)}
+                    value={selectedPlaylistId}
+                  >
+                    <option value="">Select Playlist...</option>
+                    {initialPlaylists.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="action-button-primary py-1.5 text-sm inline-flex items-center gap-1"
+                    onClick={handleAddPlaylistMembership}
+                    type="button"
+                  >
+                    Add to Playlist
+                  </button>
+                </div>
+              </div>
+
+              {playlistMessage && (
+                <div className="rounded-xl border border-emerald-950 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-400">
+                  {playlistMessage}
+                </div>
+              )}
+
+              {playlistError && (
+                <div className="rounded-xl border border-rose-950 bg-rose-950/20 px-4 py-3 text-sm text-rose-400">
+                  {playlistError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {playlistMemberships.length === 0 ? (
+                  <div className="rounded-[22px] border border-dashed border-[#383c43] bg-[#121418] px-4 py-5 text-sm text-[#7f858d] text-center">
+                    This release does not belong to any playlists. Add it using the selector above.
+                  </div>
+                ) : (
+                  playlistMemberships.map((m) => {
+                    const playlistObj = initialPlaylists.find((p) => p.id === m.playlistId);
+                    const playlistName = playlistObj ? playlistObj.name : "Unknown Playlist";
+                    const playlistSlug = playlistObj ? playlistObj.slug : "";
+
+                    return (
+                      <div
+                        className="rounded-2xl border border-[#31353b] bg-[#14171b] p-4 space-y-4"
+                        key={m.playlistId}
+                      >
+                        <div className="flex items-center justify-between gap-4 border-b border-[#272b31] pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[#ede7dc]">{playlistName}</span>
+                            <span className="text-xs text-muted font-mono">({playlistSlug})</span>
+                          </div>
+                          <button
+                            className="p-1 rounded bg-[#2c1313] text-[#e89182] hover:bg-rose-950/40 transition text-xs px-2"
+                            onClick={() => handleRemovePlaylistMembership(m.playlistId)}
+                            type="button"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        {/* target links */}
+                        <div className="grid gap-4 sm:grid-cols-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-muted">Spotify Track Target</label>
+                            <input
+                              className="field-input mt-1.5 w-full text-xs font-mono py-1 px-2"
+                              onChange={(e) =>
+                                handleUpdatePlaylistTargetUrl(m.playlistId, "spotifyTargetUrl", e.target.value)
+                              }
+                              placeholder="https://open.spotify.com/..."
+                              value={m.spotifyTargetUrl}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-muted">Apple Music Target</label>
+                            <input
+                              className="field-input mt-1.5 w-full text-xs font-mono py-1 px-2"
+                              onChange={(e) =>
+                                handleUpdatePlaylistTargetUrl(m.playlistId, "appleTargetUrl", e.target.value)
+                              }
+                              placeholder="https://music.apple.com/..."
+                              value={m.appleTargetUrl}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-muted">YouTube Target</label>
+                            <input
+                              className="field-input mt-1.5 w-full text-xs font-mono py-1 px-2"
+                              onChange={(e) =>
+                                handleUpdatePlaylistTargetUrl(m.playlistId, "youtubeTargetUrl", e.target.value)
+                              }
+                              placeholder="https://youtube.com/..."
+                              value={m.youtubeTargetUrl}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 pt-1">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              checked={m.isActive}
+                              className="sr-only peer"
+                              onChange={() => handleTogglePlaylistActive(m.playlistId)}
+                              type="checkbox"
+                            />
+                            <div className="w-8 h-4 bg-[#272b31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#ece6da] after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#c9a347]"></div>
+                            <span className="ml-2 text-xs text-muted">Active in playlist</span>
+                          </label>
+                          <span className="text-xs text-muted">
+                            Order Position: <span className="font-mono bg-[#1b1e24] px-1.5 py-0.5 rounded">#{m.position + 1}</span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {playlistMemberships.length > 0 && (
+                <div className="pt-4 border-t border-[#272b31] flex justify-end">
+                  <button
+                    className="action-button-primary py-2 text-sm"
+                    disabled={isSavingPlaylists}
+                    onClick={handleSavePlaylistMemberships}
+                    type="button"
+                  >
+                    {isSavingPlaylists ? "Saving Memberships..." : "Save Playlist Memberships"}
+                  </button>
+                </div>
+              )}
+            </section>
+
           </div>
 
           <aside className="scroll-mt-36 xl:sticky xl:top-[112px] xl:self-start" id="release-actions">
@@ -2812,6 +3054,7 @@ export function ReleaseDetailEditor({
               {href: "#discovery", label: "Discovery"},
               {href: "#media", label: "Media"},
               {href: "#promo-summary", label: "Promo"},
+              {href: "#playlists", label: "Playlists"},
               {href: "#release-actions", label: "Actions"}
             ].map((item) => (
               <a
