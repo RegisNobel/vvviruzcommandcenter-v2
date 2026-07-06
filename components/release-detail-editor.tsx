@@ -58,6 +58,8 @@ import {
   type DiscoveryChecklistStatus,
   type DiscoveryChecklistItem
 } from "@/lib/releases";
+import {parseSpotifyResourceUrl} from "@/lib/spotify-links";
+import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
 import {
   getCurrentReleasePlanningStage,
   getReleasePlanningBlockers,
@@ -439,6 +441,8 @@ export function ReleaseDetailEditor({
       playlistId: m.playlistId,
       position: m.position,
       spotifyTargetUrl: m.spotifyTargetUrl,
+      spotifyTrackUrl: m.spotifyTrackUrl || "",
+      spotifyTargetMode: m.spotifyTargetMode || "manual",
       appleTargetUrl: m.appleTargetUrl,
       youtubeTargetUrl: m.youtubeTargetUrl,
       isActive: m.isActive
@@ -458,10 +462,21 @@ export function ReleaseDetailEditor({
       return;
     }
 
+    const parentPlaylist = initialPlaylists.find((p) => p.id === selectedPlaylistId);
+    let defaultSpotifyMode = "manual";
+    if (parentPlaylist?.spotifyPlaylistUrl) {
+      try {
+        parseSpotifyResourceUrl(parentPlaylist.spotifyPlaylistUrl, "playlist");
+        defaultSpotifyMode = "generated";
+      } catch {}
+    }
+
     const newMembership = {
       playlistId: selectedPlaylistId,
       position: playlistMemberships.length,
       spotifyTargetUrl: "",
+      spotifyTrackUrl: "",
+      spotifyTargetMode: defaultSpotifyMode,
       appleTargetUrl: "",
       youtubeTargetUrl: "",
       isActive: true
@@ -484,9 +499,22 @@ export function ReleaseDetailEditor({
     );
   };
 
+  const handleUpdatePlaylistSpotifyField = (
+    playlistId: string,
+    updates: {
+      spotifyTrackUrl?: string;
+      spotifyTargetMode?: string;
+      spotifyTargetUrl?: string;
+    }
+  ) => {
+    setPlaylistMemberships((current) =>
+      current.map((m) => (m.playlistId === playlistId ? {...m, ...updates} : m))
+    );
+  };
+
   const handleUpdatePlaylistTargetUrl = (
     playlistId: string,
-    field: "spotifyTargetUrl" | "appleTargetUrl" | "youtubeTargetUrl",
+    field: "appleTargetUrl" | "youtubeTargetUrl",
     value: string
   ) => {
     setPlaylistMemberships((current) =>
@@ -504,13 +532,26 @@ export function ReleaseDetailEditor({
         method: "PUT",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-          memberships: playlistMemberships
+          memberships: playlistMemberships.map((m) => ({
+            playlistId: m.playlistId,
+            position: m.position,
+            spotifyTargetUrl: m.spotifyTargetUrl || "",
+            spotifyTrackUrl: m.spotifyTrackUrl || "",
+            spotifyTargetMode: m.spotifyTargetMode || "manual",
+            appleTargetUrl: m.appleTargetUrl || "",
+            youtubeTargetUrl: m.youtubeTargetUrl || "",
+            isActive: m.isActive
+          }))
         })
       });
 
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || "Failed to save playlist memberships.");
+      }
+
+      if (data.memberships) {
+        setPlaylistMemberships(data.memberships);
       }
 
       setPlaylistMessage("Playlist memberships updated successfully!");
@@ -2710,19 +2751,21 @@ export function ReleaseDetailEditor({
                           </button>
                         </div>
 
-                        {/* target links */}
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          <div>
-                            <label className="text-[10px] uppercase font-bold text-muted">Spotify Track Target</label>
-                            <input
-                              className="field-input mt-1.5 w-full text-xs font-mono py-1 px-2"
-                              onChange={(e) =>
-                                handleUpdatePlaylistTargetUrl(m.playlistId, "spotifyTargetUrl", e.target.value)
-                              }
-                              placeholder="https://open.spotify.com/..."
-                              value={m.spotifyTargetUrl}
-                            />
-                          </div>
+                        {/* Spotify Membership Controls */}
+                        <div className="pt-2">
+                          <SpotifyMembershipControls
+                            trackUrl={m.spotifyTrackUrl || ""}
+                            targetMode={m.spotifyTargetMode || "manual"}
+                            targetUrl={m.spotifyTargetUrl || ""}
+                            playlistUrl={playlistObj?.spotifyPlaylistUrl || ""}
+                            isRegenerating={isSavingPlaylists}
+                            onChange={(updates) => handleUpdatePlaylistSpotifyField(m.playlistId, updates)}
+                            onRegenerate={handleSavePlaylistMemberships}
+                          />
+                        </div>
+
+                        {/* Apple & YouTube target links */}
+                        <div className="grid gap-4 sm:grid-cols-2 pt-2">
                           <div>
                             <label className="text-[10px] uppercase font-bold text-muted">Apple Music Target</label>
                             <input

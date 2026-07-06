@@ -1,6 +1,10 @@
 import {prisma} from "@/lib/db/prisma";
 import {createId} from "@/lib/utils";
 import {validateExternalUrl} from "@/lib/validation";
+import {
+  parseSpotifyResourceUrl,
+  buildSpotifyPlaylistContextUrl
+} from "@/lib/spotify-links";
 import type {Playlist, PlaylistRelease, Release} from "@prisma/client";
 import type {PlaylistRecord, PlaylistReleaseRecord} from "@/lib/types";
 
@@ -42,6 +46,8 @@ function toPlaylistReleaseRecord(
     releaseId: membership.releaseId,
     position: membership.position,
     spotifyTargetUrl: membership.spotifyTargetUrl,
+    spotifyTrackUrl: membership.spotifyTrackUrl,
+    spotifyTargetMode: membership.spotifyTargetMode,
     appleTargetUrl: membership.appleTargetUrl,
     youtubeTargetUrl: membership.youtubeTargetUrl,
     isActive: membership.isActive,
@@ -153,6 +159,15 @@ export async function createPlaylist(data: {
   return toPlaylistRecord(playlist);
 }
 
+export type SpotifyRegenerationSummary = {
+  refreshedCount: number;
+  manualUnchangedCount: number;
+  missingTrackUrlCount: number;
+  invalidTrackUrlCount: number;
+  clearedTargetCount: number;
+  affectedReleaseCount: number;
+};
+
 export async function updatePlaylist(
   id: string,
   data: {
@@ -168,7 +183,7 @@ export async function updatePlaylist(
     sortOrder?: number;
     featuredReleaseId?: string | null;
   }
-): Promise<PlaylistRecord> {
+): Promise<{ playlist: PlaylistRecord; summary?: SpotifyRegenerationSummary }> {
   if (!data.name.trim()) {
     throw new Error("Playlist name cannot be empty.");
   }
@@ -177,8 +192,15 @@ export async function updatePlaylist(
   }
 
   // Validate playlist URLs if provided
-  if (data.spotifyPlaylistUrl && !validateExternalUrl(data.spotifyPlaylistUrl)) {
-    throw new Error("Spotify playlist URL must be a valid HTTPS link.");
+  if (data.spotifyPlaylistUrl) {
+    if (!validateExternalUrl(data.spotifyPlaylistUrl)) {
+      throw new Error("Spotify playlist URL must be a valid HTTPS link.");
+    }
+    try {
+      parseSpotifyResourceUrl(data.spotifyPlaylistUrl, "playlist");
+    } catch (err: any) {
+      throw new Error(`Malformed Spotify Playlist URL: ${err.message}`);
+    }
   }
   if (data.applePlaylistUrl && !validateExternalUrl(data.applePlaylistUrl)) {
     throw new Error("Apple playlist URL must be a valid HTTPS link.");
@@ -187,24 +209,111 @@ export async function updatePlaylist(
     throw new Error("YouTube playlist URL must be a valid HTTPS link.");
   }
 
-  const playlist = await prisma.playlist.update({
-    where: { id },
-    data: {
-      name: data.name.trim(),
-      slug: data.slug.trim(),
-      description: data.description?.trim() ?? "",
-      coverImageUrl: data.coverImageUrl?.trim() ?? "",
-      spotifyPlaylistUrl: data.spotifyPlaylistUrl?.trim() ?? "",
-      applePlaylistUrl: data.applePlaylistUrl?.trim() ?? "",
-      youtubePlaylistUrl: data.youtubePlaylistUrl?.trim() ?? "",
-      primaryPlatform: data.primaryPlatform?.trim() ?? "spotify",
-      isPublic: data.isPublic ?? false,
-      sortOrder: data.sortOrder ?? 0,
-      featuredReleaseId: data.featuredReleaseId
-    }
+  const oldPlaylist = await prisma.playlist.findUnique({
+    where: { id }
   });
 
-  return toPlaylistRecord(playlist);
+  if (!oldPlaylist) {
+    throw new Error("Playlist not found.");
+  }
+
+  // Check if Spotify playlist URL changed or was cleared
+  const newSpotifyUrl = data.spotifyPlaylistUrl !== undefined ? data.spotifyPlaylistUrl.trim() : oldPlaylist.spotifyPlaylistUrl;
+  const spotifyUrlChanged = newSpotifyUrl !== oldPlaylist.spotifyPlaylistUrl;
+
+  const result = await prisma.$transaction(async (tx) => {
+    const playlist = await tx.playlist.update({
+      where: { id },
+      data: {
+        name: data.name.trim(),
+        slug: data.slug.trim(),
+        description: data.description?.trim() ?? "",
+        coverImageUrl: data.coverImageUrl?.trim() ?? "",
+        spotifyPlaylistUrl: data.spotifyPlaylistUrl?.trim() ?? "",
+        applePlaylistUrl: data.applePlaylistUrl?.trim() ?? "",
+        youtubePlaylistUrl: data.youtubePlaylistUrl?.trim() ?? "",
+        primaryPlatform: data.primaryPlatform?.trim() ?? "spotify",
+        isPublic: data.isPublic ?? false,
+        sortOrder: data.sortOrder ?? 0,
+        featuredReleaseId: data.featuredReleaseId
+      }
+    });
+
+    if (!spotifyUrlChanged) {
+      return { playlist: toPlaylistRecord(playlist) };
+    }
+
+    const memberships = await tx.playlistRelease.findMany({
+      where: { playlistId: id }
+    });
+
+    const summary: SpotifyRegenerationSummary = {
+      refreshedCount: 0,
+      manualUnchangedCount: 0,
+      missingTrackUrlCount: 0,
+      invalidTrackUrlCount: 0,
+      clearedTargetCount: 0,
+      affectedReleaseCount: 0
+    };
+
+    for (const m of memberships) {
+      if (m.spotifyTargetMode === "generated") {
+        summary.affectedReleaseCount += 1;
+
+        if (!newSpotifyUrl) {
+          // Playlist URL is cleared: clear all generated targets
+          if (m.spotifyTargetUrl) {
+            summary.clearedTargetCount += 1;
+          }
+          await tx.playlistRelease.update({
+            where: { playlistId_releaseId: { playlistId: id, releaseId: m.releaseId } },
+            data: { spotifyTargetUrl: "" }
+          });
+        } else {
+          if (!m.spotifyTrackUrl) {
+            // Track URL is missing
+            summary.missingTrackUrlCount += 1;
+            if (m.spotifyTargetUrl) {
+              summary.clearedTargetCount += 1;
+            }
+            await tx.playlistRelease.update({
+              where: { playlistId_releaseId: { playlistId: id, releaseId: m.releaseId } },
+              data: { spotifyTargetUrl: "" }
+            });
+          } else {
+            // Generate context URL
+            try {
+              const res = buildSpotifyPlaylistContextUrl(m.spotifyTrackUrl, newSpotifyUrl);
+              await tx.playlistRelease.update({
+                where: { playlistId_releaseId: { playlistId: id, releaseId: m.releaseId } },
+                data: { spotifyTargetUrl: res.targetUrl }
+              });
+              summary.refreshedCount += 1;
+            } catch {
+              // Tolerating legacy malformed track URLs in bulk regeneration only
+              summary.invalidTrackUrlCount += 1;
+              if (m.spotifyTargetUrl) {
+                summary.clearedTargetCount += 1;
+              }
+              await tx.playlistRelease.update({
+                where: { playlistId_releaseId: { playlistId: id, releaseId: m.releaseId } },
+                data: { spotifyTargetUrl: "" }
+              });
+            }
+          }
+        }
+      } else {
+        summary.manualUnchangedCount += 1;
+      }
+    }
+
+    return {
+      playlist: toPlaylistRecord(playlist),
+      summary
+    };
+  });
+
+  return result;
 }
 
 export async function archivePlaylist(id: string): Promise<PlaylistRecord> {
@@ -255,6 +364,8 @@ export async function syncPlaylistMemberships(
     releaseId: string;
     position: number;
     spotifyTargetUrl: string;
+    spotifyTrackUrl: string;
+    spotifyTargetMode: string;
     appleTargetUrl: string;
     youtubeTargetUrl: string;
     isActive: boolean;
@@ -268,18 +379,41 @@ export async function syncPlaylistMemberships(
 
   // Validate URLs
   for (const m of memberships) {
-    if (m.spotifyTargetUrl && !validateExternalUrl(m.spotifyTargetUrl)) {
-      throw new Error("Spotify track URL must be a valid HTTPS link.");
-    }
     if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
       throw new Error("Apple track URL must be a valid HTTPS link.");
     }
     if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
       throw new Error("YouTube track URL must be a valid HTTPS link.");
     }
+
+    if (m.spotifyTargetMode === "generated") {
+      if (m.spotifyTrackUrl) {
+        try {
+          parseSpotifyResourceUrl(m.spotifyTrackUrl, "track");
+        } catch (err: any) {
+          throw new Error(`Malformed Spotify Track URL: ${err.message}`);
+        }
+      }
+    } else if (m.spotifyTargetMode === "manual") {
+      if (m.spotifyTargetUrl) {
+        if (!validateExternalUrl(m.spotifyTargetUrl)) {
+          throw new Error("Spotify Target URL must be a valid HTTPS link.");
+        }
+      }
+    } else {
+      throw new Error(`Invalid Spotify Target Mode: ${m.spotifyTargetMode}`);
+    }
   }
 
   return prisma.$transaction(async (tx) => {
+    const playlist = await tx.playlist.findUnique({
+      where: { id: playlistId }
+    });
+
+    if (!playlist) {
+      throw new Error("Playlist not found.");
+    }
+
     // Delete existing
     await tx.playlistRelease.deleteMany({
       where: { playlistId }
@@ -290,27 +424,40 @@ export async function syncPlaylistMemberships(
 
     // Recreate with normalized consecutive positions starting from 0
     const created = await Promise.all(
-      sorted.map((m, idx) =>
-        tx.playlistRelease.create({
+      sorted.map(async (m, idx) => {
+        let finalTargetUrl = m.spotifyTargetUrl.trim();
+
+        if (m.spotifyTargetMode === "generated") {
+          if (!m.spotifyTrackUrl || !playlist.spotifyPlaylistUrl) {
+            finalTargetUrl = "";
+          } else {
+            try {
+              const res = buildSpotifyPlaylistContextUrl(m.spotifyTrackUrl, playlist.spotifyPlaylistUrl);
+              finalTargetUrl = res.targetUrl;
+            } catch (err: any) {
+              throw new Error(`Failed to generate context link for release: ${err.message}`);
+            }
+          }
+        }
+
+        return tx.playlistRelease.create({
           data: {
             playlistId,
             releaseId: m.releaseId,
             position: idx,
-            spotifyTargetUrl: m.spotifyTargetUrl.trim(),
+            spotifyTargetUrl: finalTargetUrl,
+            spotifyTrackUrl: m.spotifyTrackUrl.trim(),
+            spotifyTargetMode: m.spotifyTargetMode,
             appleTargetUrl: m.appleTargetUrl.trim(),
             youtubeTargetUrl: m.youtubeTargetUrl.trim(),
             isActive: m.isActive
           }
-        })
-      )
+        });
+      })
     );
 
     // Validate featuredReleaseId
-    const playlist = await tx.playlist.findUnique({
-      where: { id: playlistId }
-    });
-
-    if (playlist?.featuredReleaseId) {
+    if (playlist.featuredReleaseId) {
       const activeFeaturedMember = created.find(
         (m) =>
           m.releaseId === playlist.featuredReleaseId &&
@@ -337,25 +484,61 @@ export async function syncReleasePlaylistMemberships(
     playlistId: string;
     position: number;
     spotifyTargetUrl: string;
+    spotifyTrackUrl: string;
+    spotifyTargetMode: string;
     appleTargetUrl: string;
     youtubeTargetUrl: string;
     isActive: boolean;
   }>
 ) {
-  // Validate URLs
-  for (const m of memberships) {
-    if (m.spotifyTargetUrl && !validateExternalUrl(m.spotifyTargetUrl)) {
-      throw new Error("Spotify track URL must be a valid HTTPS link.");
-    }
-    if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
-      throw new Error("Apple track URL must be a valid HTTPS link.");
-    }
-    if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
-      throw new Error("YouTube track URL must be a valid HTTPS link.");
-    }
-  }
-
   return prisma.$transaction(async (tx) => {
+    // Validate URLs and generate Spotify Targets
+    for (const m of memberships) {
+      if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
+        throw new Error("Apple track URL must be a valid HTTPS link.");
+      }
+      if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
+        throw new Error("YouTube track URL must be a valid HTTPS link.");
+      }
+
+      const playlist = await tx.playlist.findUnique({
+        where: { id: m.playlistId }
+      });
+
+      if (!playlist) {
+        throw new Error("Playlist not found.");
+      }
+
+      if (m.spotifyTargetMode === "generated") {
+        if (m.spotifyTrackUrl) {
+          try {
+            parseSpotifyResourceUrl(m.spotifyTrackUrl, "track");
+          } catch (err: any) {
+            throw new Error(`Malformed Spotify Track URL: ${err.message}`);
+          }
+        }
+
+        if (!m.spotifyTrackUrl || !playlist.spotifyPlaylistUrl) {
+          m.spotifyTargetUrl = "";
+        } else {
+          try {
+            const res = buildSpotifyPlaylistContextUrl(m.spotifyTrackUrl, playlist.spotifyPlaylistUrl);
+            m.spotifyTargetUrl = res.targetUrl;
+          } catch (err: any) {
+            throw new Error(`Failed to generate context link: ${err.message}`);
+          }
+        }
+      } else if (m.spotifyTargetMode === "manual") {
+        if (m.spotifyTargetUrl) {
+          if (!validateExternalUrl(m.spotifyTargetUrl)) {
+            throw new Error("Spotify Target URL must be a valid HTTPS link.");
+          }
+        }
+      } else {
+        throw new Error(`Invalid Spotify Target Mode: ${m.spotifyTargetMode}`);
+      }
+    }
+
     // Find all playlists this release was previously in
     const previous = await tx.playlistRelease.findMany({
       where: { releaseId },
@@ -376,6 +559,8 @@ export async function syncReleasePlaylistMemberships(
           releaseId,
           position: m.position,
           spotifyTargetUrl: m.spotifyTargetUrl.trim(),
+          spotifyTrackUrl: m.spotifyTrackUrl.trim(),
+          spotifyTargetMode: m.spotifyTargetMode,
           appleTargetUrl: m.appleTargetUrl.trim(),
           youtubeTargetUrl: m.youtubeTargetUrl.trim(),
           isActive: m.isActive

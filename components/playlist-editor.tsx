@@ -18,6 +18,8 @@ import {
   Star,
   Plus
 } from "lucide-react";
+import {parseSpotifyResourceUrl} from "@/lib/spotify-links";
+import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
 import type {PlaylistRecord, PlaylistReleaseRecord, ReleaseSummary} from "@/lib/types";
 
 export function PlaylistEditor({
@@ -130,11 +132,21 @@ export function PlaylistEditor({
     const rel = releaseOptions.find((r) => r.id === selectedReleaseId);
     if (!rel) return;
 
+    let defaultSpotifyMode = "manual";
+    if (spotifyPlaylistUrl) {
+      try {
+        parseSpotifyResourceUrl(spotifyPlaylistUrl, "playlist");
+        defaultSpotifyMode = "generated";
+      } catch {}
+    }
+
     const newMember: PlaylistReleaseRecord = {
       playlistId: initialPlaylist.id,
       releaseId: selectedReleaseId,
       position: memberships.length,
       spotifyTargetUrl: "",
+      spotifyTrackUrl: "",
+      spotifyTargetMode: defaultSpotifyMode,
       appleTargetUrl: "",
       youtubeTargetUrl: "",
       isActive: true,
@@ -162,10 +174,23 @@ export function PlaylistEditor({
     }
   };
 
+  const handleUpdateSpotifyField = (
+    releaseId: string,
+    updates: {
+      spotifyTrackUrl?: string;
+      spotifyTargetMode?: string;
+      spotifyTargetUrl?: string;
+    }
+  ) => {
+    setMemberships((current) =>
+      current.map((m) => (m.releaseId === releaseId ? {...m, ...updates} : m))
+    );
+  };
+
   // Update target URL for a membership row
   const handleUpdateTargetUrl = (
     releaseId: string,
-    field: "spotifyTargetUrl" | "appleTargetUrl" | "youtubeTargetUrl",
+    field: "appleTargetUrl" | "youtubeTargetUrl",
     value: string
   ) => {
     setMemberships((current) =>
@@ -231,9 +256,11 @@ export function PlaylistEditor({
             memberships: memberships.map((m) => ({
               releaseId: m.releaseId,
               position: m.position,
-              spotifyTargetUrl: m.spotifyTargetUrl,
-              appleTargetUrl: m.appleTargetUrl,
-              youtubeTargetUrl: m.youtubeTargetUrl,
+              spotifyTargetUrl: m.spotifyTargetUrl || "",
+              spotifyTrackUrl: m.spotifyTrackUrl || "",
+              spotifyTargetMode: m.spotifyTargetMode || "manual",
+              appleTargetUrl: m.appleTargetUrl || "",
+              youtubeTargetUrl: m.youtubeTargetUrl || "",
               isActive: m.isActive
             }))
           })
@@ -242,6 +269,10 @@ export function PlaylistEditor({
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.message || "Failed to sync memberships.");
+        }
+
+        if (data.memberships) {
+          setMemberships(data.memberships);
         }
 
         // Save general details (including featuredReleaseId in case it was cleared)
@@ -515,6 +546,41 @@ export function PlaylistEditor({
                 placeholder="https://open.spotify.com/playlist/..."
                 value={spotifyPlaylistUrl}
               />
+              {(() => {
+                if (spotifyPlaylistUrl) {
+                  if (!spotifyPlaylistUrl.startsWith("https://")) {
+                    return (
+                      <span className="text-xs text-rose-400 mt-1 block">
+                        Invalid Spotify playlist URL (must start with https://)
+                      </span>
+                    );
+                  }
+                  try {
+                    const parsed = parseSpotifyResourceUrl(spotifyPlaylistUrl, "playlist");
+                    return (
+                      <div className="mt-1 flex flex-col gap-1">
+                        <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                          ✓ Valid Spotify playlist
+                        </span>
+                        <span className="text-[10px] text-muted font-mono bg-black/20 px-2 py-0.5 rounded border border-white/5 w-fit">
+                          Playlist ID: {parsed.id}
+                        </span>
+                      </div>
+                    );
+                  } catch (err: any) {
+                    return (
+                      <span className="text-xs text-rose-400 mt-1 block">
+                        Invalid Spotify playlist URL: {err.message}
+                      </span>
+                    );
+                  }
+                }
+                return (
+                  <span className="text-xs text-amber-400 mt-1 block">
+                    Playlist URL required for generated Spotify targets
+                  </span>
+                );
+              })()}
             </div>
 
             <div>
@@ -656,22 +722,21 @@ export function PlaylistEditor({
                         </div>
                       </div>
 
-                      {/* Campaign target URLs */}
-                      <div className="grid gap-4 md:grid-cols-3 pt-2">
-                        <div>
-                          <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
-                            Spotify Track URL
-                          </label>
-                          <input
-                            className="field-input py-1 px-2 text-xs w-full mt-1.5 font-mono"
-                            onChange={(e) =>
-                              handleUpdateTargetUrl(m.releaseId, "spotifyTargetUrl", e.target.value)
-                            }
-                            placeholder="https://open.spotify.com/track/..."
-                            value={m.spotifyTargetUrl}
-                          />
-                        </div>
+                      {/* Spotify Membership Controls */}
+                      <div className="pt-2">
+                        <SpotifyMembershipControls
+                          trackUrl={m.spotifyTrackUrl || ""}
+                          targetMode={m.spotifyTargetMode || "manual"}
+                          targetUrl={m.spotifyTargetUrl || ""}
+                          playlistUrl={spotifyPlaylistUrl}
+                          isRegenerating={isPending}
+                          onChange={(updates) => handleUpdateSpotifyField(m.releaseId, updates)}
+                          onRegenerate={handleSaveMemberships}
+                        />
+                      </div>
 
+                      {/* Apple & YouTube target URLs */}
+                      <div className="grid gap-4 md:grid-cols-2 pt-2">
                         <div>
                           <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
                             Apple Music Track URL
@@ -835,6 +900,47 @@ export function PlaylistEditor({
                           </button>
                         </div>
                       </div>
+
+                      {/* Spotify Direct Context Link / Target URL */}
+                      {m.spotifyTargetUrl && (
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-center pt-2">
+                          <div>
+                            <label className="text-[10px] uppercase tracking-wider font-semibold text-muted block mb-1.5">
+                              {m.spotifyTargetMode === "generated" ? "Direct Spotify Context Link" : "Spotify Target (Manual)"}
+                            </label>
+                            <div className="rounded-xl border border-[#23272e] bg-[#15171d] px-3.5 py-2 font-mono text-xs text-muted truncate select-all">
+                              {m.spotifyTargetUrl}
+                            </div>
+                          </div>
+                          <div className="pt-5 flex items-center justify-end gap-1.5">
+                            <button
+                              className="action-button-muted py-1.5 px-3 text-xs inline-flex items-center gap-1"
+                              onClick={() => handleCopyText(m.spotifyTargetUrl, `${m.releaseId}-spotify-target`)}
+                            >
+                              {copiedKey === `${m.releaseId}-spotify-target` ? (
+                                <>
+                                  <Check size={12} className="text-emerald-400" />
+                                  Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={12} />
+                                  {m.spotifyTargetMode === "generated" ? "Copy Direct Spotify Context Link" : "Copy Spotify Target"}
+                                </>
+                              )}
+                            </button>
+                            <a
+                              className="action-button-muted py-1.5 px-3 text-xs inline-flex items-center gap-1"
+                              href={m.spotifyTargetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLink size={12} />
+                              {m.spotifyTargetMode === "generated" ? "Test Spotify Context Link" : "Test Spotify Target"}
+                            </a>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Tracked short link integration */}
                       <div className="pt-2 flex justify-start">

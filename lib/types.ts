@@ -408,6 +408,8 @@ export type PlaylistReleaseRecord = {
   releaseId: string;
   position: number;
   spotifyTargetUrl: string;
+  spotifyTrackUrl: string;
+  spotifyTargetMode: string;
   appleTargetUrl: string;
   youtubeTargetUrl: string;
   isActive: boolean;

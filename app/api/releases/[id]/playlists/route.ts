@@ -15,6 +15,8 @@ const syncReleasePlaylistsSchema = z.object({
       playlistId: z.string(),
       position: z.number(),
       spotifyTargetUrl: z.string().default(""),
+      spotifyTrackUrl: z.string().default(""),
+      spotifyTargetMode: z.string().default("manual"),
       appleTargetUrl: z.string().default(""),
       youtubeTargetUrl: z.string().default(""),
       isActive: z.boolean().default(true)
@@ -83,7 +85,26 @@ export async function PUT(
     // Also revalidate the release detail page itself (since it holds the playlists list)
     revalidatePath(`/admin/releases/${releaseId}`);
 
-    return NextResponse.json({ok: true});
+    const updated = await prisma.playlistRelease.findMany({
+      where: { releaseId },
+      orderBy: { position: "asc" }
+    });
+
+    const records = updated.map((m) => ({
+      playlistId: m.playlistId,
+      releaseId: m.releaseId,
+      position: m.position,
+      spotifyTargetUrl: m.spotifyTargetUrl,
+      spotifyTrackUrl: m.spotifyTrackUrl,
+      spotifyTargetMode: m.spotifyTargetMode,
+      appleTargetUrl: m.appleTargetUrl,
+      youtubeTargetUrl: m.youtubeTargetUrl,
+      isActive: m.isActive,
+      createdAt: m.createdAt.toISOString(),
+      updatedAt: m.updatedAt.toISOString()
+    }));
+
+    return NextResponse.json({ok: true, memberships: records});
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Failed to sync release memberships.";
     return NextResponse.json({message: msg}, {status: 500});

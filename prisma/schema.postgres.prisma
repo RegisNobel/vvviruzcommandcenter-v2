@@ -558,9 +558,11 @@ model PlaylistRelease {
   playlistId       String
   releaseId        String
   position         Int      @default(0)
-  spotifyTargetUrl String   @default("")
-  appleTargetUrl   String   @default("")
-  youtubeTargetUrl String   @default("")
+  spotifyTargetUrl  String   @default("")
+  spotifyTrackUrl   String   @default("")
+  spotifyTargetMode String   @default("manual")
+  appleTargetUrl    String   @default("")
+  youtubeTargetUrl  String   @default("")
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

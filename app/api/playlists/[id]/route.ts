@@ -92,6 +92,7 @@ export async function PUT(
 
     // Handle soft archiving lifecycle switches
     let updated;
+    let summary;
     if (data.isArchived !== undefined && data.isArchived !== oldPlaylist.isArchived) {
       if (data.isArchived) {
         updated = await archivePlaylist(id);
@@ -99,7 +100,7 @@ export async function PUT(
         updated = await restorePlaylist(id);
       }
     } else {
-      updated = await updatePlaylist(id, {
+      const res = await updatePlaylist(id, {
         name: data.name,
         slug: data.slug,
         description: data.description,
@@ -112,6 +113,8 @@ export async function PUT(
         sortOrder: data.sortOrder,
         featuredReleaseId: data.featuredReleaseId ?? null
       });
+      updated = res.playlist;
+      summary = res.summary;
     }
 
     // Fetch final state for revalidation
@@ -131,7 +134,7 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json({playlist: updated});
+    return NextResponse.json({playlist: updated, summary});
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Failed to update playlist.";
     return NextResponse.json({message: msg}, {status: 500});
