@@ -189,6 +189,7 @@ Database-backed data:
 - admin user metadata
 - admin sessions
 - analytics events and backup run records
+- playlists and playlist-release campaign memberships
 
 Asset-backed data:
 
@@ -470,6 +471,27 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-07-06 15:30 -04:00
+
+- **Spotify Playlist Context Link Generator**:
+  - Implemented server-side generation of direct Spotify context links (`https://open.spotify.com/track/[TRACK_ID]?context=spotify:playlist:[PLAYLIST_ID]`) to supply playlist playback context on mobile environments.
+  - Added support for both `"generated"` and `"manual"` Spotify target modes, defaulting to manual for backward compatibility.
+  - Created the shared `<SpotifyMembershipControls>` React component to manage track inputs, link-mode toggles, status badges, and copy/test action utilities.
+  - Integrated the shared controls in `playlist-editor.tsx` and `release-detail-editor.tsx`.
+  - Implemented automatic transactional bulk regeneration of membership links when a parent playlist's Spotify URL changes, returning a structured `SpotifyRegenerationSummary`.
+  - Added validation to reject malformed non-empty Spotify source URLs while allowing empty optional URLs. Tolerates legacy malformed track URLs in bulk updates by clearing stale targets without blocking other valid regenerations.
+  - Displayed parsed Spotify playlist ID feedback in the Platforms tab and integrated direct context-link actions in the Campaign Links builder tab.
+
+### 2026-07-04 12:00 -04:00
+
+- **Promo Playlist Campaigns v1**:
+  - Introduced dedicated dynamic pages for growing streaming playlists through direct landing page CTAs and track link campaigns.
+  - Built dynamic public routes `/listen/[playlistSlug]` and `/listen/[playlistSlug]/[releaseSlug]` that serve as clean hubs containing playlist-level follow CTAs and release-specific target streaming links.
+  - Created the admin workspace playlist directory (`/admin/promo/playlists`) and the tabbed Playlist Detail Editor supporting member order sorting and position normalization.
+  - Added hero placement support to pin a featured release at the top of the public landing page, which automatically clears if its membership is deactivated.
+  - Integrated first-party analytics tracking for playlist campaigns, recording views (`playlist_page_view`), track click intent (`playlist_track_click`), and follow click intent (`playlist_follow_click`).
+  - Added support for campaign pre-filled short link templates to facilitate Meta ad deployments.
 
 ### 2026-06-20 15:40 -04:00
 
