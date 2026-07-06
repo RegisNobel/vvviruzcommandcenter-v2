@@ -502,7 +502,7 @@ export function PlaylistEditor({
           <div>
             <h3 className="text-lg font-bold text-ink font-semibold">Playlist Growth Settings</h3>
             <p className="text-xs text-muted mt-1">
-              Configure playlist-level links used for "Follow Playlist" CTA buttons. Must be valid HTTPS starting with `https://`.
+              Configure playlist-level links used for &quot;Follow Playlist&quot; CTA buttons. Must be valid HTTPS starting with `https://`.
             </p>
           </div>
 
