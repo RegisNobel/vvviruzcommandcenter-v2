@@ -1,5 +1,7 @@
 import type {SiteContentSettings} from "@/lib/types";
 
+import {parseAndNormalizeYouTubePlaylist} from "./youtube-utils";
+
 type ExclusiveDeliverySettings = SiteContentSettings["exclusive"];
 
 function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
@@ -9,24 +11,12 @@ function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
   );
 }
 
-export function normalizePrivateExternalUrl(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
+export function validateAndNormalizeYouTubePlaylistUrl(urlStr: string): string {
+  const trimmed = urlStr.trim();
+  if (!trimmed) {
     return "";
   }
-
-  try {
-    const parsedUrl = new URL(trimmedValue);
-
-    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      throw new Error("Unsupported protocol.");
-    }
-
-    return trimmedValue;
-  } catch {
-    throw new Error("Private External URL must be a valid http:// or https:// URL.");
-  }
+  return parseAndNormalizeYouTubePlaylist(trimmed).publicUrl;
 }
 
 export function validateExclusiveEmailDeliverySettings(values: ExclusiveDeliverySettings) {
@@ -48,7 +38,7 @@ export function normalizeExclusiveDeliverySettings<T extends ExclusiveDeliverySe
 ): T {
   const normalizedValues = {
     ...values,
-    private_external_url: normalizePrivateExternalUrl(values.private_external_url)
+    private_external_url: validateAndNormalizeYouTubePlaylistUrl(values.private_external_url)
   };
 
   validateExclusiveEmailDeliverySettings(normalizedValues);

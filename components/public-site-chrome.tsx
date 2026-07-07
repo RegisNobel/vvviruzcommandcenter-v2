@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type {SiteSettingsRecord} from "@/lib/types";
-
 import {DEFAULT_SITE_LOGO_FILE, getSiteIconUrl} from "@/lib/site-assets";
+import {prisma} from "@/lib/db/prisma";
+import {PublicPreviewPlayer} from "./public-preview-player";
 
-export function PublicSiteChrome({
+export async function PublicSiteChrome({
   children,
   siteSettings
 }: {
@@ -39,8 +40,26 @@ export function PublicSiteChrome({
     navItems.push({href: "/vault", label: "Vault"});
   }
 
+  // Fetch linked releases for preview tracks
+  const previewPlayer = siteSettings.site_content.preview_player;
+  const isPlayerEnabled = previewPlayer?.is_enabled && previewPlayer?.tracks?.some(t => t.isActive);
+
+  let linkedReleases: Array<{ id: string; title: string; coverArtPath: string | null }> = [];
+  if (isPlayerEnabled) {
+    const releaseIds = previewPlayer.tracks
+      .map((t) => t.releaseId)
+      .filter(Boolean) as string[];
+
+    if (releaseIds.length > 0) {
+      linkedReleases = await prisma.release.findMany({
+        where: {id: {in: releaseIds}},
+        select: {id: true, title: true, coverArtPath: true}
+      });
+    }
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf]">
+    <div className={`flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf] ${isPlayerEnabled ? "pb-28 sm:pb-20" : ""}`}>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090b0f]/86 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1280px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <Link className="min-w-0" href="/">
@@ -55,8 +74,9 @@ export function PublicSiteChrome({
                   fill
                   sizes="44px"
                   src={getSiteIconUrl(
-                    siteSettings.site_content.chrome.brand_mark_file || DEFAULT_SITE_LOGO_FILE
+                    siteSettings.site_content.chrome.brand_mark_file || "logo_header.png"
                   )}
+                  unoptimized={!siteSettings.site_content.chrome.brand_mark_file}
                 />
               </span>
               <div className="min-w-0">
@@ -96,10 +116,13 @@ export function PublicSiteChrome({
           </p>
         </div>
       </footer>
+
+      {isPlayerEnabled && (
+        <PublicPreviewPlayer
+          tracks={previewPlayer.tracks}
+          releases={linkedReleases}
+        />
+      )}
     </div>
   );
 }
-
-
-
-

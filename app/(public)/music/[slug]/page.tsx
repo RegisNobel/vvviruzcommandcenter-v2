@@ -137,9 +137,10 @@ export default async function PublicReleaseDetailPage({
                   <Image
                     alt={coverArtAltText}
                     className="object-cover"
+                    data-release-cover
                     fill
                     priority
-                    sizes="(max-width: 1024px) 100vw, 42vw"
+                    sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(46vw - 74px), 542px"
                     src={release.cover_art_path}
                   />
                 ) : (

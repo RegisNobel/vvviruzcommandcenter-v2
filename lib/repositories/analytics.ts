@@ -4,15 +4,34 @@ import {prisma} from "@/lib/db/prisma";
 import {createId} from "@/lib/utils";
 
 export type PublicAnalyticsEventInput = {
-  eventType: 
-    | "links_page_view" 
-    | "links_link_click" 
-    | "vault_page_view" 
+  eventType:
+    | "links_page_view"
+    | "links_link_click"
+    | "vault_page_view"
     | "vault_cta_click"
     | "playlist_page_view"
     | "playlist_track_click"
-    | "playlist_follow_click";
-  page: "links" | "vault" | "playlist";
+    | "playlist_follow_click"
+    | "preview_player_impression"
+    | "preview_play"
+    | "preview_pause"
+    | "preview_next"
+    | "preview_previous"
+    | "preview_milestone"
+    | "preview_complete"
+    | "preview_error"
+    | "preview_exclusives_cta"
+    | "exclusive_unlock_success"
+    | "exclusive_unlock_existing_subscriber"
+    | "exclusive_embed_impression"
+    | "exclusive_youtube_play"
+    | "exclusive_youtube_pause"
+    | "exclusive_youtube_video_change"
+    | "exclusive_youtube_complete"
+    | "exclusive_youtube_error"
+    | "exclusive_open_in_youtube"
+    | "exclusive_subscribe_youtube_click";
+  page: "links" | "vault" | "playlist" | "preview";
   path?: string;
   hubPath?: string;
   releaseId?: string | null;

@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import {Sparkles, UploadCloud} from "lucide-react";
+import {Sparkles} from "lucide-react";
 import {useState} from "react";
 
 import type {SiteSettingsRecord} from "@/lib/types";
@@ -11,117 +10,45 @@ type ExclusiveOfferSettings = SiteSettingsRecord["site_content"]["exclusive"];
 type ExclusiveOfferSettingsPanelProps = {
   exclusiveOffer: ExclusiveOfferSettings;
   onChange: (exclusiveOffer: ExclusiveOfferSettings) => void;
-  initialTrackArtOptions: string[];
-  initialTrackFileOptions: string[];
-};
-
-type UploadState = "idle" | "uploading" | "saved" | "error";
-
-function toExclusiveArtUrl(fileName: string) {
-  return `/api/assets/exclusive-art/${fileName}`;
-}
-
-function getStoredFileName(value: string) {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return "";
-  }
-
-  const parts = trimmed.split("/");
-
-  return parts[parts.length - 1] ?? trimmed;
-}
-
-async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
-  const response = await fetch(input, init);
-  const payload = (await response.json().catch(() => null)) as
-    | (T & {message?: string})
-    | {message?: string}
-    | null;
-
-  if (!response.ok) {
-    throw new Error(payload?.message ?? "Request failed.");
-  }
-
-  return payload as T & {message?: string};
-}
-
-const UNLOCK_MODE_LABELS: Record<ExclusiveOfferSettings["unlock_experience"], string> = {
-  instant_unlock: "Instant Unlock",
-  email_only: "Email Only",
-  signup_notify: "Notify Me"
+  initialTrackArtOptions?: string[];
+  initialTrackFileOptions?: string[];
 };
 
 function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
   const hasPrivateUrl = Boolean(exclusiveOffer.private_external_url.trim());
-  const hasUploadedPreview = Boolean(exclusiveOffer.exclusive_track_file_path.trim());
-  const hasPreviewAccess = hasPrivateUrl || hasUploadedPreview;
-  const hasPreviewTitle = Boolean(exclusiveOffer.exclusive_track_title.trim());
   const hasEmailCopy =
     Boolean(exclusiveOffer.email_subject.trim()) && Boolean(exclusiveOffer.email_body.trim());
-  const mode = exclusiveOffer.unlock_experience;
-  const visitorReceives =
-    mode === "signup_notify"
-      ? "Signup confirmation only"
-      : mode === "email_only"
-        ? "Email with preview link"
-        : hasPrivateUrl
-          ? "Immediate private link"
-          : hasUploadedPreview
-            ? "Immediate tokenized download"
-            : "No immediate access configured";
 
   if (!exclusiveOffer.exclusive_track_enabled) {
     return {
-      modeLabel: UNLOCK_MODE_LABELS[mode],
+      modeLabel: "Unlisted Playlist",
       visitorReceives: "Unavailable state",
       readiness: "Disabled",
       readinessTone: "neutral"
     };
   }
 
-  if (mode === "signup_notify") {
+  if (!hasPrivateUrl) {
     return {
-      modeLabel: UNLOCK_MODE_LABELS[mode],
-      visitorReceives,
-      readiness: "Notify mode ready",
-      readinessTone: "ready"
-    };
-  }
-
-  if (!hasPreviewTitle) {
-    return {
-      modeLabel: UNLOCK_MODE_LABELS[mode],
-      visitorReceives,
-      readiness: "Needs preview title",
+      modeLabel: "Unlisted Playlist",
+      visitorReceives: "No immediate access configured",
+      readiness: "Needs YouTube Playlist URL",
       readinessTone: "warning"
     };
   }
 
-  if (!hasPreviewAccess) {
+  if (!hasEmailCopy) {
     return {
-      modeLabel: UNLOCK_MODE_LABELS[mode],
-      visitorReceives,
-      readiness: mode === "instant_unlock"
-        ? "Needs private URL or uploaded file for instant unlock"
-        : "Needs private URL or uploaded file for email delivery",
-      readinessTone: "warning"
-    };
-  }
-
-  if ((mode === "email_only" || (mode === "instant_unlock" && exclusiveOffer.also_email_link)) && !hasEmailCopy) {
-    return {
-      modeLabel: UNLOCK_MODE_LABELS[mode],
-      visitorReceives,
+      modeLabel: "Unlisted Playlist",
+      visitorReceives: "Immediate unlisted YouTube playlist",
       readiness: "Needs email subject/body",
       readinessTone: "warning"
     };
   }
 
   return {
-    modeLabel: UNLOCK_MODE_LABELS[mode],
-    visitorReceives,
+    modeLabel: "Unlisted Playlist",
+    visitorReceives: "Immediate unlisted YouTube playlist",
     readiness: "Ready",
     readinessTone: "ready"
   };
@@ -129,16 +56,8 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
 
 export function ExclusiveOfferSettingsPanel({
   exclusiveOffer,
-  initialTrackArtOptions,
-  initialTrackFileOptions,
   onChange
 }: ExclusiveOfferSettingsPanelProps) {
-  const [trackFileOptions, setTrackFileOptions] = useState(initialTrackFileOptions);
-  const [trackArtOptions, setTrackArtOptions] = useState(initialTrackArtOptions);
-  const [trackUploadFile, setTrackUploadFile] = useState<File | null>(null);
-  const [artUploadFile, setArtUploadFile] = useState<File | null>(null);
-  const [trackUploadState, setTrackUploadState] = useState<UploadState>("idle");
-  const [artUploadState, setArtUploadState] = useState<UploadState>("idle");
   const [message, setMessage] = useState<string | null>(null);
 
   function updateExclusiveOffer(patch: Partial<ExclusiveOfferSettings>) {
@@ -160,77 +79,6 @@ export function ExclusiveOfferSettingsPanel({
   }
 
   const offerPreview = getExclusiveOfferPreview(exclusiveOffer);
-
-  async function handleUploadAsset(assetType: "track" | "art") {
-    const file = assetType === "track" ? trackUploadFile : artUploadFile;
-
-    if (!file) {
-      setMessage(
-        assetType === "track"
-          ? "Choose a track file first."
-          : "Choose an artwork file first."
-      );
-      assetType === "track" ? setTrackUploadState("error") : setArtUploadState("error");
-
-      return;
-    }
-
-    assetType === "track" ? setTrackUploadState("uploading") : setArtUploadState("uploading");
-    setMessage(null);
-
-    try {
-      const formData = new FormData();
-
-      formData.append("assetType", assetType);
-      formData.append("file", file);
-
-      const prevPath = assetType === "track" ? exclusiveOffer.exclusive_track_file_path : exclusiveOffer.exclusive_track_art_path;
-      if (prevPath) {
-        formData.append("previousPath", prevPath);
-      }
-
-      const payload = await readJson<{
-        assetType: "track" | "art";
-        fileName: string;
-        storedPath: string;
-        publicUrl: string | null;
-      }>("/api/exclusive/upload", {
-        method: "POST",
-        body: formData
-      });
-
-      if (assetType === "track") {
-        setTrackFileOptions((current) =>
-          Array.from(new Set([...current, payload.storedPath])).sort((left, right) =>
-            left.localeCompare(right)
-          )
-        );
-        updateExclusiveOffer({
-          exclusive_track_file_path: payload.storedPath
-        });
-        setTrackUploadFile(null);
-        setTrackUploadState("saved");
-        setMessage("Track uploaded. Save Site Settings to publish the selection.");
-      } else {
-        const storedFileName = getStoredFileName(payload.storedPath);
-
-        setTrackArtOptions((current) =>
-          Array.from(new Set([...current, storedFileName])).sort((left, right) =>
-            left.localeCompare(right)
-          )
-        );
-        updateExclusiveOffer({
-          exclusive_track_art_path: payload.publicUrl ?? ""
-        });
-        setArtUploadFile(null);
-        setArtUploadState("saved");
-        setMessage("Artwork uploaded. Save Site Settings to publish the selection.");
-      }
-    } catch (error) {
-      assetType === "track" ? setTrackUploadState("error") : setArtUploadState("error");
-      setMessage(error instanceof Error ? error.message : "Unable to upload the file.");
-    }
-  }
 
   return (
     <>
@@ -461,227 +309,79 @@ export function ExclusiveOfferSettingsPanel({
           <div>
             <p className="field-label">Delivery & Experience</p>
             <h4 className="mt-2 text-xl font-semibold text-ink">
-              Unlock Mode & Email Settings
+              Unlisted YouTube Playlist & Email Settings
             </h4>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <span className="field-label">Unlock Experience</span>
+          <div className="mt-5 space-y-4">
+            <label className="block space-y-2">
+              <span className="field-label">Unlisted YouTube Playlist URL</span>
               <div className="flex gap-2">
-                {["instant_unlock", "email_only", "signup_notify"].map((mode) => (
-                  <button
-                    key={mode}
-                    className={`flex-1 rounded-[18px] border px-4 py-3 text-center transition capitalize ${
-                      exclusiveOffer.unlock_experience === mode
-                        ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                        : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962]"
-                    }`}
-                    onClick={() => updateExclusiveOffer({unlock_experience: mode as any})}
-                    type="button"
-                  >
-                    {mode.replace("_", " ")}
-                  </button>
-                ))}
-              </div>
-              {exclusiveOffer.unlock_experience === "signup_notify" ? (
-                <p className="mt-3 text-xs text-[#a1a7b0]">
-                  Collect subscribers before choosing a lead magnet. No track file or private link required.
-                </p>
-              ) : null}
-            </div>
-
-            {exclusiveOffer.unlock_experience !== "signup_notify" ? (
-              <label className="space-y-2 md:col-span-2">
-                <span className="field-label">Private External URL</span>
                 <input
-                  className="field-input"
+                  className="field-input flex-1"
                   onChange={(event) =>
                     updateExclusiveOffer({private_external_url: event.target.value})
                   }
-                  placeholder="https://..."
+                  placeholder="https://www.youtube.com/playlist?list=..."
                   value={exclusiveOffer.private_external_url}
                 />
-                <p className="text-xs text-muted">
-                  Use an unlisted YouTube, SoundCloud, or Dropbox link. If left blank, it falls back to the uploaded Preview Asset.
-                </p>
-              </label>
-            ) : null}
+                {exclusiveOffer.private_external_url?.trim() && (
+                  <a
+                    className="rounded-full border border-[#30343b] bg-[#15181c] px-4 py-3 text-sm font-semibold text-[#d5d9df] hover:border-[#c9a347]/45 hover:bg-[#c9a347]/10"
+                    href={exclusiveOffer.private_external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Test Playlist
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-muted">
+                Enter the unlisted YouTube playlist URL. Please ensure your YouTube playlist visibility is set to &apos;Unlisted&apos; in YouTube Studio so it is not publicly searchable.
+              </p>
+            </label>
 
-            {exclusiveOffer.unlock_experience === "instant_unlock" ? (
-              <label className="space-y-2">
-                <span className="field-label">Instant Unlock Button Label</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    updateExclusiveOffer({instant_unlock_button_label: event.target.value})
-                  }
-                  value={exclusiveOffer.instant_unlock_button_label}
-                />
-              </label>
-            ) : null}
+            <label className="block space-y-2">
+              <span className="field-label">Artwork Image URL (Optional)</span>
+              <input
+                className="field-input"
+                onChange={(event) =>
+                  updateExclusiveOffer({exclusive_track_art_path: event.target.value})
+                }
+                placeholder="https://... or /api/assets/..."
+                value={exclusiveOffer.exclusive_track_art_path}
+              />
+              <p className="text-xs text-muted">
+                URL of the background artwork image displayed on the Exclusives page.
+              </p>
+            </label>
 
-            {exclusiveOffer.unlock_experience === "instant_unlock" ? (
-              <label className="flex items-center gap-3 space-y-0 rounded-[18px] border border-[#30343b] bg-[#15181c] px-4 py-3">
-                <input
-                  checked={exclusiveOffer.also_email_link}
-                  className="h-4 w-4 rounded border-white/20 bg-[#12161b] text-[#c9a347] focus:ring-[#c9a347]"
-                  onChange={(event) =>
-                    updateExclusiveOffer({also_email_link: event.target.checked})
-                  }
-                  type="checkbox"
-                />
-                <span className="text-sm font-medium text-[#d5d9df]">
-                  Also send link by email
-                </span>
-              </label>
-            ) : null}
+            <label className="block space-y-2">
+              <span className="field-label">Email Subject</span>
+              <input
+                className="field-input"
+                onChange={(event) =>
+                  updateExclusiveOffer({email_subject: event.target.value})
+                }
+                value={exclusiveOffer.email_subject}
+              />
+            </label>
 
-            {(exclusiveOffer.unlock_experience === "email_only" ||
-              (exclusiveOffer.unlock_experience === "instant_unlock" &&
-                exclusiveOffer.also_email_link)) ? (
-              <>
-                <label className="space-y-2 md:col-span-2">
-                  <span className="field-label">Email Subject</span>
-                  <input
-                    className="field-input"
-                    onChange={(event) =>
-                      updateExclusiveOffer({email_subject: event.target.value})
-                    }
-                    value={exclusiveOffer.email_subject}
-                  />
-                </label>
-
-                <label className="space-y-2 md:col-span-2">
-                  <span className="field-label">Email Body</span>
-                  <textarea
-                    className="field-input min-h-[110px]"
-                    onChange={(event) =>
-                      updateExclusiveOffer({email_body: event.target.value})
-                    }
-                    value={exclusiveOffer.email_body}
-                  />
-                </label>
-              </>
-            ) : null}
+            <label className="block space-y-2">
+              <span className="field-label">Email Body</span>
+              <textarea
+                className="field-input min-h-[110px]"
+                onChange={(event) =>
+                  updateExclusiveOffer({email_body: event.target.value})
+                }
+                value={exclusiveOffer.email_body}
+              />
+            </label>
           </div>
         </div>
 
-        {/* ASSET UPLOAD SUB-SECTION */}
-        {exclusiveOffer.unlock_experience !== "signup_notify" ? (
-          <div className="mt-8 grid gap-5 xl:grid-cols-2">
-            <div className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
-              <p className="field-label">Preview Asset</p>
-              <div className="mt-4 space-y-4">
-                <label className="space-y-2">
-                  <span className="field-label">Select Existing Preview</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      updateExclusiveOffer({exclusive_track_file_path: event.target.value})
-                    }
-                    value={exclusiveOffer.exclusive_track_file_path}
-                  >
-                    <option value="">No track selected</option>
-                    {trackFileOptions.map((fileName) => (
-                      <option key={fileName} value={fileName}>
-                        {fileName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="field-label">Upload New Preview</span>
-                  <input
-                    accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
-                    className="field-input file:mr-3 file:rounded-full file:border-0 file:bg-[#c9a347] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#13161a]"
-                    onChange={(event) => setTrackUploadFile(event.target.files?.[0] ?? null)}
-                    type="file"
-                  />
-                </label>
-
-                <button
-                  className="action-button-secondary"
-                  disabled={!trackUploadFile || trackUploadState === "uploading"}
-                  onClick={() => void handleUploadAsset("track")}
-                  type="button"
-                >
-                  <UploadCloud size={16} />
-                  {trackUploadState === "uploading" ? "Uploading..." : "Upload Preview"}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
-              <p className="field-label">Artwork</p>
-              <div className="mt-4 space-y-4">
-                <label className="space-y-2">
-                  <span className="field-label">Select Existing Artwork</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
-                      updateExclusiveOffer({exclusive_track_art_path: event.target.value})
-                    }
-                    value={exclusiveOffer.exclusive_track_art_path}
-                  >
-                    <option value="">No artwork selected</option>
-                    {trackArtOptions.map((fileName) => (
-                      <option key={fileName} value={toExclusiveArtUrl(fileName)}>
-                        {fileName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-2">
-                  <span className="field-label">Upload New Artwork</span>
-                  <input
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                    className="field-input file:mr-3 file:rounded-full file:border-0 file:bg-[#c9a347] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#13161a]"
-                    onChange={(event) => setArtUploadFile(event.target.files?.[0] ?? null)}
-                    type="file"
-                  />
-                </label>
-
-                <button
-                  className="action-button-secondary"
-                  disabled={!artUploadFile || artUploadState === "uploading"}
-                  onClick={() => void handleUploadAsset("art")}
-                  type="button"
-                >
-                  <UploadCloud size={16} />
-                  {artUploadState === "uploading" ? "Uploading..." : "Upload Artwork"}
-                </button>
-
-                {exclusiveOffer.exclusive_track_art_path ? (
-                  <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                    <p className="field-label">Current Art Preview</p>
-                    <div className="relative mt-3 aspect-square w-full overflow-hidden rounded-[18px]">
-                      <Image
-                        alt="Exclusive track artwork preview"
-                        className="object-cover"
-                        fill
-                        sizes="320px"
-                        src={exclusiveOffer.exclusive_track_art_path}
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        ) : null}
-
         {message ? (
-          <div
-            className={`mt-6 rounded-[22px] px-4 py-3 text-sm ${
-              trackUploadState === "error" || artUploadState === "error"
-                ? "border border-rose-500/30 bg-rose-500/10 text-rose-200"
-                : "border border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-            }`}
-          >
+          <div className="mt-6 rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
             {message}
           </div>
         ) : null}

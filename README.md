@@ -145,13 +145,12 @@ Performance workspace with:
 
 ### Audience and Email
 
-- public `/exclusives` capture flow with Instant Unlock and Email Only delivery modes
-- private external URL support for unlisted YouTube, BandLab, SoundCloud, or Dropbox links
-- configurable Instant Unlock button label and "Also send link by email" hybrid option
-- transactional email delivery via `sendCampaignEmail` with dynamically generated unsubscribe URLs
+- public `/exclusives` email-gate capture flow redirecting immediately to an unlisted YouTube playlist
+- normalized and validated YouTube playlist URL format support
+- transactional email delivery via `sendCampaignEmail` sending the unlisted playlist link to subscribers
 - strict admin validation preventing blank email subject/body when email delivery is enabled
-- duplicate-safe subscriber upserts
-- token-based gated download access for uploaded track files
+- duplicate-safe subscriber upserts with optional subscriber names
+- token-based gated download compatibility route for historical track files
 - Discord/community CTA settings for the exclusives page
 - protected `/admin/audience` management
 - consent-aware campaign sends
@@ -471,6 +470,30 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-07-06 22:05 -04:00
+
+- **Vercel Image Optimization & Performance tuning (Phase 2 & Targeted Phase 3)**:
+  - Conducted automated browser-based measurements of the single-release cover artwork using Playwright, verifying it caps at exactly `542px` for viewports &ge; 1344px.
+  - Replaced the single-release page sizes expression with the container-aware sizes formula: `sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(46vw - 74px), 542px"`.
+  - Generated compressed derivatives for predictable static assets (1200px wide for the artist portrait, 800px wide for the 5 brand-pillar illustrations), reducing origin asset bytes, optimizer input size on cache misses, storage and transfer overhead, and work required when a new transformation is generated (e.g. artist portrait reduced from 2.58 MB to 846 KB) while preserving high-resolution master assets.
+  - Updated `lib/site-assets.ts` defaults to load the optimized derivatives while respecting dynamic user-defined custom uploads.
+  - Fixed ESLint React rules-of-hooks violations in `public-preview-player.tsx` by declaring state hooks unconditionally.
+  - Added automated layout checks under `tests/measure-cover.spec.ts` and `playwright.config.ts` to verify breakpoints and caps.
+
+### 2026-07-06 16:30 -04:00
+
+- **Upcoming Preview Player & YouTube Exclusives Playlist**:
+  - Implemented the public Upcoming Music Preview Player that cycles through 3–5 active unreleased track previews (shuffled per session using a shuffle-bag pattern, supporting play/pause/prev/next, muted toggling, and progress bar seeking).
+  - Integrated the player in the persistent `public-site-chrome.tsx` at the bottom of public layouts, reserving page spacing and respecting mobile safe areas.
+  - Implemented the unlisted YouTube playlist exclusives embed funnel: successful signups set a server-generated HttpOnly cookie (`vcc_exclusive_access`) and reload the exclusives page to display the unlocked experience.
+  - Implemented a server-side exchange endpoint (`/api/exclusive/unlock?t=token`) for confirmation email links to set the access cookie and redirect cleanly to `/exclusives` without leaking tokens in the address bar.
+  - Built a custom React wrapper `<YouTubeEmbedPlayer>` using the official YouTube IFrame Player API to track fine-grained play, pause, video change, completion, and error events in first-party analytics.
+  - Standardized claim responses, made subscriber names optional, and wrapped Resend email campaigns in non-blocking try/catch blocks.
+  - Excluded released content dynamically from settings validation using the centralized release stage eligibility check, and isolated the Vault releases from the preview player.
+  - Conducted repository-wide cleanups: removed the obsolete direct exclusives track uploads and selectors, deleted the `/api/exclusive/upload` route, and completely deleted the deprecated `/api/exclusive/download` route and its repository dependencies.
+  - Expanded first-party analytics schemas to explicitly support preview player events and exclusives player analytics.
+  - Created a robust test suite `scripts/test-preview-player.ts` mapped to `npm run test:previews` to cover centralized YouTube parsing, legacy token query encapsulation, active count limits, timezone boundaries, name overrides, and eligibility.
 
 ### 2026-07-06 15:30 -04:00
 

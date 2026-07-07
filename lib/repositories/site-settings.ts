@@ -94,6 +94,10 @@ function normalizeModeSafeExclusiveMessage(
 
 function createDefaultSiteContent(): SiteContentSettings {
   return {
+    preview_player: {
+      is_enabled: false,
+      tracks: []
+    },
     metadata: {
       site_title: "vvviruz",
       site_description:
@@ -333,6 +337,18 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience;
 
   return {
+    preview_player: {
+      is_enabled: input?.preview_player?.is_enabled ?? defaults.preview_player.is_enabled,
+      tracks: (input?.preview_player?.tracks ?? defaults.preview_player.tracks).map((t) => ({
+        id: t.id || createId(),
+        releaseId: t.releaseId || undefined,
+        titleOverride: t.titleOverride || undefined,
+        artworkUrlOverride: t.artworkUrlOverride || undefined,
+        audioUrl: t.audioUrl || "",
+        isActive: t.isActive !== false,
+        sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : 0
+      }))
+    },
     metadata: {
       ...defaults.metadata,
       ...input?.metadata,

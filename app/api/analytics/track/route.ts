@@ -16,9 +16,28 @@ const analyticsEventSchema = z.object({
     "vault_cta_click",
     "playlist_page_view",
     "playlist_track_click",
-    "playlist_follow_click"
+    "playlist_follow_click",
+    "preview_player_impression",
+    "preview_play",
+    "preview_pause",
+    "preview_next",
+    "preview_previous",
+    "preview_milestone",
+    "preview_complete",
+    "preview_error",
+    "preview_exclusives_cta",
+    "exclusive_unlock_success",
+    "exclusive_unlock_existing_subscriber",
+    "exclusive_embed_impression",
+    "exclusive_youtube_play",
+    "exclusive_youtube_pause",
+    "exclusive_youtube_video_change",
+    "exclusive_youtube_complete",
+    "exclusive_youtube_error",
+    "exclusive_open_in_youtube",
+    "exclusive_subscribe_youtube_click"
   ]),
-  page: z.enum(["links", "vault", "playlist"]),
+  page: z.enum(["links", "vault", "playlist", "preview"]),
   path: z.string().default(""),
   hubPath: z.string().default(""),
   releaseId: z.string().nullish(),
@@ -45,8 +64,31 @@ const analyticsEventSchema = z.object({
     (event.eventType === "playlist_page_view" ||
      event.eventType === "playlist_track_click" ||
      event.eventType === "playlist_follow_click");
+  const isPreviewEvent =
+    event.page === "preview" &&
+    [
+      "preview_player_impression",
+      "preview_play",
+      "preview_pause",
+      "preview_next",
+      "preview_previous",
+      "preview_milestone",
+      "preview_complete",
+      "preview_error",
+      "preview_exclusives_cta",
+      "exclusive_unlock_success",
+      "exclusive_unlock_existing_subscriber",
+      "exclusive_embed_impression",
+      "exclusive_youtube_play",
+      "exclusive_youtube_pause",
+      "exclusive_youtube_video_change",
+      "exclusive_youtube_complete",
+      "exclusive_youtube_error",
+      "exclusive_open_in_youtube",
+      "exclusive_subscribe_youtube_click"
+    ].includes(event.eventType);
 
-  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent) {
+  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent && !isPreviewEvent) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Unsupported analytics event for page."

@@ -31,7 +31,8 @@
     "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
     "build:vercel": "npm run db:push:postgres -- --accept-data-loss && npm run db:generate:postgres && next build",
-    "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts"
+    "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts",
+    "test:previews": "tsx scripts/test-preview-player.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",
@@ -48,6 +49,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

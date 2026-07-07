@@ -13,9 +13,15 @@ import {
   Trophy
 } from "lucide-react";
 
+import {cookies} from "next/headers";
+
 import {ExclusiveSignupForm} from "@/components/exclusive-signup-form";
 import {normalizeExternalUrl} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
+import {prisma} from "@/lib/db/prisma";
+import {parseAndNormalizeYouTubePlaylist} from "@/lib/youtube-utils";
+import {YouTubeEmbedPlayer} from "@/components/youtube-embed-player";
+import {YouTubeOutboundCTAs} from "@/components/youtube-outbound-ctas";
 
 const COMMUNITY_MARKERS = [Lightbulb, PenLine, Swords, Trophy, Radio, BadgeCheck];
 
@@ -28,8 +34,36 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function PublicExclusivesPage() {
+export default async function PublicExclusivesPage({
+  searchParams
+}: {
+  searchParams: Promise<{ t?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const cookieStore = await cookies();
+  const token = resolvedSearchParams?.t || cookieStore.get("vcc_exclusive_access")?.value;
+
   const {siteSettings, offer, isAvailable} = await readPublicExclusiveOffer();
+
+  let isUnlocked = false;
+  if (token) {
+    const subscriber = await prisma.subscriber.findUnique({
+      where: { downloadToken: token }
+    });
+    if (subscriber) {
+      isUnlocked = true;
+    }
+  }
+
+  let youtubeDetails = null;
+  try {
+    if (offer.private_external_url) {
+      youtubeDetails = parseAndNormalizeYouTubePlaylist(offer.private_external_url);
+    }
+  } catch (err) {
+    console.error("Failed to parse YouTube playlist URL from settings:", err);
+  }
+
   const hasArt = Boolean(offer.exclusive_track_art_path.trim());
   const discordInviteUrl = normalizeExternalUrl(offer.discord_invite_url);
   const benefits = offer.community_benefits.filter(
@@ -42,11 +76,10 @@ export default async function PublicExclusivesPage() {
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 scale-[1.08] opacity-80">
             <Image
-              alt={`${offer.exclusive_track_title || siteSettings.artist_name} artwork`}
+              alt=""
               className="object-cover object-center blur-[48px]"
               fill
-              priority
-              sizes="100vw"
+              sizes="256px"
               src={offer.exclusive_track_art_path}
             />
           </div>
@@ -92,29 +125,25 @@ export default async function PublicExclusivesPage() {
             </p>
           ) : null}
 
-          {offer.exclusive_track_title.trim() ? (
-            <div className="mx-auto mt-8 max-w-[560px] rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-center">
-              <p className="text-2xl font-semibold tracking-tight text-[#f7f1e6]">
-                {offer.exclusive_track_title}
-              </p>
-              {offer.exclusive_track_description.trim() ? (
-                <p className="mt-3 text-sm leading-7 text-[#b6bec7]">
-                  {offer.exclusive_track_description}
+          <div className="mx-auto mt-8 max-w-[640px] text-left">
+            {isUnlocked && youtubeDetails ? (
+              <div className="space-y-6">
+                <YouTubeEmbedPlayer playlistId={youtubeDetails.playlistId} embedUrl={youtubeDetails.embedUrl} />
+                <YouTubeOutboundCTAs
+                  publicUrl={youtubeDetails.publicUrl}
+                  subscribeUrl={siteSettings.social_links.find((l: any) => l.url.includes("youtube.com") || l.url.includes("youtu.be"))?.url || "https://youtube.com"}
+                />
+                <p className="text-center text-xs leading-6 text-[#8f98a3]">
+                  These visualizer demos are unreleased drafts. Songs rotate out of this playlist as they receive official commercial releases.
                 </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="mx-auto mt-8 max-w-[560px] text-left">
-            {isAvailable ? (
+              </div>
+            ) : isAvailable ? (
               <ExclusiveSignupForm
                 consentLabel={offer.consent_label}
                 ctaLabel={offer.cta_label}
-                downloadLabel={offer.download_label}
                 emailLabel={offer.email_label}
                 nameLabel={offer.name_label}
                 successHeading={offer.success_heading}
-                trackTitle={offer.exclusive_track_title}
                 unlockExperience={offer.unlock_experience}
               />
             ) : (

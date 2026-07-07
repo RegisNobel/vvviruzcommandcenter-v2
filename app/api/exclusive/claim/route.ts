@@ -18,13 +18,13 @@ import {
   sendCampaignEmail
 } from "@/lib/email/campaigns";
 import {
-  normalizePrivateExternalUrl,
+  validateAndNormalizeYouTubePlaylistUrl,
   validateExclusiveEmailDeliverySettings
 } from "@/lib/exclusive-offer-safety";
 import type {ExclusiveClaimResponse} from "@/lib/types";
 
 const claimSchema = z.object({
-  name: z.string().trim().min(1, "Name is required."),
+  name: z.string().trim().optional().default(""),
   email: emailField("Enter a valid email address."),
   consent_given: z.boolean().default(false),
   bot_test_field: z.string().optional().default(""),
@@ -40,7 +40,7 @@ const claimSchema = z.object({
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
-type UnlockExperience = ExclusiveClaimResponse["unlockExperience"];
+type UnlockExperience = "instant_unlock" | "email_only" | "signup_notify";
 
 const CLAIM_SUCCESS_MESSAGES: Record<UnlockExperience, string> = {
   instant_unlock: "You're in. Your preview is unlocked.",
@@ -108,17 +108,8 @@ function getBotTestFieldValue(payload: unknown) {
 
 function createFakeClaimSuccess(): ExclusiveClaimResponse {
   return {
-    unlockExperience: "signup_notify",
-    instantUnlockButtonLabel: "Listen Now",
-    isDuplicate: false,
-    message: CLAIM_SUCCESS_MESSAGES.signup_notify,
-    subscriber: {
-      id: "pending",
-      name: "Subscriber",
-      email: "subscriber@example.com",
-      status: "active",
-      consent_given: true
-    }
+    success: true,
+    message: CLAIM_SUCCESS_MESSAGES.signup_notify
   };
 }
 
@@ -165,21 +156,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const shouldSendEmail =
-      offer.unlock_experience === "email_only" ||
-      (offer.unlock_experience === "instant_unlock" && offer.also_email_link);
     const privateExternalUrl = offer.private_external_url?.trim()
-      ? normalizePrivateExternalUrl(offer.private_external_url)
+      ? validateAndNormalizeYouTubePlaylistUrl(offer.private_external_url)
       : "";
     const publicSiteBaseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
-    const shouldUseUploadedTrack =
-      !privateExternalUrl && Boolean(offer.exclusive_track_file_path?.trim());
 
     validateExclusiveEmailDeliverySettings(offer);
-
-    if (shouldSendEmail && shouldUseUploadedTrack && !publicSiteBaseUrl) {
-      throw new Error("PUBLIC_SITE_URL is required before email delivery can send preview links.");
-    }
 
     const {subscriber, isDuplicate} = await upsertExclusiveSubscriber({
       name: payload.name,
@@ -205,14 +187,13 @@ export async function POST(request: Request) {
       }
     });
 
-    let targetLink = "";
-    if (privateExternalUrl) {
-      targetLink = privateExternalUrl;
-    } else if (offer.exclusive_track_file_path?.trim()) {
-      targetLink = publicSiteBaseUrl
-        ? `${publicSiteBaseUrl}/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`
-        : "";
-    }
+    const shouldSendEmail =
+      offer.unlock_experience === "email_only" ||
+      (offer.unlock_experience === "instant_unlock" && offer.also_email_link);
+
+    const exchangeUrl = publicSiteBaseUrl
+      ? `${publicSiteBaseUrl}/api/exclusive/unlock?t=${encodeURIComponent(subscriber.download_token)}`
+      : "";
 
     if (shouldSendEmail) {
       try {
@@ -221,8 +202,8 @@ export async function POST(request: Request) {
           subject: offer.email_subject,
           previewText: "",
           body: offer.email_body,
-          ctaLabel: offer.instant_unlock_button_label || "Access Preview",
-          ctaUrl: targetLink || undefined,
+          ctaLabel: offer.instant_unlock_button_label || "Access Playlist",
+          ctaUrl: exchangeUrl || undefined,
           unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
         });
       } catch (emailError) {
@@ -233,30 +214,25 @@ export async function POST(request: Request) {
       }
     }
 
-    const isInstantUnlock = offer.unlock_experience === "instant_unlock";
-    const response: ExclusiveClaimResponse = {
-      downloadUrl: isInstantUnlock && offer.exclusive_track_file_path?.trim()
-        ? `/api/exclusive/download?token=${encodeURIComponent(subscriber.download_token)}`
-        : undefined,
-      privateExternalUrl: isInstantUnlock ? privateExternalUrl || undefined : undefined,
-      unlockExperience: offer.unlock_experience,
-      instantUnlockButtonLabel: offer.instant_unlock_button_label || "Listen Now",
-      isDuplicate,
+    const nextResponse = NextResponse.json({
+      success: true,
+      accessUrl: "/exclusives",
       message: getClaimMessage(
         offer.unlock_experience,
         isDuplicate ? offer.duplicate_message : offer.success_message,
         isDuplicate
-      ),
-      subscriber: {
-        id: subscriber.id,
-        name: subscriber.name,
-        email: subscriber.email,
-        status: subscriber.status,
-        consent_given: subscriber.consent_given
-      }
-    };
+      )
+    });
 
-    return NextResponse.json(response);
+    nextResponse.cookies.set("vcc_exclusive_access", subscriber.download_token, {
+      path: "/",
+      maxAge: 365 * 24 * 60 * 60, // 1 year
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    });
+
+    return nextResponse;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

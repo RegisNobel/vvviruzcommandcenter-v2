@@ -39,3 +39,6 @@ storage/uploads/*
 !storage/uploads/.gitkeep
 .vercel
 test.js
+test-results/
+playwright-report/
+

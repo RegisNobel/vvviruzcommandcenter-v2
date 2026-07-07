@@ -91,7 +91,23 @@ export type PublicReleaseCategory = {
   release_count: number;
 };
 
+export type UpcomingPreviewTrack = {
+  id: string;
+  releaseId?: string;
+  titleOverride?: string;
+  artworkUrlOverride?: string;
+  audioUrl: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+export type PreviewPlayerSettings = {
+  is_enabled: boolean;
+  tracks: UpcomingPreviewTrack[];
+};
+
 export type SiteContentSettings = {
+  preview_player: PreviewPlayerSettings;
   metadata: {
     site_title: string;
     site_description: string;
@@ -487,16 +503,9 @@ export type EmailSendLogRecord = {
 };
 
 export type ExclusiveClaimResponse = {
-  downloadUrl?: string; // Kept for backwards compatibility/fallback
-  privateExternalUrl?: string;
-  unlockExperience: "instant_unlock" | "email_only" | "signup_notify";
-  instantUnlockButtonLabel: string;
-  isDuplicate: boolean;
-  message: string;
-  subscriber: Pick<
-    SubscriberRecord,
-    "id" | "name" | "email" | "status" | "consent_given"
-  >;
+  success: boolean;
+  accessUrl?: string;
+  message?: string;
 };
 
 export type ExclusiveAssetUploadResponse = {

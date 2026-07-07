@@ -117,8 +117,7 @@ export function PublicLinkHubView({
                 alt=""
                 className="object-cover object-center blur-[36px]"
                 fill
-                priority
-                sizes="100vw"
+                sizes="256px"
                 src={selectedRelease.cover_art_path}
               />
             </div>

@@ -181,10 +181,18 @@ export async function readSubscriberByEmail(email: string) {
   return subscriber ? toSubscriberRecord(subscriber) : null;
 }
 
-export async function readSubscriberByDownloadToken(downloadToken: string) {
+/**
+ * Reads a subscriber by their exclusive access token.
+ * 
+ * TECHNICAL DEBT NOTE:
+ * The SQLite schema uses the column name `downloadToken` to store this value.
+ * To avoid a database schema migration, we encapsulate the legacy database field
+ * behind this properly named repository function.
+ */
+export async function readSubscriberByExclusiveAccessToken(exclusiveAccessToken: string) {
   const subscriber = await prisma.subscriber.findUnique({
     where: {
-      downloadToken
+      downloadToken: exclusiveAccessToken
     }
   });
 

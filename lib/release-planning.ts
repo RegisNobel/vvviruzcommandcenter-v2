@@ -233,6 +233,8 @@ export function getReleasePlanningSteps(release: ReleaseRecord): ReleasePlanStep
   }));
 }
 
+import {toOptionalDate} from "@/lib/db/serialization";
+
 export function getReleasePlanningSnapshot(release: ReleaseRecord) {
   const currentStage = getCurrentReleasePlanningStage(release);
   const blockers = getReleasePlanningBlockers(release);
@@ -246,4 +248,19 @@ export function getReleasePlanningSnapshot(release: ReleaseRecord) {
     stage_steps: getReleasePlanningSteps(release),
     progress_percentage: calculateReleaseProgress(release)
   };
+}
+
+export function isReleaseEligibleForPreview(release: ReleaseRecord): boolean {
+  const stage = getCurrentReleasePlanningStage(release);
+  if (stage.label === "Published") {
+    if (release.release_date) {
+      const releaseDate = toOptionalDate(release.release_date);
+      if (releaseDate && releaseDate.getTime() <= Date.now()) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  return true;
 }

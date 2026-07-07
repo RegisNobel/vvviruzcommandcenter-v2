@@ -2,14 +2,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import path from "node:path";
-
 import sharp from "sharp";
 import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {AUDIO_EXTENSIONS, IMAGE_EXTENSIONS} from "@/lib/constants";
 import {storeAsset, deleteAsset} from "@/lib/server/asset-storage";
-import {ensureStorageDirs} from "@/lib/server/storage";
 import type {ExclusiveAssetUploadResponse} from "@/lib/types";
 
 const mimeToExtension: Record<string, string> = {
@@ -66,6 +64,11 @@ export async function POST(request: Request) {
   const storedFileName = `${uuid}${detectedExtension}`;
 
   if (assetType === "track") {
+    // Enforce max 40MB for audio files
+    if (file.size > 40 * 1024 * 1024) {
+      return NextResponse.json({message: "Audio file exceeds 40MB limit."}, {status: 400});
+    }
+
     const storedAsset = await storeAsset({
       kind: "exclusive-track",
       fileName: storedFileName,
@@ -89,6 +92,10 @@ export async function POST(request: Request) {
     return NextResponse.json(payload);
   } else {
     // assetType === "art"
+    if (file.size > 8 * 1024 * 1024) {
+      return NextResponse.json({message: "Artwork file exceeds 8MB limit."}, {status: 400});
+    }
+
     const originalFileName = `original-${uuid}${detectedExtension}`;
     const originalBuffer = Buffer.from(await file.arrayBuffer()) as any;
 

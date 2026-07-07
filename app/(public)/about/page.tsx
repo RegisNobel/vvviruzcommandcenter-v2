@@ -269,6 +269,7 @@ export default async function PublicAboutPage() {
                           height={36}
                           src={getSiteIconUrl(socialLogoFile)}
                           width={36}
+                          unoptimized
                         />
                       </span>
                     ) : (
