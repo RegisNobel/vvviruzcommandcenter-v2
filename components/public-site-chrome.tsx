@@ -29,7 +29,7 @@ export async function PublicSiteChrome({
     navItems.push({href: "/links", label: siteSettings.site_content.chrome.nav_links_label});
   }
 
-  navItems.push({href: "/exclusives", label: "Insider Access"});
+  navItems.push({href: "/exclusives", label: "Exclusives"});
 
   if (siteSettings.site_content.commissions?.is_enabled) {
     navItems.push({href: "/commissions", label: "Commissions"});
