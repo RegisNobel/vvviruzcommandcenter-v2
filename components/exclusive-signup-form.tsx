@@ -85,16 +85,6 @@ export function ExclusiveSignupForm({
       }
 
       if (payload.accessUrl) {
-        try {
-          fetch("/api/analytics/track", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              eventType: "exclusive_unlock_success",
-              page: "preview"
-            })
-          });
-        } catch {}
         window.location.reload();
         return;
       }

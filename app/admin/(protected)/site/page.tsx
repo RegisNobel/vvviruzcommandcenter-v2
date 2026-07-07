@@ -1,6 +1,7 @@
 
 import {ReleaseCategorySettingsPanel} from "@/components/release-category-settings-panel";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
+import {prisma} from "@/lib/db/prisma";
 import {AppearsOnSettingsPanel} from "@/components/appears-on-settings-panel";
 import {LinkHubsSettingsPanel} from "@/components/link-hubs-settings-panel";
 import {PlaylistsSettingsPanel} from "@/components/playlists-settings-panel";
@@ -39,6 +40,12 @@ export default async function AdminSitePage() {
     readPlaylists({ archiveStatus: "active" })
   ]);
 
+  const vaultAssignments = await prisma.releaseCategoryAssignment.findMany({
+    where: { category: { slug: "vault" } },
+    select: { releaseId: true }
+  });
+  const vaultReleaseIds = vaultAssignments.map((a: { releaseId: string }) => a.releaseId);
+
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
@@ -48,6 +55,7 @@ export default async function AdminSitePage() {
           initialSiteSettings={siteSettings}
           releaseOptions={releaseSummaries}
           siteIconOptions={siteIconOptions}
+          vaultReleaseIds={vaultReleaseIds}
         />
 
         <LinkHubsSettingsPanel

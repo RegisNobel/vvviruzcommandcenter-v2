@@ -35,7 +35,12 @@ const analyticsEventSchema = z.object({
     "exclusive_youtube_complete",
     "exclusive_youtube_error",
     "exclusive_open_in_youtube",
-    "exclusive_subscribe_youtube_click"
+    "exclusive_subscribe_youtube_click",
+    "exclusive_page_view",
+    "exclusive_claim_success",
+    "exclusive_email_unlock_success",
+    "exclusive_preview_open",
+    "exclusive_discord_cta"
   ]),
   page: z.enum(["links", "vault", "playlist", "preview"]),
   path: z.string().default(""),
@@ -85,7 +90,12 @@ const analyticsEventSchema = z.object({
       "exclusive_youtube_complete",
       "exclusive_youtube_error",
       "exclusive_open_in_youtube",
-      "exclusive_subscribe_youtube_click"
+      "exclusive_subscribe_youtube_click",
+      "exclusive_page_view",
+      "exclusive_claim_success",
+      "exclusive_email_unlock_success",
+      "exclusive_preview_open",
+      "exclusive_discord_cta"
     ].includes(event.eventType);
 
   if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent && !isPreviewEvent) {

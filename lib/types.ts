@@ -91,23 +91,7 @@ export type PublicReleaseCategory = {
   release_count: number;
 };
 
-export type UpcomingPreviewTrack = {
-  id: string;
-  releaseId?: string;
-  titleOverride?: string;
-  artworkUrlOverride?: string;
-  audioUrl: string;
-  isActive: boolean;
-  sortOrder: number;
-};
-
-export type PreviewPlayerSettings = {
-  is_enabled: boolean;
-  tracks: UpcomingPreviewTrack[];
-};
-
 export type SiteContentSettings = {
-  preview_player: PreviewPlayerSettings;
   metadata: {
     site_title: string;
     site_description: string;
@@ -211,6 +195,7 @@ export type SiteContentSettings = {
     exclusive_track_file_path: string;
     exclusive_track_art_path: string;
     exclusive_track_enabled: boolean;
+    release_id?: string | null;
     unlock_experience: "instant_unlock" | "email_only" | "signup_notify";
     private_external_url: string;
     instant_unlock_button_label: string;

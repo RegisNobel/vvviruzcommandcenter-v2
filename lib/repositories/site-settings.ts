@@ -61,11 +61,11 @@ const LEGACY_EXCLUSIVE_COMMUNITY_DESCRIPTIONS = new Set([
   "Active members can earn shoutouts, credits, special roles, and recognition inside the Lab."
 ]);
 
-const DEFAULT_EXCLUSIVE_SUCCESS_HEADING = "You're on the early access list.";
+const DEFAULT_EXCLUSIVE_SUCCESS_HEADING = "Insider Access Unlocked";
 const DEFAULT_EXCLUSIVE_SUCCESS_MESSAGE =
-  "You're in. I'll send the preview/update when it's ready.";
+  "You're in. Your Insider Access is unlocked.";
 const DEFAULT_EXCLUSIVE_DUPLICATE_MESSAGE =
-  "You're already on the list. I'll send the update when it's ready.";
+  "You're already on the list. Your Insider Access is unlocked.";
 
 function hasLegacyEncoding(value: string) {
   return value.includes("â");
@@ -74,14 +74,9 @@ function hasLegacyEncoding(value: string) {
 function normalizeModeSafeExclusiveMessage(
   value: string | undefined,
   fallback: string,
-  unlockExperience: SiteContentSettings["exclusive"]["unlock_experience"]
+  unlockExperience: string
 ) {
-  const normalizedValue = value?.trim() ?? "";
-
-  if (!normalizedValue || hasLegacyEncoding(normalizedValue)) {
-    return fallback;
-  }
-
+  const normalizedValue = (value ?? "").trim();
   if (
     unlockExperience !== "instant_unlock" &&
     /\b(download|unlock|unlocked)\b/i.test(normalizedValue)
@@ -94,10 +89,6 @@ function normalizeModeSafeExclusiveMessage(
 
 function createDefaultSiteContent(): SiteContentSettings {
   return {
-    preview_player: {
-      is_enabled: false,
-      tracks: []
-    },
     metadata: {
       site_title: "vvviruz",
       site_description:
@@ -227,34 +218,35 @@ function createDefaultSiteContent(): SiteContentSettings {
         "Add featured release links, socials, or extra link-hub items from the admin command center and they will appear here automatically."
     },
   exclusive: {
-    badge_text: "Private Preview",
-    headline: "Get Early Access to Unreleased Music.",
-    subtext: "Join the private list for early access to upcoming tracks, work-in-progress drafts, and exclusive previews before they hit Spotify or Apple Music.",
-    brand_line: "Early Access Preview",
-    cta_label: "Get Early Access",
+    badge_text: "Insider Access",
+    headline: "Join Insider Access",
+    subtext: "Join the private list for early access to unreleased previews, work-in-progress drafts, and our Discord community.",
+    brand_line: "Insider Access",
+    cta_label: "Join Insider Access",
     name_label: "Name",
     email_label: "Email",
     consent_label:
       "By signing up, you'll receive this preview and future vvviruz updates. You can unsubscribe anytime.",
-    success_heading: "You’re on the early access list.",
-    success_message: "You're in. I'll send the preview/update when it's ready.",
+    success_heading: "Insider Access Unlocked",
+    success_message: "You're in. Your Insider Access is unlocked.",
     duplicate_message:
-      "You’re already on the list. Watch your inbox for the next preview drop.",
+      "You're already on the list. Your Insider Access is unlocked.",
     download_label: "Download the preview",
-    unavailable_heading: "Early Access unavailable",
+    unavailable_heading: "Insider Access unavailable",
     unavailable_body:
-      "The preview list is closed right now. Check back soon for the next drop.",
+      "Insider Access is currently closed. Check back soon for the next update.",
     exclusive_track_title: "",
     exclusive_track_description: "",
     exclusive_track_file_path: "",
     exclusive_track_art_path: "",
     exclusive_track_enabled: true,
-    unlock_experience: "signup_notify",
+    release_id: null,
+    unlock_experience: "instant_unlock",
     private_external_url: "",
-    instant_unlock_button_label: "Listen Now",
-    also_email_link: false,
-    email_subject: "Your Private Preview",
-    email_body: "Thank you for joining the early access list.\n\nHere is your private preview link.",
+    instant_unlock_button_label: "Access the Current Preview",
+    also_email_link: true,
+    email_subject: "Insider Access Unlocked",
+    email_body: "Your Insider Access is ready. Use the button below to access the current private preview.\n\nNote that previews rotate as new songs release, so check back often to hear the latest unreleased material!",
     discord_invite_url: "",
     community_badge_text: "Fan Hub",
     community_headline: "Join the vvviruz Command Center",
@@ -337,18 +329,6 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience;
 
   return {
-    preview_player: {
-      is_enabled: input?.preview_player?.is_enabled ?? defaults.preview_player.is_enabled,
-      tracks: (input?.preview_player?.tracks ?? defaults.preview_player.tracks).map((t) => ({
-        id: t.id || createId(),
-        releaseId: t.releaseId || undefined,
-        titleOverride: t.titleOverride || undefined,
-        artworkUrlOverride: t.artworkUrlOverride || undefined,
-        audioUrl: t.audioUrl || "",
-        isActive: t.isActive !== false,
-        sortOrder: typeof t.sortOrder === "number" ? t.sortOrder : 0
-      }))
-    },
     metadata: {
       ...defaults.metadata,
       ...input?.metadata,
@@ -430,6 +410,7 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     exclusive: {
       ...defaults.exclusive,
       ...input?.exclusive,
+      release_id: input?.exclusive?.release_id !== undefined ? (input.exclusive.release_id?.trim() || null) : null,
       unlock_experience: exclusiveUnlockExperience,
       instant_unlock_button_label: input?.exclusive?.instant_unlock_button_label || defaults.exclusive.instant_unlock_button_label,
       success_heading:

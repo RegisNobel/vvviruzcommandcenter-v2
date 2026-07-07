@@ -10,7 +10,8 @@ import {
   PenLine,
   Radio,
   Swords,
-  Trophy
+  Trophy,
+  Play
 } from "lucide-react";
 
 import {cookies} from "next/headers";
@@ -19,9 +20,9 @@ import {ExclusiveSignupForm} from "@/components/exclusive-signup-form";
 import {normalizeExternalUrl} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 import {prisma} from "@/lib/db/prisma";
-import {parseAndNormalizeYouTubePlaylist} from "@/lib/youtube-utils";
-import {YouTubeEmbedPlayer} from "@/components/youtube-embed-player";
-import {YouTubeOutboundCTAs} from "@/components/youtube-outbound-ctas";
+import {extractYouTubeVideoId, getCanonicalYouTubeWatchUrl} from "@/lib/youtube-utils";
+import {TrackedExternalLink} from "@/components/tracked-external-link";
+import {InsiderAccessAnalytics} from "@/components/insider-access-analytics";
 
 const COMMUNITY_MARKERS = [Lightbulb, PenLine, Swords, Trophy, Radio, BadgeCheck];
 
@@ -29,8 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const {siteSettings} = await readPublicExclusiveOffer();
 
   return {
-    title: siteSettings.site_content.metadata.exclusive_page_title,
-    description: siteSettings.site_content.metadata.exclusive_page_description
+    title: "Insider Access",
+    description: "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community."
   };
 }
 
@@ -43,7 +44,7 @@ export default async function PublicExclusivesPage({
   const cookieStore = await cookies();
   const token = resolvedSearchParams?.t || cookieStore.get("vcc_exclusive_access")?.value;
 
-  const {siteSettings, offer, isAvailable} = await readPublicExclusiveOffer();
+  const {offer} = await readPublicExclusiveOffer();
 
   let isUnlocked = false;
   if (token) {
@@ -55,24 +56,46 @@ export default async function PublicExclusivesPage({
     }
   }
 
-  let youtubeDetails = null;
-  try {
-    if (offer.private_external_url) {
-      youtubeDetails = parseAndNormalizeYouTubePlaylist(offer.private_external_url);
+  // Resolve associated release if configured
+  const release = offer.release_id
+    ? await prisma.release.findUnique({
+        where: { id: offer.release_id }
+      })
+    : null;
+
+  // Derivations
+  const derivedTitle = offer.exclusive_track_title.trim() || release?.title || "Upcoming Preview";
+  const derivedArtwork = offer.exclusive_track_art_path.trim() || release?.coverArtPath || "";
+  const derivedDescription = offer.exclusive_track_description.trim() || release?.publicDescription || "";
+
+  // Determine preview availability
+  let isPreviewActive = offer.exclusive_track_enabled && Boolean(offer.private_external_url.trim());
+  let youtubeUrl = "";
+
+  if (isPreviewActive) {
+    try {
+      const videoId = extractYouTubeVideoId(offer.private_external_url);
+      // ONLY set the YouTube watch URL if the visitor is unlocked
+      if (isUnlocked) {
+        youtubeUrl = getCanonicalYouTubeWatchUrl(videoId);
+      }
+    } catch (err) {
+      console.error("Failed to parse YouTube URL:", err);
+      isPreviewActive = false;
     }
-  } catch (err) {
-    console.error("Failed to parse YouTube playlist URL from settings:", err);
   }
 
-  const hasArt = Boolean(offer.exclusive_track_art_path.trim());
+  const hasArt = Boolean(derivedArtwork);
   const discordInviteUrl = normalizeExternalUrl(offer.discord_invite_url);
   const benefits = offer.community_benefits.filter(
     (benefit) => benefit.title.trim() || benefit.description.trim()
   );
 
   return (
-    <main className="relative min-h-[calc(100vh-140px)] overflow-hidden bg-[#06080b] px-4 py-10 sm:px-6 sm:py-16">
-      {hasArt ? (
+    <main className="relative min-h-[calc(100vh-80px)] overflow-hidden bg-[#06080b] px-4 py-10 sm:px-6 sm:py-16">
+      <InsiderAccessAnalytics releaseId={offer.release_id} releaseTitle={derivedTitle} />
+
+      {hasArt && isPreviewActive ? (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute inset-0 scale-[1.08] opacity-80">
             <Image
@@ -80,7 +103,7 @@ export default async function PublicExclusivesPage({
               className="object-cover object-center blur-[48px]"
               fill
               sizes="256px"
-              src={offer.exclusive_track_art_path}
+              src={derivedArtwork}
             />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,9,0.58),rgba(7,9,13,0.92)_32%,rgba(6,8,11,0.99))]" />
@@ -95,30 +118,63 @@ export default async function PublicExclusivesPage({
         <section className="relative mx-auto max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0c1015]/82 px-5 py-8 text-center shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(201,163,71,0.72),transparent)]" />
           <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
-            {offer.badge_text}
+            {offer.badge_text || "Insider Access"}
           </div>
 
-          {hasArt ? (
-            <div className="mt-7 flex justify-center">
-              <div className="relative h-44 w-44 overflow-hidden rounded-[28px] border border-white/10 bg-[#12161b] shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:h-52 sm:w-52">
-                <Image
-                  alt={`${offer.exclusive_track_title} artwork`}
-                  className="object-cover"
-                  fill
-                  priority
-                  sizes="208px"
-                  src={offer.exclusive_track_art_path}
-                />
-              </div>
-            </div>
-          ) : null}
+          {isPreviewActive ? (
+            <>
+              {hasArt ? (
+                <div className="mt-7 flex justify-center">
+                  <div className="relative h-44 w-44 overflow-hidden rounded-[28px] border border-white/10 bg-[#12161b] shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:h-52 sm:w-52">
+                    <Image
+                      alt={`${derivedTitle} artwork`}
+                      className="object-cover"
+                      fill
+                      priority
+                      sizes="208px"
+                      src={derivedArtwork}
+                    />
+                  </div>
+                </div>
+              ) : null}
 
-          <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
-            {offer.headline}
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
-            {offer.subtext}
-          </p>
+              <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
+                {isUnlocked ? offer.success_heading || "Insider Access Unlocked" : offer.headline}
+              </h1>
+              
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
+                {isUnlocked ? (offer.success_message || "You have unlocked early access previews.") : offer.subtext}
+              </p>
+
+              {derivedTitle && (
+                <div className="mt-6 inline-flex flex-col items-center">
+                  <span className="text-xs uppercase tracking-widest text-[#c9a347]/80">Current Preview</span>
+                  <span className="mt-1 text-lg font-bold text-[#f7f1e6]">{derivedTitle}</span>
+                  {derivedDescription && (
+                    <span className="mt-1 max-w-md text-xs text-[#a0aab5]">{derivedDescription}</span>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
+                {offer.headline || "Join Insider Access"}
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
+                {offer.subtext || "Get early access to unreleased tracks, drafts, and updates."}
+              </p>
+
+              <div className="mt-8 rounded-[28px] border border-white/5 bg-white/[0.02] px-6 py-10 text-center">
+                <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">Preview Status</span>
+                <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">Next preview coming soon</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-[#98a1aa]">
+                  Sign up below to lock in your access. You will receive an email notice the exact second the next unreleased draft goes live.
+                </p>
+              </div>
+            </>
+          )}
+
           {offer.brand_line.trim() ? (
             <p className="mt-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#d2af5a]">
               {offer.brand_line}
@@ -126,18 +182,32 @@ export default async function PublicExclusivesPage({
           ) : null}
 
           <div className="mx-auto mt-8 max-w-[640px] text-left">
-            {isUnlocked && youtubeDetails ? (
-              <div className="space-y-6">
-                <YouTubeEmbedPlayer playlistId={youtubeDetails.playlistId} embedUrl={youtubeDetails.embedUrl} />
-                <YouTubeOutboundCTAs
-                  publicUrl={youtubeDetails.publicUrl}
-                  subscribeUrl={siteSettings.social_links.find((l: any) => l.url.includes("youtube.com") || l.url.includes("youtu.be"))?.url || "https://youtube.com"}
-                />
-                <p className="text-center text-xs leading-6 text-[#8f98a3]">
-                  These visualizer demos are unreleased drafts. Songs rotate out of this playlist as they receive official commercial releases.
-                </p>
-              </div>
-            ) : isAvailable ? (
+            {isUnlocked ? (
+              isPreviewActive && youtubeUrl ? (
+                <div className="flex flex-col items-center space-y-6 text-center">
+                  <TrackedExternalLink
+                    href={youtubeUrl}
+                    eventType="exclusive_preview_open"
+                    className="inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#c9a347] to-[#e6c167] px-8 py-4 text-base font-bold text-[#13161a] transition hover:scale-[1.02] active:scale-[0.98] shadow-[0_12px_40px_rgba(201,163,71,0.25)]"
+                  >
+                    <Play size={18} fill="currentColor" />
+                    {offer.instant_unlock_button_label || "Access the Current Preview"}
+                  </TrackedExternalLink>
+                  <p className="text-center text-xs leading-6 text-[#8f98a3]">
+                    This private video is unlisted. Please check back often as previews rotate out when commercial releases occur.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-[28px] border border-white/10 bg-black/16 px-6 py-8 text-center">
+                  <h3 className="text-xl font-semibold tracking-tight text-[#f7f1e6]">
+                    Insider Access Activated
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[#b6bec7]">
+                    You are signed up! There is no active preview right now, but you will receive an email notice when the next track is uploaded.
+                  </p>
+                </div>
+              )
+            ) : (
               <ExclusiveSignupForm
                 consentLabel={offer.consent_label}
                 ctaLabel={offer.cta_label}
@@ -146,27 +216,9 @@ export default async function PublicExclusivesPage({
                 successHeading={offer.success_heading}
                 unlockExperience={offer.unlock_experience}
               />
-            ) : (
-              <div className="rounded-[28px] border border-white/10 bg-black/16 px-6 py-8 text-center">
-                <h2 className="text-2xl font-semibold tracking-tight text-[#f7f1e6]">
-                  {offer.unavailable_heading}
-                </h2>
-                <p className="mt-4 text-sm leading-7 text-[#b6bec7]">
-                  {offer.unavailable_body}
-                </p>
-                <div className="mt-6 flex justify-center">
-                  <Link
-                    className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-[#f4eedf] transition hover:border-[#c9a347]/40 hover:bg-[#c9a347]/10"
-                    href="/music"
-                  >
-                    Back to Music
-                  </Link>
-                </div>
-              </div>
             )}
           </div>
         </section>
-
 
         <section className="relative mx-auto mt-12 max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0b0f14]/70 px-4 py-10 backdrop-blur-xl sm:mt-16 sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,163,71,0.17),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(74,100,190,0.11),transparent_34%)]" />
@@ -230,15 +282,14 @@ export default async function PublicExclusivesPage({
               </h3>
               <div className="mt-6 flex justify-center">
                 {discordInviteUrl ? (
-                  <Link
+                  <TrackedExternalLink
                     className="inline-flex w-full justify-center rounded-full border border-[#c9a347]/42 bg-[#c9a347] px-6 py-4 text-sm font-semibold text-[#14120d] transition duration-300 hover:scale-[1.02] hover:bg-[#e2bf68] sm:w-auto"
                     href={discordInviteUrl}
-                    rel="noreferrer"
-                    target="_blank"
+                    eventType="exclusive_discord_cta"
                   >
                     {offer.community_cta_label}
                     <ArrowUpRight className="ml-2" size={16} />
-                  </Link>
+                  </TrackedExternalLink>
                 ) : (
                   <button
                     className="inline-flex w-full cursor-not-allowed justify-center rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-[#8d949d] sm:w-auto"
