@@ -18,7 +18,7 @@ import {
   sendCampaignEmail
 } from "@/lib/email/campaigns";
 import {
-  validateAndNormalizeYouTubeVideoUrl,
+  validateAndNormalizePrivateExternalUrl,
   validateExclusiveEmailDeliverySettings
 } from "@/lib/exclusive-offer-safety";
 import {recordPublicAnalyticsEvent} from "@/lib/repositories/analytics";
@@ -165,9 +165,9 @@ export async function POST(request: Request) {
     let privateExternalUrl = "";
     if (offer.private_external_url?.trim()) {
       try {
-        privateExternalUrl = validateAndNormalizeYouTubeVideoUrl(offer.private_external_url);
+        privateExternalUrl = validateAndNormalizePrivateExternalUrl(offer.private_external_url);
       } catch (err) {
-        console.error("Invalid YouTube URL configured in settings:", err);
+        console.error("Invalid private external URL configured in settings:", err);
       }
     }
     const publicSiteBaseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");

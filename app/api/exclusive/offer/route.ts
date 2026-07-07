@@ -63,7 +63,7 @@ const exclusiveOfferSchema = z.object({
 async function validateExclusiveAssets(values: z.infer<typeof exclusiveOfferSchema>) {
   if (values.exclusive_track_enabled) {
     if (!values.private_external_url.trim()) {
-      throw new Error("Provide an unlisted YouTube video URL before enabling the preview.");
+      throw new Error("Provide a private external URL before enabling the preview.");
     }
   }
 

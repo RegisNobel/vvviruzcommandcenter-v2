@@ -70,17 +70,34 @@ export default async function PublicExclusivesPage({
 
   // Determine preview availability
   let isPreviewActive = offer.exclusive_track_enabled && Boolean(offer.private_external_url.trim());
-  let youtubeUrl = "";
+  let unlockedUrl = "";
+
+  const isYouTubeLink = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      const allowedYouTubeHosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "music.youtube.com"];
+      return allowedYouTubeHosts.some(h => host === h || host.endsWith("." + h));
+    } catch {
+      return false;
+    }
+  };
 
   if (isPreviewActive) {
     try {
-      const videoId = extractYouTubeVideoId(offer.private_external_url);
-      // ONLY set the YouTube watch URL if the visitor is unlocked
       if (isUnlocked) {
-        youtubeUrl = getCanonicalYouTubeWatchUrl(videoId);
+        const urlTrimmed = offer.private_external_url.trim();
+        if (isYouTubeLink(urlTrimmed)) {
+          const videoId = extractYouTubeVideoId(urlTrimmed);
+          unlockedUrl = getCanonicalYouTubeWatchUrl(videoId);
+        } else {
+          // Validate valid URL structure for non-YouTube links
+          new URL(urlTrimmed);
+          unlockedUrl = urlTrimmed;
+        }
       }
     } catch (err) {
-      console.error("Failed to parse YouTube URL:", err);
+      console.error("Failed to parse private external URL:", err);
       isPreviewActive = false;
     }
   }
@@ -183,10 +200,10 @@ export default async function PublicExclusivesPage({
 
           <div className="mx-auto mt-8 max-w-[640px] text-left">
             {isUnlocked ? (
-              isPreviewActive && youtubeUrl ? (
+              isPreviewActive && unlockedUrl ? (
                 <div className="flex flex-col items-center space-y-6 text-center">
                   <TrackedExternalLink
-                    href={youtubeUrl}
+                    href={unlockedUrl}
                     eventType="exclusive_preview_open"
                     className="inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#c9a347] to-[#e6c167] px-8 py-4 text-base font-bold text-[#13161a] transition hover:scale-[1.02] active:scale-[0.98] shadow-[0_12px_40px_rgba(201,163,71,0.25)]"
                   >
@@ -194,7 +211,7 @@ export default async function PublicExclusivesPage({
                     {offer.instant_unlock_button_label || "Access the Current Preview"}
                   </TrackedExternalLink>
                   <p className="text-center text-xs leading-6 text-[#8f98a3]">
-                    This private video is unlisted. Please check back often as previews rotate out when commercial releases occur.
+                    This private preview is unlisted. Please check back often as previews rotate out when commercial releases occur.
                   </p>
                 </div>
               ) : (

@@ -10,13 +10,34 @@ function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
   );
 }
 
-export function validateAndNormalizeYouTubeVideoUrl(urlStr: string): string {
+export function validateAndNormalizePrivateExternalUrl(urlStr: string): string {
   const trimmed = urlStr.trim();
   if (!trimmed) {
     return "";
   }
-  const videoId = extractYouTubeVideoId(trimmed);
-  return getCanonicalYouTubeWatchUrl(videoId);
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error("Private external URL must be a valid URL.");
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Private external URL must use HTTP or HTTPS.");
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const allowedYouTubeHosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "music.youtube.com"];
+  const isYouTube = allowedYouTubeHosts.some(h => host === h || host.endsWith("." + h));
+
+  if (isYouTube) {
+    const videoId = extractYouTubeVideoId(trimmed);
+    return getCanonicalYouTubeWatchUrl(videoId);
+  }
+
+  // SoundCloud, BandLab, or other host: return as-is
+  return trimmed;
 }
 
 export function validateExclusiveEmailDeliverySettings(values: ExclusiveDeliverySettings) {
@@ -39,7 +60,7 @@ export function normalizeExclusiveDeliverySettings<T extends ExclusiveDeliverySe
   const normalizedValues = {
     ...values,
     release_id: values.release_id?.trim() || null,
-    private_external_url: validateAndNormalizeYouTubeVideoUrl(values.private_external_url)
+    private_external_url: validateAndNormalizePrivateExternalUrl(values.private_external_url)
   };
 
   validateExclusiveEmailDeliverySettings(normalizedValues);

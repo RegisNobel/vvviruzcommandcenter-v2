@@ -1,6 +1,6 @@
 import {extractYouTubeVideoId, getCanonicalYouTubeWatchUrl} from "../lib/youtube-utils";
 import {
-  validateAndNormalizeYouTubeVideoUrl,
+  validateAndNormalizePrivateExternalUrl,
   validateExclusiveEmailDeliverySettings,
   normalizeExclusiveDeliverySettings
 } from "../lib/exclusive-offer-safety";
@@ -68,10 +68,37 @@ runTest("extractYouTubeVideoId - non-youtube domain throws error", () => {
   }
 });
 
-runTest("validateAndNormalizeYouTubeVideoUrl", () => {
-  const norm = validateAndNormalizeYouTubeVideoUrl("https://youtu.be/dQw4w9WgXcQ");
+runTest("validateAndNormalizePrivateExternalUrl - YouTube", () => {
+  const norm = validateAndNormalizePrivateExternalUrl("https://youtu.be/dQw4w9WgXcQ");
   if (norm !== "https://www.youtube.com/watch?v=dQw4w9WgXcQ") {
     throw new Error(`Expected canonical URL, got ${norm}`);
+  }
+});
+
+runTest("validateAndNormalizePrivateExternalUrl - SoundCloud", () => {
+  const norm = validateAndNormalizePrivateExternalUrl("https://soundcloud.com/artist/track");
+  if (norm !== "https://soundcloud.com/artist/track") {
+    throw new Error(`Expected unchanged SoundCloud URL, got ${norm}`);
+  }
+});
+
+runTest("validateAndNormalizePrivateExternalUrl - BandLab", () => {
+  const norm = validateAndNormalizePrivateExternalUrl("https://www.bandlab.com/post/123456");
+  if (norm !== "https://www.bandlab.com/post/123456") {
+    throw new Error(`Expected unchanged BandLab URL, got ${norm}`);
+  }
+});
+
+runTest("validateAndNormalizePrivateExternalUrl - invalid URL throws error", () => {
+  try {
+    validateAndNormalizePrivateExternalUrl("invalid-url-string");
+    throw new Error("Should have thrown for invalid URL");
+  } catch (err: any) {
+    if (err.message.includes("valid URL")) {
+      // success
+    } else {
+      throw err;
+    }
   }
 });
 

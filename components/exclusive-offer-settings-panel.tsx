@@ -46,7 +46,7 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
     return {
       modeLabel: "Insider Access",
       visitorReceives: "No active preview configured",
-      readiness: "Needs YouTube Video URL",
+      readiness: "Needs Private External URL",
       readinessTone: "warning"
     };
   }
@@ -54,7 +54,7 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
   if (!hasEmailCopy) {
     return {
       modeLabel: "Insider Access",
-      visitorReceives: "Immediate unlisted YouTube video",
+      visitorReceives: "Immediate private preview URL link",
       readiness: "Needs email subject/body",
       readinessTone: "warning"
     };
@@ -62,7 +62,7 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
 
   return {
     modeLabel: "Insider Access",
-    visitorReceives: "Immediate unlisted YouTube video",
+    visitorReceives: "Immediate private preview URL link",
     readiness: "Ready",
     readinessTone: "ready"
   };
@@ -75,6 +75,42 @@ export function ExclusiveOfferSettingsPanel({
   vaultReleaseIds = []
 }: ExclusiveOfferSettingsPanelProps) {
   const [message, setMessage] = useState<string | null>(null);
+  const [isUploadingArt, setIsUploadingArt] = useState(false);
+
+  async function handleArtUpload(file: File) {
+    setIsUploadingArt(true);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (exclusiveOffer.exclusive_track_art_path) {
+        formData.append("previousPath", exclusiveOffer.exclusive_track_art_path);
+      }
+
+      const response = await fetch("/api/exclusive/art-upload", {
+        method: "POST",
+        body: formData
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        asset?: { url: string };
+        message?: string;
+      };
+
+      if (!response.ok || !payload.asset) {
+        throw new Error(payload.message ?? "Artwork upload failed.");
+      }
+
+      updateExclusiveOffer({
+        exclusive_track_art_path: payload.asset.url
+      });
+      setMessage("Artwork image uploaded.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Upload failed unexpectedly.");
+    } finally {
+      setIsUploadingArt(false);
+    }
+  }
 
   function updateExclusiveOffer(patch: Partial<ExclusiveOfferSettings>) {
     onChange({
@@ -353,14 +389,14 @@ export function ExclusiveOfferSettingsPanel({
 
           <div className="mt-5 space-y-4">
             <label className="block space-y-2">
-              <span className="field-label">Unlisted YouTube Video URL</span>
+              <span className="field-label">Private External URL</span>
               <div className="flex gap-2">
                 <input
                   className="field-input flex-1"
                   onChange={(event) =>
                     updateExclusiveOffer({private_external_url: event.target.value})
                   }
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder="https://soundcloud.com/... or https://youtube.com/..."
                   value={exclusiveOffer.private_external_url}
                 />
                 {exclusiveOffer.private_external_url?.trim() && (
@@ -370,12 +406,12 @@ export function ExclusiveOfferSettingsPanel({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Test Video
+                    Test Link
                   </a>
                 )}
               </div>
               <p className="text-xs text-muted">
-                Enter the unlisted YouTube video URL (e.g. watch, youtu.be, mobile, or shorts format). Ensure video visibility is set to &apos;Unlisted&apos; in YouTube Studio.
+                Enter the unlisted YouTube video, SoundCloud, BandLab, or other HTTPS preview link.
               </p>
             </label>
 
@@ -389,6 +425,33 @@ export function ExclusiveOfferSettingsPanel({
                 placeholder={selectedRelease ? "Derived from associated release artwork" : "https://... or /api/assets/..."}
                 value={exclusiveOffer.exclusive_track_art_path}
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <label className="inline-flex items-center gap-2 rounded-full border border-[#c9a347]/36 bg-[#c9a347] px-4 py-2.5 text-sm font-semibold text-[#13161a] transition hover:scale-[1.01] hover:bg-[#d8b761] disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer">
+                  {isUploadingArt ? "Uploading artwork..." : "Upload Artwork Image"}
+                  <input
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isUploadingArt}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleArtUpload(file);
+                      }
+                      event.target.value = "";
+                    }}
+                    type="file"
+                  />
+                </label>
+                {exclusiveOffer.exclusive_track_art_path ? (
+                  <button
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-[#c5cdd6] transition hover:scale-[1.01] hover:border-white/15 hover:bg-white/[0.06]"
+                    onClick={() => updateExclusiveOffer({exclusive_track_art_path: ""})}
+                    type="button"
+                  >
+                    Remove Cover Image
+                  </button>
+                ) : null}
+              </div>
               <p className="text-xs text-muted">
                 Custom artwork image URL. If blank, defaults to the associated release cover artwork.
               </p>
