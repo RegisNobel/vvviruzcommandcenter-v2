@@ -471,6 +471,21 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-07-07 02:22 -04:00
+
+- **Insider Access Refactoring & Preview Player Cleanup**:
+  - Simplified the unreleased preview system around a single unlisted YouTube preview watch link unlocked via email signup, refactoring exclusives into the "Insider Access" page experience.
+  - Completely removed the persistent global footer preview player, multi-track preview catalogs, audio file uploads, and embedded YouTube player analytics.
+  - Implemented robust, client-safe YouTube URL parsing supporting `m.youtube.com`, `music.youtube.com`, `youtube.com`, `youtu.be`, and `/shorts/`, resolving combinations of `v` and `list` query parameters while rejecting playlist-only URLs.
+  - Added associated-release selection dropdown to exclusives admin settings, resolving derived preview metadata (title, cover artwork, description overrides) from the associated release.
+  - Enforced Vault release exclusion in both the dropdown selection and server-side save validations using database category assignments.
+  - Integrated a client-side warning indicator using the centralized release-stage helper to notify the administrator if the associated release is already live.
+  - Secured the locked `/exclusives` view by ensuring that unlisted YouTube URLs and video IDs are never leaked in the locked HTML or client payload.
+  - Created server-side analytics tracking for `exclusive_claim_success` (signup unlocks) and `exclusive_email_unlock_success` (token exchange links), sanitizing referrer tokens and emails.
+  - Added client-side tracked links (`exclusive_preview_open`, `exclusive_discord_cta`) and page-view tracking.
+  - Cleaned up codebase by deleting obsolete player components, uploads, and test scripts.
+  - Created test suite `scripts/test-insider-access.ts` (unit tests) and `tests/insider-access.spec.ts` (Playwright integration tests).
+
 ### 2026-07-06 22:05 -04:00
 
 - **Vercel Image Optimization & Performance tuning (Phase 2 & Targeted Phase 3)**:

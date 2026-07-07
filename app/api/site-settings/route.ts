@@ -75,21 +75,6 @@ function normalizeLinkItems(
   });
 }
 
-const upcomingPreviewTrackSchema = z.object({
-  id: z.string().trim().default(""),
-  releaseId: z.string().trim().optional(),
-  titleOverride: z.string().trim().optional(),
-  artworkUrlOverride: z.string().trim().optional(),
-  audioUrl: z.string().trim().default(""),
-  isActive: z.boolean().default(true),
-  sortOrder: z.number().default(0)
-});
-
-const previewPlayerSchema = z.object({
-  is_enabled: z.boolean().default(false),
-  tracks: z.array(upcomingPreviewTrackSchema).default([])
-});
-
 const siteSettingsSchema = z.object({
   artist_name: z.string().default("vvviruz"),
   tagline: z.string().default(""),
@@ -108,7 +93,6 @@ const siteSettingsSchema = z.object({
     .default([])
     .transform((value, ctx) => normalizeLinkItems(value, ctx, "Links page items")),
   site_content: z.object({
-    preview_player: previewPlayerSchema,
     metadata: z.object({
       site_title: z.string().default(""),
       site_description: z.string().default(""),
@@ -212,12 +196,13 @@ const siteSettingsSchema = z.object({
       exclusive_track_file_path: z.string().default(""),
       exclusive_track_art_path: z.string().default(""),
       exclusive_track_enabled: z.boolean().default(false),
+      release_id: z.string().nullish().transform(val => val?.trim() || null),
       unlock_experience: z.enum(["instant_unlock", "email_only", "signup_notify"]).default("instant_unlock"),
       private_external_url: z.string().default(""),
-      instant_unlock_button_label: z.string().default("Listen Now"),
+      instant_unlock_button_label: z.string().default("Access the Current Preview"),
       also_email_link: z.boolean().default(true),
-      email_subject: z.string().default("Your Exclusive Track"),
-      email_body: z.string().default("Thank you for joining the vvviruz Command Center.\n\nHere is your exclusive link to the vault."),
+      email_subject: z.string().default("Insider Access Unlocked"),
+      email_body: z.string().default("Your Insider Access is ready. Use the button below to access the current private preview.\n\nNote that previews rotate as new songs release, so check back often to hear the latest unreleased material!"),
       discord_invite_url: z.string().default(""),
       community_badge_text: z.string().default(""),
       community_headline: z.string().default(""),
@@ -293,110 +278,32 @@ export async function PUT(request: Request) {
     );
   }
 
-  // Preview Player validation
-  const previewPlayer = parsed.data.site_content.preview_player;
-  const activeTracks = previewPlayer.tracks.filter(t => t.isActive);
-
-  // 1. Max 5 active tracks
-  if (activeTracks.length > 5) {
-    return NextResponse.json(
-      {message: "You can have a maximum of 5 active preview tracks."},
-      {status: 400}
-    );
-  }
-
-  // 2. Unique track IDs
-  const trackIds = previewPlayer.tracks.map(t => t.id);
-  if (new Set(trackIds).size !== trackIds.length) {
-    return NextResponse.json(
-      {message: "Preview track IDs must be unique."},
-      {status: 400}
-    );
-  }
-
-  // 3. Unique linked releases (if non-empty)
-  const linkedReleaseIds = activeTracks.map(t => t.releaseId).filter(Boolean) as string[];
-  if (new Set(linkedReleaseIds).size !== linkedReleaseIds.length) {
-    return NextResponse.json(
-      {message: "Each active preview track must link to a unique release."},
-      {status: 400}
-    );
-  }
-
-  // 4. Valid media URLs
-  const isValidMediaUrl = (url: string) => {
-    const trimmed = url.trim();
-    return /^https?:\/\//i.test(trimmed) || /^\/api\/assets\//i.test(trimmed);
-  };
-  for (const track of activeTracks) {
-    if (!isValidMediaUrl(track.audioUrl)) {
-      return NextResponse.json(
-        {message: `Invalid audio URL for track: ${track.titleOverride || "Untitled"}`},
-        {status: 400}
-      );
-    }
-    if (track.artworkUrlOverride && !isValidMediaUrl(track.artworkUrlOverride)) {
-      return NextResponse.json(
-        {message: `Invalid artwork URL for track: ${track.titleOverride || "Untitled"}`},
-        {status: 400}
-      );
-    }
-  }
-
-  // 5. Fallback metadata
-  for (const track of activeTracks) {
-    if (!track.releaseId) {
-      if (!track.titleOverride?.trim()) {
-        return NextResponse.json(
-          {message: "Active preview tracks without a linked release must specify a Title override."},
-          {status: 400}
-        );
-      }
-      if (!track.artworkUrlOverride?.trim()) {
-        return NextResponse.json(
-          {message: "Active preview tracks without a linked release must specify an Artwork override."},
-          {status: 400}
-        );
-      }
-    }
-  }
-
-  // 6. DB Eligibility Checks (only for active tracks with a linked release)
-  if (linkedReleaseIds.length > 0) {
+  // Exclusives Associated Release validation
+  const exclusive = parsed.data.site_content.exclusive;
+  if (exclusive.release_id) {
     const { prisma } = await import("@/lib/db/prisma");
     const { readRelease } = await import("@/lib/repositories/releases");
-    const { isReleaseEligibleForPreview } = await import("@/lib/release-planning");
 
-    for (const track of activeTracks) {
-      if (!track.releaseId) continue;
-      try {
-        const releaseRecord = await readRelease(track.releaseId);
-        // Exclude released content
-        if (!isReleaseEligibleForPreview(releaseRecord)) {
-          return NextResponse.json(
-            {message: `Release "${releaseRecord.title}" is already commercially released and cannot be used as an upcoming preview.`},
-            {status: 400}
-          );
+    try {
+      const releaseRecord = await readRelease(exclusive.release_id);
+      // Exclude Vault content
+      const vaultAssignment = await prisma.releaseCategoryAssignment.findFirst({
+        where: {
+          releaseId: exclusive.release_id,
+          category: { slug: "vault" }
         }
-        // Exclude Vault content
-        const vaultAssignment = await prisma.releaseCategoryAssignment.findFirst({
-          where: {
-            releaseId: track.releaseId,
-            category: { slug: "vault" }
-          }
-        });
-        if (vaultAssignment) {
-          return NextResponse.json(
-            {message: `Release "${releaseRecord.title}" belongs to the Vault and cannot be used as a public upcoming preview.`},
-            {status: 400}
-          );
-        }
-      } catch (err) {
+      });
+      if (vaultAssignment) {
         return NextResponse.json(
-          {message: `Linked release ${track.releaseId} was not found.`},
+          {message: `Release "${releaseRecord.title}" belongs to the Vault and cannot be used for Insider Access.`},
           {status: 400}
         );
       }
+    } catch (err) {
+      return NextResponse.json(
+        {message: `Associated release ${exclusive.release_id} was not found.`},
+        {status: 400}
+      );
     }
   }
 

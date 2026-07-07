@@ -18,10 +18,23 @@ import {
   sendCampaignEmail
 } from "@/lib/email/campaigns";
 import {
-  validateAndNormalizeYouTubePlaylistUrl,
+  validateAndNormalizeYouTubeVideoUrl,
   validateExclusiveEmailDeliverySettings
 } from "@/lib/exclusive-offer-safety";
+import {recordPublicAnalyticsEvent} from "@/lib/repositories/analytics";
 import type {ExclusiveClaimResponse} from "@/lib/types";
+
+function sanitizeReferrer(referrer: string) {
+  if (!referrer) return "";
+  try {
+    const url = new URL(referrer);
+    url.searchParams.delete("t");
+    url.searchParams.delete("token");
+    return url.toString();
+  } catch {
+    return referrer;
+  }
+}
 
 const claimSchema = z.object({
   name: z.string().trim().optional().default(""),
@@ -147,21 +160,25 @@ export async function POST(request: Request) {
       return rateLimitResponse(emailThrottleState);
     }
 
-    const {offer, isAvailable} = await readPublicExclusiveOffer();
+    const {offer} = await readPublicExclusiveOffer();
 
-    if (!isAvailable) {
-      return NextResponse.json(
-        {message: "The exclusive track is unavailable right now."},
-        {status: 503}
-      );
+    let privateExternalUrl = "";
+    if (offer.private_external_url?.trim()) {
+      try {
+        privateExternalUrl = validateAndNormalizeYouTubeVideoUrl(offer.private_external_url);
+      } catch (err) {
+        console.error("Invalid YouTube URL configured in settings:", err);
+      }
     }
-
-    const privateExternalUrl = offer.private_external_url?.trim()
-      ? validateAndNormalizeYouTubePlaylistUrl(offer.private_external_url)
-      : "";
     const publicSiteBaseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
 
-    validateExclusiveEmailDeliverySettings(offer);
+    let emailSettingsValid = true;
+    try {
+      validateExclusiveEmailDeliverySettings(offer);
+    } catch (err) {
+      emailSettingsValid = false;
+      console.warn("Invalid exclusives email delivery settings on signup:", err);
+    }
 
     const {subscriber, isDuplicate} = await upsertExclusiveSubscriber({
       name: payload.name,
@@ -188,8 +205,9 @@ export async function POST(request: Request) {
     });
 
     const shouldSendEmail =
-      offer.unlock_experience === "email_only" ||
-      (offer.unlock_experience === "instant_unlock" && offer.also_email_link);
+      emailSettingsValid &&
+      (offer.unlock_experience === "email_only" ||
+       (offer.unlock_experience === "instant_unlock" && offer.also_email_link));
 
     const exchangeUrl = publicSiteBaseUrl
       ? `${publicSiteBaseUrl}/api/exclusive/unlock?t=${encodeURIComponent(subscriber.download_token)}`
@@ -202,7 +220,7 @@ export async function POST(request: Request) {
           subject: offer.email_subject,
           previewText: "",
           body: offer.email_body,
-          ctaLabel: offer.instant_unlock_button_label || "Access Playlist",
+          ctaLabel: offer.instant_unlock_button_label || "Access the Current Preview",
           ctaUrl: exchangeUrl || undefined,
           unsubscribeUrl: buildCampaignUnsubscribeUrl(subscriber.unsubscribe_token)
         });
@@ -213,6 +231,18 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    const cleanReferrer = sanitizeReferrer(payload.source_referrer || request.headers.get("referer") || "");
+    await recordPublicAnalyticsEvent({
+      eventType: "exclusive_claim_success",
+      page: "preview",
+      referrer: cleanReferrer,
+      utmSource: payload.source_utm_source,
+      utmMedium: payload.source_utm_medium,
+      utmCampaign: payload.source_utm_campaign,
+      utmContent: payload.source_utm_content,
+      utmTerm: payload.source_utm_term
+    });
 
     const nextResponse = NextResponse.json({
       success: true,

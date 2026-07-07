@@ -42,12 +42,13 @@ const exclusiveOfferSchema = z.object({
   exclusive_track_file_path: z.string().default(""),
   exclusive_track_art_path: z.string().default(""),
   exclusive_track_enabled: z.boolean().default(false),
+  release_id: z.string().nullish().transform(val => val?.trim() || null),
   unlock_experience: z.enum(["instant_unlock", "email_only", "signup_notify"]).default("instant_unlock"),
   private_external_url: z.string().default(""),
-  instant_unlock_button_label: z.string().default("Listen Now"),
+  instant_unlock_button_label: z.string().default("Access the Current Preview"),
   also_email_link: z.boolean().default(true),
-  email_subject: z.string().default("Your Exclusive Track"),
-  email_body: z.string().default("Thank you for joining the vvviruz Command Center.\n\nHere is your exclusive link to the vault."),
+  email_subject: z.string().default("Insider Access Unlocked"),
+  email_body: z.string().default("Your Insider Access is ready. Use the button below to access the current private preview.\n\nNote that previews rotate as new songs release, so check back often to hear the latest unreleased material!"),
   discord_invite_url: z.string().default(""),
   community_badge_text: z.string().default(""),
   community_headline: z.string().default(""),
@@ -60,35 +61,31 @@ const exclusiveOfferSchema = z.object({
 });
 
 async function validateExclusiveAssets(values: z.infer<typeof exclusiveOfferSchema>) {
-  const trackPath = values.exclusive_track_file_path.trim();
-  const artPath = values.exclusive_track_art_path.trim();
-
-  const isSignupNotify = values.unlock_experience === "signup_notify";
-  const hasTrackFile = Boolean(trackPath);
-  const hasExternalLink = Boolean(values.private_external_url.trim());
-  const hasTrackTitle = Boolean(values.exclusive_track_title.trim());
-
   if (values.exclusive_track_enabled) {
-    if (isSignupNotify) {
-      // No strict requirements for notify mode
-      return;
-    }
-
-    if (!hasTrackTitle) {
-      throw new Error("Add an exclusive track title before enabling the offer.");
-    }
-
-    if (!hasTrackFile && !hasExternalLink) {
-      throw new Error("Upload a track file or provide a private external URL before enabling the offer.");
+    if (!values.private_external_url.trim()) {
+      throw new Error("Provide an unlisted YouTube video URL before enabling the preview.");
     }
   }
 
-  if (trackPath) {
-    await readAssetBuffer("exclusive-track", trackPath, "private");
-  }
+  if (values.release_id) {
+    const { prisma } = await import("@/lib/db/prisma");
+    const releaseRecord = await prisma.release.findUnique({
+      where: { id: values.release_id }
+    });
+    if (!releaseRecord) {
+      throw new Error(`Associated release ${values.release_id} was not found.`);
+    }
 
-  if (artPath) {
-    await readAssetBuffer("exclusive-art", artPath, "public");
+    // Exclude Vault content
+    const vaultAssignment = await prisma.releaseCategoryAssignment.findFirst({
+      where: {
+        releaseId: values.release_id,
+        category: { slug: "vault" }
+      }
+    });
+    if (vaultAssignment) {
+      throw new Error(`Release "${releaseRecord.title}" belongs to the Vault and cannot be used for Insider Access.`);
+    }
   }
 }
 

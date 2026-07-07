@@ -4,7 +4,6 @@ import Link from "next/link";
 import type {SiteSettingsRecord} from "@/lib/types";
 import {DEFAULT_SITE_LOGO_FILE, getSiteIconUrl} from "@/lib/site-assets";
 import {prisma} from "@/lib/db/prisma";
-import {PublicPreviewPlayer} from "./public-preview-player";
 
 export async function PublicSiteChrome({
   children,
@@ -30,7 +29,7 @@ export async function PublicSiteChrome({
     navItems.push({href: "/links", label: siteSettings.site_content.chrome.nav_links_label});
   }
 
-  navItems.push({href: "/exclusives", label: siteSettings.site_content.chrome.nav_exclusive_label || "Exclusives"});
+  navItems.push({href: "/exclusives", label: "Insider Access"});
 
   if (siteSettings.site_content.commissions?.is_enabled) {
     navItems.push({href: "/commissions", label: "Commissions"});
@@ -40,26 +39,8 @@ export async function PublicSiteChrome({
     navItems.push({href: "/vault", label: "Vault"});
   }
 
-  // Fetch linked releases for preview tracks
-  const previewPlayer = siteSettings.site_content.preview_player;
-  const isPlayerEnabled = previewPlayer?.is_enabled && previewPlayer?.tracks?.some(t => t.isActive);
-
-  let linkedReleases: Array<{ id: string; title: string; coverArtPath: string | null }> = [];
-  if (isPlayerEnabled) {
-    const releaseIds = previewPlayer.tracks
-      .map((t) => t.releaseId)
-      .filter(Boolean) as string[];
-
-    if (releaseIds.length > 0) {
-      linkedReleases = await prisma.release.findMany({
-        where: {id: {in: releaseIds}},
-        select: {id: true, title: true, coverArtPath: true}
-      });
-    }
-  }
-
   return (
-    <div className={`flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf] ${isPlayerEnabled ? "pb-28 sm:pb-20" : ""}`}>
+    <div className="flex min-h-screen flex-col bg-[#090b0f] text-[#f3eddf]">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#090b0f]/86 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1280px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <Link className="min-w-0" href="/">
@@ -117,12 +98,6 @@ export async function PublicSiteChrome({
         </div>
       </footer>
 
-      {isPlayerEnabled && (
-        <PublicPreviewPlayer
-          tracks={previewPlayer.tracks}
-          releases={linkedReleases}
-        />
-      )}
     </div>
   );
 }

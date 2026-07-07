@@ -1,6 +1,5 @@
 import type {SiteContentSettings} from "@/lib/types";
-
-import {parseAndNormalizeYouTubePlaylist} from "./youtube-utils";
+import {extractYouTubeVideoId, getCanonicalYouTubeWatchUrl} from "./youtube-utils";
 
 type ExclusiveDeliverySettings = SiteContentSettings["exclusive"];
 
@@ -11,12 +10,13 @@ function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
   );
 }
 
-export function validateAndNormalizeYouTubePlaylistUrl(urlStr: string): string {
+export function validateAndNormalizeYouTubeVideoUrl(urlStr: string): string {
   const trimmed = urlStr.trim();
   if (!trimmed) {
     return "";
   }
-  return parseAndNormalizeYouTubePlaylist(trimmed).publicUrl;
+  const videoId = extractYouTubeVideoId(trimmed);
+  return getCanonicalYouTubeWatchUrl(videoId);
 }
 
 export function validateExclusiveEmailDeliverySettings(values: ExclusiveDeliverySettings) {
@@ -38,7 +38,8 @@ export function normalizeExclusiveDeliverySettings<T extends ExclusiveDeliverySe
 ): T {
   const normalizedValues = {
     ...values,
-    private_external_url: validateAndNormalizeYouTubePlaylistUrl(values.private_external_url)
+    release_id: values.release_id?.trim() || null,
+    private_external_url: validateAndNormalizeYouTubeVideoUrl(values.private_external_url)
   };
 
   validateExclusiveEmailDeliverySettings(normalizedValues);

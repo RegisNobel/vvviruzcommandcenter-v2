@@ -3,16 +3,30 @@
 import {Sparkles} from "lucide-react";
 import {useState} from "react";
 
-import type {SiteSettingsRecord} from "@/lib/types";
+import type {SiteSettingsRecord, ReleaseSummary} from "@/lib/types";
 
 type ExclusiveOfferSettings = SiteSettingsRecord["site_content"]["exclusive"];
 
 type ExclusiveOfferSettingsPanelProps = {
   exclusiveOffer: ExclusiveOfferSettings;
   onChange: (exclusiveOffer: ExclusiveOfferSettings) => void;
-  initialTrackArtOptions?: string[];
-  initialTrackFileOptions?: string[];
+  releaseOptions?: ReleaseSummary[];
+  vaultReleaseIds?: string[];
 };
+
+function clientIsReleaseEligibleForPreview(release: ReleaseSummary): boolean {
+  if (release.status === "Published") {
+    if (release.release_date) {
+      const releaseDate = new Date(release.release_date);
+      if (!isNaN(releaseDate.getTime()) && releaseDate.getTime() <= Date.now()) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
 
 function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
   const hasPrivateUrl = Boolean(exclusiveOffer.private_external_url.trim());
@@ -21,7 +35,7 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
 
   if (!exclusiveOffer.exclusive_track_enabled) {
     return {
-      modeLabel: "Unlisted Playlist",
+      modeLabel: "Insider Access",
       visitorReceives: "Unavailable state",
       readiness: "Disabled",
       readinessTone: "neutral"
@@ -30,25 +44,25 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
 
   if (!hasPrivateUrl) {
     return {
-      modeLabel: "Unlisted Playlist",
-      visitorReceives: "No immediate access configured",
-      readiness: "Needs YouTube Playlist URL",
+      modeLabel: "Insider Access",
+      visitorReceives: "No active preview configured",
+      readiness: "Needs YouTube Video URL",
       readinessTone: "warning"
     };
   }
 
   if (!hasEmailCopy) {
     return {
-      modeLabel: "Unlisted Playlist",
-      visitorReceives: "Immediate unlisted YouTube playlist",
+      modeLabel: "Insider Access",
+      visitorReceives: "Immediate unlisted YouTube video",
       readiness: "Needs email subject/body",
       readinessTone: "warning"
     };
   }
 
   return {
-    modeLabel: "Unlisted Playlist",
-    visitorReceives: "Immediate unlisted YouTube playlist",
+    modeLabel: "Insider Access",
+    visitorReceives: "Immediate unlisted YouTube video",
     readiness: "Ready",
     readinessTone: "ready"
   };
@@ -56,7 +70,9 @@ function getExclusiveOfferPreview(exclusiveOffer: ExclusiveOfferSettings) {
 
 export function ExclusiveOfferSettingsPanel({
   exclusiveOffer,
-  onChange
+  onChange,
+  releaseOptions = [],
+  vaultReleaseIds = []
 }: ExclusiveOfferSettingsPanelProps) {
   const [message, setMessage] = useState<string | null>(null);
 
@@ -80,20 +96,28 @@ export function ExclusiveOfferSettingsPanel({
 
   const offerPreview = getExclusiveOfferPreview(exclusiveOffer);
 
+  // Filter out Vault releases from dropdown
+  const selectableReleases = releaseOptions.filter(
+    (release) => !vaultReleaseIds.includes(release.id)
+  );
+
+  const selectedRelease = releaseOptions.find((r) => r.id === exclusiveOffer.release_id);
+  const showReleaseWarning = selectedRelease ? !clientIsReleaseEligibleForPreview(selectedRelease) : false;
+
   return (
     <>
-      {/* SECTION 9: EXCLUSIVE TRACK OFFER */}
+      {/* SECTION 9: INSIDER ACCESS OFFER */}
       <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="field-label">Section 9</p>
             <h3 className="mt-3 flex items-center gap-2 text-2xl font-semibold text-ink">
               <Sparkles size={20} />
-              Early Access Preview Offer
+              Insider Access Offer
             </h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Control the public `/exclusives` capture page, preview track, artwork,
-              success copy, and availability from Public Site management.
+              Control the public `/exclusives` capture page, unlisted YouTube watch URL,
+              cover artwork, success copy, and availability.
             </p>
           </div>
           <span className="pill">Saved with Site Settings</span>
@@ -200,32 +224,48 @@ export function ExclusiveOfferSettingsPanel({
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="field-label">Preview Title</span>
+            <span className="field-label">Associated Release (Optional)</span>
+            <select
+              className="field-input"
+              value={exclusiveOffer.release_id || ""}
+              onChange={(event) =>
+                updateExclusiveOffer({release_id: event.target.value || null})
+              }
+            >
+              <option value="">No release associated</option>
+              {selectableReleases.map((release) => (
+                <option key={release.id} value={release.id}>
+                  {release.title} ({release.status})
+                </option>
+              ))}
+            </select>
+            {showReleaseWarning && (
+              <p className="text-xs text-amber-300 font-semibold mt-1">
+                ⚠️ Warning: This release has already been commercially released. Previews are typically for upcoming or unreleased content.
+              </p>
+            )}
+          </label>
+
+          <label className="space-y-2">
+            <span className="field-label">Preview Title Override (Optional)</span>
             <input
               className="field-input"
               onChange={(event) =>
                 updateExclusiveOffer({exclusive_track_title: event.target.value})
               }
+              placeholder={selectedRelease ? `Derived: ${selectedRelease.title}` : "Enter preview title"}
               value={exclusiveOffer.exclusive_track_title}
             />
           </label>
 
-          <label className="space-y-2">
-            <span className="field-label">Download Label</span>
-            <input
-              className="field-input"
-              onChange={(event) => updateExclusiveOffer({download_label: event.target.value})}
-              value={exclusiveOffer.download_label}
-            />
-          </label>
-
           <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Preview Description</span>
+            <span className="field-label">Preview Description Override (Optional)</span>
             <textarea
               className="field-input min-h-[110px]"
               onChange={(event) =>
                 updateExclusiveOffer({exclusive_track_description: event.target.value})
               }
+              placeholder="Enter preview description (if empty, defaults to associated release description)"
               value={exclusiveOffer.exclusive_track_description}
             />
           </label>
@@ -267,7 +307,7 @@ export function ExclusiveOfferSettingsPanel({
           </label>
 
           <label className="space-y-2">
-            <span className="field-label">Enabled</span>
+            <span className="field-label">Preview Enabled</span>
             <button
               className={`flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition ${
                 exclusiveOffer.exclusive_track_enabled
@@ -283,13 +323,11 @@ export function ExclusiveOfferSettingsPanel({
             >
               <span>
                 {exclusiveOffer.exclusive_track_enabled
-                  ? exclusiveOffer.unlock_experience === "signup_notify"
-                    ? "The preview page is live in Notify Me mode."
-                    : "The preview page is live if a preview asset/URL and Preview Title are present."
-                  : "The preview page will show an unavailable state."}
+                  ? "The preview watch button is active for unlocked visitors."
+                  : "The preview shows a 'Next preview coming soon' status."}
               </span>
               <span className="pill">
-                {exclusiveOffer.exclusive_track_enabled ? "Enabled" : "Disabled"}
+                {exclusiveOffer.exclusive_track_enabled ? "Active" : "Soon"}
               </span>
             </button>
           </label>
@@ -309,20 +347,20 @@ export function ExclusiveOfferSettingsPanel({
           <div>
             <p className="field-label">Delivery & Experience</p>
             <h4 className="mt-2 text-xl font-semibold text-ink">
-              Unlisted YouTube Playlist & Email Settings
+              Unlisted YouTube Video & Email Settings
             </h4>
           </div>
 
           <div className="mt-5 space-y-4">
             <label className="block space-y-2">
-              <span className="field-label">Unlisted YouTube Playlist URL</span>
+              <span className="field-label">Unlisted YouTube Video URL</span>
               <div className="flex gap-2">
                 <input
                   className="field-input flex-1"
                   onChange={(event) =>
                     updateExclusiveOffer({private_external_url: event.target.value})
                   }
-                  placeholder="https://www.youtube.com/playlist?list=..."
+                  placeholder="https://www.youtube.com/watch?v=..."
                   value={exclusiveOffer.private_external_url}
                 />
                 {exclusiveOffer.private_external_url?.trim() && (
@@ -332,27 +370,27 @@ export function ExclusiveOfferSettingsPanel({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Test Playlist
+                    Test Video
                   </a>
                 )}
               </div>
               <p className="text-xs text-muted">
-                Enter the unlisted YouTube playlist URL. Please ensure your YouTube playlist visibility is set to &apos;Unlisted&apos; in YouTube Studio so it is not publicly searchable.
+                Enter the unlisted YouTube video URL (e.g. watch, youtu.be, mobile, or shorts format). Ensure video visibility is set to &apos;Unlisted&apos; in YouTube Studio.
               </p>
             </label>
 
             <label className="block space-y-2">
-              <span className="field-label">Artwork Image URL (Optional)</span>
+              <span className="field-label">Preview Cover Image URL Override (Optional)</span>
               <input
                 className="field-input"
                 onChange={(event) =>
                   updateExclusiveOffer({exclusive_track_art_path: event.target.value})
                 }
-                placeholder="https://... or /api/assets/..."
+                placeholder={selectedRelease ? "Derived from associated release artwork" : "https://... or /api/assets/..."}
                 value={exclusiveOffer.exclusive_track_art_path}
               />
               <p className="text-xs text-muted">
-                URL of the background artwork image displayed on the Exclusives page.
+                Custom artwork image URL. If blank, defaults to the associated release cover artwork.
               </p>
             </label>
 
@@ -396,7 +434,7 @@ export function ExclusiveOfferSettingsPanel({
           </h3>
           <p className="mt-2 text-sm leading-6 text-muted">
             These fields control the community section that appears under the
-            preview signup area on `/exclusives`.
+            signup area on `/exclusives`.
           </p>
         </div>
 

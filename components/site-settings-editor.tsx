@@ -13,7 +13,6 @@ import type {
 import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
-import {PreviewPlayerSettingsPanel} from "@/components/preview-player-settings-panel";
 import {StickyActionDock} from "@/components/sticky-action-dock";
 import {VaultSettingsPanel} from "@/components/vault-settings-panel";
 import {CommissionsSettingsPanel} from "@/components/commissions-settings-panel";
@@ -26,6 +25,7 @@ type SiteSettingsEditorProps = {
   initialSiteSettings: SiteSettingsRecord;
   releaseOptions: ReleaseSummary[];
   siteIconOptions: string[];
+  vaultReleaseIds?: string[];
 };
 
 function serializeLinkRows(items: Array<{label: string; url: string}>) {
@@ -55,7 +55,8 @@ export function SiteSettingsEditor({
   exclusiveTrackFileOptions,
   initialSiteSettings,
   releaseOptions,
-  siteIconOptions
+  siteIconOptions,
+  vaultReleaseIds
 }: SiteSettingsEditorProps) {
   const [settings, setSettings] = useState(initialSiteSettings);
   const [socialLinksText, setSocialLinksText] = useState(
@@ -318,7 +319,6 @@ export function SiteSettingsEditor({
           {href: "#platform-labels", label: "Platforms"},
           {href: "#links-page", label: "Link Hub Defaults"},
           {href: "#exclusives-settings", label: "Exclusives"},
-          {href: "#preview-player-settings", label: "Preview Player"},
           {href: "#tracking-settings", label: "Tracking"},
           {href: "#release-page", label: "Release"},
           {href: "#social-links", label: "Social"},
@@ -1369,8 +1369,8 @@ export function SiteSettingsEditor({
         <div className="scroll-mt-36" id="exclusives-settings">
           <ExclusiveOfferSettingsPanel
             exclusiveOffer={settings.site_content.exclusive}
-            initialTrackArtOptions={exclusiveTrackArtOptions}
-            initialTrackFileOptions={exclusiveTrackFileOptions}
+            releaseOptions={releaseOptions}
+            vaultReleaseIds={vaultReleaseIds}
             onChange={(exclusive) =>
               setSettings((current) => ({
                 ...current,
@@ -1380,22 +1380,6 @@ export function SiteSettingsEditor({
                 }
               }))
             }
-          />
-        </div>
-
-        <div className="scroll-mt-36" id="preview-player-settings">
-          <PreviewPlayerSettingsPanel
-            releaseOptions={releaseOptions}
-            onChange={(preview_player) =>
-              setSettings((current) => ({
-                ...current,
-                site_content: {
-                  ...current.site_content,
-                  preview_player
-                }
-              }))
-            }
-            settings={settings.site_content.preview_player}
           />
         </div>
 
