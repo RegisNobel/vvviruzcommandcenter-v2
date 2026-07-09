@@ -33,20 +33,20 @@ function formatHookType(value: "HOOK_STORY" | "HOOK_DIRECT" | "HOOK_QUESTION" | 
 function getVerdictStyle(verdict: ReleasePromoVerdict) {
   switch (verdict) {
     case "Winner":
-      return { border: "border-emerald-500/30", bg: "bg-emerald-500/5", text: "text-emerald-400", dot: "bg-emerald-500" };
+      return { badge: "status-badge-ready", panel: "state-panel-success", dot: "bg-[var(--status-success)]" };
     case "Promising":
-      return { border: "border-sky-500/30", bg: "bg-sky-500/5", text: "text-sky-400", dot: "bg-sky-500" };
+      return { badge: "status-badge-info", panel: "state-panel-info", dot: "bg-[var(--status-info)]" };
     case "Testing":
-      return { border: "border-amber-500/30", bg: "bg-amber-500/5", text: "text-amber-400", dot: "bg-amber-500" };
+      return { badge: "status-badge-warning", panel: "state-panel-warning", dot: "bg-[var(--status-warning)]" };
     case "Needs New Creative":
-      return { border: "border-orange-500/30", bg: "bg-orange-500/5", text: "text-orange-400", dot: "bg-orange-500" };
+      return { badge: "status-badge-warning", panel: "state-panel-warning", dot: "bg-[var(--status-warning)]" };
     case "Paused":
-      return { border: "border-edge", bg: "bg-surface-elevated", text: "text-secondary", dot: "bg-status-neutral" };
+      return { badge: "status-badge-neutral", panel: "state-panel-neutral", dot: "bg-[var(--status-neutral)]" };
     case "Retired":
-      return { border: "border-red-500/30", bg: "bg-red-500/5", text: "text-red-400", dot: "bg-red-500" };
+      return { badge: "status-badge-danger", panel: "state-panel-danger", dot: "bg-[var(--status-danger)]" };
     case "Untested":
     default:
-      return { border: "border-edge", bg: "bg-input", text: "text-muted", dot: "bg-status-neutral" };
+      return { badge: "status-badge-neutral", panel: "state-panel-neutral", dot: "bg-[var(--status-neutral)]" };
   }
 }
 
@@ -76,22 +76,22 @@ function getReleasePromoVerdict(
 function getStatusBadgeClass(status: "Strong" | "Weak" | "Neutral" | "Low Data" | "Untested" | "Below Average" | "Needs Challenger" | "Narrow Coverage") {
   switch (status) {
     case "Strong":
-      return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      return "status-badge-ready";
     case "Weak":
-      return "bg-red-500/10 text-red-400 border border-red-500/20";
+      return "status-badge-danger";
     case "Below Average":
-      return "bg-orange-500/10 text-orange-400 border border-orange-500/20";
+      return "status-badge-warning";
     case "Needs Challenger":
-      return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+      return "status-badge-warning";
     case "Narrow Coverage":
-      return "border border-amber-500/20 bg-amber-500/10 text-amber-200";
+      return "status-badge-warning";
     case "Neutral":
-      return "border border-edge bg-surface-elevated text-ink";
+      return "status-badge-neutral";
     case "Low Data":
-      return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+      return "status-badge-warning";
     case "Untested":
     default:
-      return "border border-edge bg-input text-muted";
+      return "status-badge-neutral";
   }
 }
 
@@ -177,7 +177,7 @@ export default function ReleaseIntelligencePanel({
           <p className="mt-1 text-sm font-semibold text-ink">{releaseTitle}</p>
         </div>
         <span
-          className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}
+          className={`${promoStyle.badge} px-3.5 py-1.5 uppercase tracking-[0.12em]`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${promoStyle.dot}`} />
           {promoVerdict}
@@ -228,7 +228,7 @@ export default function ReleaseIntelligencePanel({
             <p className="text-sm font-semibold text-ink">{recommendation.campaignDecision}</p>
           </div>
 
-          <div className={`rounded-lg border px-4 py-3.5 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
+          <div className={`${promoStyle.panel} px-4 py-3.5`}>
             <p className="table-label mb-1 opacity-90">Next Test Direction</p>
             <p className="font-semibold text-sm">{recommendation.nextTestDirection}</p>
             {recommendation.controlAd ? (

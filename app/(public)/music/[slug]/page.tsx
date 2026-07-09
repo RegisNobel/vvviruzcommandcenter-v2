@@ -116,12 +116,12 @@ export default async function PublicReleaseDetailPage({
   });
 
   return (
-    <main className="px-4 py-10 sm:px-6 lg:px-8">
+    <main className="public-page-wrap">
       <script
         dangerouslySetInnerHTML={{__html: stringifyJsonLd(releaseJsonLd)}}
         type="application/ld+json"
       />
-      <div className="mx-auto max-w-[1320px] space-y-10">
+      <div className="space-y-12">
         <Link
           className="inline-flex items-center gap-2 border-b border-transparent pb-1 text-sm font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
           href="/music"
@@ -193,42 +193,44 @@ export default async function PublicReleaseDetailPage({
                 </div>
               ) : null}
 
-              {aboutText ? (
-                <div className="public-panel-quiet mt-8 py-5">
-                  <p className="public-eyebrow">
-                    About this track
-                  </p>
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[#d7dde3]">
-                    {aboutText}
-                  </p>
-                </div>
-              ) : null}
-
-              <div className="public-panel-quiet mt-8 py-5">
-                <p className="public-eyebrow">
-                  Listen now
-                </p>
-                <PublicPlatformLinks
-                  appleMusicUrl={release.apple_music_url}
-                  className="mt-4"
-                  labels={platformLabels}
-                  spotifyUrl={release.spotify_url}
-                  youtubeUrl={release.youtube_url}
-                />
-              </div>
-
-              {release.public_lyrics_enabled && release.lyrics.trim() ? (
-                <div className="public-panel-quiet mt-8 py-5">
-                  <p className="public-eyebrow">
-                    {content.lyrics_heading}
-                  </p>
-                  <pre className="mt-4 whitespace-pre-wrap font-sans text-sm leading-7 text-[#d7dde3]">
-                    {release.lyrics}
-                  </pre>
-                </div>
-              ) : null}
             </div>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-3xl">
+          {aboutText ? (
+            <article className="py-1">
+              <p className="public-eyebrow">About this track</p>
+              <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
+                {aboutText}
+              </p>
+            </article>
+          ) : null}
+
+          <div className="public-divider my-9" />
+
+          <article>
+            <p className="public-eyebrow">Listen now</p>
+            <PublicPlatformLinks
+              appleMusicUrl={release.apple_music_url}
+              className="mt-5"
+              labels={platformLabels}
+              spotifyUrl={release.spotify_url}
+              youtubeUrl={release.youtube_url}
+            />
+          </article>
+
+          {release.public_lyrics_enabled && release.lyrics.trim() ? (
+            <>
+              <div className="public-divider my-9" />
+              <article>
+                <p className="public-eyebrow">{content.lyrics_heading}</p>
+                <pre className="mt-5 whitespace-pre-wrap font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
+                  {release.lyrics}
+                </pre>
+              </article>
+            </>
+          ) : null}
         </section>
 
         {spotifyEmbedUrl || youtubeEmbedUrl ? (

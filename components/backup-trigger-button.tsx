@@ -43,11 +43,7 @@ export function BackupTriggerButton() {
       </button>
 
       {result && (
-        <p
-          className={`text-sm ${
-            result.success ? "text-green-400" : "text-red-400"
-          }`}
-        >
+        <p className={result.success ? "state-message-success" : "state-message-danger"}>
           {result.message}
         </p>
       )}

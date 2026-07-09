@@ -120,7 +120,7 @@ export function BackupRestoreButton() {
             ))}
           </div>
           {backups.length === 0 && (
-            <div className="px-4 py-6 text-center text-sm text-muted">
+            <div className="state-empty m-3">
               No database snapshots found in Google Drive.
             </div>
           )}
@@ -179,11 +179,7 @@ export function BackupRestoreButton() {
       )}
 
       {result && (
-        <p
-          className={`text-sm ${
-            result.success ? "text-green-400" : "text-red-400"
-          }`}
-        >
+        <p className={result.success ? "state-message-success" : "state-message-danger"}>
           {result.message}
         </p>
       )}

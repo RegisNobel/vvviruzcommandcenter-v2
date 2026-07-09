@@ -280,24 +280,24 @@ const pageCheckboxClass =
 function getDiscoveryStatusStyles(status: DiscoveryChecklistStatus) {
   if (status === "passed") {
     return {
-      badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-      dot: "bg-emerald-400",
-      text: "text-[#e7f4e9]"
+      badge: "status-badge-ready",
+      dot: "bg-[var(--status-success)]",
+      text: "text-[var(--status-success-text)]"
     };
   }
 
   if (status === "warning") {
     return {
-      badge: "border-amber-500/35 bg-amber-500/10 text-amber-200",
-      dot: "bg-amber-400",
-      text: "text-[#f4e6c3]"
+      badge: "status-badge-warning",
+      dot: "bg-[var(--status-warning)]",
+      text: "text-[var(--status-warning-text)]"
     };
   }
 
   return {
-    badge: "border-red-500/35 bg-red-500/10 text-red-200",
-    dot: "bg-red-400",
-    text: "text-[#f1d2d2]"
+    badge: "status-badge-danger",
+    dot: "bg-[var(--status-danger)]",
+    text: "text-[var(--status-danger-text)]"
   };
 }
 
@@ -1816,7 +1816,7 @@ export function ReleaseDetailEditor({
                               </p>
                             </div>
                             <span
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusStyles.badge}`}
+                              className={`${statusStyles.badge} px-2.5 py-1 text-[10px] uppercase tracking-[0.14em]`}
                             >
                               {getDiscoveryStatusLabel(item.status)}
                             </span>
@@ -3047,10 +3047,10 @@ export function ReleaseDetailEditor({
           statusSlot={
             message ? (
               <span
-                className={`rounded-full border px-4 py-2 text-sm ${
+                className={`px-4 py-2 text-sm ${
                   isErrorMessage
-                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
-                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                    ? "status-badge-danger"
+                    : "status-badge-ready"
                 }`}
               >
                 {message}

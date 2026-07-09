@@ -99,7 +99,7 @@ export function ExclusiveSignupForm({
 
   if (saveState === "success") {
     return (
-      <div className="rounded-[28px] border border-emerald-400/22 bg-[linear-gradient(145deg,rgba(16,185,129,0.12),rgba(12,15,19,0.96))] p-6 text-center">
+      <div className="state-panel-success flex-col rounded-[28px] bg-[linear-gradient(145deg,var(--status-success-soft),rgba(12,15,19,0.96))] p-6 text-center">
         <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-500/12 text-emerald-200">
           <CheckCircle2 size={24} />
         </div>
@@ -177,11 +177,7 @@ export function ExclusiveSignupForm({
       </button>
 
       {message ? (
-        <p
-          className={`text-sm leading-6 ${
-            saveState === "error" ? "text-[#f3b0b0]" : "text-[#c3ccd5]"
-          }`}
-        >
+        <p className={saveState === "error" ? "state-message-danger" : "state-message"}>
           {message}
         </p>
       ) : null}

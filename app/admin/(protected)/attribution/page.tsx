@@ -77,23 +77,23 @@ function getTrackingStatusLabel(status: string) {
 
 function getTrackingStatusClass(status: string) {
   if (status === "first_party_only") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-indigo-800/50 bg-indigo-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-indigo-300";
+    return "status-badge-info whitespace-nowrap";
   }
 
   if (status === "matched") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-emerald-800/50 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-emerald-300";
+    return "status-badge-ready whitespace-nowrap";
   }
 
   if (status === "meta_only") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-amber-800/50 bg-amber-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-amber-300";
+    return "status-badge-warning whitespace-nowrap";
   }
 
   if (status === "name_matched") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-sky-800/50 bg-sky-950/40 px-2.5 py-0.5 text-xs font-medium tracking-wide text-sky-300";
+    return "status-badge-info whitespace-nowrap";
   }
 
   if (status === "meta_snapshot" || status === "missing_utm") {
-    return "inline-flex items-center whitespace-nowrap rounded-full border border-slate-700/70 bg-slate-900/50 px-2.5 py-0.5 text-xs font-medium tracking-wide text-slate-300";
+    return "status-badge-neutral whitespace-nowrap";
   }
 
   return "pill";

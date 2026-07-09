@@ -202,7 +202,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
           </div>
 
           {message ? (
-            <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
+            <div className="state-panel-danger">
               {message}
             </div>
           ) : null}

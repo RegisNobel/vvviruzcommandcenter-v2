@@ -1103,7 +1103,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
         {/* V1.2 Locked Archive Banner */}
         {isArchived && detail.learning ? (
-          <div className="rounded-xl border border-[rgba(79,191,136,0.4)] bg-[var(--status-success-soft)] px-4 py-4 sm:px-6">
+          <div className="state-panel-success px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Lock className="mt-0.5 shrink-0 text-emerald-400" size={18} />
@@ -1299,7 +1299,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           {campaignReadout.attributionConfidence.warnings.length > 0 ? (
-            <div className="rounded-xl border border-[rgba(230,173,67,0.38)] bg-[var(--status-warning-soft)] px-4 py-4">
+            <div className="state-panel-warning px-4 py-4">
               <p className="field-label text-[#f1cf87]">Read Before Trusting This</p>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-[#f1cf87]">
                 {campaignReadout.attributionConfidence.warnings.map((warning) => (
@@ -1753,7 +1753,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
               </table>
             </div>
           ) : (
-            <div className="rounded-[22px] border border-dashed border-[#30343b] bg-[#121418] px-4 py-6 text-sm text-muted">
+            <div className="state-empty">
               No matching /links data yet. Use UTM source `meta` plus matching
               `utm_campaign` and `utm_content` values to connect Meta clicks to
               link-page follow-through.

@@ -256,12 +256,12 @@ export function PublicPlaylistCampaignView({
 
           {/* Text block */}
           <div className="space-y-2 px-2">
-            <h1 className="text-3xl font-bold tracking-tight text-[#f3ede2]">
-              {focusedMembership.release_title}
+            <h1
+              className="mx-auto max-w-full truncate whitespace-nowrap text-3xl font-bold tracking-tight text-[#f3ede2]"
+              title={`${artistDisplay} - ${focusedMembership.release_title}`}
+            >
+              {artistDisplay} - {focusedMembership.release_title}
             </h1>
-            <p className="text-sm font-semibold text-[#b8bdc5] tracking-wide">
-              {artistDisplay}
-            </p>
             {focusedMembership.release_public_description && (
               <p className="mt-3 text-sm leading-6 text-[#9ca2ad] max-w-sm mx-auto">
                 {focusedMembership.release_public_description}
@@ -406,12 +406,13 @@ export function PublicPlaylistCampaignView({
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
-                      <h4 className="font-bold text-sm text-[#f3ede2] group-hover:text-[#c9a347] transition truncate">
-                        {m.release_title}
+                      <h4
+                        className="truncate text-sm font-bold text-[#f3ede2] transition group-hover:text-[#c9a347]"
+                        title={`${previewArtist} - ${m.release_title}`}
+                      >
+                        {previewArtist} - {m.release_title}
                       </h4>
-                      <p className="text-[11px] text-[#8b919b] truncate">
-                        {previewArtist}
-                      </p>
+                      <p className="text-[11px] text-[#8b919b]">Up next</p>
                     </div>
 
                     <ChevronRight className="text-[#565b63] group-hover:text-[#ebe5d9] group-hover:translate-x-0.5 transition" size={16} />

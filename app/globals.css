@@ -30,12 +30,16 @@
 
   --status-success: #4fbf88;
   --status-success-soft: rgba(79, 191, 136, 0.12);
+  --status-success-text: #9de2bd;
   --status-warning: #e6ad43;
   --status-warning-soft: rgba(230, 173, 67, 0.12);
+  --status-warning-text: #f1cf87;
   --status-danger: #df6b6b;
   --status-danger-soft: rgba(223, 107, 107, 0.12);
+  --status-danger-text: #f0b4b4;
   --status-info: #6f9ed8;
   --status-info-soft: rgba(111, 158, 216, 0.12);
+  --status-info-text: #b4cff0;
   --status-neutral: #8b929d;
   --status-neutral-soft: rgba(139, 146, 157, 0.12);
 
@@ -299,28 +303,35 @@ input[type="range"]::-moz-range-thumb {
     @apply status-badge;
     border-color: rgba(79, 191, 136, 0.32);
     background: var(--status-success-soft);
-    color: #9de2bd;
+    color: var(--status-success-text);
   }
 
   .status-badge-warning {
     @apply status-badge;
     border-color: rgba(230, 173, 67, 0.34);
     background: var(--status-warning-soft);
-    color: #f1cf87;
+    color: var(--status-warning-text);
   }
 
   .status-badge-danger {
     @apply status-badge;
     border-color: rgba(223, 107, 107, 0.34);
     background: var(--status-danger-soft);
-    color: #f0b4b4;
+    color: var(--status-danger-text);
   }
 
   .status-badge-info {
     @apply status-badge;
     border-color: rgba(111, 158, 216, 0.34);
     background: var(--status-info-soft);
-    color: #b4cff0;
+    color: var(--status-info-text);
+  }
+
+  .status-badge-current {
+    @apply status-badge;
+    border-color: rgba(246, 201, 69, 0.38);
+    background: var(--brand-primary-soft);
+    color: var(--brand-primary);
   }
 
   .status-badge-neutral {
@@ -495,6 +506,73 @@ input[type="range"]::-moz-range-thumb {
   .public-link-button {
     @apply inline-flex items-center justify-between gap-4 border px-5 py-4 text-left text-sm font-semibold transition;
     border-radius: 12px;
+  }
+
+  .state-panel {
+    @apply flex items-start gap-3 border px-4 py-3 text-sm leading-6;
+    border-radius: var(--radius-md);
+  }
+
+  .state-panel-success {
+    @apply state-panel;
+    border-color: rgba(79, 191, 136, 0.34);
+    background: var(--status-success-soft);
+    color: var(--status-success-text);
+  }
+
+  .state-panel-warning {
+    @apply state-panel;
+    border-color: rgba(230, 173, 67, 0.34);
+    background: var(--status-warning-soft);
+    color: var(--status-warning-text);
+  }
+
+  .state-panel-danger {
+    @apply state-panel;
+    border-color: rgba(223, 107, 107, 0.34);
+    background: var(--status-danger-soft);
+    color: var(--status-danger-text);
+  }
+
+  .state-panel-info {
+    @apply state-panel;
+    border-color: rgba(111, 158, 216, 0.34);
+    background: var(--status-info-soft);
+    color: var(--status-info-text);
+  }
+
+  .state-panel-neutral {
+    @apply state-panel;
+    border-color: var(--border-strong);
+    background: var(--bg-surface-elevated);
+    color: var(--text-secondary);
+  }
+
+  .state-message {
+    @apply flex items-center gap-2 text-sm leading-6;
+  }
+
+  .state-message-success {
+    @apply state-message;
+    color: var(--status-success-text);
+  }
+
+  .state-message-danger {
+    @apply state-message;
+    color: var(--status-danger-text);
+  }
+
+  .state-empty {
+    @apply border border-dashed px-4 py-6 text-center text-sm leading-6;
+    border-color: var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-elevated);
+    color: var(--text-muted);
+  }
+
+  .state-loading {
+    @apply inline-flex items-center gap-2 text-sm;
+    color: var(--text-secondary);
   }
 
   .public-eyebrow {
