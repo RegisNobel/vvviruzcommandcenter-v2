@@ -74,21 +74,21 @@ export function CommandCenterNav() {
   return (
     <>
       {/* Mobile Top Header (hidden on desktop) */}
-      <header className="sticky top-0 z-40 border-b border-[#272b31] bg-[#101215]/92 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-40 border-b border-edge bg-sidebar/95 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-[1600px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 sm:py-3.5">
           <div className="flex items-center justify-between gap-4">
             <Link className="flex min-w-0 items-center gap-3" href="/admin/releases">
-              <span className="shrink-0 rounded-full bg-[#c9a347] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#13161a]">
+              <span className="shrink-0 rounded-md bg-brand-primary px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-inverse">
                 Admin
               </span>
               <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-[#ece6da]">
+                <p className="truncate text-base font-semibold text-ink">
                   vvviruz&apos; command center
                 </p>
               </div>
             </Link>
             <form action="/admin/logout" className="shrink-0" method="post">
-              <button className="rounded-full border border-[#7b3e3e] bg-[#341919] px-3 py-1.5 text-xs font-semibold text-[#f0d7d2] transition hover:border-[#9a5656] hover:bg-[#452020]">
+              <button className="action-button-danger px-3 py-1.5 text-xs">
                 Logout
               </button>
             </form>
@@ -108,14 +108,14 @@ export function CommandCenterNav() {
                     <button
                       onClick={() => setIsPromoExpanded(!isPromoExpanded)}
                       className={cn(
-                        "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition border flex items-center gap-1",
+                        "flex shrink-0 items-center gap-1 rounded-md border px-3.5 py-1.5 text-xs font-semibold transition",
                         isActive
-                          ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                          : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                          ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                          : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                       )}
                     >
                       <span>{item.label}</span>
-                      <span className="text-[10px] opacity-60">{isPromoExpanded ? "▲" : "▼"}</span>
+                      <span className="text-[10px] opacity-60">{isPromoExpanded ? "^" : "v"}</span>
                     </button>
                     {isPromoExpanded && promoSubItems.map((sub) => {
                       const isSubActive =
@@ -127,10 +127,10 @@ export function CommandCenterNav() {
                           href={sub.href}
                           key={sub.href}
                           className={cn(
-                            "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium transition border",
+                            "shrink-0 rounded-md border px-3 py-1.5 text-[11px] font-medium transition",
                             isSubActive
-                              ? "border-[#5b4920] bg-[#1a1710]/80 text-[#d7b45e]"
-                              : "border-[#25282e] bg-[#0d0f12] text-[#aeb3bb] hover:border-[#42464f] hover:bg-[#15181c]"
+                              ? "border-[rgba(246,201,69,0.36)] bg-brand-primary-soft text-brand-primary"
+                              : "border-edge bg-input text-muted hover:border-edge-strong hover:bg-surface-hover hover:text-secondary"
                           )}
                         >
                           {sub.label}
@@ -144,10 +144,10 @@ export function CommandCenterNav() {
               return (
                 <Link
                   className={cn(
-                    "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition border",
+                    "shrink-0 rounded-md border px-3.5 py-1.5 text-xs font-semibold transition",
                     isActive
-                      ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                      : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                      ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                      : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                   )}
                   href={item.href}
                   key={item.href}
@@ -161,19 +161,19 @@ export function CommandCenterNav() {
       </header>
 
       {/* Desktop Persistent Left Sidebar (hidden on mobile/tablet) */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-[#272b31] bg-[#101215] px-4 py-6 lg:flex lg:flex-col lg:justify-between">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-edge bg-sidebar px-4 py-6 lg:flex lg:flex-col lg:justify-between">
         <div className="flex flex-col gap-6">
           {/* Brand logo & header */}
-          <div className="flex flex-col gap-4 border-b border-[#272b31] pb-5">
+          <div className="flex flex-col gap-4 border-b border-edge pb-5">
             <Link className="flex flex-col items-start gap-2" href="/admin/releases">
-              <span className="shrink-0 rounded-full bg-[#c9a347] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#13161a]">
+              <span className="shrink-0 rounded-md bg-brand-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-inverse">
                 Admin
               </span>
               <div className="min-w-0">
-                <p className="text-base font-semibold text-[#ece6da] tracking-wide">
+                <p className="text-base font-semibold tracking-wide text-ink">
                   vvviruz&apos; command center
                 </p>
-                <p className="mt-1 text-xs text-[#8f959d]">
+                <p className="mt-1 text-xs text-muted">
                   Local creative ops & analytics
                 </p>
               </div>
@@ -195,19 +195,19 @@ export function CommandCenterNav() {
                     <button
                       onClick={() => setIsPromoExpanded(!isPromoExpanded)}
                       className={cn(
-                        "w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition text-left flex items-center justify-between",
+                        "flex w-full items-center justify-between rounded-md border px-4 py-2.5 text-left text-sm font-semibold transition",
                         isActive
-                          ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                          : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                          ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                          : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                       )}
                     >
                       <span>{item.label}</span>
                       <span className={cn("text-xs transition-transform duration-200", isPromoExpanded ? "rotate-180" : "")}>
-                        ▼
+                        v
                       </span>
                     </button>
                     {isPromoExpanded && (
-                      <div className="pl-4 pr-1 py-1 flex flex-col gap-2 mt-1 border-l border-[#272b31]/40 ml-4">
+                      <div className="ml-4 mt-1 flex flex-col gap-2 border-l border-edge py-1 pl-4 pr-1">
                         {promoSubItems.map((sub) => {
                           const isSubActive =
                             pathname === sub.href ||
@@ -218,14 +218,14 @@ export function CommandCenterNav() {
                               href={sub.href}
                               key={sub.href}
                               className={cn(
-                                "rounded-[14px] border p-3 text-left transition block",
+                                "block rounded-md border p-3 text-left transition",
                                 isSubActive
-                                  ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                                  : "border-[#25282e] bg-[#0d0f12] text-[#d5d9df] hover:border-[#42464f] hover:bg-[#121519]"
+                                  ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                                  : "border-edge bg-input text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                               )}
                             >
                               <div className="text-xs font-semibold">{sub.label}</div>
-                              <div className="text-[10px] text-[#8a9098] font-normal leading-4 mt-1 opacity-85">
+                              <div className="mt-1 text-[10px] font-normal leading-4 text-muted opacity-85">
                                 {sub.description}
                               </div>
                             </Link>
@@ -240,10 +240,10 @@ export function CommandCenterNav() {
               return (
                 <Link
                   className={cn(
-                    "w-full rounded-full border px-4 py-2.5 text-sm font-semibold transition text-left block shrink-0",
+                    "block w-full shrink-0 rounded-md border px-4 py-2.5 text-left text-sm font-semibold transition",
                     isActive
-                      ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                      : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                      ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                      : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                   )}
                   href={item.href}
                   key={item.href}
@@ -256,9 +256,9 @@ export function CommandCenterNav() {
         </div>
 
         {/* Footer/Logout Action */}
-        <div className="border-t border-[#272b31] pt-5">
+        <div className="border-t border-edge pt-5">
           <form action="/admin/logout" className="w-full" method="post">
-            <button className="w-full rounded-full border border-[#7b3e3e] bg-[#341919] px-4 py-2.5 text-sm font-semibold text-[#f0d7d2] transition hover:border-[#9a5656] hover:bg-[#452020]">
+            <button className="action-button-danger w-full px-4 py-2.5 text-sm">
               Logout
             </button>
           </form>
