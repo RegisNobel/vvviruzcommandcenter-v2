@@ -386,6 +386,161 @@ input[type="range"]::-moz-range-thumb {
     transform: translateX(16px);
   }
 
+  .public-app {
+    background:
+      radial-gradient(circle at 16% -8%, rgba(246, 201, 69, 0.16), transparent 30%),
+      radial-gradient(circle at 94% 14%, rgba(86, 104, 154, 0.13), transparent 26%),
+      linear-gradient(180deg, #07080a 0%, #090c10 46%, #07080a 100%);
+    color: #f5f0e8;
+  }
+
+  .public-chrome {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(7, 8, 10, 0.86);
+  }
+
+  .public-nav-link {
+    @apply shrink-0 border-b border-transparent px-2 py-2 text-sm font-semibold transition;
+    color: rgba(245, 240, 232, 0.78);
+  }
+
+  .public-nav-link:hover {
+    border-color: rgba(246, 201, 69, 0.72);
+    color: #fffaf0;
+  }
+
+  .public-canvas {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .public-canvas::before {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: -1;
+    height: 520px;
+    background:
+      linear-gradient(90deg, rgba(246, 201, 69, 0.045) 1px, transparent 1px),
+      linear-gradient(rgba(246, 201, 69, 0.035) 1px, transparent 1px),
+      radial-gradient(circle at top, rgba(246, 201, 69, 0.13), transparent 52%);
+    background-size: 28px 28px, 28px 28px, auto;
+    content: "";
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+    pointer-events: none;
+  }
+
+  .public-panel {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(25, 29, 36, 0.94), rgba(11, 14, 18, 0.94));
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+  }
+
+  .public-panel-quiet {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .public-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.28em];
+    color: #d9b65d;
+  }
+
+  .public-heading {
+    color: #fbf5e9;
+    letter-spacing: -0.05em;
+  }
+
+  .public-copy {
+    color: #aeb6c0;
+  }
+
+  .public-action-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold transition;
+    border-radius: 8px;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+  }
+
+  .public-action-primary:hover {
+    background: var(--brand-primary-hover);
+    transform: translateY(-1px);
+  }
+
+  .public-action-secondary {
+    @apply inline-flex items-center justify-center gap-2 border px-5 py-3 text-sm font-semibold transition;
+    border-color: rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+    color: #f5f0e8;
+  }
+
+  .public-action-secondary:hover {
+    border-color: rgba(246, 201, 69, 0.5);
+    background: rgba(246, 201, 69, 0.09);
+  }
+
+  .public-filter-chip {
+    @apply inline-flex items-center border px-3.5 py-1.5 text-sm font-semibold transition;
+    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.025);
+    color: #cbd1d8;
+  }
+
+  .public-filter-chip:hover {
+    border-color: rgba(246, 201, 69, 0.44);
+    background: rgba(246, 201, 69, 0.08);
+    color: #fff8e9;
+  }
+
+  .public-filter-chip-active {
+    border-color: rgba(246, 201, 69, 0.64);
+    background: rgba(246, 201, 69, 0.14);
+    color: #fff3cc;
+  }
+
+  .public-release-card {
+    @apply flex h-full flex-col overflow-hidden border transition;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(23, 27, 33, 0.96), rgba(11, 14, 18, 0.98));
+  }
+
+  .public-release-card:hover {
+    border-color: rgba(246, 201, 69, 0.42);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+    transform: translateY(-3px);
+  }
+
+  .public-art-frame {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, rgba(246, 201, 69, 0.12), transparent 36%),
+      linear-gradient(180deg, #171b22 0%, #0b0e12 100%);
+  }
+
+  .public-art-placeholder {
+    display: flex;
+    height: 100%;
+    align-items: flex-end;
+    background:
+      linear-gradient(90deg, rgba(246, 201, 69, 0.06) 1px, transparent 1px),
+      linear-gradient(rgba(246, 201, 69, 0.05) 1px, transparent 1px),
+      linear-gradient(160deg, rgba(246, 201, 69, 0.14), transparent 52%),
+      #11151b;
+    background-size: 24px 24px, 24px 24px, auto, auto;
+    color: #e4c46f;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .public-action-primary:hover,
+    .public-release-card:hover {
+      transform: none;
+    }
+  }
+
   .table-label {
     @apply text-[11px] font-semibold uppercase tracking-[0.16em];
     color: var(--text-muted);

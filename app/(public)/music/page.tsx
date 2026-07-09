@@ -79,29 +79,29 @@ export default async function PublicMusicPage({
   const activeFilterValue = activeCategory ? `category:${activeCategory}` : activeType;
 
   return (
-    <main className="px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1280px] space-y-8">
-        <section className="rounded-[34px] border border-white/10 bg-[#0f1217]/92 px-4 py-8 sm:px-8 sm:py-10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8d949d]">
+    <main className="px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1320px] space-y-10">
+        <section className="public-panel overflow-hidden px-5 py-9 sm:px-9 sm:py-11">
+          <p className="public-eyebrow">
             {content.page_eyebrow}
           </p>
-          <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#f7f1e6] sm:text-5xl">
+          <h1 className="public-heading mt-4 max-w-4xl text-4xl font-semibold sm:text-6xl">
             {content.page_heading}
           </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-[#98a0a8] sm:text-base">
+          <p className="public-copy mt-5 max-w-3xl text-sm leading-7 sm:text-base">
             {content.page_description}
           </p>
 
-          <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex bg-black/40 rounded-full p-1 border border-white/5 inline-flex shrink-0">
+          <div className="public-panel-quiet mt-8 flex flex-col gap-5 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="inline-flex w-fit rounded-full border border-white/10 bg-black/20 p-1">
               <Link 
                 href="/music" 
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${!isAppearsOn ? "bg-[#c9a347] text-[#13161a]" : "text-[#8d949d] hover:text-[#ece6da]"}`}>
+                className={`rounded-full px-5 py-2 text-sm font-semibold transition ${!isAppearsOn ? "bg-[var(--brand-primary)] text-[var(--text-inverse)]" : "text-[#9da7b1] hover:text-[#fff8ec]"}`}>
                 Releases
               </Link>
               <Link 
                 href="/music?view=appears-on" 
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${isAppearsOn ? "bg-[#c9a347] text-[#13161a]" : "text-[#8d949d] hover:text-[#ece6da]"}`}>
+                className={`rounded-full px-5 py-2 text-sm font-semibold transition ${isAppearsOn ? "bg-[var(--brand-primary)] text-[var(--text-inverse)]" : "text-[#9da7b1] hover:text-[#fff8ec]"}`}>
                 Appears On
               </Link>
             </div>
@@ -113,10 +113,10 @@ export default async function PublicMusicPage({
 
                   return (
                     <Link
-                      className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
+                      className={`public-filter-chip ${
                         isActive
-                          ? "border-[#c9a347]/50 bg-[#c9a347]/12 text-[#f3eddf]"
-                          : "border-white/10 bg-white/[0.03] text-[#d8dfe6] hover:border-[#c9a347]/40 hover:bg-[#c9a347]/10 hover:text-[#f6f0e4]"
+                          ? "public-filter-chip-active"
+                          : ""
                       }`}
                       href={option.href}
                       key={option.value}

@@ -116,22 +116,22 @@ export default async function PublicReleaseDetailPage({
   });
 
   return (
-    <main className="px-4 py-8 sm:px-6 lg:px-8">
+    <main className="px-4 py-10 sm:px-6 lg:px-8">
       <script
         dangerouslySetInnerHTML={{__html: stringifyJsonLd(releaseJsonLd)}}
         type="application/ld+json"
       />
-      <div className="mx-auto max-w-[1280px] space-y-8">
+      <div className="mx-auto max-w-[1320px] space-y-10">
         <Link
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#d5b15b] transition hover:text-[#eccd7d]"
+          className="inline-flex items-center gap-2 border-b border-transparent pb-1 text-sm font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
           href="/music"
         >
           {content.back_to_music_label}
         </Link>
 
-        <section className="rounded-[36px] border border-white/10 bg-[#0f1217]/92 px-4 py-7 sm:px-8 sm:py-10">
-          <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
-            <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#14171d]">
+        <section className="public-panel overflow-hidden px-5 py-7 sm:px-9 sm:py-10">
+          <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:gap-12">
+            <div className="public-art-frame overflow-hidden rounded-xl border border-white/10">
               <div className="relative aspect-square w-full">
                 {release.cover_art_path ? (
                   <Image
@@ -144,38 +144,46 @@ export default async function PublicReleaseDetailPage({
                     src={release.cover_art_path}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_42%),linear-gradient(180deg,#16191f_0%,#0d0f13_100%)] px-6 text-center text-sm uppercase tracking-[0.32em] text-[#d0b16b]">
-                    {siteSettings.artist_name}
+                  <div className="public-art-placeholder flex-col justify-end px-7 py-7 text-left">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b861]">
+                      vvviruz archive
+                    </span>
+                    <strong className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-[#fff5df]">
+                      {release.title}
+                    </strong>
+                    <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9da7b1]">
+                      {siteSettings.artist_name}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
             <div>
-              <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+              <div className="public-eyebrow flex flex-wrap items-center gap-3">
                 <span>{release.type}</span>
-                <span className="text-[#4f545c]">/</span>
+                <span className="text-[#746842]">/</span>
                 <span>{formatPublicReleaseDate(release.release_date)}</span>
               </div>
 
-              <h1 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-[#f7f1e6] sm:text-5xl">
+              <h1 className="public-heading mt-5 text-4xl font-semibold sm:text-6xl">
                 {release.title}
               </h1>
 
               {release.collaborator && release.collaborator_name.trim() ? (
-                <p className="mt-3 text-sm font-semibold text-[#d7b45e]">
+                <p className="mt-4 text-sm font-semibold text-[#e3c16e]">
                   with {formatCollaboratorsList(release.collaborator_name)}
                 </p>
               ) : null}
 
               {release.categories.length > 0 ? (
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                  <span className="public-eyebrow">
                     Part of
                   </span>
                   {release.categories.map((category) => (
                     <Link
-                      className="rounded-full border border-[#c9a347]/25 bg-[#c9a347]/10 px-3 py-1 text-xs font-semibold text-[#f0d991] transition hover:border-[#c9a347]/55 hover:bg-[#c9a347]/15 hover:text-[#f8edcf]"
+                      className="public-filter-chip public-filter-chip-active py-1 text-xs"
                       href={`/music?category=${encodeURIComponent(category.slug)}`}
                       key={category.id}
                     >
@@ -186,18 +194,18 @@ export default async function PublicReleaseDetailPage({
               ) : null}
 
               {aboutText ? (
-                <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a]/60 px-5 py-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                <div className="public-panel-quiet mt-8 py-5">
+                  <p className="public-eyebrow">
                     About this track
                   </p>
-                  <p className="mt-4 text-sm leading-7 text-[#dfe5eb] whitespace-pre-wrap">
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[#d7dde3]">
                     {aboutText}
                   </p>
                 </div>
               ) : null}
 
-              <div className="mt-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+              <div className="public-panel-quiet mt-8 py-5">
+                <p className="public-eyebrow">
                   Listen now
                 </p>
                 <PublicPlatformLinks
@@ -210,11 +218,11 @@ export default async function PublicReleaseDetailPage({
               </div>
 
               {release.public_lyrics_enabled && release.lyrics.trim() ? (
-                <div className="mt-8 rounded-[26px] border border-white/10 bg-[#12151a] px-5 py-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+                <div className="public-panel-quiet mt-8 py-5">
+                  <p className="public-eyebrow">
                     {content.lyrics_heading}
                   </p>
-                  <pre className="mt-4 whitespace-pre-wrap font-sans text-sm leading-7 text-[#dfe5eb]">
+                  <pre className="mt-4 whitespace-pre-wrap font-sans text-sm leading-7 text-[#d7dde3]">
                     {release.lyrics}
                   </pre>
                 </div>
@@ -226,11 +234,11 @@ export default async function PublicReleaseDetailPage({
         {spotifyEmbedUrl || youtubeEmbedUrl ? (
           <section className="grid gap-6 xl:grid-cols-2">
             {spotifyEmbedUrl ? (
-              <article className="rounded-[30px] border border-white/10 bg-[#0f1217]/92 px-5 py-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+              <article className="public-panel px-5 py-5">
+                <p className="public-eyebrow">
                   {content.spotify_heading}
                 </p>
-                <div className="mt-4 overflow-hidden rounded-[24px] border border-white/10">
+                <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
                   <iframe
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                     className="h-[352px] w-full"
@@ -243,11 +251,11 @@ export default async function PublicReleaseDetailPage({
             ) : null}
 
             {youtubeEmbedUrl ? (
-              <article className="rounded-[30px] border border-white/10 bg-[#0f1217]/92 px-5 py-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+              <article className="public-panel px-5 py-5">
+                <p className="public-eyebrow">
                   {content.video_heading}
                 </p>
-                <div className="mt-4 overflow-hidden rounded-[24px] border border-white/10">
+                <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
                   <iframe
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
@@ -266,15 +274,15 @@ export default async function PublicReleaseDetailPage({
           <section className="space-y-4">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8d949d]">
+                <p className="public-eyebrow">
                   {content.related_releases_eyebrow}
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#f4eedf]">
+                <h2 className="public-heading mt-3 text-3xl font-semibold">
                   {content.related_releases_heading}
                 </h2>
               </div>
               <Link
-                className="text-sm font-semibold text-[#d5b15b] transition hover:text-[#eccd7d]"
+                className="border-b border-transparent pb-1 text-sm font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
                 href="/music"
               >
                 {content.related_releases_view_all_label}

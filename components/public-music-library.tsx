@@ -52,18 +52,18 @@ export function PublicMusicLibrary({
   );
 
   return (
-    <section className="space-y-5">
-      <label className="block rounded-[26px] border border-white/10 bg-[#0f1217]/92 px-4 py-4 sm:px-5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8d949d]">
+    <section className="space-y-7">
+      <label className="public-panel block px-4 py-4 sm:px-5">
+        <span className="public-eyebrow">
           Search Releases
         </span>
         <span className="relative mt-3 block">
           <Search
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8d949d]"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#9da7b1]"
             size={16}
           />
           <input
-            className="w-full rounded-2xl border border-white/10 bg-[#090c10] px-11 py-3 text-sm text-[#f3eddf] outline-none transition placeholder:text-[#6f7781] focus:border-[#c9a347]/60 focus:ring-2 focus:ring-[#c9a347]/20"
+            className="w-full rounded-md border border-white/10 bg-black/20 px-11 py-3 text-sm text-[#fff8ec] outline-none transition placeholder:text-[#7f8994] focus:border-[rgba(246,201,69,0.68)] focus:ring-2 focus:ring-[rgba(246,201,69,0.14)]"
             onChange={(event) => setSearchValue(event.target.value)}
             placeholder="Find a release by title, type, or description"
             value={searchValue}
@@ -84,7 +84,7 @@ export function PublicMusicLibrary({
           ))}
         </div>
       ) : (
-        <div className="rounded-[30px] border border-dashed border-white/12 bg-[#0f1217]/92 px-4 py-8 text-sm leading-7 text-[#98a0a8] sm:px-8 sm:py-10">
+        <div className="rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-8 text-sm leading-7 text-[#aeb6c0] sm:px-8 sm:py-10">
           {releases.length === 0
             ? emptyText
             : "No releases match that search yet. Try a title, type, or keyword."}
