@@ -241,7 +241,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           }
         />
         <section className="command-surface overflow-hidden">
-          <div className="hidden border-b border-edge bg-surface-elevated/60 px-4 py-3 text-left lg:grid lg:grid-cols-[42px_minmax(0,1.25fr)_112px_136px_minmax(180px,1fr)_minmax(210px,1fr)_112px] lg:items-center lg:gap-5">
+          <div className="hidden border-b border-edge bg-surface-elevated px-4 py-3 text-left lg:grid lg:grid-cols-[42px_minmax(0,1.25fr)_112px_136px_minmax(180px,1fr)_minmax(210px,1fr)_112px] lg:items-center lg:gap-5">
             <span className="table-label">#</span>
             <span className="table-label">Release</span>
             <span className="table-label">Stage</span>

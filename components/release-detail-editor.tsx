@@ -255,27 +255,27 @@ function getFallbackMetaDescription(release: ReleaseRecord) {
 
 
 const pageShellClass =
-  "min-h-[calc(100vh-81px)] bg-[#0f1114] text-[#e7e2d8] pb-36";
+  "min-h-[calc(100vh-81px)] bg-app text-primary pb-36";
 const pagePanelClass =
-  "rounded-[28px] border border-[#2a2d32] bg-[#17191d]";
+  "command-surface";
 const pageLabelClass =
-  "text-[11px] font-semibold uppercase tracking-[0.2em] text-[#7b8088]";
+  "table-label";
 const pageInputClass =
-  "w-full rounded-2xl border border-[#343840] bg-[#0f1216] px-4 py-3 text-sm text-[#ece6d8] outline-none transition placeholder:text-[#6d7279] [color-scheme:dark] focus:border-[#c9a347] focus:ring-2 focus:ring-[#c9a347]/25";
+  "field-input";
 const pagePrimaryButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-[#c9a347] px-4 py-2.5 text-sm font-semibold text-[#121418] transition hover:bg-[#d5b15b]";
+  "action-button-primary";
 const pageSecondaryButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-full border border-[#3a3f46] bg-[#15181c] px-4 py-2.5 text-sm font-semibold text-[#ece6d8] transition hover:border-[#50555d] hover:bg-[#1b1f24]";
+  "action-button-secondary";
 const pageDangerButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-full border border-[#7b3e3e] bg-[#341919] px-4 py-2.5 text-sm font-semibold text-[#f0d7d2] transition hover:border-[#9a5656] hover:bg-[#452020]";
+  "action-button-danger";
 const pageTertiaryButtonClass =
-  "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#9ba0a8] transition hover:bg-[#181b20] hover:text-[#ede8dc]";
+  "action-button-tertiary";
 const pagePillClass =
-  "inline-flex items-center gap-2 rounded-full border border-[#31353b] bg-[#121417] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#8c9199]";
+  "status-badge-neutral uppercase tracking-[0.14em]";
 const pageAccentPillClass =
-  "inline-flex items-center gap-2 rounded-full border border-[#5b4920] bg-[#1a1710] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d6b45d]";
+  "status-badge-ready uppercase tracking-[0.14em]";
 const pageCheckboxClass =
-  "h-4 w-4 rounded border border-[#4a4f57] bg-[#0e1115] accent-[#c9a347] focus:ring-2 focus:ring-[#c9a347]/35 focus:ring-offset-0";
+  "h-4 w-4 rounded border border-edge-strong bg-input accent-brand-primary focus:ring-2 focus:ring-[rgba(246,201,69,0.35)] focus:ring-offset-0";
 
 function getDiscoveryStatusStyles(status: DiscoveryChecklistStatus) {
   if (status === "passed") {
@@ -1159,7 +1159,7 @@ export function ReleaseDetailEditor({
   return (
     <main className={`${pageShellClass} px-4 py-5 sm:px-6 lg:px-8`}>
       <div className="mx-auto max-w-[1450px] space-y-6">
-        <section className={`${pagePanelClass} overflow-hidden px-6 py-7`}>
+        <section className={`${pagePanelClass} overflow-hidden px-5 py-6 sm:px-6`}>
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             <div>
               <div className="flex flex-wrap items-center gap-3">
@@ -1167,35 +1167,35 @@ export function ReleaseDetailEditor({
                 <div className={pagePillClass}>#{release.id.slice(0, 8)}</div>
                 <div className={pagePillClass}>{formatReleaseType(release.type)}</div>
               </div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#f1ebdf] sm:text-4xl">
+              <h1 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-ink sm:text-[2.35rem]">
                 {release.title}
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#8e939b]">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
                 Source-of-truth workspace for release identity, media, discovery
                 packaging, planning, and lightweight promo readouts.
               </p>
             </div>
 
-            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
-              <div className="rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated p-4 sm:p-5">
+              <div className="rounded-lg border border-edge-strong bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Internal Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
                 </div>
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#23262c]">
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-surface-elevated">
                   <div
                     className={`h-full rounded-full ${getReleaseProgressTone(progress)}`}
                     style={{width: `${progress}%`}}
                   />
                 </div>
-                <div className="mt-4 space-y-2 text-sm text-[#8d9299]">
+                <div className="mt-4 space-y-2 text-sm text-muted">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Stage</span>
-                    <span className="font-semibold text-[#efe8db]">{currentStage}</span>
+                    <span className="font-semibold text-ink">{currentStage}</span>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Collaborators</span>
-                    <span className="font-semibold text-[#efe8db]">
+                    <span className="font-semibold text-ink">
                       {release.collaborator
                         ? formatCollaboratorsList(release.collaborator_name) || "Yes"
                         : "No"}
@@ -1203,11 +1203,11 @@ export function ReleaseDetailEditor({
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Autosave</span>
-                    <span className="font-semibold text-[#efe8db]">Every minute</span>
+                    <span className="font-semibold text-ink">Every minute</span>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span>Save status</span>
-                    <span className="font-semibold text-[#efe8db]">
+                    <span className="font-semibold text-ink">
                       {saveStatusLabel}
                     </span>
                   </div>
@@ -1225,10 +1225,10 @@ export function ReleaseDetailEditor({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className={pageLabelClass}>Overview</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                  <h2 className="mt-2 text-2xl font-semibold text-ink">
                     Basic Info
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-[#8a9098]">
+                  <p className="mt-2 text-sm leading-6 text-muted">
                     Core identity, collaborator credits, dates, and distributor
                     identifiers stay here.
                   </p>
@@ -1324,7 +1324,7 @@ export function ReleaseDetailEditor({
                           {collaborators.length > 1 && (
                             <button
                               type="button"
-                              className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-900/30 transition"
+                            className="rounded-md border border-[rgba(223,107,107,0.35)] bg-[var(--status-danger-soft)] px-3 py-2 text-xs font-semibold text-[#f0b4b4] transition hover:border-[rgba(223,107,107,0.7)]"
                               onClick={() => {
                                 const updated = collaborators.filter((_, i) => i !== index);
                                 setCollaborators(updated);
@@ -1342,7 +1342,7 @@ export function ReleaseDetailEditor({
                       {collaborators.length < 10 && (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a347]/30 bg-[#c9a347]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#d7b45e] hover:bg-[#c9a347]/20 transition"
+                          className="status-badge-info transition hover:border-[rgba(246,201,69,0.5)] hover:text-brand-primary"
                           onClick={() => {
                             const updated = [...collaborators, ""];
                             setCollaborators(updated);
@@ -1394,10 +1394,10 @@ export function ReleaseDetailEditor({
             <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="discovery">
               <div>
                 <p className={pageLabelClass}>Discovery</p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#f0eadf]">
+                <h2 className="mt-2 text-2xl font-semibold text-ink">
                   Internet Packaging
                 </h2>
-                <p className="mt-2 text-sm text-[#8a9098]">
+                <p className="mt-2 text-sm text-muted">
                   How this release appears to Google, AI search, social previews,
                   and public discovery surfaces.
                 </p>
@@ -1442,12 +1442,12 @@ export function ReleaseDetailEditor({
                     value={release.slug}
                   />
 
-                  <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm text-[#9aa0a8]">
+                  <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-sm text-secondary">
                     <p>
                       Suggested slug:{" "}
-                      <span className="font-mono text-[#efe7d7]">{suggestedSlug}</span>
+                      <span className="font-mono text-ink">{suggestedSlug}</span>
                     </p>
-                    <p className="mt-2 text-xs leading-5 text-[#7f858d]">
+                    <p className="mt-2 text-xs leading-5 text-muted">
                       {isSlugLocked
                         ? "Slug updates automatically when the title changes."
                         : "Unlock the slug when you need a custom URL, then use Suggested to snap it back."}
@@ -1455,15 +1455,15 @@ export function ReleaseDetailEditor({
                   </div>
 
                   <div className="grid gap-3 lg:grid-cols-2">
-                    <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm">
+                    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-sm">
                       <p className={pageLabelClass}>Live path preview</p>
-                      <p className="mt-2 break-all font-mono text-[#efe7d7]">
+                      <p className="mt-2 break-all font-mono text-ink">
                         {publicUrlPreview}
                       </p>
                     </div>
-                    <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-3 text-sm">
+                    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-sm">
                       <p className={pageLabelClass}>Cover alt preview</p>
-                      <p className="mt-2 text-[#efe7d7]">{coverAltTextPreview}</p>
+                      <p className="mt-2 text-ink">{coverAltTextPreview}</p>
                     </div>
                   </div>
                 </div>
@@ -1574,31 +1574,31 @@ export function ReleaseDetailEditor({
                     />
                   </label>
 
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 xl:col-span-2">
+                  <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 xl:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className={pageLabelClass}>Public metadata preview</p>
                       <span className={pageAccentPillClass}>Live fallback</span>
                     </div>
                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-[#7f858d]">
+                        <p className="text-xs uppercase tracking-[0.16em] text-muted">
                           Search
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-[#efe7d7]">
+                        <p className="mt-2 text-sm font-semibold text-ink">
                           {seoTitlePreview}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-[#c8ced6]">
+                        <p className="mt-2 text-sm leading-6 text-secondary">
                           {metaDescriptionPreview}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-[#7f858d]">
+                        <p className="text-xs uppercase tracking-[0.16em] text-muted">
                           Social
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-[#efe7d7]">
+                        <p className="mt-2 text-sm font-semibold text-ink">
                           {socialShareTitlePreview}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-[#c8ced6]">
+                        <p className="mt-2 text-sm leading-6 text-secondary">
                           {socialShareDescriptionPreview}
                         </p>
                       </div>
@@ -1606,8 +1606,8 @@ export function ReleaseDetailEditor({
                   </div>
                 </div>
 
-                <details className="group md:col-span-2 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#ede7dc]">
+                <details className="group md:col-span-2 rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink">
                     <span>Future discovery fields</span>
                     <ChevronDown className="transition group-open:rotate-180" size={17} />
                   </summary>
@@ -1618,7 +1618,7 @@ export function ReleaseDetailEditor({
                       "Hide unreleased from search"
                     ].map((field) => (
                       <div
-                        className="rounded-[18px] border border-dashed border-[#3a3f46] bg-[#0f1216] px-4 py-3 text-sm text-[#8a9098]"
+                        className="rounded-lg border border-dashed border-edge-strong bg-surface px-4 py-3 text-sm text-muted"
                         key={field}
                       >
                         <span className={pageLabelClass}>{field}</span>
@@ -1628,8 +1628,8 @@ export function ReleaseDetailEditor({
                   </div>
                 </details>
 
-                <label className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                  <span className="flex items-center gap-3 text-sm font-semibold text-[#ede7dc]">
+                <label className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                  <span className="flex items-center gap-3 text-sm font-semibold text-ink">
                     <input
                       checked={release.public_lyrics_enabled}
                       className={pageCheckboxClass}
@@ -1643,13 +1643,13 @@ export function ReleaseDetailEditor({
                     />
                     Include Lyrics Publicly
                   </span>
-                  <span className="mt-2 block text-xs leading-5 text-[#8a9098]">
+                  <span className="mt-2 block text-xs leading-5 text-muted">
                     Controls whether lyrics are included on the public release page.
                   </span>
                 </label>
 
-                <label className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
-                  <span className="flex items-center gap-3 text-sm font-semibold text-[#ede7dc]">
+                <label className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                  <span className="flex items-center gap-3 text-sm font-semibold text-ink">
                     <input
                       checked={release.is_featured}
                       className={pageCheckboxClass}
@@ -1663,7 +1663,7 @@ export function ReleaseDetailEditor({
                     />
                     Feature this release
                   </span>
-                  <span className="mt-2 block text-xs leading-5 text-[#8a9098]">
+                  <span className="mt-2 block text-xs leading-5 text-muted">
                     Featured releases get priority placement on the public site.
                   </span>
                 </label>
@@ -1671,12 +1671,12 @@ export function ReleaseDetailEditor({
                 <div className="space-y-3 md:col-span-2">
                   <button
                     aria-pressed={release.is_published}
-                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                    className={`w-full rounded-xl border px-4 py-4 text-left transition ${
                       release.is_published
-                        ? "border-[#7a6130] bg-[#1a1710]"
+                        ? "border-[rgba(79,191,136,0.38)] bg-[var(--status-success-soft)]"
                         : isPublishReady
-                          ? "border-[#5f4b1f] bg-[#1a1710]"
-                          : "border-[#4e3a1c] bg-[#17130d] opacity-95"
+                          ? "border-[rgba(230,173,67,0.38)] bg-[var(--status-warning-soft)]"
+                          : "border-edge bg-surface-elevated opacity-95"
                     }`}
                     disabled={!release.is_published && !isPublishReady}
                     onClick={() =>
@@ -1691,10 +1691,10 @@ export function ReleaseDetailEditor({
                       <span
                         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                           release.is_published
-                            ? "border-[#d6b45d] bg-[#c9a347] text-[#121418]"
+                            ? "border-[rgba(79,191,136,0.72)] bg-[var(--status-success)] text-inverse"
                             : isPublishReady
-                              ? "border-[#8a6d34] bg-transparent text-[#d6b45d]"
-                              : "border-[#6f5328] bg-transparent text-[#8a6d34]"
+                              ? "border-[rgba(230,173,67,0.72)] bg-transparent text-[#f1cf87]"
+                              : "border-edge-strong bg-transparent text-muted"
                         }`}
                       >
                         {release.is_published ? (
@@ -1705,10 +1705,10 @@ export function ReleaseDetailEditor({
                       </span>
 
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[#efe7d7]">
+                        <span className="block text-sm font-semibold text-ink">
                           Publicly Visible
                         </span>
-                        <span className="mt-2 block text-xs leading-5 text-[#bda980]">
+                        <span className="mt-2 block text-xs leading-5 text-secondary">
                           Controls public visibility under `/`, `/music`, `/about`,
                           and `/links`. Internal stage completion remains separate.
                         </span>
@@ -1717,7 +1717,7 @@ export function ReleaseDetailEditor({
                   </button>
 
                   <div
-                    className={`rounded-[20px] border px-4 py-4 text-sm ${
+                    className={`rounded-xl border px-4 py-4 text-sm ${
                       isPublishReady
                         ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
                         : "border-amber-500/30 bg-amber-500/10 text-[#f2dfb5]"
@@ -1749,7 +1749,7 @@ export function ReleaseDetailEditor({
                 </div>
 
                 <div className="grid gap-4 md:col-span-2 lg:grid-cols-[260px_minmax(0,1fr)]">
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                  <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                     <p className={pageLabelClass}>Schema status</p>
                     <div className="mt-3">
                       <span
@@ -1762,17 +1762,17 @@ export function ReleaseDetailEditor({
                         {schemaStatusLabel}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-[#8a9098]">
+                    <p className="mt-3 text-sm leading-6 text-muted">
                       Preview only. Structured data can use existing release fields
                       when the public page is visible.
                     </p>
                   </div>
 
-                  <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4">
+                  <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className={pageLabelClass}>Discovery Quality Checklist</p>
-                        <h3 className="mt-2 text-xl font-semibold text-[#f0eadf]">
+                        <h3 className="mt-2 text-xl font-semibold text-ink">
                           {discoveryReadinessLabel}
                         </h3>
                       </div>
@@ -1788,7 +1788,7 @@ export function ReleaseDetailEditor({
                         </span>
                       </div>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-[#8a9098]">
+                    <p className="mt-3 text-sm leading-6 text-muted">
                       Computed from the release record only. This is search, social,
                       and AI-readable guidance, not a save or public-publishing blocker.
                     </p>
@@ -1798,7 +1798,7 @@ export function ReleaseDetailEditor({
 
                         return (
                         <div
-                          className="rounded-[18px] border border-[#2f343b] bg-[#0f1216] px-4 py-3"
+                          className="rounded-lg border border-edge bg-surface px-4 py-3"
                           key={item.label}
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1811,7 +1811,7 @@ export function ReleaseDetailEditor({
                                   {item.label}
                                 </p>
                               </div>
-                              <p className="mt-2 text-xs leading-5 text-[#8a9098]">
+                              <p className="mt-2 text-xs leading-5 text-muted">
                                 {item.detail}
                               </p>
                             </div>
@@ -2832,19 +2832,19 @@ export function ReleaseDetailEditor({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className={pageLabelClass}>Release Control Panel</p>
-                  <h2 className="mt-2 text-xl font-semibold text-[#f0eadf]">
+                  <h2 className="mt-2 text-xl font-semibold text-ink">
                     At a glance
                   </h2>
                 </div>
                 <span className={pageAccentPillClass}>{saveStatusLabel}</span>
               </div>
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Internal Progress</p>
                   <span className={pageAccentPillClass}>{progress}%</span>
                 </div>
-                <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#23262c]">
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-surface">
                   <div
                     className={`h-full rounded-full ${getReleaseProgressTone(progress)}`}
                     style={{width: `${progress}%`}}
@@ -2852,30 +2852,30 @@ export function ReleaseDetailEditor({
                 </div>
                 <div className="mt-3 grid gap-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#8a9098]">Stage</span>
-                    <span className="text-right font-semibold text-[#efe8db]">{snapshotStage}</span>
+                    <span className="text-muted">Stage</span>
+                    <span className="text-right font-semibold text-ink">{snapshotStage}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-[#8a9098]">Tasks</span>
-                    <span className="font-semibold text-[#efe8db]">
+                    <span className="text-muted">Tasks</span>
+                    <span className="font-semibold text-ink">
                       {openTasks.length} open / {completedTaskCount} done
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 text-sm">
                 <p className={pageLabelClass}>Next Action</p>
-                <p className="mt-2 leading-6 text-[#efe8db]">{snapshotNextAction}</p>
+                <p className="mt-2 leading-6 text-ink">{snapshotNextAction}</p>
               </div>
 
               {snapshotBlockers.length > 0 ? (
-                <div className="rounded-[20px] border border-[#5a312d] bg-[#1c1313] px-4 py-4">
+                <div className="rounded-xl border border-[rgba(223,107,107,0.35)] bg-[var(--status-danger-soft)] px-4 py-4">
                   <p className={pageLabelClass}>Blockers</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {snapshotBlockers.map((blocker) => (
                       <span
-                        className="inline-flex items-center rounded-full border border-[#6c3934] bg-[#251515] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d4a7a0]"
+                        className="status-badge-danger uppercase tracking-[0.12em]"
                         key={blocker}
                       >
                         {blocker}
@@ -2885,7 +2885,7 @@ export function ReleaseDetailEditor({
                 </div>
               ) : null}
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className={pageLabelClass}>Public + Discovery</p>
                   <span className={isPublishReady ? pageAccentPillClass : pagePillClass}>
@@ -2900,12 +2900,12 @@ export function ReleaseDetailEditor({
                     Discovery: {discoveryReadinessLabel}
                   </span>
                 </div>
-                <p className="mt-3 break-all font-mono text-xs text-[#8a9098]">
+                <p className="mt-3 break-all font-mono text-xs text-muted">
                   {publicUrlPreview}
                 </p>
               </div>
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-[#aeb3bb]">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 text-sm text-secondary">
                 <p className={pageLabelClass}>Metadata</p>
                 <div className="mt-3 space-y-2">
                   {[
@@ -2917,14 +2917,14 @@ export function ReleaseDetailEditor({
                     ["Updated", formatTimestamp(release.updated_on)]
                   ].map(([label, value]) => (
                     <div className="flex items-start justify-between gap-3" key={label}>
-                      <span className="text-xs uppercase tracking-[0.14em] text-[#7b8088]">{label}</span>
-                      <span className="text-right text-[#ebe4d8]">{value}</span>
+                      <span className="text-xs uppercase tracking-[0.14em] text-muted">{label}</span>
+                      <span className="text-right text-ink">{value}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                 <p className={pageLabelClass}>Streaming</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {streamingMetadataButtons.map((platform) => {
@@ -2933,7 +2933,7 @@ export function ReleaseDetailEditor({
                     if (!platform.href) {
                       return (
                         <span
-                          className="inline-flex items-center gap-2 rounded-full border border-[#30343b] bg-[#101318] px-3 py-2 text-xs font-semibold text-[#727780]"
+                          className="status-badge-neutral"
                           key={platform.label}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
@@ -2944,7 +2944,7 @@ export function ReleaseDetailEditor({
 
                     return (
                       <a
-                        className="inline-flex items-center gap-2 rounded-full border border-[#3f4637] bg-[#171a12] px-3 py-2 text-xs font-semibold text-[#f0d98b] transition hover:border-[#d7b45e]/50 hover:text-[#ffe2a5]"
+                        className="status-badge-info transition hover:border-[rgba(246,201,69,0.5)] hover:text-brand-primary"
                         href={platform.href}
                         key={platform.label}
                         rel="noreferrer"
@@ -2958,7 +2958,7 @@ export function ReleaseDetailEditor({
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#31353b] bg-[#121418] px-4 py-4">
+              <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className={pageLabelClass}>Tasks</p>
                   <span className={pagePillClass}>{release.tasks.length} total</span>
@@ -2985,10 +2985,10 @@ export function ReleaseDetailEditor({
                 <div className="mt-3 max-h-[260px] space-y-2 overflow-y-auto pr-1">
                   {release.tasks.map((task) => (
                     <div
-                      className={`flex items-start gap-2 rounded-[16px] border px-3 py-2 ${
+                      className={`flex items-start gap-2 rounded-lg border px-3 py-2 ${
                         task.completed
-                          ? "border-[#353941] bg-[#101318]"
-                          : "border-[#31353b] bg-[#15181c]"
+                          ? "border-edge bg-surface"
+                          : "border-edge-strong bg-surface"
                       }`}
                       key={task.id}
                     >
@@ -3013,15 +3013,15 @@ export function ReleaseDetailEditor({
                       <span
                         className={`min-w-0 flex-1 text-sm leading-5 ${
                           task.completed
-                            ? "text-[#727780] line-through"
-                            : "text-[#e7e1d6]"
+                            ? "text-muted line-through"
+                            : "text-ink"
                         }`}
                       >
                         {task.text}
                       </span>
                       <button
                         aria-label={`Delete task: ${task.text}`}
-                        className="rounded-full border border-[#4a2b2b] bg-[#251515] p-1.5 text-[#d4a7a0] transition hover:border-[#7b3e3e] hover:bg-[#341919]"
+                        className="rounded-md border border-[rgba(223,107,107,0.35)] bg-[var(--status-danger-soft)] p-1.5 text-[#f0b4b4] transition hover:border-[rgba(223,107,107,0.7)]"
                         onClick={() => handleDeleteTask(task.id)}
                         type="button"
                       >
@@ -3031,7 +3031,7 @@ export function ReleaseDetailEditor({
                   ))}
 
                   {release.tasks.length === 0 ? (
-                    <div className="rounded-[16px] border border-dashed border-[#383c43] bg-[#101318] px-3 py-4 text-sm text-[#7f858d]">
+                    <div className="rounded-lg border border-dashed border-edge-strong bg-surface px-3 py-4 text-sm text-muted">
                       No tasks yet. Add the next concrete action here.
                     </div>
                   ) : null}
