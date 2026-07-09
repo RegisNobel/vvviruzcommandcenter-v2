@@ -187,10 +187,10 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-4">
+    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
       <div className="flex items-center justify-between gap-3">
         <p className="field-label">{label}</p>
-        <span className="rounded-full border border-[#4a3c1d] bg-[#1a1710] p-2 text-[#d7b45e]">
+        <span className="rounded-full border border-[rgba(246,201,69,0.32)] bg-brand-primary-soft p-2 text-brand-primary">
           <Icon size={16} />
         </span>
       </div>
@@ -202,10 +202,10 @@ function MetricCard({
 
 function FunnelVerdictCard({value}: {value: string}) {
   return (
-    <div className="rounded-[24px] border border-[#4a3c1d] bg-[#17140d] px-4 py-4">
+    <div className="rounded-xl border border-[rgba(246,201,69,0.32)] bg-brand-primary-soft px-4 py-4">
       <div className="flex items-center justify-between gap-3">
         <p className="field-label">Funnel Verdict</p>
-        <span className="rounded-full border border-[#4a3c1d] bg-[#1f1a10] p-2 text-[#d7b45e]">
+        <span className="rounded-full border border-[rgba(246,201,69,0.32)] bg-surface p-2 text-brand-primary">
           <ArrowRight size={16} />
         </span>
       </div>
@@ -229,7 +229,7 @@ function BreakdownList({
   wrapLabels?: boolean;
 }) {
   return (
-    <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+    <section className="rounded-xl border border-edge bg-surface-elevated p-4 sm:p-5">
       <h3 className="text-lg font-semibold text-ink">{title}</h3>
       <div className="mt-4 space-y-3">
         {items.length > 0 ? (
@@ -237,8 +237,8 @@ function BreakdownList({
             <div
               className={
                 wrapLabels
-                  ? "rounded-[18px] border border-[#252a31] bg-[#0f1114] px-4 py-3"
-                  : "flex items-center justify-between gap-4 rounded-[18px] border border-[#252a31] bg-[#0f1114] px-4 py-3"
+                  ? "rounded-lg border border-edge bg-surface px-4 py-3"
+                  : "flex items-center justify-between gap-4 rounded-lg border border-edge bg-surface px-4 py-3"
               }
               key={item.label}
             >
@@ -249,11 +249,11 @@ function BreakdownList({
                       {formatNumber(item.conversions)} / {formatNumber(item.views)}
                     </span>
                   </div>
-                  <p className="mt-2 break-all text-sm leading-6 text-[#d9dee5]">{item.label}</p>
+                  <p className="mt-2 break-all text-sm leading-6 text-ink">{item.label}</p>
                 </>
               ) : (
                 <>
-                  <span className="min-w-0 truncate text-sm text-[#d9dee5]">{item.label}</span>
+                  <span className="min-w-0 truncate text-sm text-ink">{item.label}</span>
                   <span className="pill shrink-0">
                     {formatNumber(item.conversions)} / {formatNumber(item.views)}
                   </span>
@@ -262,7 +262,7 @@ function BreakdownList({
             </div>
           ))
         ) : (
-          <p className="rounded-[18px] border border-dashed border-[#30343b] bg-[#0f1114] px-4 py-4 text-sm text-muted">
+          <p className="rounded-lg border border-dashed border-edge-strong bg-surface px-4 py-4 text-sm text-muted">
             {emptyText}
           </p>
         )}
@@ -283,7 +283,7 @@ function BreakdownDetailTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[620px] text-left text-sm">
-        <thead className="bg-[#171a1f] text-[#b8bec6]">
+        <thead className="bg-surface-elevated text-secondary">
           <tr>
             <th className="px-4 py-3 font-semibold">Segment</th>
             <th className="px-4 py-3 font-semibold">Views</th>
@@ -291,10 +291,10 @@ function BreakdownDetailTable({
             <th className="px-4 py-3 font-semibold">CTR</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#252a31]">
+        <tbody className="divide-y divide-edge">
           {items.length > 0 ? (
             items.map((item) => (
-              <tr className="text-[#d9dee5]" key={item.label}>
+              <tr className="text-ink transition hover:bg-surface-hover" key={item.label}>
                 <td
                   className={`px-4 py-4 font-semibold ${
                     kind === "utm" ? "max-w-[520px] break-all leading-6" : ""
@@ -337,12 +337,12 @@ function CampaignSelector({
   return (
     <form
       action="/admin/attribution"
-      className="grid gap-3 rounded-[22px] border border-[#30343b] bg-[#101216] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+      className="grid gap-3 rounded-xl border border-edge bg-surface-elevated p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
     >
       <label className="block">
         <span className="field-label">Campaign release</span>
         <select
-          className="mt-2 w-full rounded-[16px] border border-[#30343b] bg-[#0b0d10] px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-[#c9a347]"
+          className="field-input mt-2 font-semibold"
           defaultValue={selectedReleaseId ?? ""}
           name="releaseId"
         >
@@ -376,7 +376,7 @@ function FunnelStage({
   value: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-[#30343b] bg-[#0f1114] p-4">
+    <div className="rounded-xl border border-edge bg-surface-elevated p-4">
       <p className="field-label">{label}</p>
       <p className="mt-3 text-3xl font-semibold tracking-tight text-ink">{value}</p>
       <p className="mt-2 text-xs leading-5 text-muted">{helper}</p>
@@ -401,14 +401,14 @@ function SignalList({
     <div className="space-y-3">
       {signals.length > 0 ? signals.map((signal) => (
         <div
-          className={`flex gap-3 rounded-[18px] border px-4 py-3 text-sm leading-6 ${toneBySeverity[signal.severity]}`}
+          className={`flex gap-3 rounded-lg border px-4 py-3 text-sm leading-6 ${toneBySeverity[signal.severity]}`}
           key={signal.text}
         >
           <AlertTriangle className="mt-0.5 shrink-0" size={16} />
           <span>{signal.text}</span>
         </div>
       )) : (
-        <div className="rounded-[18px] border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm leading-6 text-emerald-100">
+        <div className="rounded-lg border border-[rgba(79,191,136,0.28)] bg-[var(--status-success-soft)] px-4 py-3 text-sm leading-6 text-emerald-100">
           No major tracking issues flagged for this view.
         </div>
       )}
@@ -451,16 +451,16 @@ export default async function AdminAttributionPage({
   const selectedBreakdownItems = selectedDay?.breakdowns[activeBreakdown] ?? [];
 
   return (
-    <main className="px-4 py-5 sm:px-6 lg:px-8">
+    <main className="bg-app px-4 py-5 text-primary sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1400px] space-y-6">
-        <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
+        <section className="command-surface overflow-hidden px-5 py-6 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="pill">
+              <div className="status-badge-neutral uppercase tracking-[0.14em]">
                 <BarChart3 size={12} />
                 Attribution Dashboard
               </div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              <h1 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-ink sm:text-[2.35rem]">
                 One view for spend, traffic, and stream intent
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -469,7 +469,7 @@ export default async function AdminAttributionPage({
                 what is leaking, and what should happen next.
               </p>
             </div>
-            <div className="rounded-[18px] border border-[#30343b] bg-[#121418] px-4 py-3 text-sm text-muted">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-sm text-muted">
               Last update: {formatTimestamp(commandDashboard.updated_at)}
             </div>
           </div>
@@ -530,8 +530,8 @@ export default async function AdminAttributionPage({
               <FunnelVerdictCard value={commandDashboard.recommended_next_move} />
             </section>
 
-            <section className="panel overflow-hidden p-0">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <section className="command-surface overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-edge px-4 py-5 sm:px-6">
                 <div>
                   <p className="field-label">Campaign funnel</p>
                   <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -541,7 +541,7 @@ export default async function AdminAttributionPage({
                     The core funnel from Meta delivery to first-party stream intent.
                   </p>
                 </div>
-                <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                <div className="status-badge-neutral uppercase tracking-[0.14em]">
                   {commandDashboard.days} days
                 </div>
               </div>
@@ -574,8 +574,8 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
-            <section className="panel overflow-hidden p-0">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <section className="command-surface overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-4 py-5 sm:px-6">
                 <div>
                   <p className="field-label">Daily funnel trend</p>
                   <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -589,8 +589,8 @@ export default async function AdminAttributionPage({
                   <Link
                     className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                       safeTrendDays === 14
-                        ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                        : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                        ? "border-[rgba(246,201,69,0.65)] bg-brand-primary text-inverse"
+                        : "border-edge bg-surface-elevated text-secondary hover:border-[rgba(246,201,69,0.45)] hover:text-brand-primary"
                     }`}
                     href={getTrendDaysHref({
                       trendDays: 14,
@@ -604,8 +604,8 @@ export default async function AdminAttributionPage({
                   <Link
                     className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                       safeTrendDays === 30
-                        ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                        : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                        ? "border-[rgba(246,201,69,0.65)] bg-brand-primary text-inverse"
+                        : "border-edge bg-surface-elevated text-secondary hover:border-[rgba(246,201,69,0.45)] hover:text-brand-primary"
                     }`}
                     href={getTrendDaysHref({
                       trendDays: 30,
@@ -620,7 +620,7 @@ export default async function AdminAttributionPage({
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[620px] text-left text-sm">
-                  <thead className="bg-[#171a1f] text-[#b8bec6]">
+                  <thead className="bg-surface-elevated text-secondary">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Date</th>
                       <th className="px-4 py-3 font-semibold">Link-Hub Views</th>
@@ -628,9 +628,9 @@ export default async function AdminAttributionPage({
                       <th className="px-4 py-3 font-semibold">Stream Rate</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#252a31]">
+                  <tbody className="divide-y divide-edge">
                     {commandDashboard.daily_trend.map((day) => (
-                      <tr className="text-[#d9dee5]" key={day.date}>
+                      <tr className="text-ink transition hover:bg-surface-hover" key={day.date}>
                         <td className="px-4 py-4 font-semibold">{formatDate(day.date)}</td>
                         <td className="px-4 py-4">{formatNumber(day.views)}</td>
                         <td className="px-4 py-4">{formatNumber(day.streamingClicks)}</td>
@@ -644,7 +644,7 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
-            <section className="panel p-4 sm:p-6">
+            <section className="command-surface p-4 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="field-label">Attribution quality</p>
@@ -656,7 +656,7 @@ export default async function AdminAttributionPage({
                     whether the funnel is clean enough to trust.
                   </p>
                 </div>
-                <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                <div className="status-badge-neutral uppercase tracking-[0.14em]">
                   Attribution v2
                 </div>
               </div>
@@ -692,8 +692,8 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
-            <details className="panel overflow-hidden p-0">
-              <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <details className="command-surface overflow-hidden p-0">
+              <summary className="cursor-pointer list-none border-b border-edge px-4 py-5 sm:px-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="field-label">Tracking audit</p>
@@ -704,15 +704,15 @@ export default async function AdminAttributionPage({
                       Open to verify branded redirects and see which Meta ads matched first-party UTM tracking.
                     </p>
                   </div>
-                  <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  <span className="status-badge-neutral uppercase tracking-[0.14em]">
                     Collapsed by default
                   </span>
                 </div>
               </summary>
 
               <div className="space-y-6 p-4 sm:p-6">
-                <section className="panel overflow-hidden p-0">
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <section className="command-surface overflow-hidden p-0">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-4 py-5 sm:px-6">
                     <div>
                       <p className="field-label">UTM creative matrix</p>
                       <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -725,13 +725,13 @@ export default async function AdminAttributionPage({
                         deserves more budget, a retest, or a landing-page fix.
                       </p>
                     </div>
-                    <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                    <div className="status-badge-neutral uppercase tracking-[0.14em]">
                       {commandDashboard.attribution.source_batch_type || "No batch"}
                     </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[1400px] text-left text-sm">
-                      <thead className="bg-[#171a1f] text-[#b8bec6]">
+                        <thead className="bg-surface-elevated text-secondary">
                         <tr>
                           <th className="px-4 py-3 font-semibold">Creative / UTM</th>
                           <th className="px-4 py-3 font-semibold">Status</th>
@@ -748,10 +748,10 @@ export default async function AdminAttributionPage({
                           <th className="px-4 py-3 font-semibold">Platform Split</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#252a31]">
-                        {commandDashboard.attribution.rows.length > 0 ? (
-                          commandDashboard.attribution.rows.map((row) => (
-                            <tr className="align-top text-[#d9dee5]" key={`${row.utm_campaign}-${row.utm_content}-${row.ad_name}`}>
+                        <tbody className="divide-y divide-edge">
+                          {commandDashboard.attribution.rows.length > 0 ? (
+                            commandDashboard.attribution.rows.map((row) => (
+                              <tr className="align-top text-ink transition hover:bg-surface-hover" key={`${row.utm_campaign}-${row.utm_content}-${row.ad_name}`}>
                               <td className="max-w-[300px] px-4 py-4">
                                 <p className="font-semibold text-ink">{row.label}</p>
                                 {row.ad_name ? (
@@ -793,8 +793,8 @@ export default async function AdminAttributionPage({
                 </section>
 
                 {commandDashboard.short_links.links.length > 0 ? (
-                  <section className="panel overflow-hidden p-0">
-                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                  <section className="command-surface overflow-hidden p-0">
+                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-4 py-5 sm:px-6">
                       <div>
                         <p className="field-label">Short links</p>
                         <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -841,9 +841,9 @@ export default async function AdminAttributionPage({
                         />
                       </div>
 
-                      <div className="overflow-x-auto rounded-[22px] border border-[#30343b]">
+                      <div className="overflow-x-auto rounded-xl border border-edge">
                         <table className="w-full min-w-[720px] text-left text-sm">
-                          <thead className="bg-[#171a1f] text-[#b8bec6]">
+                          <thead className="bg-surface-elevated text-secondary">
                             <tr>
                               <th className="px-4 py-3 font-semibold">Short Link</th>
                               <th className="px-4 py-3 font-semibold">Status</th>
@@ -852,12 +852,12 @@ export default async function AdminAttributionPage({
                               <th className="px-4 py-3 font-semibold">Destination</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#252a31]">
+                          <tbody className="divide-y divide-edge">
                             {commandDashboard.short_links.links.map((link) => (
-                              <tr className="align-top text-[#d9dee5]" key={link.id}>
+                              <tr className="align-top text-ink transition hover:bg-surface-hover" key={link.id}>
                                 <td className="px-4 py-4">
                                   <Link
-                                    className="font-semibold text-[#f1dfad] transition hover:text-[#d7b45e]"
+                                    className="font-semibold text-brand-primary transition hover:text-brand-primary-hover"
                                     href={link.short_path}
                                     target="_blank"
                                   >
@@ -894,7 +894,7 @@ export default async function AdminAttributionPage({
                     </div>
                   </section>
                 ) : (
-                  <section className="panel flex flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
+                  <section className="command-surface flex flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
                     <div>
                       <p className="field-label">Short links</p>
                       <h2 className="mt-2 text-xl font-semibold text-ink">No release short links yet</h2>
@@ -911,8 +911,8 @@ export default async function AdminAttributionPage({
               </div>
             </details>
 
-            <details className="panel overflow-hidden p-0">
-              <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <details className="command-surface overflow-hidden p-0">
+              <summary className="cursor-pointer list-none border-b border-edge px-4 py-5 sm:px-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <p className="field-label">Advanced diagnostics</p>
@@ -923,7 +923,7 @@ export default async function AdminAttributionPage({
                       Open when you need the original country, source, link, UTM, and daily drill-down tables.
                     </p>
                   </div>
-                  <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  <span className="status-badge-neutral uppercase tracking-[0.14em]">
                     Collapsed by default
                   </span>
                 </div>
@@ -1007,8 +1007,8 @@ export default async function AdminAttributionPage({
                   />
                 </section>
 
-                <section className="panel overflow-hidden p-0">
-                  <div className="border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <section className="command-surface overflow-hidden p-0">
+                  <div className="border-b border-edge px-4 py-5 sm:px-6">
                     <p className="field-label">Raw Daily Analytics Global</p>
                     <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 Days</h2>
                     <p className="mt-2 text-xs leading-5 text-muted">
@@ -1017,7 +1017,7 @@ export default async function AdminAttributionPage({
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[720px] text-left text-sm">
-                      <thead className="bg-[#171a1f] text-[#b8bec6]">
+                      <thead className="bg-surface-elevated text-secondary">
                         <tr>
                           <th className="px-4 py-3 font-semibold">Date</th>
                           <th className="px-4 py-3 font-semibold">Views</th>
@@ -1025,9 +1025,9 @@ export default async function AdminAttributionPage({
                           <th className="px-4 py-3 font-semibold">CTR</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#252a31]">
+                      <tbody className="divide-y divide-edge">
                         {analytics.daily.map((day) => (
-                          <tr className="text-[#d9dee5]" key={day.date}>
+                          <tr className="text-ink transition hover:bg-surface-hover" key={day.date}>
                             <td className="px-4 py-4 font-semibold">
                               {formatDate(day.date)}
                               <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs font-medium normal-case">
@@ -1060,8 +1060,8 @@ export default async function AdminAttributionPage({
                   </div>
                 </section>
 
-                <section className="panel overflow-hidden p-0" id="daily-breakdown">
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+                <section className="command-surface overflow-hidden p-0" id="daily-breakdown">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-4 py-5 sm:px-6">
                     <div>
                       <p className="field-label">Daily breakdown</p>
                       <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -1073,8 +1073,8 @@ export default async function AdminAttributionPage({
                         <Link
                           className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                             activeBreakdown === option.kind
-                              ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                              : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                              ? "border-[rgba(246,201,69,0.65)] bg-brand-primary text-inverse"
+                              : "border-edge bg-surface-elevated text-secondary hover:border-[rgba(246,201,69,0.45)] hover:text-brand-primary"
                           }`}
                           href={getBreakdownHref({
                             breakdown: option.kind,
@@ -1123,17 +1123,17 @@ export default async function AdminAttributionPage({
             </details>
           </>
         ) : (
-          <section className="panel p-6 text-sm text-muted">
+          <section className="command-surface p-6 text-sm text-muted">
             Create a release first, then the campaign dashboard will have a release to analyze.
           </section>
         )}
 
         {commandDashboard.selected_release && "overview" in commandDashboard ? null : (
-        <details className="panel overflow-hidden p-0">
-          <summary className="cursor-pointer list-none border-b border-[#30343b] px-4 py-5 sm:px-6">
+        <details className="command-surface overflow-hidden p-0">
+          <summary className="cursor-pointer list-none border-b border-edge px-4 py-5 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="pill">
+                <div className="status-badge-neutral uppercase tracking-[0.14em]">
                   <Activity size={12} />
                   Advanced diagnostics
                 </div>
@@ -1145,7 +1145,7 @@ export default async function AdminAttributionPage({
                   page stays focused on campaign decisions.
                 </p>
               </div>
-              <span className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              <span className="status-badge-neutral uppercase tracking-[0.14em]">
                 Open diagnostics
               </span>
             </div>
@@ -1185,8 +1185,8 @@ export default async function AdminAttributionPage({
               />
             </section>
 
-            <section className="panel overflow-hidden p-0">
-              <div className="border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <section className="command-surface overflow-hidden p-0">
+              <div className="border-b border-edge px-4 py-5 sm:px-6">
                 <p className="field-label">Raw Daily Analytics Global</p>
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Last 30 Days</h2>
                 <p className="mt-2 text-xs leading-5 text-muted">
@@ -1195,7 +1195,7 @@ export default async function AdminAttributionPage({
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="bg-[#171a1f] text-[#b8bec6]">
+                  <thead className="bg-surface-elevated text-secondary">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Date</th>
                       <th className="px-4 py-3 font-semibold">Views</th>
@@ -1203,9 +1203,9 @@ export default async function AdminAttributionPage({
                       <th className="px-4 py-3 font-semibold">CTR</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#252a31]">
+                  <tbody className="divide-y divide-edge">
                     {analytics.daily.map((day) => (
-                      <tr className="text-[#d9dee5]" key={day.date}>
+                      <tr className="text-ink transition hover:bg-surface-hover" key={day.date}>
                         <td className="px-4 py-4 font-semibold">
                           {formatDate(day.date)}
                           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs font-medium normal-case">
@@ -1238,8 +1238,8 @@ export default async function AdminAttributionPage({
               </div>
             </section>
 
-            <section className="panel overflow-hidden p-0" id="daily-breakdown">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+            <section className="command-surface overflow-hidden p-0" id="daily-breakdown">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-4 py-5 sm:px-6">
                 <div>
                   <p className="field-label">Daily breakdown</p>
                   <h2 className="mt-2 text-2xl font-semibold text-ink">
@@ -1251,8 +1251,8 @@ export default async function AdminAttributionPage({
                     <Link
                       className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                         activeBreakdown === option.kind
-                          ? "border-[#5b4920] bg-[#c9a347] text-[#14120d]"
-                          : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#c9a347]/45 hover:text-[#d7b45e]"
+                          ? "border-[rgba(246,201,69,0.65)] bg-brand-primary text-inverse"
+                          : "border-edge bg-surface-elevated text-secondary hover:border-[rgba(246,201,69,0.45)] hover:text-brand-primary"
                       }`}
                       href={getBreakdownHref({
                         breakdown: option.kind,
