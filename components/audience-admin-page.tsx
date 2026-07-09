@@ -172,14 +172,14 @@ function getStatusPillClass(status: EmailCampaignStatus | SubscriberStatus) {
   }
 
   if (status === "sending") {
-    return "border border-[#5b4920] bg-[#1a1710] text-[#d7b45e]";
+    return "border border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary";
   }
 
   if (status === "failed" || status === "unsubscribed") {
     return "border border-rose-500/25 bg-rose-500/12 text-rose-200";
   }
 
-  return "border border-[#31353b] bg-[#15181c] text-[#d5d9df]";
+  return "border border-edge bg-surface text-secondary";
 }
 
 async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
@@ -602,32 +602,32 @@ export function AudienceAdminPage({
   return (
     <div className="space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Total</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.total_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Every captured or manually added contact.</p>
         </div>
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Active</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.active_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Subscribers currently eligible for access.</p>
         </div>
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Consented</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.consented_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Active subscribers eligible for campaigns.</p>
         </div>
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Exclusive</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.exclusive_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Captured through the public exclusive page.</p>
         </div>
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Manual</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.manual_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Subscribers added from the command center.</p>
         </div>
-        <div className="panel px-5 py-5">
+        <div className="command-surface px-5 py-5">
           <p className="field-label">Unsubscribed</p>
           <p className="mt-3 text-3xl font-semibold text-ink">
             {overview.unsubscribed_subscribers}
@@ -636,7 +636,7 @@ export function AudienceAdminPage({
         </div>
       </section>
 
-      <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+      <section className="command-surface space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">
@@ -701,7 +701,7 @@ export function AudienceAdminPage({
             </label>
           </div>
 
-          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+          <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="field-label">{subscriberDraft.id ? "Edit Subscriber" : "Add Subscriber"}</p>
@@ -780,10 +780,10 @@ export function AudienceAdminPage({
               </label>
             </div>
 
-            <label className="mt-4 flex items-center gap-3 rounded-[20px] border border-[#30343b] bg-[#15181c] px-4 py-4 text-sm text-muted">
+            <label className="mt-4 flex items-center gap-3 rounded-md border border-edge bg-input px-4 py-4 text-sm text-muted">
               <input
                 checked={subscriberDraft.consent_given}
-                className="h-4 w-4 rounded border-white/20 bg-[#12161b] text-[#c9a347] focus:ring-[#c9a347]"
+                className="h-4 w-4 rounded border-edge bg-input text-brand-primary focus:ring-brand-primary"
                 onChange={(event) =>
                   setSubscriberDraft((current) => ({
                     ...current,
@@ -818,7 +818,7 @@ export function AudienceAdminPage({
                   className={`rounded-full border px-4 py-2 text-sm ${
                     subscriberSaveState === "error"
                       ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
-                      : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                      : "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
                   }`}
                 >
                   {subscriberMessage}
@@ -827,10 +827,10 @@ export function AudienceAdminPage({
             </div>
           </section>
 
-          <div className="overflow-hidden rounded-[24px] border border-[#30343b] bg-[#121418]">
+          <div className="overflow-hidden rounded-lg border border-edge bg-surface-elevated">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#262a30] text-sm">
-                <thead className="bg-[#0f1216] text-left text-xs uppercase tracking-[0.18em] text-[#8f959d]">
+              <table className="min-w-full divide-y divide-edge text-sm">
+                <thead className="bg-input text-left text-xs uppercase tracking-[0.18em] text-muted">
                   <tr>
                     <th className="px-4 py-3">Name</th>
                     <th className="px-4 py-3">Email</th>
@@ -841,21 +841,21 @@ export function AudienceAdminPage({
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#262a30]">
+                <tbody className="divide-y divide-edge">
                   {subscribers.map((subscriber) => (
                     <tr key={subscriber.id}>
-                      <td className="px-4 py-4 text-[#ece6da]">{subscriber.name || "Unknown"}</td>
-                      <td className="px-4 py-4 text-[#d7dde4]">{subscriber.email}</td>
+                      <td className="px-4 py-4 text-ink">{subscriber.name || "Unknown"}</td>
+                      <td className="px-4 py-4 text-secondary">{subscriber.email}</td>
                       <td className="px-4 py-4 text-muted">
                         <div className="flex flex-col">
                           <span>{formatSourceLabel(subscriber.source)}</span>
                           {subscriber.source_utm_campaign ? (
-                            <span className="mt-1 text-xs text-[#a1a7b0]">
+                            <span className="mt-1 text-xs text-secondary">
                               Campaign: {subscriber.source_utm_campaign}
                             </span>
                           ) : null}
                           {subscriber.source_offer_mode ? (
-                            <span className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-[#81878f]">
+                            <span className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted">
                               Mode: {subscriber.source_offer_mode}
                             </span>
                           ) : null}
@@ -917,7 +917,7 @@ export function AudienceAdminPage({
         </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="command-surface space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">
@@ -962,10 +962,10 @@ export function AudienceAdminPage({
 
                 return (
                   <button
-                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${
                       isSelected
-                        ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                        : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#545962] hover:bg-[#171b20]"
+                        ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                        : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover"
                     }`}
                     key={campaign.id}
                     onClick={() => {
@@ -980,7 +980,7 @@ export function AudienceAdminPage({
                         <p className="text-sm font-semibold text-inherit">
                           {campaign.subject}
                         </p>
-                        <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[#9ca4ad]">
+                        <p className="mt-2 text-xs uppercase tracking-[0.16em] text-muted">
                           {formatAudienceFilter(campaign.audience_filter)}
                         </p>
                       </div>
@@ -992,7 +992,7 @@ export function AudienceAdminPage({
                         {formatCampaignStatus(campaign.status)}
                       </span>
                     </div>
-                    <p className="mt-3 text-xs text-[#98a0a8]">
+                    <p className="mt-3 text-xs text-muted">
                       {campaign.recipient_count} recipients • Updated{" "}
                       {formatDateTime(campaign.updated_at)}
                     </p>
@@ -1001,13 +1001,13 @@ export function AudienceAdminPage({
               })}
 
               {campaigns.length === 0 ? (
-                <div className="rounded-[22px] border border-[#30343b] bg-[#121418] px-4 py-6 text-sm text-muted">
+                <div className="rounded-lg border border-edge bg-surface-elevated px-4 py-6 text-sm text-muted">
                   No campaigns yet. Save the first draft to start building history.
                 </div>
               ) : null}
             </div>
 
-            <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+            <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 md:col-span-2">
                   <span className="field-label">Subject</span>
@@ -1096,7 +1096,7 @@ export function AudienceAdminPage({
                   </select>
                 </label>
 
-                <div className="rounded-[20px] border border-[#30343b] bg-[#15181c] px-4 py-4 text-sm text-muted">
+                <div className="rounded-md border border-edge bg-input px-4 py-4 text-sm text-muted">
                   <p className="field-label">Recipient Count</p>
                   <p className="mt-3 text-2xl font-semibold text-ink">
                     {campaignDraft.recipient_count}
@@ -1156,10 +1156,10 @@ export function AudienceAdminPage({
 
               {campaignMessage ? (
                 <div
-                  className={`mt-5 rounded-[22px] px-4 py-3 text-sm ${
+                  className={`mt-5 rounded-lg px-4 py-3 text-sm ${
                     campaignSaveState === "error"
                       ? "border border-rose-500/30 bg-rose-500/10 text-rose-200"
-                      : "border border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                      : "border border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
                   }`}
                 >
                   {campaignMessage}
@@ -1169,7 +1169,7 @@ export function AudienceAdminPage({
           </div>
         </section>
 
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="command-surface space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div>
             <div className="pill">
               <CheckCircle2 size={12} />
@@ -1182,12 +1182,12 @@ export function AudienceAdminPage({
             </p>
           </div>
 
-          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+          <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
             <p className="field-label">Campaigns</p>
             <div className="mt-4 space-y-3">
               {campaignHistory.map((campaign) => (
                 <div
-                  className="rounded-[20px] border border-[#2e3238] bg-[#0f1217] px-4 py-4"
+                  className="rounded-md border border-edge bg-input px-4 py-4"
                   key={campaign.id}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1213,14 +1213,14 @@ export function AudienceAdminPage({
               ))}
 
               {campaignHistory.length === 0 ? (
-                <div className="rounded-[20px] border border-[#2e3238] bg-[#0f1217] px-4 py-5 text-sm text-muted">
+                <div className="rounded-md border border-edge bg-input px-4 py-5 text-sm text-muted">
                   Sent and failed campaigns will appear here once you start sending.
                 </div>
               ) : null}
             </div>
           </section>
 
-          <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+          <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
             <p className="field-label">Delivery Logs</p>
             <div className="mt-4 space-y-3">
               {sendLogs.map((log) => {
@@ -1228,7 +1228,7 @@ export function AudienceAdminPage({
 
                 return (
                   <div
-                    className="rounded-[20px] border border-[#2e3238] bg-[#0f1217] px-4 py-4"
+                    className="rounded-md border border-edge bg-input px-4 py-4"
                     key={log.id}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1244,7 +1244,7 @@ export function AudienceAdminPage({
                             ? "border border-emerald-500/25 bg-emerald-500/12 text-emerald-200"
                             : log.status === "failed"
                               ? "border border-rose-500/25 bg-rose-500/12 text-rose-200"
-                              : "border border-[#31353b] bg-[#15181c] text-[#d5d9df]"
+                              : "border border-edge bg-surface text-secondary"
                         }`}
                       >
                         {log.status}
@@ -1261,7 +1261,7 @@ export function AudienceAdminPage({
               })}
 
               {sendLogs.length === 0 ? (
-                <div className="rounded-[20px] border border-[#2e3238] bg-[#0f1217] px-4 py-5 text-sm text-muted">
+                <div className="rounded-md border border-edge bg-input px-4 py-5 text-sm text-muted">
                   Delivery logs will appear after the first test or campaign send.
                 </div>
               ) : null}
@@ -1270,11 +1270,11 @@ export function AudienceAdminPage({
         </section>
       </section>
 
-      <section className="panel px-4 py-5 sm:px-6">
+      <section className="command-surface px-4 py-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted">
           <p>
             Public capture lives on{" "}
-            <Link className="font-semibold text-[#d7b45e] hover:text-[#edd08a]" href="/exclusives" target="_blank">
+            <Link className="font-semibold text-brand-primary hover:text-brand-primary-hover" href="/exclusives" target="_blank">
               /exclusives
             </Link>
             . Download access is token-based and the raw storage path is never exposed.
