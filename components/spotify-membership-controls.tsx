@@ -92,43 +92,43 @@ export function SpotifyMembershipControls({
     switch (status) {
       case "generated":
         return (
-          <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+          <span className="status-badge-ready px-2 py-0.5 text-[10px]">
             Generated Context Link
           </span>
         );
       case "manual":
         return (
-          <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+          <span className="status-badge-warning px-2 py-0.5 text-[10px]">
             Manual Spotify Target
           </span>
         );
       case "missing_playlist_url":
         return (
-          <span className="rounded bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+          <span className="status-badge-danger px-2 py-0.5 text-[10px]">
             Missing Playlist URL
           </span>
         );
       case "missing_track_url":
         return (
-          <span className="rounded bg-[#a0a5b0]/10 px-2 py-0.5 text-[10px] font-semibold text-[#a0a5b0]">
+          <span className="status-badge-neutral px-2 py-0.5 text-[10px]">
             Missing Track URL
           </span>
         );
       case "invalid_playlist_url":
         return (
-          <span className="rounded bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+          <span className="status-badge-danger px-2 py-0.5 text-[10px]">
             Invalid Playlist URL
           </span>
         );
       case "invalid_track_url":
         return (
-          <span className="rounded bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+          <span className="status-badge-danger px-2 py-0.5 text-[10px]">
             Invalid Track URL
           </span>
         );
       case "generation_failed":
         return (
-          <span className="rounded bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+          <span className="status-badge-danger px-2 py-0.5 text-[10px]">
             Generation Failed
           </span>
         );
@@ -136,13 +136,13 @@ export function SpotifyMembershipControls({
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-white/5 bg-[#171a21]/50 p-4">
+    <div className="inset-surface space-y-4 p-4">
       {/* Mode selection & status */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge pb-3">
         <div className="flex items-center gap-3">
           <label className="text-xs font-bold text-ink uppercase tracking-wide">Spotify Mode</label>
           <select
-            className="rounded border border-[#30343b] bg-[#121519] px-2.5 py-1 text-xs font-semibold text-ink focus:border-[#5b4920] focus:outline-none focus:ring-0"
+            className="rounded-md border border-edge bg-input px-2.5 py-1 text-xs font-semibold text-ink outline-none focus:border-[rgba(246,201,69,0.58)]"
             value={targetMode}
             onChange={(e) => {
               const newMode = e.target.value;
@@ -188,7 +188,7 @@ export function SpotifyMembershipControls({
                 type="button"
                 disabled={!targetUrl}
                 onClick={() => handleCopy(targetUrl)}
-                className="rounded border border-[#30343b] bg-[#15181c] px-3 text-xs text-ink transition hover:border-[#545962] hover:bg-[#1b1f24] disabled:opacity-50"
+                className="rounded-md border border-edge bg-surface-elevated px-3 text-xs text-ink transition hover:bg-surface-hover disabled:opacity-50"
                 title="Copy Direct Spotify Context Link"
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
@@ -198,7 +198,7 @@ export function SpotifyMembershipControls({
                   href={targetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center rounded border border-[#30343b] bg-[#15181c] px-3 text-ink transition hover:border-[#545962] hover:bg-[#1b1f24]"
+                  className="flex items-center justify-center rounded-md border border-edge bg-surface-elevated px-3 text-ink transition hover:bg-surface-hover"
                   title="Test Spotify Context Link"
                 >
                   <ExternalLink size={14} />
@@ -213,7 +213,7 @@ export function SpotifyMembershipControls({
                 type="button"
                 disabled={isRegenerating || !trackUrl || !playlistUrl}
                 onClick={onRegenerate}
-                className="flex items-center gap-1.5 rounded border border-[#5b4920] bg-[#1a1710] px-3 py-1.5 text-xs font-semibold text-[#d7b45e] transition hover:bg-[#252014] disabled:opacity-50"
+                className="action-button-secondary gap-1.5 border-[rgba(246,201,69,0.3)] bg-[var(--brand-primary-soft)] px-3 py-1.5 text-xs text-brand-primary hover:bg-[rgba(246,201,69,0.18)] disabled:opacity-50"
               >
                 <RefreshCw size={12} className={isRegenerating ? "animate-spin" : ""} />
                 {isRegenerating ? "Regenerating..." : "Regenerate Link"}
@@ -237,7 +237,7 @@ export function SpotifyMembershipControls({
                 type="button"
                 disabled={!targetUrl}
                 onClick={() => handleCopy(targetUrl)}
-                className="rounded border border-[#30343b] bg-[#15181c] px-3 text-xs text-ink transition hover:border-[#545962] hover:bg-[#1b1f24] disabled:opacity-50"
+                className="rounded-md border border-edge bg-surface-elevated px-3 text-xs text-ink transition hover:bg-surface-hover disabled:opacity-50"
                 title="Copy Spotify Target"
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}

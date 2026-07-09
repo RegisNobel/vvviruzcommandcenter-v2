@@ -219,17 +219,17 @@ export function PlaylistsDashboard({
       </section>
 
       {message && (
-        <div className="rounded-xl border border-rose-950 bg-rose-950/20 px-4 py-3 text-sm text-rose-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {message}
         </div>
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#272b31] pb-px">
+      <div className="flex items-center gap-2 border-b border-edge pb-px">
         <button
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             statusFilter === "ACTIVE"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => handleFilterChange("ACTIVE")}
@@ -239,7 +239,7 @@ export function PlaylistsDashboard({
         <button
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             statusFilter === "ARCHIVED"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => handleFilterChange("ARCHIVED")}
@@ -249,14 +249,14 @@ export function PlaylistsDashboard({
       </div>
 
       {/* Playlists Table */}
-      <div className="rounded-2xl border border-[#272b31] bg-[#101215] overflow-hidden">
+      <div className="table-surface">
         {playlists.length === 0 ? (
-          <div className="p-16 text-center text-[#8f959d]">
+          <div className="p-16 text-center text-muted">
             No {statusFilter === "ARCHIVED" ? "archived" : "active"} playlists found.
           </div>
         ) : (
-          <table className="w-full text-left text-sm text-[#ece6da]">
-            <thead className="border-b border-[#272b31] bg-[#16191d] text-[#8f959d]">
+          <table className="w-full text-left text-sm text-ink">
+            <thead className="border-b border-edge bg-surface-elevated text-secondary">
               <tr>
                 <th className="px-6 py-4 font-semibold">Playlist</th>
                 <th className="px-6 py-4 font-semibold">Slug</th>
@@ -266,12 +266,12 @@ export function PlaylistsDashboard({
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#272b31]">
+            <tbody className="divide-y divide-edge">
               {playlists.map((playlist) => (
-                <tr className="transition hover:bg-[#16191d]" key={playlist.id}>
+                <tr className="transition hover:bg-surface-hover" key={playlist.id}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="relative h-12 w-12 shrink-0 rounded-md overflow-hidden bg-[#1a1d24] border border-white/5">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-edge bg-input">
                         {playlist.coverImageUrl ? (
                           <img
                             alt=""
@@ -292,7 +292,7 @@ export function PlaylistsDashboard({
                           {playlist.name}
                         </Link>
                         {playlist.featuredRelease_title && (
-                          <p className="text-xs text-[#d5b15b]">
+                          <p className="text-xs text-brand-primary">
                             Pinned: {playlist.featuredRelease_title}
                           </p>
                         )}
@@ -306,21 +306,21 @@ export function PlaylistsDashboard({
                     {playlist.activeReleaseCount ?? 0}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center rounded-full bg-[#1b1c1f] border border-[#2d3036] px-2 py-0.5 text-xs font-semibold text-[#8f959d] capitalize">
+                    <span className="status-badge-neutral capitalize">
                       {playlist.primaryPlatform}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     {playlist.isArchived ? (
-                      <span className="inline-flex items-center rounded-full border border-[#522920] bg-[#211210] px-2 py-0.5 text-xs font-medium text-[#e89182]">
+                      <span className="status-badge-danger">
                         Archived
                       </span>
                     ) : playlist.isPublic ? (
-                      <span className="inline-flex items-center rounded-full border border-[#2d5b48] bg-[#102118] px-2 py-0.5 text-xs font-medium text-[#8fe0b8]">
+                      <span className="status-badge-ready">
                         Public
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full border border-[#4a3f25] bg-[#1d180e] px-2 py-0.5 text-xs font-medium text-[#e0c166]">
+                      <span className="status-badge-warning">
                         Private
                       </span>
                     )}
@@ -390,7 +390,7 @@ export function PlaylistsDashboard({
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl border border-[#2d3239] bg-[#0c0e12] p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-xl border border-edge bg-surface p-6 shadow-[var(--shadow-modal)]">
             <h3 className="text-xl font-bold text-ink">Create Playlist</h3>
             <p className="mt-1.5 text-xs text-muted">
               Add a new marketing playlist. Slugs are auto-generated but editable.
@@ -453,7 +453,7 @@ export function PlaylistsDashboard({
               <div className="flex items-center gap-2 pt-2">
                 <input
                   checked={isPublic}
-                  className="rounded border-[#30343b] bg-transparent text-[#c9a347] focus:ring-[#c9a347]"
+                  className="rounded border-edge bg-transparent text-brand-primary focus:ring-brand-primary"
                   id="modalIsPublic"
                   onChange={(e) => setIsPublic(e.target.checked)}
                   type="checkbox"

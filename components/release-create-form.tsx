@@ -81,7 +81,7 @@ export function ReleaseCreateForm() {
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 New Release
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
                 Start a release entry with the basics first. You&apos;ll land on the
                 detail page right after creation.
               </p>
@@ -191,7 +191,7 @@ export function ReleaseCreateForm() {
                       {collaborators.length > 1 && (
                         <button
                           type="button"
-                          className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-900/30 transition"
+                          className="action-button-danger !px-3 !py-2 text-xs"
                           onClick={() => {
                             const updated = collaborators.filter((_, i) => i !== index);
                             setCollaborators(updated);
@@ -209,7 +209,7 @@ export function ReleaseCreateForm() {
                   {collaborators.length < 10 && (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9a347]/30 bg-[#c9a347]/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#d7b45e] hover:bg-[#c9a347]/20 transition"
+                      className="action-button-secondary !px-3 !py-1.5 text-xs uppercase tracking-wider text-brand-primary hover:border-[rgba(246,201,69,0.42)]"
                       onClick={() => {
                         const updated = [...collaborators, ""];
                         setCollaborators(updated);
@@ -258,7 +258,7 @@ export function ReleaseCreateForm() {
           </div>
 
           {message ? (
-            <div className="rounded-[22px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {message}
             </div>
           ) : null}

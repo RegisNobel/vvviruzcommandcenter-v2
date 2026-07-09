@@ -174,13 +174,13 @@ export function CopyCreateForm({
               />
             </label>
 
-            <details className="group border border-[#252a31] rounded-[22px] bg-[#101319]/40 p-4 md:col-span-2 space-y-4">
-              <summary className="flex cursor-pointer items-center justify-between font-semibold text-sm text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+            <details className="inset-surface group space-y-4 p-4 md:col-span-2">
+              <summary className="flex cursor-pointer select-none items-center justify-between text-sm font-semibold text-secondary [&::-webkit-details-marker]:hidden">
                 <span>Legacy / Optional Metadata</span>
                 <span className="text-xs text-muted group-open:hidden">Show</span>
                 <span className="text-xs text-muted hidden group-open:inline">Hide</span>
               </summary>
-              <div className="grid gap-5 md:grid-cols-2 pt-3 border-t border-[#252a31]/60">
+              <div className="grid gap-5 border-t border-edge pt-3 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="field-label">Content Type</span>
                   <select
@@ -256,7 +256,7 @@ export function CopyCreateForm({
             </label>
           </div>
 
-          <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-5 py-5 text-sm text-muted">
+          <div className="inset-surface px-5 py-5 text-sm text-muted">
             {selectedRelease ? (
               <>
                 This copy will be linked to{" "}
@@ -272,7 +272,7 @@ export function CopyCreateForm({
           </div>
 
           {message ? (
-            <div className="rounded-[22px] border border-[#5a312d] bg-[#1c1313] px-4 py-3 text-sm text-[#d4a7a0]">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {message}
             </div>
           ) : null}

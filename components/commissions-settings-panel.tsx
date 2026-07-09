@@ -32,7 +32,7 @@ export function CommissionsSettingsPanel({
         <label className="flex items-center gap-3">
           <input
             checked={commissionsSettings.is_enabled}
-            className="h-4 w-4 rounded border-gray-300 text-[#c9a347] focus:ring-[#c9a347]"
+            className="h-4 w-4 rounded border-edge bg-input text-brand-primary focus:ring-brand-primary"
             onChange={(e) => updateField("is_enabled", e.target.checked)}
             type="checkbox"
           />

@@ -44,7 +44,7 @@ export function CreativePerformanceMemorySection({
     hasOverlappingSnapshots
   } = memory;
 
-  const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
+  const pageLabelClass = "table-label";
 
   const renderTrendPill = (trend: ComponentPerformanceRow["trendLabel"]) => {
     switch (trend) {
@@ -88,13 +88,13 @@ export function CreativePerformanceMemorySection({
     warning?: string
   ) => {
     return (
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] p-4 flex flex-col justify-between min-h-[110px]">
+      <div className="inset-surface flex min-h-[110px] flex-col justify-between p-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+          <div className="table-label flex items-center gap-1.5">
             {icon}
             {title}
           </div>
-          <p className="mt-2 text-base font-semibold text-[#efe7db] truncate">
+          <p className="mt-2 truncate text-base font-semibold text-ink">
             {value || "None Isolated"}
           </p>
         </div>
@@ -140,13 +140,13 @@ export function CreativePerformanceMemorySection({
   }
 
   return (
-    <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5 space-y-6">
+    <div className="command-surface space-y-6 px-4 py-5 sm:px-5">
       <div>
         <p className={pageLabelClass}>Creative Performance Memory</p>
-        <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+        <h3 className="mt-2 text-xl font-semibold text-ink">
           Historical component breakdown
         </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Aggregated performance history of creative components extracted from ad naming conventions across all test cycles.
         </p>
       </div>
@@ -235,14 +235,14 @@ export function CreativePerformanceMemorySection({
     if (rows.length === 0) return null;
 
     return (
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] overflow-hidden">
-        <div className="border-b border-[#2d3138] px-4 py-3 bg-[#0f1216]">
-          <h4 className="text-sm font-semibold text-[#efe7db]">{title}</h4>
+      <div className="table-surface">
+        <div className="border-b border-edge bg-surface-elevated px-4 py-3">
+          <h4 className="text-sm font-semibold text-ink">{title}</h4>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#aeb3bb]">
+          <table className="w-full text-left text-xs text-secondary">
             <thead>
-              <tr className="border-b border-[#20242b] text-[10px] uppercase tracking-wider text-[#7f858d] bg-[#0f1216]/50">
+              <tr className="border-b border-edge bg-input text-[10px] uppercase tracking-wider text-muted">
                 <th className="py-2.5 px-4 font-semibold">Component</th>
                 <th className="py-2.5 px-4 font-semibold text-center">Batches</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Spend</th>
@@ -254,9 +254,9 @@ export function CreativePerformanceMemorySection({
                 <th className="py-2.5 px-4 font-semibold text-right">Trend</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#20242b]">
+            <tbody className="divide-y divide-edge">
               {rows.map((row) => (
-                <tr key={row.value} className="hover:bg-[#141820]/30 transition-colors">
+                <tr key={row.value} className="transition-colors hover:bg-surface-hover">
                   <td className="py-3 px-4 font-medium text-[#efe7db]">{row.value}</td>
                   <td className="py-3 px-4 text-center">{row.batchCount}</td>
                   <td className="py-3 px-4 text-right">

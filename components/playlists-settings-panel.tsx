@@ -73,19 +73,19 @@ export function PlaylistsSettingsPanel({
       </div>
 
       {errorMsg && (
-        <div className="rounded-xl border border-rose-900 bg-rose-950/20 px-4 py-3 text-sm text-rose-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {errorMsg}
         </div>
       )}
 
-      <div className="mt-8 rounded-2xl border border-[#272b31] bg-[#101215] overflow-hidden">
+      <div className="table-surface mt-8">
         {playlists.length === 0 ? (
-          <div className="p-12 text-center text-[#8f959d]">
+          <div className="p-12 text-center text-muted">
             No playlists found. Create one in Promo &rarr; Playlists.
           </div>
         ) : (
-          <table className="w-full text-left text-sm text-[#ece6da]">
-            <thead className="border-b border-[#272b31] bg-[#16191d] text-[#8f959d]">
+          <table className="w-full text-left text-sm text-ink">
+            <thead className="border-b border-edge bg-surface-elevated text-secondary">
               <tr>
                 <th className="px-6 py-4 font-semibold">Playlist</th>
                 <th className="px-6 py-4 font-semibold">Slug</th>
@@ -93,9 +93,9 @@ export function PlaylistsSettingsPanel({
                 <th className="px-6 py-4 font-semibold">Visibility</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#272b31]">
+            <tbody className="divide-y divide-edge">
               {playlists.map((playlist) => (
-                <tr className="transition hover:bg-[#16191d]" key={playlist.id}>
+                <tr className="transition hover:bg-surface-hover" key={playlist.id}>
                   <td className="px-6 py-4 font-semibold text-ink">
                     {playlist.name}
                   </td>
@@ -104,7 +104,7 @@ export function PlaylistsSettingsPanel({
                   </td>
                   <td className="px-6 py-4">
                     <Link
-                      className="inline-flex items-center gap-1.5 text-xs text-[#d5b15b] hover:underline"
+                      className="inline-flex items-center gap-1.5 text-xs text-brand-primary hover:underline"
                       href={`/listen/${playlist.slug}`}
                       target="_blank"
                     >
@@ -121,7 +121,7 @@ export function PlaylistsSettingsPanel({
                         onChange={() => handleTogglePublic(playlist.id, playlist.isPublic)}
                         type="checkbox"
                       />
-                      <div className="w-9 h-5 bg-[#272b31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#ece6da] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#c9a347]"></div>
+                      <div className="toggle-control peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-primary/30"></div>
                       <span className="ml-2 text-xs text-muted">
                         {playlist.isPublic ? "Public" : "Private"}
                       </span>

@@ -313,7 +313,7 @@ export function PlaylistEditor({
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <Link
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#d5b15b] hover:text-[#ecccd7d] transition"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-primary transition hover:text-brand-primary-hover"
           href="/admin/promo/playlists"
         >
           <ArrowLeft size={16} />
@@ -340,12 +340,12 @@ export function PlaylistEditor({
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] ${
+              className={`status-badge uppercase tracking-[0.08em] ${
                 initialPlaylist.isArchived
-                  ? "border border-rose-900 bg-rose-950/20 text-rose-400"
+                  ? "border-red-500/30 bg-red-500/10 text-red-200"
                   : initialPlaylist.isPublic
-                  ? "border border-emerald-900 bg-emerald-950/20 text-emerald-400"
-                  : "border border-amber-900 bg-amber-950/20 text-amber-400"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-200"
               }`}
             >
               {initialPlaylist.isArchived ? "Archived" : initialPlaylist.isPublic ? "Public" : "Private"}
@@ -355,23 +355,23 @@ export function PlaylistEditor({
       </section>
 
       {message && (
-        <div className="rounded-xl border border-emerald-950 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-400">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
           {message}
         </div>
       )}
 
       {errorMsg && (
-        <div className="rounded-xl border border-rose-950 bg-rose-950/20 px-4 py-3 text-sm text-rose-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {errorMsg}
         </div>
       )}
 
       {/* Editor Tabs Navigation */}
-      <div className="flex items-center gap-1 border-b border-[#272b31] pb-px">
+      <div className="mobile-scroll-x flex items-center gap-1 border-b border-edge pb-px">
         <button
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "general"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => setActiveTab("general")}
@@ -384,7 +384,7 @@ export function PlaylistEditor({
         <button
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "platforms"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => setActiveTab("platforms")}
@@ -397,7 +397,7 @@ export function PlaylistEditor({
         <button
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "memberships"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => setActiveTab("memberships")}
@@ -410,7 +410,7 @@ export function PlaylistEditor({
         <button
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "campaigns"
-              ? "border-[#c9a347] text-[#c9a347]"
+              ? "border-brand-primary text-brand-primary"
               : "border-transparent text-muted hover:text-ink"
           }`}
           onClick={() => setActiveTab("campaigns")}
@@ -499,7 +499,7 @@ export function PlaylistEditor({
                   onChange={(e) => setIsPublic(e.target.checked)}
                   type="checkbox"
                 />
-                <div className="w-9 h-5 bg-[#272b31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#ece6da] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#c9a347]"></div>
+                <div className="toggle-control peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-primary/30"></div>
                 <span className="ml-2 text-sm text-ink">Public Visibility</span>
               </label>
 
@@ -510,13 +510,13 @@ export function PlaylistEditor({
                   onChange={(e) => setIsArchived(e.target.checked)}
                   type="checkbox"
                 />
-                <div className="w-9 h-5 bg-[#272b31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#ece6da] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#c9a347]"></div>
+                <div className="toggle-control peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-primary/30"></div>
                 <span className="ml-2 text-sm text-ink">Archived Status</span>
               </label>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#272b31] flex justify-end">
+          <div className="flex justify-end border-t border-edge pt-4">
             <button
               className="action-button-primary"
               disabled={isPending}
@@ -604,7 +604,7 @@ export function PlaylistEditor({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#272b31] flex justify-end">
+          <div className="flex justify-end border-t border-edge pt-4">
             <button
               className="action-button-primary"
               disabled={isPending}
@@ -628,7 +628,7 @@ export function PlaylistEditor({
             {/* Add release form */}
             <div className="flex items-center gap-2">
               <select
-                className="field-input py-1.5 px-3 bg-[#101215] text-sm"
+                className="field-input bg-input px-3 py-1.5 text-sm"
                 onChange={(e) => setSelectedReleaseId(e.target.value)}
                 value={selectedReleaseId}
               >
@@ -652,7 +652,7 @@ export function PlaylistEditor({
           {/* Members list */}
           <div className="space-y-4">
             {memberships.length === 0 ? (
-              <div className="p-12 border border-dashed border-white/10 rounded-2xl text-center text-muted">
+              <div className="rounded-lg border border-dashed border-edge p-12 text-center text-muted">
                 No members assigned to this playlist yet. Select a release above to add one.
               </div>
             ) : (
@@ -662,18 +662,18 @@ export function PlaylistEditor({
 
                   return (
                     <div
-                      className="rounded-2xl border border-[#272b31] bg-[#101215] p-5 space-y-4 transition hover:border-[#383d47]"
+                      className="command-surface space-y-4 p-5 transition hover:border-[rgba(246,201,69,0.3)]"
                       key={m.releaseId}
                     >
                       {/* Member header row */}
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono bg-[#1b1e24] px-2 py-1 rounded text-muted">
+                          <span className="rounded-md bg-surface-elevated px-2 py-1 font-mono text-xs text-muted">
                             #{m.position + 1}
                           </span>
                           <span className="font-semibold text-ink">{m.release_title}</span>
                           {!m.isActive && (
-                            <span className="text-[10px] bg-amber-950/40 text-amber-400 px-2 py-0.5 rounded-full border border-amber-900/50">
+                            <span className="status-badge-warning px-2 py-0.5 text-[10px]">
                               Inactive
                             </span>
                           )}
@@ -682,14 +682,14 @@ export function PlaylistEditor({
                         {/* Order / Actions */}
                         <div className="flex items-center gap-2">
                           <button
-                            className="p-1.5 rounded-lg border border-[#2d3036] hover:bg-[#1a1d24] text-muted hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition"
+                            className="rounded-md border border-edge p-1.5 text-muted transition hover:bg-surface-hover hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                             disabled={index === 0}
                             onClick={() => handleMoveUp(index)}
                           >
                             <ChevronUp size={14} />
                           </button>
                           <button
-                            className="p-1.5 rounded-lg border border-[#2d3036] hover:bg-[#1a1d24] text-muted hover:text-ink disabled:opacity-30 disabled:pointer-events-none transition"
+                            className="rounded-md border border-edge p-1.5 text-muted transition hover:bg-surface-hover hover:text-ink disabled:pointer-events-none disabled:opacity-30"
                             disabled={index === memberships.length - 1}
                             onClick={() => handleMoveDown(index)}
                           >
@@ -700,8 +700,8 @@ export function PlaylistEditor({
                           <button
                             className={`p-1.5 rounded-lg border transition ${
                               isFeatured
-                                ? "border-[#c9a347] bg-[#211b0e] text-[#c9a347]"
-                                : "border-[#2d3036] hover:bg-[#1a1d24] text-muted hover:text-ink"
+                                ? "border-brand-primary bg-[var(--brand-primary-soft)] text-brand-primary"
+                                : "border-edge text-muted hover:bg-surface-hover hover:text-ink"
                             }`}
                             disabled={!m.isActive}
                             onClick={() =>
@@ -713,7 +713,7 @@ export function PlaylistEditor({
                           </button>
 
                           <button
-                            className="p-1.5 rounded-lg border border-[#2d3036] hover:bg-[#2c1313] text-muted hover:text-rose-400 transition"
+                            className="rounded-md border border-edge p-1.5 text-muted transition hover:bg-red-500/10 hover:text-red-300"
                             onClick={() => handleRemoveRelease(m.releaseId)}
                             title="Remove Member"
                           >
@@ -774,7 +774,7 @@ export function PlaylistEditor({
                             onChange={() => handleToggleActive(m.releaseId)}
                             type="checkbox"
                           />
-                          <div className="w-8 h-4 bg-[#272b31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#ece6da] after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#c9a347]"></div>
+                          <div className="toggle-control h-4 w-8 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-primary/30 after:h-3 after:w-3"></div>
                           <span className="ml-2 text-xs text-muted">Active Membership</span>
                         </label>
                       </div>
@@ -785,7 +785,7 @@ export function PlaylistEditor({
             )}
           </div>
 
-          <div className="pt-4 border-t border-[#272b31] flex justify-end">
+          <div className="flex justify-end border-t border-edge pt-4">
             <button
               className="action-button-primary"
               disabled={isPending}
@@ -833,14 +833,14 @@ export function PlaylistEditor({
 
                   return (
                     <div
-                      className="rounded-2xl border border-[#272b31] bg-[#101215] p-5 space-y-4"
+                      className="command-surface space-y-4 p-5"
                       key={m.releaseId}
                     >
                       <h4 className="font-semibold text-ink text-base">{m.release_title}</h4>
 
                       {/* Clean Landing Link row */}
                       <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-center">
-                        <div className="rounded-xl border border-[#23272e] bg-[#15171d] px-3.5 py-2 font-mono text-xs text-muted truncate select-all">
+                        <div className="inset-surface truncate select-all px-3.5 py-2 font-mono text-xs text-muted">
                           {fullCleanUrl}
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -877,7 +877,7 @@ export function PlaylistEditor({
                           <label className="text-[10px] uppercase tracking-wider font-semibold text-muted block mb-1.5">
                             Meta Ads URL Template
                           </label>
-                          <div className="rounded-xl border border-[#23272e] bg-[#15171d] px-3.5 py-2 font-mono text-xs text-muted truncate select-all">
+                          <div className="inset-surface truncate select-all px-3.5 py-2 font-mono text-xs text-muted">
                             {metaTemplateUrl}
                           </div>
                         </div>
@@ -908,7 +908,7 @@ export function PlaylistEditor({
                             <label className="text-[10px] uppercase tracking-wider font-semibold text-muted block mb-1.5">
                               {m.spotifyTargetMode === "generated" ? "Direct Spotify Context Link" : "Spotify Target (Manual)"}
                             </label>
-                            <div className="rounded-xl border border-[#23272e] bg-[#15171d] px-3.5 py-2 font-mono text-xs text-muted truncate select-all">
+                            <div className="inset-surface truncate select-all px-3.5 py-2 font-mono text-xs text-muted">
                               {m.spotifyTargetUrl}
                             </div>
                           </div>
@@ -945,7 +945,7 @@ export function PlaylistEditor({
                       {/* Tracked short link integration */}
                       <div className="pt-2 flex justify-start">
                         <Link
-                          className="action-button-muted py-1.5 px-4 text-xs inline-flex items-center gap-1 hover:border-[#c9a347]/40 hover:text-[#c9a347]"
+                          className="action-button-muted inline-flex gap-1 px-4 py-1.5 text-xs hover:border-[rgba(246,201,69,0.4)] hover:text-brand-primary"
                           href={shortLinkCreateHref}
                         >
                           <Link2 size={12} />

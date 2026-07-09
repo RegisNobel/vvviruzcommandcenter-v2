@@ -41,12 +41,12 @@ function getVerdictStyle(verdict: ReleasePromoVerdict) {
     case "Needs New Creative":
       return { border: "border-orange-500/30", bg: "bg-orange-500/5", text: "text-orange-400", dot: "bg-orange-500" };
     case "Paused":
-      return { border: "border-[#424852]", bg: "bg-[#1a1d23]", text: "text-[#aeb3bb]", dot: "bg-[#6b7280]" };
+      return { border: "border-edge", bg: "bg-surface-elevated", text: "text-secondary", dot: "bg-status-neutral" };
     case "Retired":
       return { border: "border-red-500/30", bg: "bg-red-500/5", text: "text-red-400", dot: "bg-red-500" };
     case "Untested":
     default:
-      return { border: "border-[#31353b]", bg: "bg-[#14171b]", text: "text-[#7f858d]", dot: "bg-[#424852]" };
+      return { border: "border-edge", bg: "bg-input", text: "text-muted", dot: "bg-status-neutral" };
   }
 }
 
@@ -84,14 +84,14 @@ function getStatusBadgeClass(status: "Strong" | "Weak" | "Neutral" | "Low Data" 
     case "Needs Challenger":
       return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
     case "Narrow Coverage":
-      return "bg-[#181b20] text-amber-200 border border-amber-500/10";
+      return "border border-amber-500/20 bg-amber-500/10 text-amber-200";
     case "Neutral":
-      return "bg-[#272b31] text-[#ede7dc] border border-[#31353b]";
+      return "border border-edge bg-surface-elevated text-ink";
     case "Low Data":
       return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
     case "Untested":
     default:
-      return "bg-[#181b20] text-[#7f858d] border border-[#2d3138]";
+      return "border border-edge bg-input text-muted";
   }
 }
 
@@ -168,13 +168,13 @@ export default function ReleaseIntelligencePanel({
   }, [adMetrics, latestAdLearning, reports]);
 
   return (
-    <div className="rounded-[22px] border border-[#31353b] bg-[#121418] p-5 space-y-5">
+    <div className="command-surface space-y-5 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+          <p className="table-label">
             Strategic Campaign Intelligence
           </p>
-          <p className="mt-1 text-sm font-semibold text-[#ede7dc]">{releaseTitle}</p>
+          <p className="mt-1 text-sm font-semibold text-ink">{releaseTitle}</p>
         </div>
         <span
           className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}
@@ -186,33 +186,33 @@ export default function ReleaseIntelligencePanel({
 
       {adMetrics.has_data && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Campaigns</p>
-            <p className="mt-1 text-base font-semibold text-[#ede7dc]">{adMetrics.batch_count}</p>
+          <div className="inset-surface px-3 py-3">
+            <p className="table-label">Campaigns</p>
+            <p className="mt-1 text-base font-semibold text-ink">{adMetrics.batch_count}</p>
           </div>
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Total Spend</p>
-            <p className="mt-1 text-base font-semibold text-[#ede7dc]">{formatCurrency(adMetrics.total_spend)}</p>
+          <div className="inset-surface px-3 py-3">
+            <p className="table-label">Total Spend</p>
+            <p className="mt-1 text-base font-semibold text-ink">{formatCurrency(adMetrics.total_spend)}</p>
           </div>
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Results</p>
-            <p className="mt-1 text-base font-semibold text-[#ede7dc]">{formatNumber(adMetrics.total_results)}</p>
+          <div className="inset-surface px-3 py-3">
+            <p className="table-label">Results</p>
+            <p className="mt-1 text-base font-semibold text-ink">{formatNumber(adMetrics.total_results)}</p>
           </div>
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Streaming Clicks</p>
-            <p className="mt-1 text-base font-semibold text-[#ede7dc]">{formatNumber(streamingClicksCount)}</p>
+          <div className="inset-surface px-3 py-3">
+            <p className="table-label">Streaming Clicks</p>
+            <p className="mt-1 text-base font-semibold text-ink">{formatNumber(streamingClicksCount)}</p>
           </div>
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">UTM Coverage</p>
-            <p className="mt-1 text-base font-semibold text-[#ede7dc]">
+          <div className="inset-surface px-3 py-3">
+            <p className="table-label">UTM Coverage</p>
+            <p className="mt-1 text-base font-semibold text-ink">
               {utmCoverageRate > 0 ? `${utmCoverageRate.toFixed(1)}%` : "0%"}
             </p>
           </div>
-          <div className="rounded-[18px] border border-[#272b31] bg-[#14171b] px-3 py-3 flex flex-col justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Attribution</p>
+          <div className="inset-surface flex flex-col justify-between px-3 py-3">
+            <p className="table-label">Attribution</p>
             <Link
               href={`/admin/attribution?releaseId=${releaseId}`}
-              className="mt-1 text-xs font-semibold text-[#c9a347] hover:text-[#d5b15b] transition inline-flex items-center gap-1"
+              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-brand-primary transition hover:text-brand-primary-hover"
             >
               Open Auditor
               <span className="text-[10px]">→</span>
@@ -223,13 +223,13 @@ export default function ReleaseIntelligencePanel({
 
       {adMetrics.has_data && (
         <div className="space-y-4">
-          <div className="rounded-[16px] border border-[#5b4920]/40 bg-[#1a1710] px-4 py-3.5 text-sm leading-6 text-[#d7b45e]">
-            <p className="text-[10px] uppercase font-bold tracking-wider opacity-90 text-[#aeb3bb] mb-1">Campaign Decision</p>
-            <p className="font-semibold text-sm text-[#efe7dc]">{recommendation.campaignDecision}</p>
+          <div className="rounded-lg border border-[rgba(246,201,69,0.3)] bg-[var(--brand-primary-soft)] px-4 py-3.5 text-sm leading-6 text-brand-primary">
+            <p className="table-label mb-1 text-secondary">Campaign Decision</p>
+            <p className="text-sm font-semibold text-ink">{recommendation.campaignDecision}</p>
           </div>
 
-          <div className={`rounded-[16px] border px-4 py-3.5 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
-            <p className="text-[10px] uppercase font-bold tracking-wider opacity-90 mb-1">Next Test Direction</p>
+          <div className={`rounded-lg border px-4 py-3.5 text-sm leading-6 ${promoStyle.border} ${promoStyle.bg} ${promoStyle.text}`}>
+            <p className="table-label mb-1 opacity-90">Next Test Direction</p>
             <p className="font-semibold text-sm">{recommendation.nextTestDirection}</p>
             {recommendation.controlAd ? (
               <p className="mt-1 text-[10px] font-mono opacity-80">
@@ -239,78 +239,78 @@ export default function ReleaseIntelligencePanel({
           </div>
 
           {recommendation.componentDiagnosis && (
-            <div className="rounded-[16px] border border-[#2d3138] bg-[#0f1216] p-4 space-y-4">
+            <div className="inset-surface space-y-4 p-4">
               <div>
-                <p className="text-[10px] uppercase font-bold tracking-wider text-[#7f858d] mb-2">Component Diagnosis</p>
+                <p className="table-label mb-2">Component Diagnosis</p>
                 {recommendation.componentDiagnosis.controlAd ? (
-                  <div className="inline-flex items-center gap-1.5 rounded bg-[#1c1e22] px-2.5 py-1 text-xs text-[#ede7dc] border border-[#2d3138]">
-                    <span className="font-bold text-[#c9a347]">Control Ad:</span>
+                  <div className="inline-flex items-center gap-1.5 rounded-md border border-edge bg-surface-elevated px-2.5 py-1 text-xs text-ink">
+                    <span className="font-bold text-brand-primary">Control Ad:</span>
                     <span className="font-mono">{recommendation.componentDiagnosis.controlAd}</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-[#7f858d]">No Control Ad identified yet.</span>
+                  <span className="text-xs text-muted">No Control Ad identified yet.</span>
                 )}
               </div>
 
               {recommendation.componentDiagnosis.diagnosisComment && (
-                <div className="rounded-[12px] border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200 mt-2">
+                <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-200">
                   💡 {recommendation.componentDiagnosis.diagnosisComment}
                 </div>
               )}
 
               {recommendation.componentDiagnosis.controlAd && (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 pt-2 border-t border-[#1c1e22]">
+                <div className="grid grid-cols-2 gap-4 border-t border-edge pt-2 sm:grid-cols-4">
                   <div>
-                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Visual Format</p>
-                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlVisual || "N/A"}</p>
+                    <p className="table-label">Visual Format</p>
+                    <p className="mt-0.5 text-xs font-semibold text-ink">{recommendation.componentDiagnosis.controlVisual || "N/A"}</p>
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.visualStatus)}`}>
                       {recommendation.componentDiagnosis.visualStatus}
                     </span>
-                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.visualReason}</p>
+                    <p className="mt-1.5 text-[10px] leading-normal text-muted">{recommendation.componentDiagnosis.visualReason}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Song Section</p>
-                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlSongSection || "N/A"}</p>
+                    <p className="table-label">Song Section</p>
+                    <p className="mt-0.5 text-xs font-semibold text-ink">{recommendation.componentDiagnosis.controlSongSection || "N/A"}</p>
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.songSectionStatus)}`}>
                       {recommendation.componentDiagnosis.songSectionStatus}
                     </span>
-                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.songSectionReason}</p>
+                    <p className="mt-1.5 text-[10px] leading-normal text-muted">{recommendation.componentDiagnosis.songSectionReason}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Angle</p>
-                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5">{recommendation.componentDiagnosis.controlCopyAngle || "N/A"}</p>
+                    <p className="table-label">Copy Angle</p>
+                    <p className="mt-0.5 text-xs font-semibold text-ink">{recommendation.componentDiagnosis.controlCopyAngle || "N/A"}</p>
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyAngleStatus)}`}>
                       {recommendation.componentDiagnosis.copyAngleStatus}
                     </span>
-                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.copyAngleReason}</p>
+                    <p className="mt-1.5 text-[10px] leading-normal text-muted">{recommendation.componentDiagnosis.copyAngleReason}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase font-semibold text-[#7f858d]">Copy Pair</p>
-                    <p className="text-xs font-semibold text-[#ede7dc] mt-0.5 truncate max-w-full" title={recommendation.componentDiagnosis.controlCopyPair || ""}>{recommendation.componentDiagnosis.controlCopyPair || "N/A"}</p>
+                    <p className="table-label">Copy Pair</p>
+                    <p className="mt-0.5 max-w-full truncate text-xs font-semibold text-ink" title={recommendation.componentDiagnosis.controlCopyPair || ""}>{recommendation.componentDiagnosis.controlCopyPair || "N/A"}</p>
                     <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${getStatusBadgeClass(recommendation.componentDiagnosis.copyPairStatus)}`}>
                       {recommendation.componentDiagnosis.copyPairStatus}
                     </span>
-                    <p className="text-[10px] text-[#8a9098] mt-1.5 leading-normal">{recommendation.componentDiagnosis.copyPairReason}</p>
+                    <p className="mt-1.5 text-[10px] leading-normal text-muted">{recommendation.componentDiagnosis.copyPairReason}</p>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#1c1e22] text-xs">
+              <div className="flex flex-col gap-2 border-t border-edge pt-2 text-xs">
                 {recommendation.componentDiagnosis.preserveComponents && recommendation.componentDiagnosis.preserveComponents.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-emerald-400">Preserve:</span>
-                    <span className="text-[#aeb3bb]">{recommendation.componentDiagnosis.preserveComponents.join(", ")}</span>
+                    <span className="text-secondary">{recommendation.componentDiagnosis.preserveComponents.join(", ")}</span>
                   </div>
                 )}
                 {recommendation.componentDiagnosis.testComponent && (
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-amber-400">Test Next:</span>
-                    <span className="text-[#aeb3bb]">{recommendation.componentDiagnosis.testComponent}</span>
+                    <span className="text-secondary">{recommendation.componentDiagnosis.testComponent}</span>
                   </div>
                 )}
                 {recommendation.componentDiagnosis.coverageWarnings && recommendation.componentDiagnosis.coverageWarnings.length > 0 && (
                   <div className="flex flex-col gap-1 mt-1">
-                    <span className="font-bold text-[#d7b45e] text-[10px] uppercase tracking-wider">Coverage Gaps:</span>
+                    <span className="table-label text-brand-primary">Coverage Gaps:</span>
                     {recommendation.componentDiagnosis.coverageWarnings.map((warning, idx) => (
                       <div key={idx} className="text-amber-300 flex items-center gap-1 text-[11px]">
                         <span>⚠️ {warning}</span>
@@ -320,21 +320,21 @@ export default function ReleaseIntelligencePanel({
                 )}
               </div>
 
-              <div className="text-xs text-[#8a9098] italic border-t border-[#1c1e22] pt-2 mt-2">
-                <span className="font-bold text-[#ede7dc]">Why this diagnosis?</span> {recommendation.componentDiagnosis.diagnosisRead}
+              <div className="mt-2 border-t border-edge pt-2 text-xs italic text-muted">
+                <span className="font-bold text-ink">Why this diagnosis?</span> {recommendation.componentDiagnosis.diagnosisRead}
               </div>
             </div>
           )}
 
           {recommendation.componentDiagnosis && recommendation.componentDiagnosis.iterationCandidates && recommendation.componentDiagnosis.iterationCandidates.length > 0 && (
-            <div className="space-y-3 pt-3 border-t border-[#2d3138]">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-[#7f858d]">Iteration Candidates</p>
+            <div className="space-y-3 border-t border-edge pt-3">
+              <p className="table-label">Iteration Candidates</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {recommendation.componentDiagnosis.iterationCandidates.map((cand, idx) => (
-                  <div key={idx} className="rounded-[16px] border border-[#2d3138] bg-[#14171b] p-4 flex flex-col justify-between space-y-3">
+                  <div key={idx} className="inset-surface flex flex-col justify-between space-y-3 p-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-semibold text-[#c9a347] truncate max-w-[80%]" title={cand.suggestedPattern}>
+                        <span className="max-w-[80%] truncate font-mono text-xs font-semibold text-brand-primary" title={cand.suggestedPattern}>
                           {cand.suggestedPattern}
                         </span>
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
@@ -342,21 +342,21 @@ export default function ReleaseIntelligencePanel({
                             ? "bg-emerald-500/10 text-emerald-400"
                             : cand.confidence === "Moderate"
                             ? "bg-sky-500/10 text-sky-400"
-                            : "bg-[#272b31] text-[#ede7dc]"
+                            : "bg-surface-elevated text-ink"
                         }`}>
                           {cand.confidence}
                         </span>
                       </div>
-                      <div className="space-y-1.5 text-xs text-[#aeb3bb]">
+                      <div className="space-y-1.5 text-xs text-secondary">
                         <p>
-                          <strong className="text-[#ede7dc]">What changes:</strong> {cand.whatChanges}
+                          <strong className="text-ink">What changes:</strong> {cand.whatChanges}
                         </p>
                         <p>
-                          <strong className="text-[#ede7dc]">What stays same:</strong> {cand.whatStaysSame}
+                          <strong className="text-ink">What stays same:</strong> {cand.whatStaysSame}
                         </p>
                       </div>
                     </div>
-                    <p className="text-xs text-[#7f858d] leading-5 border-t border-[#1c1e22] pt-2">
+                    <p className="border-t border-edge pt-2 text-xs leading-5 text-muted">
                       {cand.whyMatters}
                     </p>
                   </div>
@@ -370,7 +370,7 @@ export default function ReleaseIntelligencePanel({
       {adMetrics.has_data && recommendation.dataWarnings.length > 0 && (
         <div className="space-y-2">
           {recommendation.dataWarnings.map((warning, idx) => (
-            <div key={idx} className="rounded-[14px] border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-200 flex items-center gap-2">
+            <div key={idx} className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-200">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
               <span>{warning}</span>
             </div>
@@ -379,7 +379,7 @@ export default function ReleaseIntelligencePanel({
       )}
 
       {!adMetrics.has_data && (
-        <p className="text-sm text-[#6b7280]">
+        <p className="text-sm text-muted">
           No campaign data imported for this release yet. Import a Meta CSV batch from Ad Lab to generate a promo verdict.
         </p>
       )}

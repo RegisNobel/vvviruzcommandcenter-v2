@@ -261,13 +261,13 @@ export function CopyDetailEditor({
                 when they belong in a rollout.
               </p>
               {copy.archived_at && (
-                <div className="mt-4 p-4 rounded-[22px] border border-amber-950/60 bg-amber-950/10 text-sm text-[#f1dfad] space-y-2">
+                <div className="mt-4 space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
                   <div className="flex items-center gap-2">
-                    <span className="rounded border border-amber-950 bg-amber-950/40 px-2 py-0.5 text-[10px] font-bold text-[#d7b45e] uppercase tracking-wider">
+                    <span className="status-badge-warning px-2 py-0.5 text-[10px] uppercase tracking-wider">
                       Archived
                     </span>
                     {copy.archive_reason?.toLowerCase().includes("legacy duplicate") && (
-                      <span className="rounded border border-red-950 bg-red-950/30 px-2 py-0.5 text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                      <span className="status-badge-danger px-2 py-0.5 text-[10px] uppercase tracking-wider">
                         Legacy Duplicate
                       </span>
                     )}
@@ -284,8 +284,8 @@ export function CopyDetailEditor({
               )}
             </div>
 
-            <div className="rounded-[24px] border border-[#31353b] bg-[#111317] p-4 sm:p-5">
-              <div className="space-y-3 rounded-[22px] border border-[#3a3f46] bg-[#16191d] p-4 text-sm text-muted">
+            <div className="command-surface p-4 sm:p-5">
+              <div className="inset-surface space-y-3 p-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Copy Angle</span>
                   <span className="font-semibold text-ink">
@@ -399,13 +399,13 @@ export function CopyDetailEditor({
                   />
                 </label>
 
-                <details className="group border border-[#252a31] rounded-[22px] bg-[#101319]/40 p-4 md:col-span-2 space-y-4">
-                  <summary className="flex cursor-pointer items-center justify-between font-semibold text-sm text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+                <details className="inset-surface group space-y-4 p-4 md:col-span-2">
+                  <summary className="flex cursor-pointer select-none items-center justify-between text-sm font-semibold text-secondary [&::-webkit-details-marker]:hidden">
                     <span>Legacy / Optional Metadata</span>
                     <span className="text-xs text-muted group-open:hidden">Show</span>
                     <span className="text-xs text-muted hidden group-open:inline">Hide</span>
                   </summary>
-                  <div className="grid gap-5 md:grid-cols-2 pt-3 border-t border-[#252a31]/60">
+                  <div className="grid gap-5 border-t border-edge pt-3 md:grid-cols-2">
                     <label className="space-y-2">
                       <span className="field-label">Content Type</span>
                       <select
@@ -498,7 +498,7 @@ export function CopyDetailEditor({
                 </h2>
               </div>
 
-              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-muted">
+              <div className="inset-surface space-y-3 px-4 py-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">Copy Angle</span>
                   <span className="font-semibold text-ink">
@@ -512,7 +512,7 @@ export function CopyDetailEditor({
                   </span>
                 </div>
 
-                <div className="border-t border-[#31353b] pt-3">
+                <div className="border-t border-edge pt-3">
                   <span className="field-label">Hook Text Preview</span>
                   <p className="mt-1 text-ink line-clamp-2 text-xs leading-normal">
                     {copy.hook.trim() || "(Empty)"}
@@ -520,7 +520,7 @@ export function CopyDetailEditor({
                 </div>
 
                 {copy.caption.trim() ? (
-                  <div className="border-t border-[#31353b] pt-3">
+                  <div className="border-t border-edge pt-3">
                     <span className="field-label">Caption Preview</span>
                     <p className="mt-1 text-ink line-clamp-2 text-xs leading-normal">
                       {copy.caption}
@@ -529,19 +529,19 @@ export function CopyDetailEditor({
                 ) : null}
 
                 {copy.creative_notes.trim() ? (
-                  <div className="border-t border-[#31353b] pt-3">
+                  <div className="border-t border-edge pt-3">
                     <span className="field-label">Creative Notes</span>
                     <p className="mt-1 text-xs text-ink leading-normal">{copy.creative_notes}</p>
                   </div>
                 ) : null}
 
-                <details className="group border border-[#252a31] rounded-[18px] bg-[#101319]/40 p-3 mt-3">
-                  <summary className="flex cursor-pointer items-center justify-between font-medium text-xs text-[#7f858d] select-none [&::-webkit-details-marker]:hidden">
+                <details className="inset-surface group mt-3 p-3">
+                  <summary className="flex cursor-pointer select-none items-center justify-between text-xs font-medium text-secondary [&::-webkit-details-marker]:hidden">
                     <span>Legacy Metadata</span>
                     <span className="text-[10px] text-muted group-open:hidden">Show</span>
                     <span className="text-[10px] text-muted hidden group-open:inline">Hide</span>
                   </summary>
-                  <div className="space-y-2 pt-2 mt-2 border-t border-[#252a31]/60 text-xs">
+                  <div className="mt-2 space-y-2 border-t border-edge pt-2 text-xs">
                     <div className="flex justify-between gap-3">
                       <span className="text-muted">Content Type</span>
                       <span className="font-semibold text-ink text-right">
@@ -565,7 +565,7 @@ export function CopyDetailEditor({
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Release Context</h2>
               </div>
 
-              <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm leading-6 text-muted">
+              <div className="inset-surface px-4 py-4 text-sm leading-6 text-muted">
                 {selectedRelease ? (
                   <>
                     This copy is linked to{" "}
@@ -587,7 +587,7 @@ export function CopyDetailEditor({
                 <h2 className="mt-2 text-2xl font-semibold text-ink">Metadata</h2>
               </div>
 
-              <div className="space-y-3 rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-4 text-sm text-muted">
+              <div className="inset-surface space-y-3 px-4 py-4 text-sm text-muted">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="field-label">ID</span>
                   <span className="font-mono text-xs text-ink">{copy.id}</span>
@@ -617,8 +617,8 @@ export function CopyDetailEditor({
               <span
                 className={`rounded-full border px-4 py-2 text-sm ${
                   isErrorMessage
-                    ? "border-[#5a312d] bg-[#1c1313] text-[#d4a7a0]"
-                    : "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
+                    ? "border-red-500/30 bg-red-500/10 text-red-200"
+                    : "border-amber-500/30 bg-amber-500/10 text-amber-100"
                 }`}
               >
                 {message}
@@ -641,7 +641,7 @@ export function CopyDetailEditor({
               ) : null}
               {copy.archived_at ? (
                 <button
-                  className="action-button-secondary border-[#5b4920]/40 bg-[#1a1710]/40 text-[#d7b45e] hover:bg-[#2c2215]"
+                  className="action-button-secondary border-[rgba(246,201,69,0.30)] bg-[var(--brand-primary-soft)] text-brand-primary hover:bg-[rgba(246,201,69,0.18)]"
                   onClick={() => void handleRestore()}
                   type="button"
                 >
@@ -649,7 +649,7 @@ export function CopyDetailEditor({
                 </button>
               ) : (
                 <button
-                  className="action-button-secondary border-[#252a31] bg-[#151820]/40 text-muted/60 hover:border-[#d7b45e]/50"
+                  className="action-button-secondary border-edge bg-input text-muted/60 hover:border-[rgba(246,201,69,0.5)]"
                   onClick={() => void handleArchive()}
                   type="button"
                 >

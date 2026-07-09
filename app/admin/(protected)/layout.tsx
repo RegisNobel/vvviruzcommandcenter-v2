@@ -9,7 +9,7 @@ export default async function ProtectedAdminLayout({
   await requireAuthenticatedAdminSession();
 
   return (
-    <div className="min-h-screen bg-[#0f1114]">
+    <div className="admin-signal-scope min-h-screen bg-app">
       <CommandCenterNav />
       <div className="lg:pl-64">
         {children}

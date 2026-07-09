@@ -201,7 +201,7 @@ export function ReleaseCategorySettingsPanel({
       <div className="grid gap-4">
         {categories.map((category, index) => (
           <section
-            className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5"
+            className="command-surface p-4 sm:p-5"
             key={category.id}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -263,7 +263,7 @@ export function ReleaseCategorySettingsPanel({
               </label>
             </div>
 
-            <div className="mt-5 rounded-[22px] border border-[#30343b] bg-[#0f1217] p-4">
+            <div className="inset-surface mt-5 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="field-label">Attached Releases</p>
@@ -280,22 +280,22 @@ export function ReleaseCategorySettingsPanel({
 
                   return (
                     <label
-                      className={`flex cursor-pointer items-start gap-3 rounded-[18px] border px-3 py-3 text-sm transition ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 text-sm transition ${
                         isSelected
-                          ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                          : "border-[#30343b] bg-[#121418] text-[#d5d9df] hover:border-[#545962]"
+                          ? "border-[rgba(246,201,69,0.4)] bg-[var(--brand-primary-soft)] text-brand-primary"
+                          : "border-edge bg-surface text-secondary hover:border-[rgba(246,201,69,0.3)]"
                       }`}
                       key={release.id}
                     >
                       <input
                         checked={isSelected}
-                        className="mt-1 h-4 w-4 rounded border-white/20 bg-[#12161b] text-[#c9a347] focus:ring-[#c9a347]"
+                        className="mt-1 h-4 w-4 rounded border-edge bg-input text-brand-primary focus:ring-brand-primary"
                         onChange={() => toggleCategoryRelease(category.id, release.id)}
                         type="checkbox"
                       />
                       <span>
                         <span className="block font-semibold">{release.title}</span>
-                        <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-[#8f959d]">
+                        <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-muted">
                           {releaseOptionsById.get(release.id)?.type} / {release.status}
                         </span>
                       </span>
@@ -308,7 +308,7 @@ export function ReleaseCategorySettingsPanel({
         ))}
 
         {categories.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-[#30343b] bg-[#121418] px-5 py-8 text-center text-sm text-muted">
+          <div className="rounded-xl border border-dashed border-edge bg-surface px-5 py-8 text-center text-sm text-muted">
             No manual music categories yet. Add one to create project filters for
             the public music page.
           </div>

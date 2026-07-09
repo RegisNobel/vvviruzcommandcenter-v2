@@ -91,10 +91,10 @@ export function CommissionsAdminPage({initialRequests}: Props) {
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[800px] text-left text-sm text-[#ece6da]">
+      <div className="table-surface mobile-scroll-x mt-6">
+        <table className="w-full min-w-[800px] text-left text-sm text-ink">
           <thead>
-            <tr className="border-b border-[#272b31] bg-[#16191d] text-[#8f959d]">
+            <tr className="border-b border-edge bg-surface-elevated text-secondary">
               <th className="px-6 py-4 font-semibold">Date</th>
               <th className="px-6 py-4 font-semibold">Client</th>
               <th className="px-6 py-4 font-semibold">Type</th>
@@ -103,24 +103,24 @@ export function CommissionsAdminPage({initialRequests}: Props) {
               <th className="px-6 py-4 text-right font-semibold">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#272b31]">
+          <tbody className="divide-y divide-edge">
             {filteredRequests.map((req) => (
-              <tr key={req.id} className="group hover:bg-[#16191d] transition">
-                <td className="px-6 py-4 text-[#8f959d]">
+              <tr key={req.id} className="group transition hover:bg-surface-hover">
+                <td className="px-6 py-4 text-muted">
                   {new Date(req.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4">
-                  <div className="font-medium text-[#ece6da]">{req.name}</div>
-                  <div className="text-xs text-[#8f959d]">{req.email}</div>
+                  <div className="font-medium text-ink">{req.name}</div>
+                  <div className="text-xs text-muted">{req.email}</div>
                 </td>
-                <td className="px-6 py-4 text-[#ece6da]">{req.requestType}</td>
-                <td className="px-6 py-4 text-[#ece6da]">{req.budgetRange}</td>
+                <td className="px-6 py-4 text-ink">{req.requestType}</td>
+                <td className="px-6 py-4 text-ink">{req.budgetRange}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
                     req.status === 'New' ? 'bg-blue-500/10 border-blue-500/30 text-blue-200' :
                     req.status === 'Paid' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' :
                     req.status === 'Delivered' ? 'bg-purple-500/10 border-purple-500/30 text-purple-200' :
-                    req.status === 'Declined' || req.status === 'Closed' ? 'bg-[#20242c] border-[#272b31] text-[#8f959d]' :
+                    req.status === 'Declined' || req.status === 'Closed' ? 'bg-surface-elevated border-edge text-muted' :
                     'bg-amber-500/10 border-amber-500/30 text-amber-200'
                   }`}>
                     {req.status}
@@ -129,7 +129,7 @@ export function CommissionsAdminPage({initialRequests}: Props) {
                 <td className="px-6 py-4 text-right">
                   <Link
                     href={`/admin/commissions/${req.id}`}
-                    className="inline-flex items-center justify-center rounded-md p-2 text-[#8f959d] hover:bg-[#20242c] hover:text-[#c9a347] transition"
+                    className="inline-flex items-center justify-center rounded-md p-2 text-muted transition hover:bg-surface-hover hover:text-brand-primary"
                   >
                     <ChevronRight size={18} />
                   </Link>
@@ -138,7 +138,7 @@ export function CommissionsAdminPage({initialRequests}: Props) {
             ))}
             {filteredRequests.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-[#8f959d]">
+                <td colSpan={6} className="py-8 text-center text-muted">
                   No commission requests found matching your filters.
                 </td>
               </tr>

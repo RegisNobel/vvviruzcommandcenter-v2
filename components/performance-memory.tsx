@@ -47,7 +47,7 @@ export function PerformanceMemorySection({
 }: PerformanceMemorySectionProps) {
   const [activeTab, setActiveTab] = useState<"creative" | "copy" | "timeline">("timeline");
 
-  const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
+  const pageLabelClass = "table-label";
 
   const renderSummaryCard = (
     title: string,
@@ -57,13 +57,13 @@ export function PerformanceMemorySection({
     warning?: string
   ) => {
     return (
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] p-4 flex flex-col justify-between min-h-[110px]">
+      <div className="inset-surface flex min-h-[110px] flex-col justify-between p-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+          <div className="table-label flex items-center gap-1.5">
             {icon}
             {title}
           </div>
-          <p className="mt-2 text-sm sm:text-base font-semibold text-[#efe7db] line-clamp-2" title={value || "None Isolated"}>
+          <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink sm:text-base" title={value || "None Isolated"}>
             {value || "None Isolated"}
           </p>
         </div>
@@ -93,14 +93,14 @@ export function PerformanceMemorySection({
   }
 
   return (
-    <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5 space-y-6">
+    <div className="command-surface space-y-6 px-4 py-5 sm:px-5">
       {/* Header */}
       <div>
         <p className={pageLabelClass}>Performance Memory</p>
-        <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+        <h3 className="mt-2 text-xl font-semibold text-ink">
           Consolidated Historical Insights
         </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Review what worked across ads, creative components, and copy strategy.
         </p>
       </div>
@@ -166,7 +166,7 @@ export function PerformanceMemorySection({
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-[#2d3138] pb-px gap-6 overflow-x-auto scrollbar-none">
+      <div className="mobile-scroll-x flex gap-6 border-b border-edge pb-px">
         {[
           { key: "creative" as const, label: "Creative Component Memory" },
           { key: "copy" as const, label: "Copy Strategy Memory" },
@@ -179,8 +179,8 @@ export function PerformanceMemorySection({
             className={cn(
               "pb-3 text-xs font-semibold tracking-wide border-b-2 px-1 transition duration-150 outline-none uppercase whitespace-nowrap",
               activeTab === tab.key
-                ? "border-[#c9a347] text-[#c9a347]"
-                : "border-transparent text-[#8a9098] hover:text-[#efe7dc]"
+                ? "border-brand-primary text-brand-primary"
+                : "border-transparent text-muted hover:text-ink"
             )}
           >
             {tab.label}

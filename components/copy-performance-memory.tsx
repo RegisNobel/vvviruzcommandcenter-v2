@@ -57,7 +57,7 @@ export function CopyPerformanceMemorySection({
     }));
   };
 
-  const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
+  const pageLabelClass = "table-label";
 
   const hasAnyData =
     copyPairs.length > 0 ||
@@ -77,13 +77,13 @@ export function CopyPerformanceMemorySection({
   ) => {
     const isNeedsData = !winner;
     return (
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0f1216] p-4 flex flex-col justify-between min-h-[110px]">
+      <div className="inset-surface flex min-h-[110px] flex-col justify-between p-4">
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#7f858d]">
+          <div className="table-label flex items-center gap-1.5">
             {icon}
             {title}
           </div>
-          <p className="mt-2 text-sm sm:text-base font-semibold text-[#efe7db] line-clamp-2" title={winner?.label || "Needs More Data"}>
+          <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink sm:text-base" title={winner?.label || "Needs More Data"}>
             {winner ? winner.label : "Needs More Data"}
           </p>
         </div>
@@ -148,10 +148,10 @@ export function CopyPerformanceMemorySection({
         {renderSnapshotNotice()}
 
         {/* Coverage Section */}
-        <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] p-4 space-y-4">
+        <div className="inset-surface space-y-4 p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h4 className="text-sm font-semibold text-[#efe7db]">Copy Linking Coverage</h4>
+              <h4 className="text-sm font-semibold text-ink">Copy Linking Coverage</h4>
               <p className="text-xs text-[#8a9098] mt-0.5">
                 {coverage.metricBasis === "latest_snapshot"
                   ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
@@ -351,13 +351,13 @@ export function CopyPerformanceMemorySection({
   }
 
   return (
-    <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5 space-y-6">
+    <div className="command-surface space-y-6 px-4 py-5 sm:px-5">
       <div>
         <p className={pageLabelClass}>Copy Performance Memory</p>
-        <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+        <h3 className="mt-2 text-xl font-semibold text-ink">
           Historical copy & strategy breakdown
         </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Aggregated performance history of Copy Lab hooks, angles, song sections, and visual combinations.
         </p>
       </div>
@@ -365,10 +365,10 @@ export function CopyPerformanceMemorySection({
       {renderSnapshotNotice()}
 
       {/* Coverage Section */}
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] p-4 space-y-4">
+      <div className="inset-surface space-y-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h4 className="text-sm font-semibold text-[#efe7db]">Copy Linking Coverage</h4>
+            <h4 className="text-sm font-semibold text-ink">Copy Linking Coverage</h4>
             <p className="text-xs text-[#8a9098] mt-0.5">
               {coverage.metricBasis === "latest_snapshot"
                 ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
@@ -604,26 +604,26 @@ export function CopyPerformanceMemorySection({
     if (rows.length === 0) return null;
 
     return (
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] overflow-hidden">
+      <div className="table-surface">
         {/* Header Button */}
         <button
           onClick={() => toggleSection(sectionKey)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-[#0f1216] border-b border-[#2d3138] hover:bg-[#15191e] transition-colors text-left"
+          className="flex w-full items-center justify-between border-b border-edge bg-surface-elevated px-4 py-3 text-left transition-colors hover:bg-surface-hover"
         >
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-[#efe7db]">{title}</h4>
+            <h4 className="text-sm font-semibold text-ink">{title}</h4>
             <span className="rounded-full bg-[#1b1f24] text-[#8a9098] px-2 py-0.5 text-[10px] font-semibold">
               {rows.length} rows
             </span>
           </div>
-          {isOpen ? <ChevronUp size={16} className="text-[#8a9098]" /> : <ChevronDown size={16} className="text-[#8a9098]" />}
+          {isOpen ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
         </button>
 
         {isOpen && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#aeb3bb]">
+            <table className="w-full text-left text-xs text-secondary">
               <thead>
-                <tr className="border-b border-[#20242b] text-[10px] uppercase tracking-wider text-[#7f858d] bg-[#0f1216]/50">
+                <tr className="border-b border-edge bg-input text-[10px] uppercase tracking-wider text-muted">
                   {headers.map((header, idx) => (
                     <th
                       key={header}
@@ -642,7 +642,7 @@ export function CopyPerformanceMemorySection({
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#20242b]">
+              <tbody className="divide-y divide-edge">
                 {rows.map((row) => renderRow(row))}
               </tbody>
             </table>

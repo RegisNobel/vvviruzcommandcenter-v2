@@ -259,6 +259,19 @@ input[type="range"]::-moz-range-thumb {
     color: var(--text-primary);
   }
 
+  .action-button-muted {
+    @apply action-button border;
+    border-color: var(--border-default);
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .action-button-muted:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+  }
+
   .action-button-danger {
     @apply action-button border;
     border-color: rgba(223, 107, 107, 0.4);
@@ -332,6 +345,45 @@ input[type="range"]::-moz-range-thumb {
 
   .command-row:hover {
     background: var(--bg-surface-hover);
+  }
+
+  .inset-surface {
+    @apply border;
+    border-color: var(--border-muted);
+    border-radius: var(--radius-lg);
+    background: var(--bg-input);
+  }
+
+  .table-surface {
+    @apply overflow-hidden border;
+    border-color: var(--border-default);
+    border-radius: var(--radius-xl);
+    background: var(--bg-surface);
+  }
+
+  .toggle-control {
+    @apply relative h-5 w-9 rounded-full transition-colors;
+    background: var(--bg-surface-hover);
+  }
+
+  .toggle-control::after {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    height: 16px;
+    width: 16px;
+    border-radius: 9999px;
+    background: var(--text-primary);
+    content: "";
+    transition: transform 150ms ease;
+  }
+
+  .peer:checked + .toggle-control {
+    background: var(--brand-primary);
+  }
+
+  .peer:checked + .toggle-control::after {
+    transform: translateX(16px);
   }
 
   .table-label {

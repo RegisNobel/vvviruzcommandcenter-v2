@@ -59,19 +59,19 @@ interface AdPerformanceTimelineSectionProps {
 export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: AdPerformanceTimelineSectionProps) {
   const { snapshots, rows, hasOverlappingSnapshots } = timeline;
 
-  const pageLabelClass = "text-xs font-semibold uppercase tracking-wider text-[#7f858d]";
+  const pageLabelClass = "table-label";
 
   if (snapshots.length < 2) {
     return (
-      <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-6 sm:px-5 space-y-4">
+      <div className="command-surface space-y-4 px-4 py-6 sm:px-5">
         <div>
           <p className={pageLabelClass}>Ad Performance Timeline</p>
-          <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+          <h3 className="mt-2 text-xl font-semibold text-ink">
             Chronological Ad Matrix
           </h3>
         </div>
-        <div className="rounded-[20px] border border-dashed border-[#383c43] bg-[#101318] px-6 py-8 text-center text-sm leading-6 text-[#7f858d]">
-          <p className="font-medium text-[#efe7db] mb-1">Timeline requires at least 2 snapshot uploads</p>
+        <div className="rounded-lg border border-dashed border-edge bg-input px-6 py-8 text-center text-sm leading-6 text-muted">
+          <p className="mb-1 font-medium text-ink">Timeline requires at least 2 snapshot uploads</p>
           <p className="max-w-md mx-auto">
             Upload and link additional Meta CSV reports in Ad Lab to track individual ad-level movement, rebounds, and winner changes over time.
           </p>
@@ -138,13 +138,13 @@ export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: Ad
   };
 
   return (
-    <div className="rounded-[22px] border border-[#31353b] bg-[#121418] px-4 py-5 sm:px-5 space-y-6">
+    <div className="command-surface space-y-6 px-4 py-5 sm:px-5">
       <div>
         <p className={pageLabelClass}>Ad Performance Timeline</p>
-        <h3 className="mt-2 text-xl font-semibold text-[#efe7db]">
+        <h3 className="mt-2 text-xl font-semibold text-ink">
           Ad-Level Movement Matrix
         </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8a9098]">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Compare individual ad creatives side-by-side across chronological uploads to observe performance curves, lead handovers, and rebounds.
         </p>
       </div>
@@ -159,7 +159,7 @@ export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: Ad
       )}
 
       {/* Threshold Legend/Explanation */}
-      <div className="rounded-[16px] border border-[#2d3138] bg-[#0c0f13] px-4 py-3 text-xs text-[#8a9098] flex flex-wrap gap-x-6 gap-y-2 items-center">
+      <div className="inset-surface flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 text-xs text-muted">
         <span className="font-semibold text-[#efe7db] flex items-center gap-1">
           <Award size={14} className="text-emerald-400" />
           Threshold Rules:
@@ -173,7 +173,7 @@ export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: Ad
       </div>
 
       {/* Scrollable Matrix Table */}
-      <div className="rounded-[18px] border border-[#2d3138] bg-[#0c0f13] overflow-hidden">
+      <div className="table-surface">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[#2d3138]">
           <table className="w-full text-left text-xs text-[#aeb3bb] border-collapse min-w-[800px]">
             <thead>
