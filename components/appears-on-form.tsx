@@ -65,24 +65,24 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      <div className="rounded-2xl border border-[#272b31] bg-[#101215] overflow-hidden">
-        <div className="border-b border-[#272b31] bg-[#16191d] px-6 py-4">
-          <h2 className="text-sm font-semibold text-[#ece6da]">Resolve via Spotify</h2>
-          <p className="mt-1 text-sm text-[#8f959d]">
+    <div className="max-w-5xl space-y-8">
+      <div className="command-surface overflow-hidden">
+        <div className="border-b border-edge bg-input px-5 py-4 sm:px-6">
+          <p className="field-label">Resolve via Spotify</p>
+          <p className="mt-2 text-sm text-muted">
             Paste a Spotify URL to automatically pull metadata and links via Odesli.
           </p>
         </div>
-        <div className="p-6">
-          <div className="flex gap-3">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
-              className="flex-1 rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] placeholder:text-[#545962] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+              className="field-input flex-1"
               placeholder="https://open.spotify.com/track/..."
               value={record.spotify_url}
               onChange={(e) => setRecord({...record, spotify_url: e.target.value})}
             />
             <button
-              className="flex items-center gap-2 rounded-xl bg-[#c9a347] px-5 py-2.5 font-semibold text-[#13161a] hover:bg-[#d7b663] disabled:opacity-50"
+              className="action-button-primary disabled:opacity-50"
               disabled={!record.spotify_url || isResolving}
               onClick={handleResolve}
             >
@@ -90,61 +90,61 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
               Resolve
             </button>
           </div>
-          {resolveError && <p className="mt-2 text-sm text-red-500">{resolveError}</p>}
+          {resolveError && <p className="mt-3 text-sm text-rose-300">{resolveError}</p>}
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="flex-1 space-y-6 rounded-2xl border border-[#272b31] bg-[#101215] p-6">
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="command-surface flex-1 space-y-6 p-5 sm:p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">Title</label>
+              <label className="field-label mb-2 block">Title</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.title}
                 onChange={(e) => setRecord({...record, title: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">Artists</label>
+              <label className="field-label mb-2 block">Artists</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.artists}
                 onChange={(e) => setRecord({...record, artists: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">Cover Art URL</label>
+              <label className="field-label mb-2 block">Cover Art URL</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.cover_art_url}
                 onChange={(e) => setRecord({...record, cover_art_url: e.target.value})}
               />
             </div>
           </div>
           
-          <div className="space-y-4 border-t border-[#272b31] pt-6">
-            <h3 className="font-semibold text-[#ece6da]">Links</h3>
+          <div className="space-y-4 border-t border-edge pt-6">
+            <h3 className="text-lg font-semibold text-ink">Links</h3>
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">Apple Music URL</label>
+              <label className="field-label mb-2 block">Apple Music URL</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.apple_music_url}
                 onChange={(e) => setRecord({...record, apple_music_url: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">YouTube Music URL</label>
+              <label className="field-label mb-2 block">YouTube Music URL</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.youtube_music_url}
                 onChange={(e) => setRecord({...record, youtube_music_url: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">YouTube Video URL</label>
+              <label className="field-label mb-2 block">YouTube Video URL</label>
               <input
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.youtube_url}
                 onChange={(e) => setRecord({...record, youtube_url: e.target.value})}
               />
@@ -153,9 +153,9 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
         </div>
 
         <div className="w-full lg:w-80 space-y-6">
-          <div className="rounded-2xl border border-[#272b31] bg-[#101215] p-6">
-            <h3 className="font-semibold text-[#ece6da] mb-4">Preview</h3>
-            <div className="aspect-square w-full rounded-xl border border-[#272b31] bg-[#16191d] overflow-hidden flex flex-col items-center justify-center text-center">
+          <div className="command-surface p-5 sm:p-6">
+            <h3 className="mb-4 font-semibold text-ink">Preview</h3>
+            <div className="flex aspect-square w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-edge bg-input text-center">
               {record.cover_art_url ? (
                 <div className="relative w-full h-full">
                   <Image 
@@ -167,31 +167,31 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
                   />
                 </div>
               ) : (
-                <p className="text-sm text-[#545962] px-4">No Cover Art</p>
+                <p className="px-4 text-sm text-muted">No Cover Art</p>
               )}
             </div>
             <div className="mt-4 text-center">
-              <p className="font-semibold text-[#ece6da] truncate">{record.title || "Untitled"}</p>
-              <p className="text-sm text-[#8f959d] truncate">{record.artists || "Artist"}</p>
+              <p className="truncate font-semibold text-ink">{record.title || "Untitled"}</p>
+              <p className="truncate text-sm text-muted">{record.artists || "Artist"}</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#272b31] bg-[#101215] p-6 space-y-4">
+          <div className="command-surface space-y-4 p-5 sm:p-6">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                className="h-5 w-5 rounded border-[#30343b] bg-[#0c0d10] text-[#c9a347] focus:ring-[#c9a347] focus:ring-offset-[#101215]"
+                className="h-5 w-5 rounded border-edge bg-input text-brand-primary focus:ring-brand-primary focus:ring-offset-surface"
                 checked={record.is_published}
                 onChange={(e) => setRecord({...record, is_published: e.target.checked})}
               />
-              <span className="font-semibold text-[#ece6da]">Published</span>
+              <span className="font-semibold text-ink">Published</span>
             </label>
             
             <div>
-              <label className="block text-sm font-semibold text-[#ece6da] mb-1.5">Display Order</label>
+              <label className="field-label mb-2 block">Display Order</label>
               <input
                 type="number"
-                className="w-full rounded-xl border border-[#30343b] bg-[#0c0d10] px-4 py-2.5 text-[#ece6da] focus:border-[#c9a347] focus:outline-none focus:ring-1 focus:ring-[#c9a347]"
+                className="field-input"
                 value={record.sort_order}
                 onChange={(e) => setRecord({...record, sort_order: parseInt(e.target.value) || 0})}
               />
@@ -200,7 +200,7 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
 
           <div className="flex gap-3">
             <button
-              className="flex-1 rounded-xl bg-[#c9a347] py-3 font-semibold text-[#13161a] hover:bg-[#d7b663] disabled:opacity-50"
+              className="action-button-primary flex-1 py-3 disabled:opacity-50"
               disabled={isSaving}
               onClick={handleSave}
             >
@@ -208,7 +208,7 @@ export function AppearsOnForm({initialRecord}: {initialRecord?: AppearsOnRecord}
             </button>
             {initialRecord && (
               <button
-                className="flex items-center justify-center rounded-xl border border-[#7b3e3e] bg-[#341919] px-4 py-3 text-[#f0d7d2] hover:bg-[#452020] disabled:opacity-50"
+                className="action-button-danger px-4 py-3 disabled:opacity-50"
                 disabled={isSaving}
                 onClick={handleDelete}
               >
