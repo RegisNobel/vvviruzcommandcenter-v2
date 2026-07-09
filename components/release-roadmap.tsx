@@ -135,9 +135,9 @@ export function ReleaseRoadmap({
   const openMonthCount = monthSlots.filter((slot) => slot.releases.length === 0).length;
 
   return (
-    <main className="min-h-[calc(100vh-81px)] bg-[#0f1114] px-4 py-5 text-[#e7e2d8] sm:px-6 lg:px-8">
+    <main className="min-h-[calc(100vh-81px)] bg-app px-4 py-5 text-ink sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="panel md:sticky md:top-[89px] z-30 overflow-hidden border-[#32363d] bg-[#15181c]/95 px-6 py-7 shadow-[0_18px_44px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8">
+        <section className="command-surface z-30 overflow-hidden border-edge bg-surface/95 px-6 py-7 backdrop-blur-xl md:sticky md:top-[89px] sm:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">
@@ -176,27 +176,27 @@ export function ReleaseRoadmap({
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[24px] border border-edge bg-panel-subtle px-4 py-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
               <p className="field-label">Scheduled Releases</p>
               <p className="mt-3 text-2xl font-semibold text-ink">{scheduledCount}</p>
             </div>
-            <div className="rounded-[24px] border border-edge bg-panel-subtle px-4 py-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
               <p className="field-label">Monthly Slots</p>
               <p className="mt-3 text-2xl font-semibold text-ink">12</p>
             </div>
-            <div className="rounded-[24px] border border-edge bg-panel-subtle px-4 py-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
               <p className="field-label">Ready / Near Ready</p>
               <p className="mt-3 text-2xl font-semibold text-ink">{readySoonCount}</p>
             </div>
-            <div className="rounded-[24px] border border-edge bg-panel-subtle px-4 py-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
               <p className="field-label">Open Months</p>
               <p className="mt-3 text-2xl font-semibold text-ink">{openMonthCount}</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-[32px] border border-[#30343b] bg-[#111418] p-4 sm:p-6">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#282d33] pb-4">
+        <section className="command-surface p-4 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-edge pb-4">
             <div>
               <p className="field-label">At a glance</p>
               <h2 className="mt-2 text-2xl font-semibold text-ink">{year} Songs</h2>
@@ -207,7 +207,7 @@ export function ReleaseRoadmap({
             </p>
           </div>
 
-          <div className="mt-4 divide-y divide-[#252a31]">
+          <div className="mt-4 divide-y divide-edge">
             {monthSlots.map((slot, index) => {
               const monthDateText = slot.releases.length
                 ? slot.releases.map((release) => formatShortDate(release.release_date)).join(" / ")
@@ -218,13 +218,13 @@ export function ReleaseRoadmap({
                   className="grid gap-4 py-5 lg:grid-cols-[64px_170px_minmax(0,1fr)_180px_220px] lg:items-center"
                   key={slot.monthName}
                 >
-                  <div className="text-2xl font-semibold text-[#a4a9b0] sm:text-3xl">
+                  <div className="text-2xl font-semibold text-muted sm:text-3xl">
                     {index + 1}.
                   </div>
 
                   <div>
                     <p className="field-label">{slot.monthName}</p>
-                    <p className="mt-2 text-sm font-semibold text-[#d7b45e]">
+                    <p className="mt-2 text-sm font-semibold text-brand-primary">
                       {monthDateText}
                     </p>
                     <p className="mt-1 text-xs text-muted">
@@ -237,7 +237,7 @@ export function ReleaseRoadmap({
                       <div className="flex flex-wrap gap-2">
                         {slot.releases.map((release) => (
                           <Link
-                            className="rounded-full border border-[#3a3f46] bg-[#15181c] px-4 py-2 text-sm font-semibold text-[#d5d9df] transition hover:border-[#c9a347]/60 hover:bg-[#191b20] hover:text-[#d7b45e]"
+                            className="rounded-md border border-edge bg-surface-elevated px-4 py-2 text-sm font-semibold text-secondary transition hover:border-[rgba(246,201,69,0.55)] hover:bg-surface-hover hover:text-brand-primary"
                             href={`/admin/releases/${release.id}`}
                             key={release.id}
                           >
@@ -246,7 +246,7 @@ export function ReleaseRoadmap({
                         ))}
                       </div>
                     ) : (
-                      <span className="inline-flex rounded-full border border-dashed border-[#3a3f46] bg-[#101215] px-4 py-2 text-sm font-semibold text-muted">
+                      <span className="inline-flex rounded-md border border-dashed border-edge bg-input px-4 py-2 text-sm font-semibold text-muted">
                         Open slot
                       </span>
                     )}
@@ -255,7 +255,7 @@ export function ReleaseRoadmap({
                   <div>
                     <p className="field-label">Internal Progress</p>
                     <div className="mt-2 flex items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#23262c]">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-elevated">
                         <div
                           className={`h-full rounded-full ${getReleaseProgressTone(slot.progress)}`}
                           style={{width: `${slot.progress}%`}}
@@ -269,7 +269,7 @@ export function ReleaseRoadmap({
                     {slot.releases.length > 0 ? (
                       slot.releases.map((release) => (
                         <span
-                          className="inline-flex items-center gap-1 rounded-full border border-[#30343b] bg-[#101215] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9ca2aa]"
+                          className="inline-flex items-center gap-1 rounded-md border border-edge bg-input px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                           key={release.id}
                         >
                           {release.progress_percentage === 100 ? (
