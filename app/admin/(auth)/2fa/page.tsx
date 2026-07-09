@@ -34,7 +34,7 @@ export default async function AdminTotpPage({
         </p>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-[#7b3e3e] bg-[#341919] px-4 py-3 text-sm text-[#f0d7d2]">
+          <div className="mt-5 rounded-md border border-[rgba(223,107,107,0.4)] bg-[var(--status-danger-soft)] px-4 py-3 text-sm text-[#f0b4b4]">
             {errorMessages[error] ?? "Verification failed."}
           </div>
         ) : null}
@@ -63,4 +63,3 @@ export default async function AdminTotpPage({
     </main>
   );
 }
-

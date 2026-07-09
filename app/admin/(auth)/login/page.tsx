@@ -56,13 +56,13 @@ export default async function AdminLoginPage({
         </p>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-[#7b3e3e] bg-[#341919] px-4 py-3 text-sm text-[#f0d7d2]">
+          <div className="mt-5 rounded-md border border-[rgba(223,107,107,0.4)] bg-[var(--status-danger-soft)] px-4 py-3 text-sm text-[#f0b4b4]">
             {errorMessages[error] ?? "Sign in failed."}
           </div>
         ) : null}
 
         {!error && message ? (
-          <div className="mt-5 rounded-2xl border border-[#3c4f3f] bg-[#111813] px-4 py-3 text-sm text-[#d2e8d4]">
+          <div className="mt-5 rounded-md border border-[rgba(79,191,136,0.34)] bg-[var(--status-success-soft)] px-4 py-3 text-sm text-[#9de2bd]">
             {infoMessages[message] ?? message}
           </div>
         ) : null}
@@ -100,4 +100,3 @@ export default async function AdminLoginPage({
     </main>
   );
 }
-

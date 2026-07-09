@@ -38,12 +38,12 @@ export default async function AdminSetupTotpPage({
         </p>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-[#7b3e3e] bg-[#341919] px-4 py-3 text-sm text-[#f0d7d2]">
+          <div className="mt-5 rounded-md border border-[rgba(223,107,107,0.4)] bg-[var(--status-danger-soft)] px-4 py-3 text-sm text-[#f0b4b4]">
             {errorMessages[error] ?? "Two-factor setup failed."}
           </div>
         ) : null}
 
-        <div className="mt-6 space-y-4 rounded-[24px] border border-[#2f343b] bg-[#111317] p-5">
+        <div className="mt-6 space-y-4 rounded-xl border border-edge bg-surface-elevated p-5">
           <div>
             <p className="field-label">Issuer</p>
             <p className="mt-2 text-sm font-semibold text-ink">{enrollment.issuer}</p>
@@ -51,7 +51,7 @@ export default async function AdminSetupTotpPage({
 
           <div>
             <p className="field-label">Manual secret</p>
-            <div className="mt-2 rounded-2xl border border-[#373c44] bg-[#0d1013] px-4 py-3 font-mono text-sm text-[#efe7dc]">
+            <div className="mt-2 rounded-md border border-edge-strong bg-input px-4 py-3 font-mono text-sm text-ink">
               {enrollment.secret}
             </div>
           </div>
@@ -88,4 +88,3 @@ export default async function AdminSetupTotpPage({
     </main>
   );
 }
-
