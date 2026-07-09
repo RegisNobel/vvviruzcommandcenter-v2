@@ -81,14 +81,14 @@ const statusCopy: Record<ShortLinkStatus, {
 
 function getStatusPillClass(status: ShortLinkStatus) {
   if (status === "ARCHIVED") {
-    return "border-[#4a3f25] bg-[#1d180e] text-[#e0c166]";
+    return "status-badge-warning";
   }
 
   if (status === "PAUSED") {
-    return "border-[#6b3b2e] bg-[#231510] text-[#e7a78f]";
+    return "status-badge-danger";
   }
 
-  return "border-[#2d5b48] bg-[#102118] text-[#8fe0b8]";
+  return "status-badge-ready";
 }
 
 type ShortLinkContextDraft = {
@@ -359,10 +359,10 @@ export function ShortLinksAdminPage({
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px] space-y-6">
-        <section className="panel px-4 py-6 sm:px-8 sm:py-7">
+        <section className="command-surface px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="pill">Utility links</div>
+              <div className="status-badge-neutral">Utility links</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
                 Short Links
               </h1>
@@ -371,13 +371,13 @@ export function ShortLinksAdminPage({
                 `vvviruz.com/p/...` links.
               </p>
             </div>
-            <div className="rounded-full border border-[#30343b] bg-[#101216] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+            <div className="status-badge-neutral uppercase tracking-[0.14em]">
               {initialLinks.length} {shortLinkFilterOptions.find((option) => option.value === statusFilter)?.label.toLowerCase()}
             </div>
           </div>
         </section>
 
-        <section className="panel space-y-5 px-4 py-5 sm:px-6">
+        <section className="command-surface space-y-5 px-5 py-5 sm:px-6">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-end">
             <label className="block">
               <span className="field-label">Destination URL</span>
@@ -411,7 +411,7 @@ export function ShortLinksAdminPage({
             </button>
           </div>
 
-          <div className="rounded-[24px] border border-[#30343b] bg-[#101216] p-4">
+          <div className="rounded-lg border border-edge bg-surface-elevated p-4">
             <p className="field-label">Attribution handoff</p>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               Optional context lets Attribution connect short-link clicks back to a
@@ -458,7 +458,7 @@ export function ShortLinksAdminPage({
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-[#30343b] bg-[#101216] p-4">
+          <div className="rounded-lg border border-edge bg-surface-elevated p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="field-label">UTM Presets</p>
@@ -470,20 +470,20 @@ export function ShortLinksAdminPage({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 rounded-[20px] border border-[#3b3322] bg-[#17140d] p-4 text-sm leading-6 text-[#d7c48f] md:grid-cols-2">
+            <div className="mt-4 grid gap-3 rounded-md border border-[rgba(246,201,69,0.24)] bg-brand-primary-soft p-4 text-sm leading-6 text-secondary md:grid-cols-2">
               <p>
-                <span className="font-semibold text-[#f1dfad]">utm_source</span> is where traffic comes from. For paid campaigns, use <code className="text-ink">meta</code>.
+                <span className="font-semibold text-ink">utm_source</span> is where traffic comes from. For paid campaigns, use <code className="text-ink">meta</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">utm_medium</span> is the traffic lane. For paid campaigns, use <code className="text-ink">paid_social</code>.
+                <span className="font-semibold text-ink">utm_medium</span> is the traffic lane. For paid campaigns, use <code className="text-ink">paid_social</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">utm_campaign</span> is the campaign release slug. <code className="text-ink">Release slug = utm_campaign</code>.
+                <span className="font-semibold text-ink">utm_campaign</span> is the campaign release slug. <code className="text-ink">Release slug = utm_campaign</code>.
               </p>
               <p>
-                <span className="font-semibold text-[#f1dfad]">utm_content</span> is the creative ad identifier. <code className="text-ink">Ad Name = utm_content</code>.
+                <span className="font-semibold text-ink">utm_content</span> is the creative ad identifier. <code className="text-ink">Ad Name = utm_content</code>.
               </p>
-              <p className="md:col-span-2 text-xs text-[#efdfba] border-t border-[#3b3322] pt-2 mt-1">
+              <p className="mt-1 border-t border-[rgba(246,201,69,0.18)] pt-2 text-xs text-ink md:col-span-2">
                 <strong>Attribution Rule:</strong> Ad Name = utm_content. Release slug = utm_campaign. This keeps Meta CSV imports, Short Links, and Attribution matched.
               </p>
             </div>
@@ -502,7 +502,7 @@ export function ShortLinksAdminPage({
                 <div className="flex flex-wrap gap-2">
                   {utmSourcePresets.map((preset) => (
                     <button
-                      className="rounded-full border border-[#30343b] bg-[#15181d] px-3 py-1.5 text-xs font-semibold text-[#d9dee5] transition hover:border-accent/50 hover:text-[#f1dfad]"
+                      className="status-badge-neutral px-3 py-1.5 transition hover:border-[rgba(246,201,69,0.55)] hover:text-ink"
                       key={preset}
                       onClick={() => updateUtmField("utm_source", preset)}
                       type="button"
@@ -526,7 +526,7 @@ export function ShortLinksAdminPage({
                 <div className="flex flex-wrap gap-2">
                   {utmMediumPresets.map((preset) => (
                     <button
-                      className="rounded-full border border-[#30343b] bg-[#15181d] px-3 py-1.5 text-xs font-semibold text-[#d9dee5] transition hover:border-accent/50 hover:text-[#f1dfad]"
+                      className="status-badge-neutral px-3 py-1.5 transition hover:border-[rgba(246,201,69,0.55)] hover:text-ink"
                       key={preset}
                       onClick={() => updateUtmField("utm_medium", preset)}
                       type="button"
@@ -571,7 +571,7 @@ export function ShortLinksAdminPage({
             </div>
           </div>
 
-          <div className="rounded-[20px] border border-[#30343b] bg-[#0d0f12] px-4 py-3">
+          <div className="rounded-md border border-edge bg-input px-4 py-3">
             <p className="field-label">Final destination preview</p>
             <p className="mt-2 break-all text-sm leading-6 text-muted">
               {finalDestinationPreview ||
@@ -582,14 +582,14 @@ export function ShortLinksAdminPage({
           </div>
 
           {message ? (
-            <p className="mt-4 rounded-[18px] border border-[#30343b] bg-[#101216] px-4 py-3 text-sm text-ink">
+            <p className="mt-4 rounded-md border border-edge bg-surface-elevated px-4 py-3 text-sm text-ink">
               {message}
             </p>
           ) : null}
         </section>
 
-        <section className="panel overflow-hidden p-0">
-          <div className="space-y-4 border-b border-[#30343b] px-4 py-5 sm:px-6">
+        <section className="command-surface overflow-hidden p-0">
+          <div className="space-y-4 border-b border-edge px-5 py-5 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="field-label">Management</p>
@@ -604,10 +604,10 @@ export function ShortLinksAdminPage({
             <div className="flex flex-wrap gap-2">
               {shortLinkFilterOptions.map((option) => (
                 <a
-                  className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                  className={`rounded-md border px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
                     statusFilter === option.value
-                      ? "border-[#d7b45e] bg-[#d7b45e] text-black"
-                      : "border-[#30343b] bg-[#101216] text-[#c6ccd4] hover:border-[#d7b45e]/50 hover:text-[#f1dfad]"
+                      ? "border-brand-primary bg-brand-primary text-inverse"
+                      : "border-edge-strong bg-surface-elevated text-secondary hover:border-[rgba(246,201,69,0.55)] hover:text-ink"
                   }`}
                   href={`/admin/short-links?status=${option.value.toLowerCase()}`}
                   key={option.value}
@@ -620,7 +620,7 @@ export function ShortLinksAdminPage({
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1450px] text-left text-sm">
-              <thead className="bg-[#171a1f] text-[#b8bec6]">
+              <thead className="bg-surface-elevated text-secondary">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Short URL</th>
                   <th className="px-4 py-3 font-semibold">Lifecycle</th>
@@ -631,7 +631,7 @@ export function ShortLinksAdminPage({
                   <th className="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252a31]">
+              <tbody className="divide-y divide-edge">
                 {initialLinks.length > 0 ? (
                   initialLinks.map((link) => {
                     const shortUrl = getShortUrl(baseUrl, link.slug);
@@ -643,10 +643,10 @@ export function ShortLinksAdminPage({
                     };
 
                     return (
-                      <tr className="align-top text-[#d9dee5]" key={link.id}>
+                      <tr className="align-top text-secondary transition hover:bg-surface-hover" key={link.id}>
                         <td className="px-4 py-4">
                           <a
-                            className="font-semibold text-[#f1dfad] transition hover:text-[#d7b45e]"
+                            className="font-semibold text-ink transition hover:text-brand-primary"
                             href={shortUrl}
                             rel="noreferrer"
                             target="_blank"
@@ -657,7 +657,7 @@ export function ShortLinksAdminPage({
                         <td className="min-w-[220px] px-4 py-4">
                           {link.deleted_at ? (
                             <>
-                              <span className="inline-flex rounded-full border border-[#30343b] bg-[#101216] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                              <span className="status-badge-neutral uppercase tracking-[0.14em]">
                                 Deleted
                               </span>
                               <p className="mt-2 text-xs leading-5 text-muted">
@@ -667,7 +667,7 @@ export function ShortLinksAdminPage({
                           ) : (
                             <>
                               <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${getStatusPillClass(link.status)}`}
+                                className={`${getStatusPillClass(link.status)} uppercase tracking-[0.14em]`}
                               >
                                 {statusCopy[link.status].label}
                               </span>
@@ -677,7 +677,7 @@ export function ShortLinksAdminPage({
                             </>
                           )}
                           {link.destination_updated_at ? (
-                            <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-[#8a9098]">
+                            <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-muted">
                               Destination updated {formatDate(link.destination_updated_at)}
                             </p>
                           ) : null}
@@ -685,8 +685,8 @@ export function ShortLinksAdminPage({
                         <td className="max-w-[420px] px-4 py-4">
                           <p className="break-all text-muted">{link.destination_url}</p>
                           {link.deleted_at ? null : (
-                            <details className="mt-3 rounded-[18px] border border-[#30343b] bg-[#0f1114] p-3">
-                              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-[#f1dfad]">
+                            <details className="mt-3 rounded-md border border-edge bg-input p-3">
+                              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-brand-primary">
                                 Update destination
                               </summary>
                               <div className="mt-3 space-y-3">
@@ -719,17 +719,17 @@ export function ShortLinksAdminPage({
                             </p>
                             <div className="flex flex-wrap gap-2 text-xs">
                               {link.campaign_label ? (
-                                <span className="pill">Campaign: {link.campaign_label}</span>
+                                <span className="status-badge-neutral">Campaign: {link.campaign_label}</span>
                               ) : null}
                               {link.content_label ? (
-                                <span className="pill">Content: {link.content_label}</span>
+                                <span className="status-badge-neutral">Content: {link.content_label}</span>
                               ) : null}
                               {!link.campaign_label && !link.content_label ? (
                                 <span className="text-muted">No campaign/content labels</span>
                               ) : null}
                             </div>
-                            <details className="rounded-[18px] border border-[#30343b] bg-[#0f1114] p-3">
-                              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-[#f1dfad]">
+                            <details className="rounded-md border border-edge bg-input p-3">
+                              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.14em] text-brand-primary">
                                 Edit context
                               </summary>
                               <div className="mt-3 grid gap-3">
@@ -829,7 +829,7 @@ export function ShortLinksAdminPage({
                             ) : null}
                             {!link.deleted_at && link.status !== "PAUSED" ? (
                               <button
-                                className="rounded-full border border-[#6b3b2e] bg-[#231510] px-3 py-2 text-sm font-semibold text-[#e7a78f] transition hover:border-[#9a5656] hover:bg-[#321b14]"
+                                className="action-button-danger px-3 py-2"
                                 onClick={() => handleUpdateStatus(link, "PAUSED")}
                                 type="button"
                               >
@@ -839,7 +839,7 @@ export function ShortLinksAdminPage({
                             ) : null}
                             {!link.deleted_at && link.status !== "ACTIVE" ? (
                               <button
-                                className="rounded-full border border-[#2d5b48] bg-[#102118] px-3 py-2 text-sm font-semibold text-[#8fe0b8] transition hover:border-[#58b98c] hover:bg-[#142f21]"
+                                className="action-button-secondary border-[rgba(79,191,136,0.34)] px-3 py-2 text-status-success hover:border-[rgba(79,191,136,0.72)]"
                                 onClick={() => handleUpdateStatus(link, "ACTIVE")}
                                 type="button"
                               >
@@ -849,7 +849,7 @@ export function ShortLinksAdminPage({
                             ) : null}
                             {!link.deleted_at ? (
                               <button
-                                className="rounded-full border border-[#7b3e3e] bg-[#341919] px-3 py-2 text-sm font-semibold text-[#f0d7d2] transition hover:border-[#9a5656] hover:bg-[#452020]"
+                                className="action-button-danger px-3 py-2"
                                 onClick={() => handleDelete(link)}
                                 type="button"
                               >
@@ -857,7 +857,7 @@ export function ShortLinksAdminPage({
                                 Delete
                               </button>
                             ) : (
-                              <span className="rounded-full border border-[#30343b] bg-[#101216] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                              <span className="status-badge-neutral px-3 py-2 uppercase tracking-[0.14em]">
                                 Soft deleted
                               </span>
                             )}
