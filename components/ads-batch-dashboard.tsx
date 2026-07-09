@@ -274,7 +274,7 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-[#30343b] bg-[#121418] px-4 py-4">
+    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
       <p className="field-label">{label}</p>
       <p className="mt-4 text-3xl font-semibold tracking-tight text-ink">{value}</p>
       <p className="mt-2 text-xs leading-5 text-muted">{note}</p>
@@ -290,11 +290,11 @@ function StrategyTable({
   title: string;
 }) {
   return (
-    <section className="rounded-[26px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+    <section className="rounded-xl border border-edge bg-surface-elevated p-4 sm:p-5">
       <h3 className="text-lg font-semibold text-ink">{title}</h3>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-[#171a1f] text-[#b8bec6]">
+          <thead className="bg-surface text-secondary">
             <tr>
               <th className="px-3 py-3 font-semibold">Segment</th>
               <th className="px-3 py-3 font-semibold">Spend</th>
@@ -307,10 +307,10 @@ function StrategyTable({
               <th className="px-3 py-3 font-semibold">Rows</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#252a31]">
+          <tbody className="divide-y divide-edge">
             {rows.length > 0 ? (
               rows.map((row) => (
-                <tr className="text-[#d9dee5]" key={row.label}>
+                <tr className="text-ink transition hover:bg-surface-hover" key={row.label}>
                   <td className="px-3 py-3 font-semibold">{row.label}</td>
                   <td className="px-3 py-3">{formatMoney(row.spend)}</td>
                   <td className="px-3 py-3">{formatNumber(row.results)}</td>
@@ -1044,18 +1044,18 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
   }
 
   return (
-    <main className="px-4 py-5 sm:px-6 lg:px-8">
+    <main className="bg-app px-4 py-5 text-primary sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1700px] space-y-6">
-        <section className="panel px-4 py-6 sm:px-8 sm:py-7">
+        <section className="command-surface px-5 py-6 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="pill">Ad Lab</div>
+              <div className="status-badge-neutral uppercase tracking-[0.14em]">Ad Lab</div>
               <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+                <h1 className="text-[2rem] font-semibold leading-tight tracking-tight text-ink sm:text-[2.35rem]">
                   {detail.name || "Imported Meta Report"}
                 </h1>
                 <button
-                  className="rounded-lg p-1.5 text-muted hover:bg-[#1a1d24] hover:text-ink transition-colors"
+                  className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-ink"
                   onClick={() => {
                     setNewName(detail.name || "");
                     setShowRenameDialog(true);
@@ -1103,7 +1103,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
         {/* V1.2 Locked Archive Banner */}
         {isArchived && detail.learning ? (
-          <div className="rounded-[22px] border border-emerald-800/50 bg-emerald-950/20 px-4 py-4 sm:px-6">
+          <div className="rounded-xl border border-[rgba(79,191,136,0.4)] bg-[var(--status-success-soft)] px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <Lock className="mt-0.5 shrink-0 text-emerald-400" size={18} />
@@ -1115,7 +1115,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                 </div>
               </div>
               {detail.learning.final_decision ? (
-                <span className="rounded-full border border-emerald-700/60 bg-emerald-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                <span className="status-badge-ready uppercase tracking-[0.12em]">
                   Final: {detail.learning.final_decision}
                 </span>
               ) : null}
@@ -1128,7 +1128,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
         ) : null}
 
-        <section className="panel px-4 py-5 sm:px-6">
+        <section className="command-surface px-4 py-5 sm:px-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div>
               <p className="field-label">Reporting Start</p>
@@ -1162,7 +1162,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
           {detail.batch_type === "Rolling Snapshot" ? (
             <div className="mt-4 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300 font-sans">
+              <span className="status-badge-warning uppercase tracking-wider">
                 <AlertTriangle size={12} className="shrink-0" />
                 Snapshot-based read
               </span>
@@ -1174,7 +1174,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         </section>
 
         {detail.linked_copy_count > 0 ? (
-          <div className="rounded-[22px] border border-[#30343b] bg-[#121418] px-4 py-3 text-sm leading-6 text-muted">
+          <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-sm leading-6 text-muted">
             <span className="font-semibold text-ink">{formatNumber(detail.linked_copy_count)}</span>{" "}
             Copy Lab link{detail.linked_copy_count === 1 ? "" : "s"} are active in this batch.
             New imports for the same release auto-carry links forward when normalized ad names match.
@@ -1200,24 +1200,24 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           <MetricCard label="100% Hold" note="100% plays divided by 3-second plays." value={formatPercent(videoHoldRate)} />
         </section>
 
-        <section className="overflow-hidden rounded-[30px] border border-[#5b4920] bg-[linear-gradient(135deg,rgba(215,180,94,0.16),rgba(18,20,24,0.96)_38%,rgba(12,14,18,0.98))] px-4 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)] sm:px-6 sm:py-6 space-y-5">
+        <section className="command-surface space-y-5 overflow-hidden border-[rgba(246,201,69,0.28)] bg-[linear-gradient(135deg,rgba(246,201,69,0.12),var(--bg-surface)_34%,var(--bg-surface)_100%)] px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="field-label text-[#d7b45e]">Batch Readout & Diagnostics</p>
+              <p className="field-label text-brand-primary">Batch Readout & Diagnostics</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-tight text-ink">
                 {campaignReadout.decision}
               </h2>
               {detail.release_id ? (
                 <p className="mt-1 text-xs">
                   <Link
-                    className="font-semibold text-[#c9a347] underline hover:text-[#d5b15b] transition"
+                    className="font-semibold text-brand-primary underline transition hover:text-brand-primary-hover"
                     href={`/admin/releases/${detail.release_id}`}
                   >
                     View Strategic Campaign Intelligence on Release Detail
                   </Link>
                 </p>
               ) : null}
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c7c0ae]">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-secondary">
                 Auto-generated from Meta CSV metrics, Copy Lab links, and first-party
                 `/links` follow-through. Manual notes are optional context only.
               </p>
@@ -1242,7 +1242,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
           <div className="grid gap-4 lg:grid-cols-3">
             <div
-              className={`rounded-[22px] border px-4 py-4 ${getQualityClass(
+              className={`rounded-xl border px-4 py-4 ${getQualityClass(
                 campaignReadout.landingPageViewQuality.tone
               )}`}
             >
@@ -1252,7 +1252,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
 
             <div
-              className={`rounded-[22px] border px-4 py-4 ${getQualityClass(
+              className={`rounded-xl border px-4 py-4 ${getQualityClass(
                 campaignReadout.streamingOutboundClickQuality.tone
               )}`}
             >
@@ -1266,7 +1266,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
 
             <div
-              className={`rounded-[22px] border px-4 py-4 ${getConfidenceClass(
+              className={`rounded-xl border px-4 py-4 ${getConfidenceClass(
                 campaignReadout.attributionConfidence.level
               )}`}
             >
@@ -1280,16 +1280,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
             </div>
           </div>
 
-          <div className="mt-4 rounded-[22px] border border-[#5b4920]/60 bg-[#12100a]/70 px-4 py-4">
-            <p className="field-label text-[#d7b45e]">Batch Action</p>
-            <p className="mt-2 text-sm leading-6 text-[#f1eadc]">{campaignReadout.nextTest}</p>
+          <div className="mt-4 rounded-xl border border-[rgba(246,201,69,0.32)] bg-brand-primary-soft px-4 py-4">
+            <p className="field-label text-brand-primary">Batch Action</p>
+            <p className="mt-2 text-sm leading-6 text-ink">{campaignReadout.nextTest}</p>
             {campaignReadout.coverageWarning && (
-              <div className="mt-3 border-t border-[#5b4920]/30 pt-3 text-sm text-amber-300 flex flex-wrap gap-1 items-center">
+              <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-[rgba(246,201,69,0.24)] pt-3 text-sm text-[#f1cf87]">
                 <span>{campaignReadout.coverageWarning}</span>
                 {detail.release_id && (
                   <Link
                     href={`/admin/releases/${detail.release_id}`}
-                    className="underline text-amber-100 hover:text-white font-medium"
+                    className="font-medium text-ink underline hover:text-brand-primary-hover"
                   >
                     Go to Release Detail for strategic iteration planning
                   </Link>
@@ -1299,12 +1299,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           {campaignReadout.attributionConfidence.warnings.length > 0 ? (
-            <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-4">
-              <p className="field-label text-[#d7b45e]">Read Before Trusting This</p>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-[#d7b45e]">
+            <div className="rounded-xl border border-[rgba(230,173,67,0.38)] bg-[var(--status-warning-soft)] px-4 py-4">
+              <p className="field-label text-[#f1cf87]">Read Before Trusting This</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-[#f1cf87]">
                 {campaignReadout.attributionConfidence.warnings.map((warning) => (
                   <li key={warning} className="flex items-start gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#d7b45e] shrink-0 mt-2" />
+                    <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#f1cf87]" />
                     <span>{warning}</span>
                   </li>
                 ))}
@@ -1391,12 +1391,12 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         ) : null}
 
         {message ? (
-          <div className="rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
+          <div className="rounded-xl border border-[rgba(246,201,69,0.32)] bg-brand-primary-soft px-4 py-3 text-sm text-brand-primary">
             {message}
           </div>
         ) : null}
 
-        <section className="panel space-y-5 px-4 py-5 sm:px-6 sm:py-6">
+        <section className="command-surface space-y-5 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="field-label">Creative Leaderboard</p>
@@ -1445,7 +1445,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[2200px] text-left text-sm">
-              <thead className="bg-[#171a1f] text-[#b8bec6]">
+              <thead className="bg-surface-elevated text-secondary">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Ad Name</th>
                   <th className="px-3 py-3 font-semibold">Visual</th>
@@ -1476,7 +1476,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   <th className="px-3 py-3 font-semibold">Performance Signals</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252a31]">
+              <tbody className="divide-y divide-edge">
                 {filteredReports.map((report) => {
                   const resultType = getResultTypeSummary(report.result_indicator);
                   const parsed = parseAdName(report.ad_name);
@@ -1491,7 +1491,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                   });
 
                   return (
-                  <tr className="align-top text-[#d9dee5]" key={report.id}>
+                  <tr className="align-top text-ink transition hover:bg-surface-hover" key={report.id}>
                     <td className="max-w-[260px] px-3 py-4">
                       <p className="font-semibold text-ink">{report.ad_name}</p>
                       <p className="mt-1 text-xs text-muted">{report.ad_set_name || "No ad set"}</p>
@@ -1547,27 +1547,27 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                       {report.linked_copy ? (
                         <div className="mt-3 flex flex-wrap gap-2 items-center">
                           {report.copy_link_source === "carryover" ? (
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
+                            <span className="rounded border border-[rgba(230,173,67,0.24)] bg-[var(--status-warning-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#f1cf87]">
                               Carried Link
                             </span>
                           ) : null}
                           {report.linked_copy.archived_at ? (
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
+                            <span className="rounded border border-[rgba(230,173,67,0.24)] bg-[var(--status-warning-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#f1cf87]">
                               Archived
                             </span>
                           ) : null}
                           {report.linked_copy.archived_at && report.linked_copy.archive_reason?.toLowerCase().includes("legacy duplicate") ? (
-                            <span className="text-[9px] font-semibold uppercase tracking-wider text-red-400 bg-red-400/10 border border-red-400/20 rounded px-1.5 py-0.5">
+                            <span className="rounded border border-[rgba(223,107,107,0.24)] bg-[var(--status-danger-soft)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#f0b4b4]">
                               Legacy Duplicate
                             </span>
                           ) : null}
                           {report.linked_copy.hook ? (
-                            <p className="w-full text-xs font-medium text-ink italic bg-[#14171c]/50 p-2 rounded border border-[#2a2f37] leading-relaxed">
+                            <p className="w-full rounded border border-edge bg-surface p-2 text-xs font-medium italic leading-relaxed text-ink">
                               &quot;{report.linked_copy.hook}&quot;
                             </p>
                           ) : null}
                           {report.linked_copy.caption ? (
-                            <p className="w-full text-xs text-muted bg-[#14171c]/30 p-2 rounded border border-[#20242b]/60 leading-relaxed whitespace-pre-wrap">
+                            <p className="w-full whitespace-pre-wrap rounded border border-edge bg-surface p-2 text-xs leading-relaxed text-muted">
                               {report.linked_copy.caption}
                             </p>
                           ) : null}
@@ -1581,7 +1581,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
                             {formatSongSection(report.linked_copy.song_section)} (Legacy)
                           </span>
                           {report.linked_copy.creative_notes ? (
-                            <p className="mt-2 text-xs leading-5 text-[#969ca5] w-full">
+                            <p className="mt-2 w-full text-xs leading-5 text-muted">
                               {report.linked_copy.creative_notes}
                             </p>
                           ) : null}
@@ -1652,7 +1652,7 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           </div>
 
           {filteredReports.length === 0 ? (
-            <div className="rounded-[22px] border border-dashed border-[#30343b] bg-[#121418] px-4 py-6 text-center text-sm text-muted">
+            <div className="rounded-xl border border-dashed border-edge-strong bg-surface-elevated px-4 py-6 text-center text-sm text-muted">
               No ad rows match the current filters.
             </div>
           ) : null}
