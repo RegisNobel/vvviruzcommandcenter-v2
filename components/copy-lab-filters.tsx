@@ -55,11 +55,11 @@ export function CopyLabFilters({
   return (
     <div className="flex flex-wrap items-center gap-5">
       <div className="flex flex-col gap-1.5 min-w-[200px]">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted">
           Release Context
         </span>
         <select
-          className="field-input w-full bg-[#151820] border-[#30343b] text-ink focus:border-[#d7b45e]"
+          className="field-input w-full"
           onChange={handleReleaseChange}
           value={activeReleaseId || ""}
         >
@@ -73,11 +73,11 @@ export function CopyLabFilters({
       </div>
 
       <div className="flex flex-col gap-1.5 min-w-[160px]">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted">
           Archive State
         </span>
         <select
-          className="field-input w-full bg-[#151820] border-[#30343b] text-ink focus:border-[#d7b45e]"
+          className="field-input w-full"
           onChange={handleArchiveChange}
           value={activeArchiveFilter}
         >
@@ -88,10 +88,10 @@ export function CopyLabFilters({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted/60">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted">
           Linkage Status
         </span>
-        <div className="flex rounded-full border border-[#252a31] bg-[#0e1116] p-1">
+        <div className="flex flex-wrap rounded-md border border-edge bg-input p-1">
           {[
             { key: "all", label: "All" },
             { key: "linked", label: "Linked (Direct + Carried)" },
@@ -104,10 +104,10 @@ export function CopyLabFilters({
               <button
                 key={item.key}
                 onClick={() => handleStatusChange(item.key)}
-                className={`rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-[0.14em] transition ${
+                className={`rounded-md px-4 py-1.5 text-xs font-black uppercase tracking-[0.14em] transition ${
                   isActive
-                    ? "bg-[#d7b45e] text-[#15120a] shadow-[0_0_0_1px_rgba(215,180,94,0.2)]"
-                    : "text-[#d9dee5] hover:text-[#f1dfad]"
+                    ? "bg-brand-primary text-inverse shadow-[0_0_0_1px_rgba(246,201,69,0.18)]"
+                    : "text-secondary hover:bg-surface-hover hover:text-ink"
                 }`}
                 type="button"
               >
