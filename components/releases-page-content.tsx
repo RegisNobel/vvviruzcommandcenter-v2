@@ -52,6 +52,18 @@ function matchesReleaseSearch(release: ReleaseSummary, query: string) {
   return haystack.includes(query);
 }
 
+function getDiscoveryStatusClass(status: ReleaseSummary["discovery_status"]) {
+  if (status === "Ready") {
+    return "status-badge-ready";
+  }
+
+  if (status === "Needs polish") {
+    return "status-badge-warning";
+  }
+
+  return "status-badge-danger";
+}
+
 export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
@@ -141,11 +153,11 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <section className="panel overflow-hidden px-6 py-7 sm:px-8" ref={headerRef}>
+        <section className="command-surface overflow-hidden px-5 py-6 sm:px-6" ref={headerRef}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">Release planning</div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+              <h1 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-ink sm:text-[2.35rem]">
                 Releases
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -183,7 +195,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
               </span>
             </label>
 
-            <div className="rounded-[24px] border border-edge bg-panel-subtle px-4 py-4">
+            <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
               <p className="field-label">Results</p>
               <p className="mt-3 text-2xl font-semibold text-ink">
                 {filteredReleases.length}
@@ -228,96 +240,109 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
             </>
           }
         />
-        <section className="space-y-4">
-          {filteredReleases.map((release, index) => (
-            <article
-              className="panel cursor-pointer px-4 py-5 transition sm:px-6 sm:py-6 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel-subtle"
-              key={release.id}
-              onClick={() => router.push(`/admin/releases/${release.id}`)}
-            >
-              <div className="grid gap-5 lg:grid-cols-[50px_minmax(0,1.2fr)_110px_130px_minmax(180px,1fr)_minmax(200px,1fr)_110px] lg:items-center">
-                <div className="pill w-fit">{index + 1}</div>
+        <section className="command-surface overflow-hidden">
+          <div className="hidden border-b border-edge bg-surface-elevated/60 px-4 py-3 text-left lg:grid lg:grid-cols-[42px_minmax(0,1.25fr)_112px_136px_minmax(180px,1fr)_minmax(210px,1fr)_112px] lg:items-center lg:gap-5">
+            <span className="table-label">#</span>
+            <span className="table-label">Release</span>
+            <span className="table-label">Stage</span>
+            <span className="table-label">Date</span>
+            <span className="table-label">Internal Progress</span>
+            <span className="table-label">Discovery Quality</span>
+            <span className="table-label text-right">Action</span>
+          </div>
 
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className="truncate text-lg font-semibold text-ink">
-                      {release.title}
-                    </p>
-                    {release.pinned ? <span className="pill">Pinned</span> : null}
-                  </div>
-                  <p className="mt-1 truncate text-sm text-muted">
-                    {formatReleaseType(release.type)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="field-label">Stage</p>
-                  <p className="mt-2 text-sm font-semibold text-ink">
-                    {release.status}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="field-label">Release Date</p>
-                  <p className="mt-2 text-sm font-semibold text-ink">
-                    {formatReleaseDate(release.release_date)}
-                  </p>
-                </div>
-
-                <div className="min-w-0">
-                  <p className="field-label">Internal Progress</p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#23262c]">
-                      <div
-                        className={`h-full rounded-full ${getReleaseProgressTone(
-                          release.progress_percentage
-                        )}`}
-                        style={{width: `${release.progress_percentage}%`}}
-                      />
+          <div className="divide-y divide-edge">
+            {filteredReleases.map((release, index) => (
+              <article
+                className="command-row cursor-pointer px-4 py-4"
+                key={release.id}
+                onClick={() => router.push(`/admin/releases/${release.id}`)}
+              >
+                <div className="grid gap-4 lg:grid-cols-[42px_minmax(0,1.25fr)_112px_136px_minmax(180px,1fr)_minmax(210px,1fr)_112px] lg:items-center lg:gap-5">
+                  <div className="flex items-center gap-3 lg:block">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-edge bg-surface-elevated text-xs font-semibold text-secondary">
+                      {index + 1}
                     </div>
-                    <span className="text-sm font-semibold text-ink">
-                      {release.progress_percentage}%
-                    </span>
+                    <span className="table-label lg:hidden">Release</span>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="truncate text-lg font-semibold text-ink">
+                        {release.title}
+                      </p>
+                      {release.pinned ? <span className="status-badge-info">Pinned</span> : null}
+                    </div>
+                    <p className="mt-1 truncate text-sm text-muted">
+                      {formatReleaseType(release.type)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="table-label lg:hidden">Stage</p>
+                    <p className="mt-1 text-sm font-semibold text-ink lg:mt-0">
+                      {release.status}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="table-label lg:hidden">Release Date</p>
+                    <p className="mt-1 text-sm font-semibold text-ink lg:mt-0">
+                      {formatReleaseDate(release.release_date)}
+                    </p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="table-label lg:hidden">Internal Progress</p>
+                    <div className="mt-2 flex items-center gap-3 lg:mt-0">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-elevated">
+                        <div
+                          className={`h-full rounded-full ${getReleaseProgressTone(
+                            release.progress_percentage
+                          )}`}
+                          style={{width: `${release.progress_percentage}%`}}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-ink">
+                        {release.progress_percentage}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="table-label lg:hidden">Discovery Quality</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 lg:mt-0">
+                      <span className={getDiscoveryStatusClass(release.discovery_status)}>
+                        {release.discovery_status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">
+                      {release.discovery_passed} passed / {release.discovery_warning} warning / {release.discovery_missing} missing
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-start gap-3 lg:justify-end">
+                    <button
+                      className={release.pinned ? "action-button-primary" : "action-button-secondary"}
+                      disabled={busyReleaseId === release.id}
+                      onClick={(event) => void togglePinnedState(event, release)}
+                      type="button"
+                    >
+                      {release.pinned ? <PinOff size={16} /> : <Pin size={16} />}
+                      {busyReleaseId === release.id
+                        ? "Saving..."
+                        : release.pinned
+                          ? "Unpin"
+                          : "Pin"}
+                    </button>
                   </div>
                 </div>
-
-                <div className="min-w-0">
-                  <p className="field-label">Discovery Quality</p>
-                  <p className={`mt-2 text-sm font-semibold ${
-                    release.discovery_status === "Ready"
-                      ? "text-emerald-400"
-                      : release.discovery_status === "Needs polish"
-                        ? "text-amber-400"
-                        : "text-red-400"
-                  }`}>
-                    {release.discovery_status}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {release.discovery_passed} passed · {release.discovery_warning} warning · {release.discovery_missing} missing
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    className={release.pinned ? "action-button-primary" : "action-button-secondary"}
-                    disabled={busyReleaseId === release.id}
-                    onClick={(event) => void togglePinnedState(event, release)}
-                    type="button"
-                  >
-                    {release.pinned ? <PinOff size={16} /> : <Pin size={16} />}
-                    {busyReleaseId === release.id
-                      ? "Saving..."
-                      : release.pinned
-                        ? "Unpin"
-                        : "Pin"}
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
 
           {releaseItems.length === 0 ? (
-            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
+            <div className="px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No releases yet</p>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Create your first release to start tracking the song, visuals, promo,
@@ -327,7 +352,7 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           ) : null}
 
           {releaseItems.length > 0 && filteredReleases.length === 0 ? (
-            <div className="panel px-4 py-7 sm:px-6 sm:py-8">
+            <div className="px-4 py-7 sm:px-6 sm:py-8">
               <p className="text-lg font-semibold text-ink">No matching releases</p>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Try a different title, collaborator, slug, UPC, or ISRC.

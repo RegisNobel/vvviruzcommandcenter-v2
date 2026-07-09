@@ -3,6 +3,60 @@
 @tailwind utilities;
 
 :root {
+  --bg-app: #090a0c;
+  --bg-sidebar: #0d0f12;
+  --bg-surface: #121419;
+  --bg-surface-elevated: #181b21;
+  --bg-surface-hover: #1e222a;
+  --bg-input: #0f1115;
+  --bg-overlay: rgba(4, 5, 7, 0.72);
+
+  --text-primary: #f5f7fa;
+  --text-secondary: #a8adb7;
+  --text-muted: #7c8490;
+  --text-disabled: #606773;
+  --text-inverse: #0a0b0d;
+
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-muted: rgba(255, 255, 255, 0.05);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-focus: rgba(246, 201, 69, 0.58);
+
+  --brand-primary: #f6c945;
+  --brand-primary-hover: #ffd95a;
+  --brand-primary-pressed: #dfb637;
+  --brand-primary-muted: #a8862e;
+  --brand-primary-soft: rgba(246, 201, 69, 0.12);
+
+  --status-success: #4fbf88;
+  --status-success-soft: rgba(79, 191, 136, 0.12);
+  --status-warning: #e6ad43;
+  --status-warning-soft: rgba(230, 173, 67, 0.12);
+  --status-danger: #df6b6b;
+  --status-danger-soft: rgba(223, 107, 107, 0.12);
+  --status-info: #6f9ed8;
+  --status-info-soft: rgba(111, 158, 216, 0.12);
+  --status-neutral: #8b929d;
+  --status-neutral-soft: rgba(139, 146, 157, 0.12);
+
+  --chart-1: #f6c945;
+  --chart-2: #7c9df2;
+  --chart-3: #63bd91;
+  --chart-4: #d88967;
+  --chart-5: #ae87d9;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-panel:
+    0 1px 2px rgba(0, 0, 0, 0.32),
+    0 8px 24px rgba(0, 0, 0, 0.18);
+  --shadow-popover: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.46);
+
   --bg: #0f1114;
   --surface: rgba(23, 25, 29, 0.86);
   --surface-strong: rgba(18, 20, 24, 0.96);
@@ -33,11 +87,11 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(201, 163, 71, 0.08), transparent 26%),
-    radial-gradient(circle at top right, rgba(72, 76, 84, 0.22), transparent 24%),
-    linear-gradient(180deg, #101215 0%, #0b0d10 100%);
-  color: var(--text);
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    radial-gradient(circle at top left, rgba(246, 201, 69, 0.07), transparent 26%),
+    radial-gradient(circle at top right, rgba(111, 158, 216, 0.08), transparent 28%),
+    linear-gradient(180deg, var(--bg-app) 0%, #07080a 100%);
+  color: var(--text-primary);
+  font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 ::selection {
@@ -128,10 +182,11 @@ input[type="range"]::-moz-range-thumb {
 
 @layer components {
   .panel {
-    @apply rounded-[28px] border backdrop-blur-xl;
-    border-color: var(--border);
-    background: var(--surface);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+    @apply border;
+    border-color: var(--border-default);
+    border-radius: var(--radius-xl);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-panel);
   }
 
   .panel-header {
@@ -140,81 +195,148 @@ input[type="range"]::-moz-range-thumb {
 
   .field-label {
     @apply text-xs font-semibold uppercase tracking-[0.18em];
-    color: #7f858d;
+    color: var(--text-muted);
   }
 
   .field-input {
-    @apply w-full rounded-2xl border px-4 py-3 text-sm outline-none transition;
-    border-color: rgba(70, 76, 84, 0.85);
-    background: rgba(14, 17, 21, 0.96);
-    color: var(--text);
+    @apply w-full border px-4 py-3 text-sm outline-none transition;
+    border-color: var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    color: var(--text-primary);
     box-shadow: none;
     color-scheme: dark;
   }
 
   .field-input::placeholder {
-    color: #6f757d;
+    color: var(--text-disabled);
   }
 
   .field-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(201, 163, 71, 0.22);
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(246, 201, 69, 0.14);
   }
 
   .action-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold transition;
+    border-radius: var(--radius-md);
   }
 
   .action-button-primary {
     @apply action-button;
-    background: var(--accent);
-    color: #13161a;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
   }
 
   .action-button-primary:hover {
-    background: var(--accent-strong);
+    background: var(--brand-primary-hover);
+  }
+
+  .action-button-primary:active {
+    background: var(--brand-primary-pressed);
   }
 
   .action-button-secondary {
     @apply action-button border;
-    border-color: rgba(74, 80, 88, 0.85);
-    background: rgba(20, 23, 27, 0.96);
-    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--bg-surface-elevated);
+    color: var(--text-primary);
   }
 
   .action-button-secondary:hover {
-    border-color: rgba(96, 102, 111, 0.9);
-    background: rgba(28, 31, 36, 0.98);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: var(--bg-surface-hover);
   }
 
   .action-button-tertiary {
     @apply action-button;
     background: transparent;
-    color: var(--muted);
+    color: var(--text-secondary);
   }
 
   .action-button-tertiary:hover {
-    background: rgba(24, 27, 32, 0.94);
-    color: var(--text);
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
   }
 
   .action-button-danger {
     @apply action-button border;
-    border-color: rgba(120, 59, 59, 0.9);
-    background: rgba(52, 24, 24, 0.98);
-    color: #f0d7d2;
+    border-color: rgba(223, 107, 107, 0.4);
+    background: var(--status-danger-soft);
+    color: #f2cccc;
   }
 
   .action-button-danger:hover {
-    border-color: rgba(154, 76, 76, 0.95);
-    background: rgba(72, 29, 29, 0.98);
+    border-color: rgba(223, 107, 107, 0.72);
+    background: rgba(223, 107, 107, 0.18);
   }
 
   .pill {
     @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em];
-    border-color: rgba(58, 63, 70, 0.9);
-    background: rgba(17, 20, 24, 0.96);
-    color: #969ca5;
+    border-color: var(--border-default);
+    background: var(--status-neutral-soft);
+    color: var(--text-secondary);
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .status-badge-ready {
+    @apply status-badge;
+    border-color: rgba(79, 191, 136, 0.32);
+    background: var(--status-success-soft);
+    color: #9de2bd;
+  }
+
+  .status-badge-warning {
+    @apply status-badge;
+    border-color: rgba(230, 173, 67, 0.34);
+    background: var(--status-warning-soft);
+    color: #f1cf87;
+  }
+
+  .status-badge-danger {
+    @apply status-badge;
+    border-color: rgba(223, 107, 107, 0.34);
+    background: var(--status-danger-soft);
+    color: #f0b4b4;
+  }
+
+  .status-badge-info {
+    @apply status-badge;
+    border-color: rgba(111, 158, 216, 0.34);
+    background: var(--status-info-soft);
+    color: #b4cff0;
+  }
+
+  .status-badge-neutral {
+    @apply status-badge;
+    border-color: var(--border-default);
+    background: var(--status-neutral-soft);
+    color: var(--text-secondary);
+  }
+
+  .command-surface {
+    @apply border;
+    border-color: var(--border-default);
+    border-radius: var(--radius-xl);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .command-row {
+    @apply border-b transition last:border-b-0;
+    border-color: var(--border-muted);
+  }
+
+  .command-row:hover {
+    background: var(--bg-surface-hover);
+  }
+
+  .table-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em];
+    color: var(--text-muted);
   }
 
   .mobile-scroll-x {
