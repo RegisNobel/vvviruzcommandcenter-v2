@@ -1,16 +1,13 @@
 "use client";
 
-import {useEffect, useState, useTransition} from "react";
+import {useEffect} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Disc,
   Play,
-  Mail,
-  CheckCircle,
   Plus,
-  ChevronRight,
-  Loader2
+  ChevronRight
 } from "lucide-react";
 import type {
   PlaylistRecord,
@@ -126,13 +123,6 @@ export function PublicPlaylistCampaignView({
   previewMemberships: PlaylistReleaseRecord[];
   siteSettings: SiteSettingsRecord;
 }) {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [consentGiven, setConsentGiven] = useState(false);
-  const [signupState, setSignupState] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [signupMsg, setSignupMsg] = useState("");
-  const [isPending, startTransition] = useTransition();
-
   // Log page view on mount
   useEffect(() => {
     trackEvent(playlist.slug, focusedMembership.releaseId, {
@@ -157,58 +147,6 @@ export function PublicPlaylistCampaignView({
       linkType: "playlist",
       linkLabel: platform,
       targetUrl: playlistUrl
-    });
-  };
-
-  // Newsletter submit
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !name.trim()) {
-      setSignupState("error");
-      setSignupMsg("Name and email are required.");
-      return;
-    }
-    if (!consentGiven) {
-      setSignupState("error");
-      setSignupMsg("Please check the consent box to continue.");
-      return;
-    }
-
-    setSignupState("loading");
-    setSignupMsg("");
-
-    const utm = getUtmParams();
-
-    startTransition(async () => {
-      try {
-        const response = await fetch("/api/exclusive/claim", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({
-            name,
-            email,
-            consent_given: consentGiven,
-            bot_test_field: "",
-            source_utm_source: utm.utmSource,
-            source_utm_medium: utm.utmMedium,
-            source_utm_campaign: utm.utmCampaign,
-            source_utm_content: utm.utmContent,
-            source_utm_term: utm.utmTerm,
-            source_referrer: typeof document !== "undefined" ? document.referrer : "",
-            source_landing_page: window.location.pathname
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to subscribe.");
-        }
-
-        setSignupState("success");
-        setSignupMsg("You're in. I'll send the preview/update when it's ready.");
-      } catch (err) {
-        setSignupState("error");
-        setSignupMsg(err instanceof Error ? err.message : "Failed to join newsletter.");
-      }
     });
   };
 
@@ -306,71 +244,7 @@ export function PublicPlaylistCampaignView({
           </section>
         )}
 
-        {/* 4. Compact Inline Newsletter Signup */}
-        <section className="public-form-surface space-y-4 p-6">
-          <div className="flex items-center gap-2 border-b border-white/5 pb-3">
-            <Mail className="text-[#c9a347]" size={18} />
-            <h3 className="text-sm font-bold text-[#f3ede2]">Join the Inner Circle</h3>
-          </div>
-
-          {signupState === "success" ? (
-            <div className="flex items-start gap-2.5 rounded-xl border border-emerald-950/40 bg-emerald-950/20 px-3.5 py-3 text-xs text-emerald-400">
-              <CheckCircle className="shrink-0 mt-0.5" size={16} />
-              <p>{signupMsg}</p>
-            </div>
-          ) : (
-            <form className="space-y-3" onSubmit={handleNewsletterSubmit}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-xs text-[#ebe5d9] placeholder-[#5f656e] focus:border-[#c9a347]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a347]/50"
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your Name"
-                  required
-                  type="text"
-                  value={name}
-                />
-                <input
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-xs text-[#ebe5d9] placeholder-[#5f656e] focus:border-[#c9a347]/50 focus:outline-none focus:ring-1 focus:ring-[#c9a347]/50"
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your Email"
-                  required
-                  type="email"
-                  value={email}
-                />
-              </div>
-
-              <label className="flex items-start gap-2 cursor-pointer pt-1">
-                <input
-                  checked={consentGiven}
-                  className="mt-0.5 rounded border-white/10 bg-black/40 text-[#c9a347] focus:ring-[#c9a347]"
-                  onChange={(e) => setConsentGiven(e.target.checked)}
-                  type="checkbox"
-                />
-                <span className="text-[10px] leading-4 text-[#8b919b]">
-                  {siteSettings.site_content.exclusive.consent_label || "I consent to receive marketing emails and release updates."}
-                </span>
-              </label>
-
-              {signupState === "error" && (
-                <p className="text-[10px] text-rose-400 font-semibold">{signupMsg}</p>
-              )}
-
-              <button
-                className="w-full rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/15 hover:border-white/20 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                disabled={signupState === "loading"}
-                type="submit"
-              >
-                {signupState === "loading" ? (
-                  <Loader2 className="animate-spin" size={14} />
-                ) : (
-                  "Subscribe for Updates"
-                )}
-              </button>
-            </form>
-          )}
-        </section>
-
-        {/* 5. Compact Playlist Preview */}
+        {/* 4. Compact Playlist Preview */}
         {previewMemberships.length > 0 && (
           <section className="space-y-4">
             <h3 className="text-xs uppercase tracking-widest font-bold text-[#868c96] px-1">
@@ -423,7 +297,7 @@ export function PublicPlaylistCampaignView({
           </section>
         )}
 
-        {/* 6. Playlist Follow CTA */}
+        {/* 5. Playlist Follow CTA */}
         {(playlist.spotifyPlaylistUrl || playlist.applePlaylistUrl || playlist.youtubePlaylistUrl) && (
           <section className="public-form-surface space-y-4 p-6">
             <div className="text-center">
@@ -473,7 +347,7 @@ export function PublicPlaylistCampaignView({
           </section>
         )}
 
-        {/* 7. Minimal Footer */}
+        {/* 6. Minimal Footer */}
         <footer className="text-center pt-8 text-[10px] text-[#5c616b] font-medium tracking-wider space-y-1.5">
           <p>© {new Date().getFullYear()} {siteSettings.artist_name}. All rights reserved.</p>
           <p className="opacity-75">POWERED BY COMMAND CENTER</p>
