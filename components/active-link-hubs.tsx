@@ -30,9 +30,9 @@ export function ActiveLinkHubs({hubs}: ActiveLinkHubsProps) {
   }
 
   return (
-    <section className="panel p-5 space-y-4">
+    <section className="command-surface space-y-4 p-5">
       <div className="flex items-center gap-2">
-        <Link2 size={16} className="text-[#c9a347]" />
+        <Link2 size={16} className="text-brand-primary" />
         <h3 className="text-lg font-semibold text-ink">Active Link Hubs</h3>
       </div>
 
@@ -48,7 +48,7 @@ export function ActiveLinkHubs({hubs}: ActiveLinkHubsProps) {
 
             return (
               <div
-                className="flex items-center justify-between gap-4 rounded-xl border border-[#272b31] bg-[#121418] px-3.5 py-2.5 transition hover:border-[#3a3f47]"
+                className="flex items-center justify-between gap-4 rounded-md border border-edge bg-surface-elevated px-3.5 py-2.5 transition hover:border-edge-strong hover:bg-surface-hover"
                 key={hub.id}
               >
                 <div className="min-w-0">
@@ -65,7 +65,7 @@ export function ActiveLinkHubs({hubs}: ActiveLinkHubsProps) {
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#ece6da] hover:bg-white/10 hover:text-white transition"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-edge bg-input text-ink transition hover:border-[rgba(246,201,69,0.5)] hover:bg-surface-hover hover:text-brand-primary"
                     onClick={() => handleCopy(hub.path, hub.id)}
                     title="Copy URL"
                     type="button"
@@ -77,7 +77,7 @@ export function ActiveLinkHubs({hubs}: ActiveLinkHubsProps) {
                     )}
                   </button>
                   <a
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-[#ece6da] hover:bg-white/10 hover:text-white transition"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-edge bg-input text-ink transition hover:border-[rgba(246,201,69,0.5)] hover:bg-surface-hover hover:text-brand-primary"
                     href={publicUrl}
                     rel="noreferrer"
                     target="_blank"
