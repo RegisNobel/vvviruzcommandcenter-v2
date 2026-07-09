@@ -76,7 +76,7 @@ export function BackupRestoreButton() {
       <button
         onClick={handleOpenPanel}
         disabled={isPending}
-        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="action-button-secondary border-[rgba(246,201,69,0.32)] bg-brand-primary-soft text-brand-primary hover:border-[rgba(246,201,69,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isPending && !showPanel ? (
           <>
@@ -93,8 +93,8 @@ export function BackupRestoreButton() {
       </button>
 
       {showPanel && backups.length > 0 && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[360px] rounded-xl border border-[#252a31] bg-[#15181c] shadow-2xl">
-          <div className="border-b border-[#252a31] px-4 py-3">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[360px] overflow-hidden rounded-lg border border-edge bg-surface-elevated shadow-popover">
+          <div className="border-b border-edge bg-input px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted">
               Select Backup to Restore
             </p>
@@ -108,9 +108,9 @@ export function BackupRestoreButton() {
                   setShowConfirm(true);
                 }}
                 disabled={isPending}
-                className={`w-full px-4 py-3 text-left transition hover:bg-panel-subtle ${
+                className={`w-full px-4 py-3 text-left transition hover:bg-surface-hover ${
                   selectedBackup?.id === backup.id
-                    ? "bg-amber-500/10 border-l-2 border-amber-500"
+                    ? "border-l-2 border-brand-primary bg-brand-primary-soft"
                     : ""
                 }`}
               >
@@ -129,7 +129,7 @@ export function BackupRestoreButton() {
 
       {showConfirm && selectedBackup && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-red-500/30 bg-[#15181c] p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-lg border border-red-500/30 bg-surface-elevated p-6 shadow-modal">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
                 <AlertTriangle className="text-red-400" size={20} />
@@ -141,12 +141,12 @@ export function BackupRestoreButton() {
               <p>
                 This will <strong className="text-red-400">overwrite your current database</strong> with the selected backup snapshot.
               </p>
-              <div className="rounded-lg bg-[#1a1e24] px-3 py-2">
+              <div className="rounded-lg border border-edge bg-input px-3 py-2">
                 <p className="text-xs text-muted">Selected Backup</p>
                 <p className="mt-1 font-medium text-ink">{selectedBackup.name}</p>
                 <p className="text-xs text-muted">{formatDate(selectedBackup.createdTime)}</p>
               </div>
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-brand-primary">
                 Admin credentials will not be overwritten.
               </p>
             </div>
@@ -155,7 +155,7 @@ export function BackupRestoreButton() {
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={isPending}
-                className="flex-1 rounded-lg border border-[#252a31] px-4 py-2 text-sm font-semibold text-muted transition hover:bg-panel-subtle"
+                className="action-button-secondary flex-1 px-4 py-2 text-sm"
               >
                 Cancel
               </button>

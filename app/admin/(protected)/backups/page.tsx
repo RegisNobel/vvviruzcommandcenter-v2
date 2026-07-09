@@ -35,13 +35,13 @@ function formatBytes(bytes: number | null) {
 function StatusBadge({status}: {status: string}) {
   switch (status) {
     case "success":
-      return <span className="rounded bg-green-500/10 px-2 py-1 text-xs font-semibold text-green-400">Success</span>;
+      return <span className="status-badge-ready">Success</span>;
     case "failed":
-      return <span className="rounded bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-400">Failed</span>;
+      return <span className="status-badge-danger">Failed</span>;
     case "running":
-      return <span className="rounded bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-400">Running</span>;
+      return <span className="status-badge-info">Running</span>;
     default:
-      return <span className="rounded bg-gray-500/10 px-2 py-1 text-xs font-semibold text-gray-400">Unknown</span>;
+      return <span className="status-badge-neutral">Unknown</span>;
   }
 }
 
@@ -86,7 +86,7 @@ export default async function AdminBackupsPage() {
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1200px] space-y-6">
-        <section className="panel overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
+        <section className="command-surface overflow-hidden px-4 py-6 sm:px-8 sm:py-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="pill">System Health</div>
@@ -106,7 +106,7 @@ export default async function AdminBackupsPage() {
 
         {latestRun ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="panel px-4 py-5">
+            <div className="command-surface px-4 py-5">
               <p className="field-label">Last Backup</p>
               <div className="mt-2 flex items-center gap-2">
                 <StatusBadge status={latestRun.status} />
@@ -119,19 +119,19 @@ export default async function AdminBackupsPage() {
               </p>
             </div>
 
-            <div className="panel px-4 py-5">
+            <div className="command-surface px-4 py-5">
               <p className="field-label">Primary Destination</p>
               <p className="mt-2 text-sm font-semibold text-ink">Vercel Blob</p>
               <p className="mt-2 text-sm text-muted">Status: {blobStatus}</p>
             </div>
 
-            <div className="panel px-4 py-5">
+            <div className="command-surface px-4 py-5">
               <p className="field-label">Offsite Destination</p>
               <p className="mt-2 text-sm font-semibold text-ink">Google Drive</p>
               <p className="mt-2 text-sm text-muted">Status: {googleDriveStatus}</p>
             </div>
 
-            <div className="panel px-4 py-5">
+            <div className="command-surface px-4 py-5">
               <p className="field-label">Records Captured</p>
               <p className="mt-2 text-sm font-semibold text-ink">{latestRun.type === "database_snapshot" ? "Database Snapshot" : "Asset Manifest"}</p>
               <p className="mt-2 text-xs leading-relaxed text-muted line-clamp-3">
@@ -140,13 +140,13 @@ export default async function AdminBackupsPage() {
             </div>
           </div>
         ) : (
-          <div className="panel px-4 py-5 text-center text-sm text-muted">
+          <div className="command-surface px-4 py-5 text-center text-sm text-muted">
             No backups have been recorded yet.
           </div>
         )}
 
         {latestFailedRun && latestFailedRun.errorMessage ? (
-          <section className="panel border border-red-500/20 bg-red-500/5 px-4 py-5 sm:px-6">
+          <section className="command-surface border-red-500/20 bg-red-500/5 px-4 py-5 sm:px-6">
             <h2 className="text-sm font-bold text-red-400">
               Latest Error ({latestFailedRun.type === "database_snapshot" ? "Database" : "Assets"})
             </h2>
@@ -159,13 +159,13 @@ export default async function AdminBackupsPage() {
           </section>
         ) : null}
 
-        <section className="panel overflow-hidden">
-          <div className="border-b border-[#252a31] px-4 py-5 sm:px-6">
+        <section className="command-surface overflow-hidden">
+          <div className="border-b border-edge px-4 py-5 sm:px-6">
             <h2 className="text-lg font-semibold text-ink">Recent Backup Runs</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-[#252a31] text-sm">
-              <thead className="bg-[#15181c]">
+            <table className="min-w-full divide-y divide-edge text-sm">
+              <thead className="bg-input">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-muted">Started</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted">Type</th>
@@ -174,9 +174,9 @@ export default async function AdminBackupsPage() {
                   <th className="px-4 py-3 text-left font-semibold text-muted">Destinations</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252a31] bg-transparent">
+              <tbody className="divide-y divide-edge bg-transparent">
                 {recentRuns.map((run) => (
-                  <tr key={run.id} className="transition hover:bg-panel-subtle">
+                  <tr key={run.id} className="transition hover:bg-surface-hover">
                     <td className="whitespace-nowrap px-4 py-3 text-ink">
                       {formatTimestamp(run.startedAt)}
                     </td>
@@ -206,7 +206,7 @@ export default async function AdminBackupsPage() {
           </div>
         </section>
 
-        <section className="panel px-4 py-5 sm:px-6">
+        <section className="command-surface px-4 py-5 sm:px-6">
           <h2 className="text-lg font-semibold text-ink">Restore &amp; Recovery</h2>
           <div className="mt-4 space-y-4 text-sm leading-6 text-muted">
             <p>
