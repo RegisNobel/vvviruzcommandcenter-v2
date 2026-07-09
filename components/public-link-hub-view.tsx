@@ -59,11 +59,11 @@ export function PublicLinkHubView({
 
   if (!selectedRelease) {
     return (
-      <main className="relative min-h-[calc(100vh-140px)] overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
+      <main className="public-conversion-shell">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.16),transparent_36%),linear-gradient(180deg,rgba(5,6,9,0.92),rgba(9,11,15,1))]" />
         <div className="relative mx-auto flex max-w-[560px] justify-center">
-          <section className="w-full rounded-[34px] border border-white/10 bg-[#0c1015]/72 px-6 py-10 text-center backdrop-blur-2xl">
-            <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+          <section className="public-panel w-full px-6 py-10 text-center sm:px-8 sm:py-12">
+            <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
               {content.badge_text}
             </div>
             <p className="mt-6 text-sm leading-7 text-[#b2bac4]">{content.empty_state_text}</p>
@@ -108,7 +108,7 @@ export function PublicLinkHubView({
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(selectedRelease);
 
   return (
-    <main className="relative min-h-[calc(100vh-140px)] overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
+    <main className="public-conversion-shell">
       {hasCoverArt ? (
         <>
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -131,15 +131,14 @@ export function PublicLinkHubView({
 
       <div className="relative mx-auto flex max-w-[560px] justify-center">
         <LinkPageAnalytics releaseId={selectedRelease.id} releaseTitle={selectedRelease.title} hubPath={hubPath} />
-        <section className="w-full rounded-[38px] border border-white/10 bg-[#0b0f14]/70 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:p-6">
-          <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(8,11,15,0.4))] px-5 py-7 text-center sm:px-6 sm:py-8">
-            <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+        <section className="public-panel w-full px-5 py-8 text-center sm:px-8 sm:py-10">
+          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
               {content.badge_text}
             </div>
 
             <div className="mt-6 flex justify-center">
               {hasCoverArt ? (
-                <div className="relative h-44 w-44 overflow-hidden rounded-[28px] border border-white/10 bg-[#12161b] shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:h-52 sm:w-52">
+                <div className="public-art-stage relative h-44 w-44 overflow-hidden sm:h-52 sm:w-52">
                   <Image
                     alt={coverArtAltText}
                     className="object-cover"
@@ -150,7 +149,7 @@ export function PublicLinkHubView({
                   />
                 </div>
               ) : (
-                <div className="flex h-44 w-44 items-center justify-center rounded-[28px] border border-white/10 bg-[#11161c] px-6 text-center text-2xl font-semibold tracking-[-0.03em] text-[#f6efdf] sm:h-52 sm:w-52">
+                <div className="public-art-stage flex h-44 w-44 items-center justify-center px-6 text-center text-2xl font-semibold tracking-[-0.03em] text-[#f6efdf] sm:h-52 sm:w-52">
                   {selectedRelease.title}
                 </div>
               )}
@@ -172,7 +171,7 @@ export function PublicLinkHubView({
 
                     return (
                       <Link
-                        className={`flex w-full items-center justify-between gap-4 rounded-[22px] border px-5 py-4 text-left transition duration-200 hover:scale-[1.01] ${platform.style}`}
+                        className={`public-link-button w-full duration-200 hover:translate-y-[-1px] ${platform.style}`}
                         data-analytics-event="links_link_click"
                         data-analytics-link-label={platform.label}
                         data-analytics-link-type={platform.id}
@@ -194,12 +193,11 @@ export function PublicLinkHubView({
                   })}
                 </>
               ) : (
-                <div className="rounded-[22px] border border-dashed border-white/12 bg-white/[0.03] px-5 py-5 text-sm leading-7 text-[#a9b1bb]">
+                <div className="public-quiet-card border-dashed px-5 py-5 text-sm leading-7 text-[#a9b1bb]">
                   {content.empty_state_text}
                 </div>
               )}
             </div>
-          </div>
         </section>
       </div>
     </main>

@@ -223,21 +223,21 @@ export function PublicPlaylistCampaignView({
     : siteSettings.artist_name;
 
   return (
-    <main className="relative min-h-screen bg-[#090b0e] text-[#ebe5d9] overflow-x-hidden font-sans pb-24">
+    <main className="public-conversion-shell min-h-screen pb-24 text-[#ebe5d9]">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-[#c9a347]/10 via-[#c9a347]/0 to-transparent blur-[120px]" />
 
-      <div className="relative mx-auto max-w-[540px] px-4 pt-10 sm:pt-14 space-y-10">
+      <div className="relative mx-auto max-w-[540px] space-y-10 pt-4 sm:pt-8">
         
         {/* 1. Focused Release Hero */}
         <section className="text-center space-y-6">
           {/* Playlist Context Pill */}
-          <div className="inline-flex rounded-full border border-[#c9a347]/20 bg-[#c9a347]/5 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#d8b864] shadow-sm">
+          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/20 bg-[#c9a347]/5 px-3.5 py-1 text-[#d8b864] shadow-sm">
             Part of {playlist.name}
           </div>
 
           {/* Artwork Container */}
-          <div className="relative mx-auto aspect-square w-[320px] sm:w-[360px] rounded-3xl overflow-hidden shadow-2xl border border-white/5 bg-[#12141a]">
+          <div className="public-art-stage relative mx-auto aspect-square w-[320px] overflow-hidden sm:w-[360px]">
             {focusedMembership.release_cover_art_path ? (
               <Image
                 alt={`${focusedMembership.release_title} Cover Art`}
@@ -274,7 +274,7 @@ export function PublicPlaylistCampaignView({
         {primaryTarget && (
           <section className="px-2">
             <a
-              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-[#c9a347] py-4 px-6 font-bold text-[#090b0e] shadow-[0_0_40px_rgba(201,163,71,0.18)] transition-all duration-300 hover:bg-[#d8b864] hover:shadow-[0_0_50px_rgba(201,163,71,0.28)] hover:-translate-y-[1px]"
+              className="public-action-primary group flex w-full gap-3 py-4 shadow-[0_0_40px_rgba(201,163,71,0.18)]"
               href={primaryTarget.url}
               onClick={() => handleTrackClick(primaryTarget.platform, primaryTarget.url)}
               target="_blank"
@@ -307,7 +307,7 @@ export function PublicPlaylistCampaignView({
         )}
 
         {/* 4. Compact Inline Newsletter Signup */}
-        <section className="rounded-3xl border border-white/10 bg-[#0e1015]/60 p-6 backdrop-blur-2xl shadow-xl space-y-4">
+        <section className="public-form-surface space-y-4 p-6">
           <div className="flex items-center gap-2 border-b border-white/5 pb-3">
             <Mail className="text-[#c9a347]" size={18} />
             <h3 className="text-sm font-bold text-[#f3ede2]">Join the Inner Circle</h3>
@@ -377,7 +377,7 @@ export function PublicPlaylistCampaignView({
               Up Next on Playlist
             </h3>
 
-            <div className="rounded-3xl border border-white/10 bg-[#0e1015]/60 overflow-hidden backdrop-blur-2xl divide-y divide-white/5">
+            <div className="public-form-surface divide-y divide-white/5 overflow-hidden">
               {previewMemberships.map((m) => {
                 const previewArtist = m.release_collaborator
                   ? `${siteSettings.artist_name} feat. ${formatCollaboratorsList(m.release_collaborator_name)}`
@@ -424,7 +424,7 @@ export function PublicPlaylistCampaignView({
 
         {/* 6. Playlist Follow CTA */}
         {(playlist.spotifyPlaylistUrl || playlist.applePlaylistUrl || playlist.youtubePlaylistUrl) && (
-          <section className="rounded-3xl border border-white/10 bg-[#0e1015]/60 p-6 backdrop-blur-2xl shadow-xl space-y-4">
+          <section className="public-form-surface space-y-4 p-6">
             <div className="text-center">
               <h3 className="text-sm font-bold text-[#f3ede2]">Grow the Asset</h3>
               <p className="text-[11px] text-[#8b919b] mt-1">

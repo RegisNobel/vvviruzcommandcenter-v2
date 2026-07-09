@@ -76,7 +76,7 @@ export function BrandPillarsCarousel({pillars}: BrandPillarsCarouselProps) {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#101318]">
+      <div className="public-panel overflow-hidden">
         <div
           className={`flex ease-out ${isTransitionEnabled ? "transition-transform duration-700" : ""}`}
           style={{transform: `translateX(-${activeIndex * 100}%)`}}
@@ -86,7 +86,7 @@ export function BrandPillarsCarousel({pillars}: BrandPillarsCarouselProps) {
               className="grid min-w-full gap-6 p-5 sm:p-6 lg:grid-cols-[1fr_0.95fr] lg:items-center"
               key={`${pillar.id}-${index}`}
             >
-              <div className="relative aspect-[16/10] overflow-hidden rounded-[24px] border border-white/10 bg-[#0b0e12]">
+              <div className="public-art-stage relative aspect-[16/10] overflow-hidden">
                 <Image
                   alt={pillar.title}
                   className="object-cover"

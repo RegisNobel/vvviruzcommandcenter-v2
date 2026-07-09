@@ -25,7 +25,7 @@ export function PublicAppearsOnLibrary({
 }) {
   if (records.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[34px] border border-white/10 bg-[#0f1217]/92 px-6 py-20 text-center">
+      <div className="public-panel flex flex-col items-center justify-center px-6 py-20 text-center">
         <p className="text-[#8d949d]">{emptyText}</p>
       </div>
     );
@@ -68,9 +68,9 @@ export function PublicAppearsOnLibrary({
         return (
           <article
             key={record.id}
-            className="group flex flex-col gap-3 rounded-2xl border border-transparent p-3 transition hover:border-white/10 hover:bg-[#161a20]"
+            className="public-release-card group flex flex-col gap-3 p-3"
           >
-            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#0f1217]">
+            <div className="public-art-frame relative aspect-square w-full overflow-hidden">
               {record.cover_art_url ? (
                 <Image
                   src={record.cover_art_url}

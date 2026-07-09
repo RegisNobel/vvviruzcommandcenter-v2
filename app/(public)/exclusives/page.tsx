@@ -109,7 +109,7 @@ export default async function PublicExclusivesPage({
   );
 
   return (
-    <main className="relative min-h-[calc(100vh-80px)] overflow-hidden bg-[#06080b] px-4 py-10 sm:px-6 sm:py-16">
+    <main className="public-conversion-shell">
       <InsiderAccessAnalytics releaseId={offer.release_id} releaseTitle={derivedTitle} />
 
       {hasArt && isPreviewActive ? (
@@ -132,9 +132,9 @@ export default async function PublicExclusivesPage({
       <div className="pointer-events-none absolute left-1/2 top-24 h-64 w-64 -translate-x-1/2 rounded-full bg-[#c9a347]/10 blur-[90px]" />
 
       <div className="relative mx-auto max-w-[1160px]">
-        <section className="relative mx-auto max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0c1015]/82 px-5 py-8 text-center shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:px-7 sm:py-12 lg:px-10">
+        <section className="public-panel relative mx-auto max-w-[1120px] overflow-hidden px-5 py-8 text-center sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(201,163,71,0.72),transparent)]" />
-          <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
             {offer.badge_text || "Insider Access"}
           </div>
 
@@ -142,7 +142,7 @@ export default async function PublicExclusivesPage({
             <>
               {hasArt ? (
                 <div className="mt-7 flex justify-center">
-                  <div className="relative h-44 w-44 overflow-hidden rounded-[28px] border border-white/10 bg-[#12161b] shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:h-52 sm:w-52">
+                  <div className="public-art-stage relative h-44 w-44 overflow-hidden sm:h-52 sm:w-52">
                     <Image
                       alt={`${derivedTitle} artwork`}
                       className="object-cover"
@@ -182,7 +182,7 @@ export default async function PublicExclusivesPage({
                 {offer.subtext || "Get early access to unreleased tracks, drafts, and updates."}
               </p>
 
-              <div className="mt-8 rounded-[28px] border border-white/5 bg-white/[0.02] px-6 py-10 text-center">
+              <div className="public-quiet-card mt-8 px-6 py-10 text-center">
                 <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">Preview Status</span>
                 <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">Next preview coming soon</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-[#98a1aa]">
@@ -215,7 +215,7 @@ export default async function PublicExclusivesPage({
                   </p>
                 </div>
               ) : (
-                <div className="rounded-[28px] border border-white/10 bg-black/16 px-6 py-8 text-center">
+                <div className="public-quiet-card bg-black/16 px-6 py-8 text-center">
                   <h3 className="text-xl font-semibold tracking-tight text-[#f7f1e6]">
                     Insider Access Activated
                   </h3>
@@ -237,13 +237,13 @@ export default async function PublicExclusivesPage({
           </div>
         </section>
 
-        <section className="relative mx-auto mt-12 max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0b0f14]/70 px-4 py-10 backdrop-blur-xl sm:mt-16 sm:px-7 sm:py-12 lg:px-10">
+        <section className="public-panel relative mx-auto mt-12 max-w-[1120px] overflow-hidden px-4 py-10 sm:mt-16 sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,163,71,0.17),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(74,100,190,0.11),transparent_34%)]" />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.026)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[length:38px_38px] opacity-35" />
 
           <div className="relative">
             <div className="flex justify-center">
-              <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+              <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
                 {offer.community_badge_text}
               </div>
             </div>
@@ -269,7 +269,7 @@ export default async function PublicExclusivesPage({
 
                   return (
                     <article
-                      className="group relative min-h-[220px] overflow-hidden rounded-[28px] border border-white/[0.085] bg-[linear-gradient(145deg,rgba(255,255,255,0.06),rgba(9,12,17,0.76))] p-5 transition duration-300 hover:-translate-y-1 hover:border-[#c9a347]/45 hover:shadow-[0_20px_60px_rgba(201,163,71,0.12)]"
+                      className="group public-quiet-card relative min-h-[220px] overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:border-[#c9a347]/45 hover:shadow-[0_20px_60px_rgba(201,163,71,0.12)]"
                       key={benefit.id || `${benefit.title}-${index}`}
                     >
                       <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#c9a347]/0 blur-2xl transition group-hover:bg-[#c9a347]/12" />
@@ -293,7 +293,7 @@ export default async function PublicExclusivesPage({
               </div>
             ) : null}
 
-            <div className="mx-auto mt-10 max-w-2xl rounded-[34px] border border-[#c9a347]/22 bg-[linear-gradient(135deg,rgba(201,163,71,0.16),rgba(8,10,13,0.88))] px-5 py-7 text-center shadow-[0_24px_80px_rgba(0,0,0,0.25)] sm:px-8">
+            <div className="mx-auto mt-10 max-w-2xl border-y border-[#c9a347]/22 bg-[linear-gradient(135deg,rgba(201,163,71,0.12),rgba(8,10,13,0.68))] px-5 py-7 text-center sm:px-8">
               <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[#f7f1e6]">
                 {offer.community_cta_heading}
               </h3>

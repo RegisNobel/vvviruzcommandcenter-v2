@@ -27,10 +27,10 @@ export default async function UnsubscribePage({
   const isValid = Boolean(subscriber);
 
   return (
-    <main className="px-4 py-10 sm:px-6 sm:py-14">
+    <main className="public-page-wrap">
       <div className="mx-auto max-w-[640px]">
-        <section className="rounded-[34px] border border-white/10 bg-[#0f1217]/94 px-6 py-10 text-center shadow-[0_26px_80px_rgba(0,0,0,0.35)]">
-          <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+        <section className="public-panel px-6 py-10 text-center sm:px-8 sm:py-12">
+          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
             Email Preferences
           </div>
           <h1 className="mt-6 text-3xl font-semibold tracking-[-0.05em] text-[#f7f1e6] sm:text-[2.5rem]">
@@ -43,7 +43,7 @@ export default async function UnsubscribePage({
           </p>
           <div className="mt-8 flex justify-center">
             <Link
-              className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-[#f4eedf] transition hover:border-[#c9a347]/40 hover:bg-[#c9a347]/10"
+              className="public-action-secondary"
               href="/"
             >
               Return to {siteSettings.artist_name}
@@ -54,4 +54,3 @@ export default async function UnsubscribePage({
     </main>
   );
 }
-

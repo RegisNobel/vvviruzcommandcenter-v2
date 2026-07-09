@@ -147,14 +147,14 @@ export default async function PublicAboutPage() {
     .filter(Boolean);
 
   return (
-    <main className="px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1280px] space-y-8">
-        <section className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[#0f1217]/92 px-4 py-7 sm:px-8 sm:py-10">
+    <main className="public-page-wrap">
+      <div className="space-y-7">
+        <section className="public-panel public-hero relative overflow-hidden px-4 py-7 sm:px-8 sm:py-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_left,rgba(201,163,71,0.18),transparent_38%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_34%)]" />
           <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#c9a347]/10 blur-[130px]" />
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-stretch">
-            <div className="flex h-full items-center justify-center rounded-[30px] border border-white/10 bg-[#11151a]/80 p-4 sm:p-6 sm:p-8">
-              <div className="w-full max-w-3xl rounded-[24px] border border-white/10 bg-black/20 px-5 py-5 text-center sm:px-8 sm:py-8">
+            <div className="flex h-full items-center justify-center p-4 sm:p-6 sm:p-8">
+              <div className="public-quiet-card w-full max-w-3xl px-5 py-5 text-center sm:px-8 sm:py-8">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8d949d]">
                   {content.statement_heading}
                 </p>
@@ -166,7 +166,7 @@ export default async function PublicAboutPage() {
               </div>
             </div>
 
-            <div className="relative min-h-[320px] overflow-hidden rounded-[30px] border border-white/10 bg-[#12161c]">
+            <div className="public-art-stage relative min-h-[320px] overflow-hidden">
               <Image
                 alt={`${siteSettings.artist_name} portrait`}
                 className="object-cover object-center opacity-88"
@@ -181,7 +181,7 @@ export default async function PublicAboutPage() {
           </div>
         </section>
 
-        <section className="rounded-[34px] border border-white/10 bg-[#0f1217]/92 px-4 py-7 sm:px-8 sm:py-8">
+        <section className="public-panel px-4 py-7 sm:px-8 sm:py-8">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-semibold tracking-[-0.04em] text-[#f7f1e6] sm:text-[2.2rem]">
               {content.narrative_heading}
@@ -191,7 +191,7 @@ export default async function PublicAboutPage() {
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             {aboutNarrative.map((section, index) => (
               <article
-                className={`rounded-[28px] border border-white/10 px-5 py-6 sm:px-6 ${
+                className={`public-quiet-card px-5 py-6 sm:px-6 ${
                   ABOUT_SECTION_SURFACES[index % ABOUT_SECTION_SURFACES.length]
                 } ${
                   section.id === "closing" ? "lg:col-span-2 text-center" : ""
@@ -232,7 +232,7 @@ export default async function PublicAboutPage() {
           </div>
         </section>
 
-        <section className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#0f1217]/92 px-6 py-7">
+        <section className="public-panel relative overflow-hidden px-6 py-7">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_42%),linear-gradient(180deg,rgba(201,163,71,0.04),transparent_55%)]" />
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[#f7f1e6] sm:text-[2rem]">
@@ -289,14 +289,14 @@ export default async function PublicAboutPage() {
           )}
         </section>
 
-        <section className="rounded-[30px] border border-white/10 bg-[#0f1217]/92 px-6 py-7">
+        <section className="public-panel px-6 py-7">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm leading-7 text-[#b3bbc5]">
               {content.contact_microcopy}
             </p>
           </div>
 
-          <div className="mx-auto mt-6 max-w-xl rounded-[24px] border border-white/10 bg-[linear-gradient(145deg,rgba(201,163,71,0.12),rgba(15,18,23,0.96))] px-5 py-5 text-center">
+          <div className="public-quiet-card mx-auto mt-6 max-w-xl bg-[linear-gradient(145deg,rgba(201,163,71,0.12),rgba(15,18,23,0.96))] px-5 py-5 text-center">
             <Link
               className="inline-flex justify-center text-lg font-semibold text-[#f2e4be] transition hover:text-[#ffdfa0]"
               href={`mailto:${contactEmail}`}
@@ -309,4 +309,3 @@ export default async function PublicAboutPage() {
     </main>
   );
 }
-

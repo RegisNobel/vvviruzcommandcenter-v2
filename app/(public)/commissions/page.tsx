@@ -60,13 +60,13 @@ export default async function CommissionsPage() {
   ];
 
   return (
-    <main className="min-h-[100dvh] bg-[#050609]">
+    <main className="public-conversion-shell min-h-[100dvh]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.08),transparent_40%),linear-gradient(180deg,rgba(5,6,9,0.96),rgba(7,9,13,1))]" />
       
-      <div className="relative mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+      <div className="relative mx-auto max-w-5xl py-8 sm:py-12">
         {/* Hero Section */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#c9a347]/20 bg-[#c9a347]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#d7b663]">
+        <div className="public-hero public-panel text-center">
+          <div className="public-eyebrow inline-flex items-center gap-2 rounded-full border border-[#c9a347]/20 bg-[#c9a347]/10 px-4 py-1.5 text-[#d7b663]">
             <Sparkles size={14} />
             {commissions.page_eyebrow}
           </div>
@@ -79,9 +79,9 @@ export default async function CommissionsPage() {
         </div>
 
         {/* Services Grid */}
-        <div className="mt-16 grid gap-6 sm:grid-cols-3 lg:mt-24">
+        <div className="mt-10 grid gap-4 sm:grid-cols-3 lg:mt-14">
           {services.map((service, idx) => (
-            <div key={idx} className="flex flex-col rounded-[28px] border border-white/10 bg-[#0c1015]/82 p-6 sm:p-8">
+            <div key={idx} className="public-quiet-card flex flex-col p-6 sm:p-8">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03] border border-white/5 shadow-inner shrink-0">
                 {service.icon}
               </div>
@@ -97,7 +97,7 @@ export default async function CommissionsPage() {
         </div>
 
         {/* Guardrail Note */}
-        <div className="mt-8 rounded-2xl bg-white/[0.02] p-5 border border-white/5">
+        <div className="public-quiet-card mt-4 p-5">
           <p className="text-sm leading-relaxed text-[#8a949f] text-center">
             Prices are starter rates for standard requests. Every commission is reviewed before approval. Rush deadlines, complex concepts, commercial usage, extra revisions, or expanded delivery needs may require a custom quote.
           </p>

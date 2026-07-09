@@ -32,17 +32,17 @@ export default async function PublicVaultPage() {
   );
 
   return (
-    <main className="relative min-h-[calc(100vh-140px)] overflow-hidden bg-[#06080b] px-4 py-10 sm:px-6 sm:py-16">
+    <main className="public-conversion-shell">
       <VaultPageAnalytics />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_33%),linear-gradient(180deg,rgba(5,6,9,0.96),rgba(7,9,13,1))]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.024)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[length:52px_52px] opacity-30" />
       <div className="pointer-events-none absolute left-1/2 top-24 h-64 w-64 -translate-x-1/2 rounded-full bg-[#c9a347]/10 blur-[90px]" />
 
       <div className="relative mx-auto max-w-[1160px]">
-        <section className="relative mx-auto max-w-[1120px] overflow-hidden rounded-[42px] border border-white/10 bg-[#0c1015]/82 px-5 py-12 text-center shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:px-8 sm:py-16 lg:px-12">
+        <section className="public-panel relative mx-auto max-w-[1120px] overflow-hidden px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(201,163,71,0.72),transparent)]" />
           
-          <div className="inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d7b663]">
+          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
             {vault.badge_text}
           </div>
 
@@ -75,7 +75,7 @@ export default async function PublicVaultPage() {
 
                 return (
                   <article
-                    className="group relative overflow-hidden rounded-[28px] border border-white/[0.085] bg-[linear-gradient(145deg,rgba(255,255,255,0.06),rgba(9,12,17,0.76))] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#c9a347]/45 hover:shadow-[0_20px_60px_rgba(201,163,71,0.12)]"
+                    className="group public-quiet-card relative overflow-hidden p-6 transition duration-300 hover:-translate-y-1 hover:border-[#c9a347]/45 hover:shadow-[0_20px_60px_rgba(201,163,71,0.12)]"
                     key={benefit.id || index}
                   >
                     <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#c9a347]/0 blur-2xl transition group-hover:bg-[#c9a347]/12" />

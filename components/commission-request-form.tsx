@@ -56,7 +56,7 @@ export function CommissionRequestForm() {
 
   if (submitState === "success") {
     return (
-      <div className="rounded-[32px] border border-white/10 bg-[#0c1015]/82 p-8 text-center shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:p-12">
+      <div className="public-form-surface p-8 text-center sm:p-12">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
           <CheckCircle2 size={32} />
         </div>
@@ -68,7 +68,7 @@ export function CommissionRequestForm() {
 
   return (
     <form
-      className="rounded-[32px] border border-white/10 bg-[#0c1015]/82 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl sm:p-10"
+      className="public-form-surface p-6 sm:p-10"
       onSubmit={handleSubmit}
     >
       <h3 className="mb-6 text-2xl font-semibold text-white">Start a Request</h3>
