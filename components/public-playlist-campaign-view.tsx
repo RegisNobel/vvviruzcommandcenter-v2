@@ -347,12 +347,6 @@ export function PublicPlaylistCampaignView({
           </section>
         )}
 
-        {/* 6. Minimal Footer */}
-        <footer className="text-center pt-8 text-[10px] text-[#5c616b] font-medium tracking-wider space-y-1.5">
-          <p>© {new Date().getFullYear()} {siteSettings.artist_name}. All rights reserved.</p>
-          <p className="opacity-75">POWERED BY COMMAND CENTER</p>
-        </footer>
-
       </div>
     </main>
   );
