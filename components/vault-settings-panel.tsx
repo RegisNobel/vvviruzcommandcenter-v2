@@ -30,7 +30,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
   }
 
   return (
-    <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+    <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="field-label">Section 14</p>
@@ -50,10 +50,10 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
         <label className="space-y-2 md:col-span-2">
           <span className="field-label">Vault Page Enabled</span>
           <button
-            className={`flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition ${
+            className={`flex w-full items-center justify-between rounded-md border px-4 py-3 text-left transition ${
               vaultSettings.is_enabled
-                ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                : "border-edge-strong bg-surface text-secondary hover:border-edge hover:bg-surface-hover"
             }`}
             onClick={() => updateVault({is_enabled: !vaultSettings.is_enabled})}
             type="button"
@@ -129,7 +129,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
         <div className="grid gap-4 lg:grid-cols-2">
           {vaultSettings.benefits.map((benefit, index) => (
             <div
-              className="rounded-[22px] border border-[#30343b] bg-[#0f1217] p-4"
+              className="rounded-lg border border-edge bg-input p-4"
               key={benefit.id || index}
             >
               <p className="field-label">Benefit {index + 1}</p>

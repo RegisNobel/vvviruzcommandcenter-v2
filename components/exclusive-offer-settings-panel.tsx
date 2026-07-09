@@ -143,7 +143,7 @@ export function ExclusiveOfferSettingsPanel({
   return (
     <>
       {/* SECTION 9: INSIDER ACCESS OFFER */}
-      <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+      <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="field-label">Section 9</p>
@@ -159,7 +159,7 @@ export function ExclusiveOfferSettingsPanel({
           <span className="pill">Saved with Site Settings</span>
         </div>
 
-        <div className="mt-5 grid gap-3 rounded-[22px] border border-[#30343b] bg-[#0f1217] p-4 text-sm sm:grid-cols-3">
+        <div className="mt-5 grid gap-3 rounded-lg border border-edge bg-input p-4 text-sm sm:grid-cols-3">
           <div>
             <p className="field-label">Current Mode</p>
             <p className="mt-2 font-semibold text-ink">{offerPreview.modeLabel}</p>
@@ -176,7 +176,7 @@ export function ExclusiveOfferSettingsPanel({
                   ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
                   : offerPreview.readinessTone === "warning"
                     ? "border-amber-400/30 bg-amber-400/10 text-amber-200"
-                    : "border-[#30343b] bg-[#15181c] text-muted"
+                    : "border-edge bg-surface text-muted"
               }`}
             >
               {offerPreview.readiness}
@@ -345,10 +345,10 @@ export function ExclusiveOfferSettingsPanel({
           <label className="space-y-2">
             <span className="field-label">Preview Enabled</span>
             <button
-              className={`flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition ${
+              className={`flex w-full items-center justify-between rounded-md border px-4 py-3 text-left transition ${
                 exclusiveOffer.exclusive_track_enabled
-                  ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                  : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                  ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                  : "border-edge-strong bg-surface text-secondary hover:border-edge hover:bg-surface-hover"
               }`}
               onClick={() =>
                 updateExclusiveOffer({
@@ -379,7 +379,7 @@ export function ExclusiveOfferSettingsPanel({
         </div>
 
         {/* DELIVERY & EXPERIENCE SUB-SECTION */}
-        <div className="mt-8 rounded-[24px] border border-[#30343b] bg-[#0f1217] p-4 sm:p-5">
+        <div className="mt-8 rounded-lg border border-edge bg-input p-4 sm:p-5">
           <div>
             <p className="field-label">Delivery & Experience</p>
             <h4 className="mt-2 text-xl font-semibold text-ink">
@@ -401,7 +401,7 @@ export function ExclusiveOfferSettingsPanel({
                 />
                 {exclusiveOffer.private_external_url?.trim() && (
                   <a
-                    className="rounded-full border border-[#30343b] bg-[#15181c] px-4 py-3 text-sm font-semibold text-[#d5d9df] hover:border-[#c9a347]/45 hover:bg-[#c9a347]/10"
+                    className="action-button-secondary px-4 py-3 text-sm"
                     href={exclusiveOffer.private_external_url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -426,7 +426,7 @@ export function ExclusiveOfferSettingsPanel({
                 value={exclusiveOffer.exclusive_track_art_path}
               />
               <div className="mt-2 flex flex-wrap gap-2">
-                <label className="inline-flex items-center gap-2 rounded-full border border-[#c9a347]/36 bg-[#c9a347] px-4 py-2.5 text-sm font-semibold text-[#13161a] transition hover:scale-[1.01] hover:bg-[#d8b761] disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer">
+                <label className="action-button-primary cursor-pointer px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-70">
                   {isUploadingArt ? "Uploading artwork..." : "Upload Artwork Image"}
                   <input
                     accept="image/*"
@@ -444,7 +444,7 @@ export function ExclusiveOfferSettingsPanel({
                 </label>
                 {exclusiveOffer.exclusive_track_art_path ? (
                   <button
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-[#c5cdd6] transition hover:scale-[1.01] hover:border-white/15 hover:bg-white/[0.06]"
+                    className="action-button-secondary px-4 py-2.5 text-sm"
                     onClick={() => updateExclusiveOffer({exclusive_track_art_path: ""})}
                     type="button"
                   >
@@ -482,14 +482,14 @@ export function ExclusiveOfferSettingsPanel({
         </div>
 
         {message ? (
-          <div className="mt-6 rounded-[22px] border border-[#5b4920] bg-[#1a1710] px-4 py-3 text-sm text-[#d7b45e]">
+          <div className="mt-6 rounded-lg border border-[rgba(246,201,69,0.4)] bg-brand-primary-soft px-4 py-3 text-sm text-brand-primary">
             {message}
           </div>
         ) : null}
       </section>
 
       {/* SECTION 10: COMMUNITY SECTION */}
-      <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+      <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
         <div>
           <p className="field-label">Section 10</p>
           <h3 className="mt-3 flex items-center gap-2 text-2xl font-semibold text-ink">
@@ -595,7 +595,7 @@ export function ExclusiveOfferSettingsPanel({
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           {exclusiveOffer.community_benefits.map((benefit, index) => (
             <div
-              className="rounded-[22px] border border-[#30343b] bg-[#121418] p-4"
+              className="rounded-lg border border-edge bg-input p-4"
               key={benefit.id || index}
             >
               <p className="field-label">Benefit {index + 1}</p>

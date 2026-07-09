@@ -22,7 +22,7 @@ export function CommissionsSettingsPanel({
   }
 
   return (
-    <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+    <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
       <div>
         <p className="field-label">Section 15</p>
         <h3 className="mt-3 text-2xl font-semibold text-ink">Commissions Page</h3>
@@ -67,7 +67,7 @@ export function CommissionsSettingsPanel({
             />
           </label>
 
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 md:col-span-2">
+          <div className="rounded-lg border border-edge bg-input p-4 md:col-span-2">
             <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Unified Service Card</h4>
             <div className="mt-4 grid gap-5 md:grid-cols-2">
               <label className="space-y-2">

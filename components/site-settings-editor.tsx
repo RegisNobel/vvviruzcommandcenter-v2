@@ -254,7 +254,7 @@ export function SiteSettingsEditor({
 
   return (
     <>
-      <section className="panel mb-6 px-6 py-7" ref={headerRef}>
+      <section className="command-surface mb-6 px-5 py-6 sm:px-6 sm:py-7" ref={headerRef}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="pill">
@@ -307,7 +307,7 @@ export function SiteSettingsEditor({
 
       <nav
         aria-label="Public site settings sections"
-        className="panel mb-6 flex flex-wrap gap-2 px-4 py-3"
+        className="command-surface mb-6 flex flex-wrap gap-2 px-4 py-3"
       >
         {[
           {href: "#core-profile", label: "Core"},
@@ -326,7 +326,7 @@ export function SiteSettingsEditor({
           {href: "#commissions-settings", label: "Commissions"}
         ].map((item) => (
           <a
-            className="rounded-full border border-[#30343b] bg-[#15181c] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d5d9df] transition hover:border-[#d7b45e]/45 hover:text-[#f1dfad]"
+            className="rounded-md border border-edge-strong bg-surface-elevated px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-secondary transition hover:border-[rgba(246,201,69,0.45)] hover:bg-surface-hover hover:text-primary"
             href={item.href}
             key={item.href}
           >
@@ -335,7 +335,7 @@ export function SiteSettingsEditor({
         ))}
       </nav>
 
-      <section className="panel space-y-6 px-6 py-7 pb-36">
+      <section className="command-surface space-y-6 px-5 py-6 pb-36 sm:px-6 sm:py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="pill">
@@ -354,7 +354,7 @@ export function SiteSettingsEditor({
         </div>
 
         <div className="grid gap-6">
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="core-profile">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="core-profile">
           <div>
             <p className="field-label">Section 1</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Core Profile</h3>
@@ -406,7 +406,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="metadata-seo">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="metadata-seo">
           <div>
             <p className="field-label">Section 2</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Metadata & SEO</h3>
@@ -571,7 +571,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="site-chrome">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="site-chrome">
           <div>
             <p className="field-label">Section 3</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Chrome</h3>
@@ -689,7 +689,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="home-page">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="home-page">
           <div>
             <p className="field-label">Section 4</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Home Page</h3>
@@ -777,7 +777,7 @@ export function SiteSettingsEditor({
                 <div className="grid gap-3 md:grid-cols-3">
                   {selectedFeaturedReleases.map((release) => (
                     <button
-                      className="rounded-[20px] border border-[#c9a347]/25 bg-[#171a1f] px-4 py-4 text-left transition hover:border-[#c9a347]/45 hover:bg-[#1b1f25]"
+                      className="rounded-md border border-[rgba(246,201,69,0.25)] bg-brand-primary-soft px-4 py-4 text-left transition hover:border-[rgba(246,201,69,0.45)] hover:bg-brand-primary-soft"
                       key={release.id}
                       onClick={() => toggleFeaturedRelease(release.id)}
                       type="button"
@@ -804,11 +804,11 @@ export function SiteSettingsEditor({
                 />
               </label>
 
-              <div className="max-h-72 space-y-2 overflow-y-auto rounded-[22px] border border-[#30343b] bg-[#0f1217] p-3">
+              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-edge bg-input p-3">
                 {filteredReleaseOptions.length > 0 ? (
                   filteredReleaseOptions.map((release) => (
                     <button
-                      className="flex w-full items-center justify-between gap-3 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-3 text-left transition hover:border-[#c9a347]/35 hover:bg-[#171b20]"
+                      className="flex w-full items-center justify-between gap-3 rounded-md border border-edge bg-surface px-4 py-3 text-left transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover"
                       key={release.id}
                       onClick={() => toggleFeaturedRelease(release.id)}
                       type="button"
@@ -909,7 +909,7 @@ export function SiteSettingsEditor({
               <div className="grid gap-4 xl:grid-cols-2">
                 {settings.site_content.home.brand_pillars.map((pillar, index) => (
                   <div
-                    className="rounded-[22px] border border-[#30343b] bg-[#0f1217] p-4"
+                    className="rounded-lg border border-edge bg-input p-4"
                     key={pillar.id}
                   >
                     <p className="field-label">Pillar {index + 1}</p>
@@ -961,7 +961,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="music-page">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="music-page">
           <div>
             <p className="field-label">Section 5</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Music Page</h3>
@@ -1047,7 +1047,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="about-page">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="about-page">
           <div>
             <p className="field-label">Section 6</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">About Page</h3>
@@ -1219,7 +1219,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="platform-labels">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="platform-labels">
           <div>
             <p className="field-label">Section 7</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Platform Labels</h3>
@@ -1321,7 +1321,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="links-page">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="links-page">
           <div>
             <p className="field-label">Section 8</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Link Hub Defaults</h3>
@@ -1383,7 +1383,7 @@ export function SiteSettingsEditor({
           />
         </div>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="tracking-settings">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="tracking-settings">
           <div>
             <p className="field-label">Section 11</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Tracking</h3>
@@ -1393,10 +1393,10 @@ export function SiteSettingsEditor({
             <label className="space-y-2 md:col-span-2">
               <span className="field-label">Enable Meta Pixel</span>
               <button
-                className={`flex w-full items-center justify-between rounded-[18px] border px-4 py-3 text-left transition ${
+                className={`flex w-full items-center justify-between rounded-md border px-4 py-3 text-left transition ${
                   settings.site_content.analytics.meta_pixel_enabled
-                    ? "border-[#5b4920] bg-[#1a1710] text-[#d7b45e]"
-                    : "border-[#30343b] bg-[#15181c] text-[#d5d9df] hover:border-[#545962] hover:bg-[#1b1f24]"
+                    ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                    : "border-edge-strong bg-surface text-secondary hover:border-edge hover:bg-surface-hover"
                 }`}
                 onClick={() =>
                   updateSiteContent(
@@ -1436,7 +1436,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="release-page">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="release-page">
           <div>
             <p className="field-label">Section 12</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Release Page</h3>
@@ -1556,7 +1556,7 @@ export function SiteSettingsEditor({
           </div>
         </section>
 
-        <section className="scroll-mt-36 rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5" id="social-links">
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="social-links">
           <div>
             <p className="field-label">Section 13</p>
             <h3 className="mt-3 text-2xl font-semibold text-ink">Social Links</h3>
@@ -1609,7 +1609,7 @@ export function SiteSettingsEditor({
         </div>
       </div>
 
-      <section className="rounded-[24px] border border-[#30343b] bg-[#121418] p-4 sm:p-5">
+      <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="field-label">Public site control map</p>
@@ -1623,7 +1623,7 @@ export function SiteSettingsEditor({
               and Meta Pixel setup without changing code.
             </p>
           </div>
-          <div className="grid gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d7b45e] sm:grid-cols-2">
+          <div className="grid gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-primary sm:grid-cols-2">
             <span className="pill">Copy</span>
             <span className="pill">Images</span>
             <span className="pill">Links</span>
@@ -1633,7 +1633,7 @@ export function SiteSettingsEditor({
       </section>
       {message ? (
         <div
-          className={`rounded-[22px] px-4 py-3 text-sm ${
+          className={`rounded-lg px-4 py-3 text-sm ${
             saveState === "error"
               ? "border border-rose-500/30 bg-rose-500/10 text-rose-200"
               : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
