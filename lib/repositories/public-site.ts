@@ -179,7 +179,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings"],
+  ["public-site-settings-v2"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }
@@ -576,7 +576,6 @@ const getCachedCanPubliclyReadCoverAsset = unstable_cache(
 export async function canPubliclyReadCoverAsset(fileName: string) {
   return getCachedCanPubliclyReadCoverAsset(fileName);
 }
-
 
 
 
