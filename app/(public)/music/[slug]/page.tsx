@@ -104,6 +104,7 @@ export default async function PublicReleaseDetailPage({
   );
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const aboutText = (release.public_long_description || release.public_description || "").trim();
+  const hasPublicLyrics = release.public_lyrics_enabled && Boolean(release.lyrics.trim());
   const content = siteSettings.site_content.release;
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
@@ -193,13 +194,25 @@ export default async function PublicReleaseDetailPage({
                 </div>
               ) : null}
 
+              <div className="public-panel-quiet mt-8 pt-5">
+                <p className="public-eyebrow">Listen now</p>
+                <PublicPlatformLinks
+                  appleMusicUrl={release.apple_music_url}
+                  className="mt-5"
+                  labels={platformLabels}
+                  spotifyUrl={release.spotify_url}
+                  youtubeUrl={release.youtube_url}
+                />
+              </div>
+
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-3xl">
+        {aboutText || hasPublicLyrics ? (
+        <section className="grid gap-10 lg:grid-cols-2 lg:gap-0">
           {aboutText ? (
-            <article className="py-1">
+            <article className="py-1 lg:pr-10">
               <p className="public-eyebrow">About this track</p>
               <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
                 {aboutText}
@@ -207,31 +220,16 @@ export default async function PublicReleaseDetailPage({
             </article>
           ) : null}
 
-          <div className="public-divider my-9" />
-
-          <article>
-            <p className="public-eyebrow">Listen now</p>
-            <PublicPlatformLinks
-              appleMusicUrl={release.apple_music_url}
-              className="mt-5"
-              labels={platformLabels}
-              spotifyUrl={release.spotify_url}
-              youtubeUrl={release.youtube_url}
-            />
-          </article>
-
-          {release.public_lyrics_enabled && release.lyrics.trim() ? (
-            <>
-              <div className="public-divider my-9" />
-              <article>
+          {hasPublicLyrics ? (
+              <article className="border-t border-white/10 pt-10 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-1">
                 <p className="public-eyebrow">{content.lyrics_heading}</p>
                 <pre className="mt-5 whitespace-pre-wrap font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
                   {release.lyrics}
                 </pre>
               </article>
-            </>
           ) : null}
         </section>
+        ) : null}
 
         {spotifyEmbedUrl || youtubeEmbedUrl ? (
           <section className="grid gap-6 xl:grid-cols-2">
