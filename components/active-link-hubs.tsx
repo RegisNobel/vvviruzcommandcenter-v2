@@ -4,6 +4,7 @@ import {Check, Copy, ExternalLink, Link2} from "lucide-react";
 import {useState, useEffect} from "react";
 
 import type {LinkHubRecord} from "@/lib/types";
+import {EmptyState} from "@/components/ui-state";
 
 type ActiveLinkHubsProps = {
   hubs: LinkHubRecord[];
@@ -37,7 +38,11 @@ export function ActiveLinkHubs({hubs}: ActiveLinkHubsProps) {
       </div>
 
       {activeHubs.length === 0 ? (
-        <p className="text-sm text-muted">No active link hubs found.</p>
+        <EmptyState
+          compact
+          description="Create or enable a public link hub from Public Site Settings."
+          title="No active link hubs"
+        />
       ) : (
         <div className="space-y-2">
           {activeHubs.map((hub) => {

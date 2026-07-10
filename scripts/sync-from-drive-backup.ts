@@ -17,8 +17,7 @@ async function getAccessToken() {
     throw new Error(`Google Drive OAuth credentials missing in environment. Found: ClientId=${!!clientId}, Secret=${!!clientSecret}, Token=${!!refreshToken}`);
   }
 
-  console.log(`Attempting to refresh token for Client ID: ${clientId.slice(0, 10)}...`);
-  console.log(`Using Refresh Token (masked): ${refreshToken.slice(0, 5)}...${refreshToken.slice(-5)} (Length: ${refreshToken.length})`);
+  console.log("Refreshing Google Drive backup access token...");
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",

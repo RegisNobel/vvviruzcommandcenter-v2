@@ -25,6 +25,11 @@ import type {
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+type CopySaveResponse = {
+  copy?: CopyRecord;
+  message?: string;
+};
+
 function serializeCopy(copy: CopyRecord) {
   return JSON.stringify(copy);
 }
@@ -114,10 +119,7 @@ export function CopyDetailEditor({
         },
         body: snapshot
       });
-      const payload = (await response.json()) as {
-        copy?: CopyRecord;
-        message?: string;
-      };
+      const payload = (await response.json()) as CopySaveResponse;
 
       if (!response.ok || !payload.copy) {
         throw new Error(payload.message ?? "Save failed.");

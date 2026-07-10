@@ -106,6 +106,11 @@ const decisionOptions: Array<{value: AdCampaignDecision; label: string}> = [
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+type ReleaseSaveResponse = {
+  release?: ReleaseRecord;
+  message?: string;
+};
+
 function serializeRelease(release: ReleaseRecord) {
   return JSON.stringify(release);
 }
@@ -798,10 +803,7 @@ export function ReleaseDetailEditor({
         },
         body: snapshot
       });
-      const payload = (await response.json()) as {
-        release?: ReleaseRecord;
-        message?: string;
-      };
+      const payload = (await response.json()) as ReleaseSaveResponse;
 
       if (!response.ok || !payload.release) {
         throw new Error(payload.message ?? "Save failed.");

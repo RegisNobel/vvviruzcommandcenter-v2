@@ -391,7 +391,7 @@ export function PlaylistEditor({
         >
           <span className="inline-flex items-center gap-1.5">
             <Link2 size={14} />
-            Follow Links
+            Platform Links
           </span>
         </button>
         <button
@@ -531,9 +531,9 @@ export function PlaylistEditor({
       {activeTab === "platforms" && (
         <section className="panel space-y-6 px-6 py-6">
           <div>
-            <h3 className="text-lg font-bold text-ink font-semibold">Playlist Growth Settings</h3>
+            <h3 className="text-lg font-bold text-ink font-semibold">Playlist Platform Settings</h3>
             <p className="text-xs text-muted mt-1">
-              Configure playlist-level links used for &quot;Follow Playlist&quot; CTA buttons. Must be valid HTTPS starting with `https://`.
+              Configure the playlist URL used for Spotify context links and set platform defaults. Public playlist pages now focus on individual release links instead of a playlist follow CTA.
             </p>
           </div>
 
@@ -610,7 +610,7 @@ export function PlaylistEditor({
               disabled={isPending}
               onClick={handleSaveGeneral}
             >
-              {isPending ? "Saving..." : "Save Follow Links"}
+              {isPending ? "Saving..." : "Save Platform Links"}
             </button>
           </div>
         </section>

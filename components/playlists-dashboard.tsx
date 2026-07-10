@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, useTransition, useMemo, useEffect} from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import type {PlaylistRecord} from "@/lib/types";
 import {slugify} from "@/lib/utils";
+import {EmptyState} from "@/components/ui-state";
 
 export function PlaylistsDashboard({
   initialPlaylists,
@@ -205,7 +207,7 @@ export function PlaylistsDashboard({
               Playlists
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-              Manage campaign landing pages and follow links for streaming playlists.
+              Manage campaign landing pages and playlist context links for streaming playlists.
             </p>
           </div>
           <button
@@ -251,8 +253,11 @@ export function PlaylistsDashboard({
       {/* Playlists Table */}
       <div className="table-surface">
         {playlists.length === 0 ? (
-          <div className="p-16 text-center text-muted">
-            No {statusFilter === "ARCHIVED" ? "archived" : "active"} playlists found.
+          <div className="p-6">
+            <EmptyState
+              description="Create a playlist from the campaign workflow when you are ready to build a listening destination."
+              title={`No ${statusFilter === "ARCHIVED" ? "archived" : "active"} playlists`}
+            />
           </div>
         ) : (
           <table className="w-full text-left text-sm text-ink">
@@ -273,10 +278,13 @@ export function PlaylistsDashboard({
                     <div className="flex items-center gap-4">
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-edge bg-input">
                         {playlist.coverImageUrl ? (
-                          <img
+                          <Image
                             alt=""
-                            className="object-cover h-full w-full"
+                            className="object-cover"
+                            fill
+                            sizes="48px"
                             src={playlist.coverImageUrl}
+                            unoptimized
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-muted">

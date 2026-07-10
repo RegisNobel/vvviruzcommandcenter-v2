@@ -104,40 +104,22 @@ export function CommandCenterNav() {
 
               if (isPromo) {
                 return (
-                  <div key={item.href} className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => setIsPromoExpanded(!isPromoExpanded)}
-                      className={cn(
-                        "flex shrink-0 items-center gap-1 rounded-md border px-3.5 py-1.5 text-xs font-semibold transition",
-                        isActive
-                          ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
-                          : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
-                      )}
-                    >
-                      <span>{item.label}</span>
-                      <span className="text-[10px] opacity-60">{isPromoExpanded ? "^" : "v"}</span>
-                    </button>
-                    {isPromoExpanded && promoSubItems.map((sub) => {
-                      const isSubActive =
-                        pathname === sub.href ||
-                        (sub.href !== "/admin/promo" && pathname.startsWith(`${sub.href}/`)) ||
-                        (sub.href === "/admin/promo" && pathname === "/admin/promo");
-                      return (
-                        <Link
-                          href={sub.href}
-                          key={sub.href}
-                          className={cn(
-                            "shrink-0 rounded-md border px-3 py-1.5 text-[11px] font-medium transition",
-                            isSubActive
-                              ? "border-[rgba(246,201,69,0.36)] bg-brand-primary-soft text-brand-primary"
-                              : "border-edge bg-input text-muted hover:border-edge-strong hover:bg-surface-hover hover:text-secondary"
-                          )}
-                        >
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  <button
+                    aria-controls="admin-promo-mobile-menu"
+                    aria-expanded={isPromoExpanded}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1 rounded-md border px-3.5 py-1.5 text-xs font-semibold transition",
+                      isActive
+                        ? "border-[rgba(246,201,69,0.4)] bg-brand-primary-soft text-brand-primary"
+                        : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
+                    )}
+                    key={item.href}
+                    onClick={() => setIsPromoExpanded(!isPromoExpanded)}
+                    type="button"
+                  >
+                    <span>{item.label}</span>
+                    <span className="text-[10px] opacity-60">{isPromoExpanded ? "^" : "v"}</span>
+                  </button>
                 );
               }
 
@@ -157,6 +139,36 @@ export function CommandCenterNav() {
               );
             })}
           </nav>
+
+          {isPromoExpanded ? (
+            <nav
+              aria-label="Promo tools"
+              className="grid grid-cols-2 gap-2 rounded-lg border border-edge bg-input p-2 sm:grid-cols-3"
+              id="admin-promo-mobile-menu"
+            >
+              {promoSubItems.map((sub) => {
+                const isSubActive =
+                  pathname === sub.href ||
+                  (sub.href !== "/admin/promo" && pathname.startsWith(`${sub.href}/`)) ||
+                  (sub.href === "/admin/promo" && pathname === "/admin/promo");
+
+                return (
+                  <Link
+                    className={cn(
+                      "rounded-md border px-3 py-2.5 text-center text-xs font-semibold transition",
+                      isSubActive
+                        ? "border-[rgba(246,201,69,0.36)] bg-brand-primary-soft text-brand-primary"
+                        : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
+                    )}
+                    href={sub.href}
+                    key={sub.href}
+                  >
+                    {sub.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
         </div>
       </header>
 

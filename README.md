@@ -471,6 +471,25 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-07-10 - Signal Console Design Sweep and Public Listening Polish
+
+- **Command Center visual system**:
+  - Applied the SignalConsole visual foundation across the protected admin experience, including authentication, navigation, Releases, Release Detail, Roadmap, Promo, Copy Lab, Ad Lab, Attribution, Short Links, Audience, Public Site Settings, Appears On, Commissions, and Backups.
+  - Standardized the primary console palette, status language, actions, surfaces, badges, and desktop/mobile spacing around semantic design tokens while preserving existing routes, workflows, calculations, and data behavior.
+  - Refined Release Detail action docks so editor-style pages use a narrower, context-appropriate dock width without changing save, delete, autosave, or section-anchor behavior.
+  - Added reusable `EmptyState`, `ErrorState`, and `LoadingState` primitives using the shared semantic state treatment, with the first empty-state migrations in Promo link hubs and Playlists.
+  - Replaced the remaining raw playlist dashboard image with `next/image`, and began a page-by-page public token migration with semantic public navigation, brand, and status-strip tokens.
+  - Removed credential-derived OAuth logging from the local Drive backup sync utility and corrected React callback lint false positives by moving response shapes out of callback bodies.
+
+- **Public Signal Broadcast refresh**:
+  - Reworked the homepage, music library, About, release detail, links, exclusives, commissions, and playlist campaign surfaces into a distinct public artist experience rather than mirroring the admin console.
+  - Updated release cards so description blocks begin at a consistent height whether or not a collaborator is present, and renamed the homepage discovery prompt to **Pick a Poison**.
+  - Refined release detail storytelling: platform actions and the About copy live in the main release card, category/project context remains public, and lyrics are integrated beside the artwork on larger screens with a readable mobile order and independently scrollable lyric pane.
+  - Simplified public playlist campaign pages into focused track destinations: artist and song render on one line, cover art drives the backdrop, the subscription and playlist-follow/Grow the Asset modules were removed, and the shared public footer is used.
+  - Updated Exclusives to use the current rectangular public action treatment and refreshed public cache keys so admin Site Settings changes reliably reach the public experience.
+  - Replaced the clipped mobile public navigation strip with an accessible **More** menu, and changed the admin mobile Promo submenu from an injected horizontal list to a compact tool grid.
+  - Audited legacy playlist follow behavior: the public follow CTA and emitter are gone, while the historical `playlist_follow_click` event and stored platform fields remain backward-compatible pending a deliberate versioned data-retention cleanup.
+
 ### 2026-07-07 02:22 -04:00
 
 - **Insider Access Refactoring & Preview Player Cleanup**:

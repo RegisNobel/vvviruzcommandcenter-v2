@@ -182,7 +182,7 @@ export default async function PublicExclusivesPage({
                 {offer.subtext || "Get early access to unreleased tracks, drafts, and updates."}
               </p>
 
-              <div className="public-quiet-card mt-8 px-6 py-10 text-center">
+              <div className="public-status-strip mt-8 px-6 py-8 text-center">
                 <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">Preview Status</span>
                 <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">Next preview coming soon</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-[#98a1aa]">

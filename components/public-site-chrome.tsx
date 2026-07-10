@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type {SiteSettingsRecord} from "@/lib/types";
-import {DEFAULT_SITE_LOGO_FILE, getSiteIconUrl} from "@/lib/site-assets";
-import {prisma} from "@/lib/db/prisma";
+import {getSiteIconUrl} from "@/lib/site-assets";
+import {PublicMobileNav} from "@/components/public-mobile-nav";
 
 export async function PublicSiteChrome({
   children,
@@ -43,7 +43,7 @@ export async function PublicSiteChrome({
     <div className="public-app flex min-h-screen flex-col">
       <header className="public-chrome sticky top-0 z-40 border-b backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1280px] flex-col items-stretch gap-3 px-3 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <Link className="min-w-0" href="/">
+          <Link className="min-w-0 lg:hidden" href="/">
             <div className="inline-flex items-center gap-3">
               <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-[rgba(246,201,69,0.42)] bg-[var(--brand-primary-soft)] sm:h-11 sm:w-11">
                 <Image
@@ -61,17 +61,47 @@ export async function PublicSiteChrome({
                 />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-base font-semibold tracking-[0.04em] text-[#fff8ec] sm:text-lg">
+                <p className="public-brand-name truncate text-base font-semibold tracking-[0.04em] sm:text-lg">
                   {siteSettings.artist_name}
                 </p>
-                <p className="hidden truncate text-xs uppercase tracking-[0.24em] text-[#9da7b1] sm:block">
+                <p className="public-brand-subtitle hidden truncate text-xs uppercase tracking-[0.24em] sm:block">
                   {siteSettings.site_content.chrome.brand_subtitle_text}
                 </p>
               </div>
             </div>
           </Link>
 
-          <nav aria-label="Public navigation" className="mobile-scroll-x flex items-center gap-2 lg:mx-0 lg:px-0">
+          <PublicMobileNav items={navItems} />
+
+          <Link className="hidden min-w-0 lg:block" href="/">
+            <div className="inline-flex items-center gap-3">
+              <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-[rgba(246,201,69,0.42)] bg-[var(--brand-primary-soft)] sm:h-11 sm:w-11">
+                <Image
+                  alt={
+                    siteSettings.site_content.chrome.brand_mark_text ||
+                    `${siteSettings.artist_name} mark`
+                  }
+                  className="object-cover"
+                  fill
+                  sizes="44px"
+                  src={getSiteIconUrl(
+                    siteSettings.site_content.chrome.brand_mark_file || "logo_header.png"
+                  )}
+                  unoptimized={!siteSettings.site_content.chrome.brand_mark_file}
+                />
+              </span>
+              <div className="min-w-0">
+                <p className="public-brand-name truncate text-base font-semibold tracking-[0.04em] sm:text-lg">
+                  {siteSettings.artist_name}
+                </p>
+                <p className="public-brand-subtitle hidden truncate text-xs uppercase tracking-[0.24em] sm:block">
+                  {siteSettings.site_content.chrome.brand_subtitle_text}
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          <nav aria-label="Public navigation" className="hidden items-center gap-2 lg:flex">
             {navItems.map((item) => (
               <Link
                 className="public-nav-link"

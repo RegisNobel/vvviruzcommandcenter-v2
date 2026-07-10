@@ -132,35 +132,50 @@ export default async function PublicReleaseDetailPage({
 
         <section className="public-panel overflow-hidden px-5 py-7 sm:px-9 sm:py-10">
           <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:gap-12">
-            <div className="public-art-frame overflow-hidden rounded-xl border border-white/10">
-              <div className="relative aspect-square w-full">
-                {release.cover_art_path ? (
-                  <Image
-                    alt={coverArtAltText}
-                    className="object-cover"
-                    data-release-cover
-                    fill
-                    priority
-                    sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(46vw - 74px), 542px"
-                    src={release.cover_art_path}
-                  />
-                ) : (
-                  <div className="public-art-placeholder flex-col justify-end px-7 py-7 text-left">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b861]">
-                      vvviruz archive
-                    </span>
-                    <strong className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-[#fff5df]">
-                      {release.title}
-                    </strong>
-                    <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9da7b1]">
-                      {siteSettings.artist_name}
-                    </span>
-                  </div>
-                )}
+            <div className="contents">
+              <div className="order-1 public-art-frame overflow-hidden rounded-xl border border-white/10 lg:col-start-1 lg:row-start-1">
+                <div className="relative aspect-square w-full">
+                  {release.cover_art_path ? (
+                    <Image
+                      alt={coverArtAltText}
+                      className="object-cover"
+                      data-release-cover
+                      fill
+                      priority
+                      sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(46vw - 74px), 542px"
+                      src={release.cover_art_path}
+                    />
+                  ) : (
+                    <div className="public-art-placeholder flex-col justify-end px-7 py-7 text-left">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b861]">
+                        vvviruz archive
+                      </span>
+                      <strong className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-[#fff5df]">
+                        {release.title}
+                      </strong>
+                      <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9da7b1]">
+                        {siteSettings.artist_name}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {hasPublicLyrics ? (
+                <article
+                  aria-label={`${release.title} lyrics`}
+                  className="order-3 mt-7 max-h-[24rem] overflow-y-auto border-l border-white/10 pl-4 pr-3 text-left scrollbar-thin scrollbar-thumb-white/15 hover:scrollbar-thumb-white/25 lg:col-start-1 lg:row-start-2"
+                  tabIndex={0}
+                >
+                  <p className="public-eyebrow">{content.lyrics_heading}</p>
+                  <pre className="mt-5 whitespace-pre-wrap font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
+                    {release.lyrics}
+                  </pre>
+                </article>
+              ) : null}
             </div>
 
-            <div>
+            <div className="order-2 lg:col-start-2 lg:row-span-2">
               <div className="public-eyebrow flex flex-wrap items-center gap-3">
                 <span>{release.type}</span>
                 <span className="text-[#746842]">/</span>
@@ -217,15 +232,6 @@ export default async function PublicReleaseDetailPage({
             </div>
           </div>
         </section>
-
-        {hasPublicLyrics ? (
-        <section className="mx-auto max-w-3xl text-center">
-          <p className="public-eyebrow text-center">{content.lyrics_heading}</p>
-          <pre className="mt-5 whitespace-pre-wrap text-center font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
-            {release.lyrics}
-          </pre>
-        </section>
-        ) : null}
 
         {spotifyEmbedUrl || youtubeEmbedUrl ? (
           <section className="grid gap-6 xl:grid-cols-2">

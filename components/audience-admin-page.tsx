@@ -58,6 +58,16 @@ type CampaignDraft = {
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+type SubscribersResponse = {
+  subscribers: SubscriberRecord[];
+  overview: AudienceOverview;
+};
+
+type CampaignsResponse = {
+  campaigns: EmailCampaignRecord[];
+  sendLogs: EmailSendLogRecord[];
+};
+
 const subscriberStatusOptions: Array<{label: string; value: SubscriberStatus | "all"}> = [
   {label: "All", value: "all"},
   {label: "Active", value: "active"},
@@ -259,10 +269,9 @@ export function AudienceAdminPage({
 
       query.set("status", nextStatus);
 
-      const payload = await readJson<{
-        subscribers: SubscriberRecord[];
-        overview: AudienceOverview;
-      }>(`/api/subscribers?${query.toString()}`);
+      const payload = await readJson<SubscribersResponse>(
+        `/api/subscribers?${query.toString()}`
+      );
 
       setSubscribers(payload.subscribers);
       setOverview(payload.overview);
@@ -280,10 +289,7 @@ export function AudienceAdminPage({
     setIsRefreshingCampaigns(true);
 
     try {
-      const payload = await readJson<{
-        campaigns: EmailCampaignRecord[];
-        sendLogs: EmailSendLogRecord[];
-      }>("/api/campaigns");
+      const payload = await readJson<CampaignsResponse>("/api/campaigns");
 
       setCampaigns(payload.campaigns);
       setSendLogs(payload.sendLogs);
