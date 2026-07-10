@@ -167,8 +167,8 @@ export function ExclusiveSignupForm({
         <span>{consentLabel}</span>
       </label>
 
-      <button
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c9a347]/36 bg-[#c9a347] px-5 py-3 text-sm font-semibold text-[#13161a] transition hover:scale-[1.01] hover:bg-[#d8b761] disabled:cursor-not-allowed disabled:opacity-70"
+        <button
+          className="public-action-primary w-full disabled:cursor-not-allowed disabled:opacity-70"
         disabled={saveState === "submitting"}
         type="submit"
       >

@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Disc,
   Play,
-  Plus,
   ChevronRight
 } from "lucide-react";
 import type {
@@ -137,16 +136,6 @@ export function PublicPlaylistCampaignView({
       linkType: "track",
       linkLabel: platform,
       targetUrl
-    });
-  };
-
-  // Follow click handler
-  const handleFollowClick = (platform: string, playlistUrl: string) => {
-    trackEvent(playlist.slug, focusedMembership.releaseId, {
-      eventType: "playlist_follow_click",
-      linkType: "playlist",
-      linkLabel: platform,
-      targetUrl: playlistUrl
     });
   };
 
@@ -314,56 +303,6 @@ export function PublicPlaylistCampaignView({
                   </Link>
                 );
               })}
-            </div>
-          </section>
-        )}
-
-        {/* 5. Playlist Follow CTA */}
-        {(playlist.spotifyPlaylistUrl || playlist.applePlaylistUrl || playlist.youtubePlaylistUrl) && (
-          <section className="public-form-surface space-y-4 p-6">
-            <div className="text-center">
-              <h3 className="text-sm font-bold text-[#f3ede2]">Grow the Asset</h3>
-              <p className="text-[11px] text-[#8b919b] mt-1">
-                Save the playlist to your library for offline listening & updates.
-              </p>
-            </div>
-
-            <div className="grid gap-2">
-              {playlist.spotifyPlaylistUrl && (
-                <a
-                  className="flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 px-4 py-3 text-xs font-semibold text-emerald-100 hover:border-emerald-500/40 transition"
-                  href={playlist.spotifyPlaylistUrl}
-                  onClick={() => handleFollowClick("spotify", playlist.spotifyPlaylistUrl)}
-                  target="_blank"
-                >
-                  <span>Follow Playlist on Spotify</span>
-                  <Plus size={14} />
-                </a>
-              )}
-
-              {playlist.applePlaylistUrl && (
-                <a
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] px-4 py-3 text-xs font-semibold text-[#f3ede2] hover:border-white/20 transition"
-                  href={playlist.applePlaylistUrl}
-                  onClick={() => handleFollowClick("apple", playlist.applePlaylistUrl)}
-                  target="_blank"
-                >
-                  <span>Follow Playlist on Apple Music</span>
-                  <Plus size={14} />
-                </a>
-              )}
-
-              {playlist.youtubePlaylistUrl && (
-                <a
-                  className="flex items-center justify-between rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-100 hover:border-rose-500/40 transition"
-                  href={playlist.youtubePlaylistUrl}
-                  onClick={() => handleFollowClick("youtube", playlist.youtubePlaylistUrl)}
-                  target="_blank"
-                >
-                  <span>Follow Playlist on YouTube Music</span>
-                  <Plus size={14} />
-                </a>
-              )}
             </div>
           </section>
         )}

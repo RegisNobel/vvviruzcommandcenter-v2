@@ -205,7 +205,7 @@ export default async function PublicExclusivesPage({
                   <TrackedExternalLink
                     href={unlockedUrl}
                     eventType="exclusive_preview_open"
-                    className="inline-flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#c9a347] to-[#e6c167] px-8 py-4 text-base font-bold text-[#13161a] transition hover:scale-[1.02] active:scale-[0.98] shadow-[0_12px_40px_rgba(201,163,71,0.25)]"
+                    className="public-action-primary px-8 py-4 text-base"
                   >
                     <Play size={18} fill="currentColor" />
                     {offer.instant_unlock_button_label || "Access the Current Preview"}
@@ -300,7 +300,7 @@ export default async function PublicExclusivesPage({
               <div className="mt-6 flex justify-center">
                 {discordInviteUrl ? (
                   <TrackedExternalLink
-                    className="inline-flex w-full justify-center rounded-full border border-[#c9a347]/42 bg-[#c9a347] px-6 py-4 text-sm font-semibold text-[#14120d] transition duration-300 hover:scale-[1.02] hover:bg-[#e2bf68] sm:w-auto"
+                    className="public-action-primary w-full px-6 py-4 sm:w-auto"
                     href={discordInviteUrl}
                     eventType="exclusive_discord_cta"
                   >
@@ -309,7 +309,7 @@ export default async function PublicExclusivesPage({
                   </TrackedExternalLink>
                 ) : (
                   <button
-                    className="inline-flex w-full cursor-not-allowed justify-center rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-[#8d949d] sm:w-auto"
+                    className="public-action-secondary w-full cursor-not-allowed px-6 py-4 text-[#8d949d] opacity-70 sm:w-auto"
                     disabled
                     type="button"
                   >

@@ -194,7 +194,7 @@ export default async function PublicReleaseDetailPage({
                 </div>
               ) : null}
 
-              <div className="public-panel-quiet mt-8 pt-5">
+              <div className="mt-8 border-t border-white/10 pt-5">
                 <p className="public-eyebrow">Listen now</p>
                 <PublicPlatformLinks
                   appleMusicUrl={release.apple_music_url}
@@ -210,9 +210,9 @@ export default async function PublicReleaseDetailPage({
         </section>
 
         {aboutText || hasPublicLyrics ? (
-        <section className="grid gap-10 lg:grid-cols-2 lg:gap-0">
+        <section className="grid gap-10 lg:grid-cols-2 lg:gap-x-16">
           {aboutText ? (
-            <article className="py-1 lg:pr-10">
+            <article className="py-1 text-left">
               <p className="public-eyebrow">About this track</p>
               <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
                 {aboutText}
@@ -221,9 +221,9 @@ export default async function PublicReleaseDetailPage({
           ) : null}
 
           {hasPublicLyrics ? (
-              <article className="border-t border-white/10 pt-10 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-1">
-                <p className="public-eyebrow">{content.lyrics_heading}</p>
-                <pre className="mt-5 whitespace-pre-wrap font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
+              <article className="pt-10 text-right lg:pt-1">
+                <p className="public-eyebrow text-right">{content.lyrics_heading}</p>
+                <pre className="mt-5 whitespace-pre-wrap text-right font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
                   {release.lyrics}
                 </pre>
               </article>
