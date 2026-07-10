@@ -159,11 +159,32 @@ export function PublicPlaylistCampaignView({
   const artistDisplay = focusedMembership.release_collaborator
     ? `${siteSettings.artist_name} feat. ${formatCollaboratorsList(focusedMembership.release_collaborator_name)}`
     : siteSettings.artist_name;
+  const coverArtPath = focusedMembership.release_cover_art_path?.trim() || "";
+  const hasCoverArt = Boolean(coverArtPath);
 
   return (
     <main className="public-conversion-shell min-h-screen pb-24 text-[#ebe5d9]">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-gradient-to-b from-[#c9a347]/10 via-[#c9a347]/0 to-transparent blur-[120px]" />
+      {hasCoverArt ? (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 scale-[1.08] opacity-70">
+            <Image
+              alt=""
+              className="object-cover object-center blur-[42px]"
+              fill
+              sizes="360px"
+              src={coverArtPath}
+              unoptimized
+            />
+          </div>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,7,10,0.52),rgba(7,9,13,0.92)_38%,rgba(7,9,13,0.99))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,201,69,0.1),transparent_38%)]" />
+        </div>
+      ) : (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(246,201,69,0.14),transparent_35%),linear-gradient(180deg,rgba(7,9,13,0.88),rgba(7,9,13,1))]"
+        />
+      )}
 
       <div className="relative mx-auto max-w-[540px] space-y-10 pt-4 sm:pt-8">
         
