@@ -205,29 +205,25 @@ export default async function PublicReleaseDetailPage({
                 />
               </div>
 
+              {aboutText ? (
+                <div className="mt-8 max-w-2xl text-left">
+                  <p className="public-eyebrow">About this track</p>
+                  <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
+                    {aboutText}
+                  </p>
+                </div>
+              ) : null}
+
             </div>
           </div>
         </section>
 
-        {aboutText || hasPublicLyrics ? (
-        <section className="grid gap-10 lg:grid-cols-2 lg:gap-x-16">
-          {aboutText ? (
-            <article className="py-1 text-left">
-              <p className="public-eyebrow">About this track</p>
-              <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
-                {aboutText}
-              </p>
-            </article>
-          ) : null}
-
-          {hasPublicLyrics ? (
-              <article className="pt-10 text-right lg:pt-1">
-                <p className="public-eyebrow text-right">{content.lyrics_heading}</p>
-                <pre className="mt-5 whitespace-pre-wrap text-right font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
-                  {release.lyrics}
-                </pre>
-              </article>
-          ) : null}
+        {hasPublicLyrics ? (
+        <section className="mx-auto max-w-3xl text-center">
+          <p className="public-eyebrow text-center">{content.lyrics_heading}</p>
+          <pre className="mt-5 whitespace-pre-wrap text-center font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
+            {release.lyrics}
+          </pre>
         </section>
         ) : null}
 

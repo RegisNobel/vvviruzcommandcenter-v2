@@ -68,15 +68,17 @@ export function PublicReleaseCard({
 
         <div className="mt-4">
           <Link href={`/music/${release.slug}`}>
-            <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[#fff8ec] transition group-hover:text-[#f1ca61]">
+            <h3 className="line-clamp-2 min-h-[3.5rem] text-2xl font-semibold leading-7 tracking-[-0.04em] text-[#fff8ec] transition group-hover:text-[#f1ca61]">
               {release.title}
             </h3>
           </Link>
-          {collaboratorName ? (
-            <p className="mt-2 text-xs font-semibold text-[#e3c16e]">
-              with {collaboratorName}
-            </p>
-          ) : null}
+          <div className="mt-2 min-h-5">
+            {collaboratorName ? (
+              <p className="text-xs font-semibold text-[#e3c16e]">
+                with {collaboratorName}
+              </p>
+            ) : null}
+          </div>
           <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#aeb6c0]">
             {release.public_description}
           </p>

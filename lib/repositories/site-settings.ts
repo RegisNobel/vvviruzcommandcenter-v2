@@ -125,7 +125,7 @@ function createDefaultSiteContent(): SiteContentSettings {
         "Select up to three releases from Public Site settings to feature them here.",
       featured_release_ids: [],
       recent_releases_eyebrow: "Recent Releases",
-      recent_releases_heading: "Pick a Glitch",
+      recent_releases_heading: "Pick A Poison",
       recent_releases_view_all_label: "View all",
       brand_pillars_eyebrow: "Brand Pillars",
       brand_pillars_heading: "What the catalog is built around",
@@ -363,7 +363,9 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           .slice(0, 3) || defaults.home.featured_release_ids,
       recent_releases_heading:
         !input?.home?.recent_releases_heading ||
-        input.home.recent_releases_heading === "Latest drops"
+        ["latest drops", "pick a glitch"].includes(
+          input.home.recent_releases_heading.trim().toLowerCase()
+        )
           ? defaults.home.recent_releases_heading
           : input.home.recent_releases_heading,
       brand_pillars: defaults.home.brand_pillars.map((defaultPillar, index) => {
@@ -707,6 +709,4 @@ export async function writeSiteSettings(input: SiteSettingsRecord) {
 
   return normalized;
 }
-
-
 
