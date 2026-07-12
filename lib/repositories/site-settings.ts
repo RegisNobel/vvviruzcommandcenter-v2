@@ -3,7 +3,8 @@ import {parseJson, serializeJson, toDate} from "@/lib/db/serialization";
 import {
   DEFAULT_BRAND_PILLAR_ICON_FILES,
   DEFAULT_SITE_ARTIST_IMAGE_FILE,
-  DEFAULT_SITE_LOGO_FILE
+  DEFAULT_SITE_LOGO_FILE,
+  resolveBrandPillarImageFile
 } from "@/lib/site-assets";
 import type {
   BrandPillar,
@@ -379,7 +380,10 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           id: inputPillar.id || defaultPillar.id || createId(),
           title: inputPillar.title || defaultPillar.title,
           description: inputPillar.description || defaultPillar.description,
-          imageFile: inputPillar.imageFile?.trim() || defaultPillar.imageFile
+          imageFile: resolveBrandPillarImageFile(
+            inputPillar.imageFile || defaultPillar.imageFile,
+            index
+          )
         };
       })
     },
@@ -709,4 +713,3 @@ export async function writeSiteSettings(input: SiteSettingsRecord) {
 
   return normalized;
 }
-

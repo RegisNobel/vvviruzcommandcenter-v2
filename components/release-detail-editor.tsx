@@ -2829,7 +2829,7 @@ export function ReleaseDetailEditor({
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] uppercase font-bold text-muted">YouTube Target</label>
+                            <label className="text-[10px] uppercase font-bold text-muted">YouTube Video / Context URL</label>
                             <input
                               className="field-input mt-1.5 w-full text-xs font-mono py-1 px-2"
                               onChange={(e) =>
@@ -2838,6 +2838,11 @@ export function ReleaseDetailEditor({
                               placeholder="https://youtube.com/..."
                               value={m.youtubeTargetUrl}
                             />
+                            {playlistObj?.youtubePlaylistUrl && (
+                              <p className="mt-1.5 text-[10px] leading-4 text-muted">
+                                Saved in this playlist&apos;s playback context.
+                              </p>
+                            )}
                           </div>
                         </div>
 

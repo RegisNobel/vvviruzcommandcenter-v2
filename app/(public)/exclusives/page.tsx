@@ -67,6 +67,12 @@ export default async function PublicExclusivesPage({
   const derivedTitle = offer.exclusive_track_title.trim() || release?.title || "Upcoming Preview";
   const derivedArtwork = offer.exclusive_track_art_path.trim() || release?.coverArtPath || "";
   const derivedDescription = offer.exclusive_track_description.trim() || release?.publicDescription || "";
+  const activePreviewHeadline = isUnlocked
+    ? offer.success_heading.trim() || "Insider Access Unlocked"
+    : offer.headline.trim();
+  const activePreviewSubtext = isUnlocked
+    ? offer.success_message.trim() || "You have unlocked early access previews."
+    : offer.subtext.trim();
 
   // Determine preview availability
   let isPreviewActive = offer.exclusive_track_enabled && Boolean(offer.private_external_url.trim());
@@ -155,16 +161,20 @@ export default async function PublicExclusivesPage({
                 </div>
               ) : null}
 
-              <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
-                {isUnlocked ? offer.success_heading || "Insider Access Unlocked" : offer.headline}
-              </h1>
-              
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
-                {isUnlocked ? (offer.success_message || "You have unlocked early access previews.") : offer.subtext}
-              </p>
+              {activePreviewHeadline ? (
+                <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
+                  {activePreviewHeadline}
+                </h1>
+              ) : null}
+
+              {activePreviewSubtext ? (
+                <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
+                  {activePreviewSubtext}
+                </p>
+              ) : null}
 
               {derivedTitle && (
-                <div className="mt-6 inline-flex flex-col items-center">
+                <div className="mt-5 inline-flex flex-col items-center">
                   <span className="text-lg font-bold text-[#f7f1e6]">{derivedTitle}</span>
                   {derivedDescription && (
                     <span className="mt-1 max-w-md text-xs text-[#a0aab5]">{derivedDescription}</span>

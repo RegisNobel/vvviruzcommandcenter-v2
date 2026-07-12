@@ -471,6 +471,19 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-07-12 - Brand Pillar Visual Refresh
+
+- Replaced the electrically dense pillar icon set with a cohesive cinematic collection for Music, Fitness, Kai/Change, Nerdcore, and Tech.
+- Standardized every carousel image around restrained black-glass hardware, aged-gold signal lighting, subtle grid texture, and clean 16:10 editorial framing.
+- Added lightweight versioned WebP assets and automatic legacy filename resolution so existing Site Settings records adopt the new artwork without losing their editable pillar copy.
+
+### 2026-07-12 - YouTube Playlist Context Links
+
+- Added strict YouTube video and playlist URL parsing plus canonical per-song playlist-context targets in the form `youtube.com/watch?v=VIDEO_ID&list=PLAYLIST_ID`.
+- Playlist membership saves now generate YouTube context links when both a song video and parent YouTube playlist are configured; changing the parent playlist refreshes compatible saved targets without disturbing legacy manual destinations.
+- Refined public playlist-song pages by removing the playlist emblem, promoting YouTube to a full-width red tracked action, and allowing combined artist/title headings to wrap instead of truncating.
+- Added the focused `npm run test:youtube-links` regression suite for share URLs, existing context URLs, invalid hosts, and missing playlist IDs.
+
 ### 2026-07-11 - Public Release Lyrics Layout v1
 
 - Split public release detail pages into a compact artwork-and-identity hero followed by an editorial lyrics and media area.
@@ -502,7 +515,7 @@ npm run normalize:releases
   - Reworked the homepage, music library, About, release detail, links, exclusives, commissions, and playlist campaign surfaces into a distinct public artist experience rather than mirroring the admin console.
   - Updated release cards so description blocks begin at a consistent height whether or not a collaborator is present, and renamed the homepage discovery prompt to **Pick a Poison**.
   - Refined release detail storytelling: platform actions and the About copy live in the main release card, category/project context remains public, and lyrics are integrated beside the artwork on larger screens with a readable mobile order and independently scrollable lyric pane.
-  - Simplified public playlist campaign pages into focused track destinations: artist and song render on one line, cover art drives the backdrop, the subscription and playlist-follow/Grow the Asset modules were removed, and the shared public footer is used.
+  - Simplified public playlist campaign pages into focused track destinations: artist and song share one combined heading, cover art drives the backdrop, the subscription and playlist-follow/Grow the Asset modules were removed, and the shared public footer is used.
   - Updated Exclusives to use the current rectangular public action treatment and refreshed public cache keys so admin Site Settings changes reliably reach the public experience.
   - Replaced the clipped mobile public navigation strip with an accessible **More** menu, and changed the admin mobile Promo submenu from an injected horizontal list to a compact tool grid.
   - Audited legacy playlist follow behavior: the public follow CTA and emitter are gone, while the historical `playlist_follow_click` event and stored platform fields remain backward-compatible pending a deliberate versioned data-retention cleanup.

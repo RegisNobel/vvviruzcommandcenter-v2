@@ -5,6 +5,10 @@ import {
   parseSpotifyResourceUrl,
   buildSpotifyPlaylistContextUrl
 } from "@/lib/spotify-links";
+import {
+  buildYouTubePlaylistContextUrl,
+  parseYouTubePlaylistUrl
+} from "@/lib/youtube-links";
 import type {Playlist, PlaylistRelease, Release} from "@prisma/client";
 import type {PlaylistAnalyticsSummary, PlaylistRecord, PlaylistReleaseRecord, PlaylistReadiness} from "@/lib/types";
 import {inferPlaylistPlatform, validatePlaylistDestination} from "@/lib/playlist-analytics";
@@ -347,6 +351,15 @@ export async function updatePlaylist(
   if (data.youtubePlaylistUrl && !validateExternalUrl(data.youtubePlaylistUrl)) {
     throw new Error("YouTube playlist URL must be a valid HTTPS link.");
   }
+  if (data.youtubePlaylistUrl) {
+    try {
+      parseYouTubePlaylistUrl(data.youtubePlaylistUrl);
+    } catch (error) {
+      throw new Error(
+        `Malformed YouTube Playlist URL: ${error instanceof Error ? error.message : "Invalid playlist URL."}`
+      );
+    }
+  }
 
   const oldPlaylist = await prisma.playlist.findUnique({
     where: { id }
@@ -359,6 +372,8 @@ export async function updatePlaylist(
   // Check if Spotify playlist URL changed or was cleared
   const newSpotifyUrl = data.spotifyPlaylistUrl !== undefined ? data.spotifyPlaylistUrl.trim() : oldPlaylist.spotifyPlaylistUrl;
   const spotifyUrlChanged = newSpotifyUrl !== oldPlaylist.spotifyPlaylistUrl;
+  const newYouTubeUrl = data.youtubePlaylistUrl !== undefined ? data.youtubePlaylistUrl.trim() : oldPlaylist.youtubePlaylistUrl;
+  const youtubeUrlChanged = newYouTubeUrl !== oldPlaylist.youtubePlaylistUrl;
 
   const result = await prisma.$transaction(async (tx) => {
     const playlist = await tx.playlist.update({
@@ -378,7 +393,7 @@ export async function updatePlaylist(
       }
     });
 
-    if (!spotifyUrlChanged) {
+    if (!spotifyUrlChanged && !youtubeUrlChanged) {
       return { playlist: toPlaylistRecord(playlist) };
     }
 
@@ -443,6 +458,18 @@ export async function updatePlaylist(
         }
       } else {
         summary.manualUnchangedCount += 1;
+      }
+
+      if (youtubeUrlChanged && m.youtubeTargetUrl && newYouTubeUrl) {
+        try {
+          const generated = buildYouTubePlaylistContextUrl(m.youtubeTargetUrl, newYouTubeUrl);
+          await tx.playlistRelease.update({
+            where: {playlistId_releaseId: {playlistId: id, releaseId: m.releaseId}},
+            data: {youtubeTargetUrl: generated.targetUrl}
+          });
+        } catch {
+          // Preserve legacy or non-video targets instead of blocking playlist settings updates.
+        }
       }
     }
 
@@ -519,15 +546,22 @@ export async function syncPlaylistMemberships(
   const existingMemberships = await prisma.playlistRelease.findMany({
     where: {playlistId}
   });
+  const playlistRecord = await prisma.playlist.findUnique({where: {id: playlistId}});
+  if (!playlistRecord) {
+    throw new Error("Playlist not found.");
+  }
   const existingByRelease = new Map(existingMemberships.map((item) => [item.releaseId, item]));
 
   // Validate new and changed URLs. Unchanged legacy mismatches remain editable elsewhere
   // but continue to appear in paid-readiness diagnostics.
   for (const m of memberships) {
+    const finalYouTubeTarget = m.youtubeTargetUrl && playlistRecord.youtubePlaylistUrl
+      ? buildYouTubePlaylistContextUrl(m.youtubeTargetUrl, playlistRecord.youtubePlaylistUrl).targetUrl
+      : m.youtubeTargetUrl;
     if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
       throw new Error("Apple track URL must be a valid HTTPS link.");
     }
-    if (m.youtubeTargetUrl && !validateExternalUrl(m.youtubeTargetUrl)) {
+    if (finalYouTubeTarget && !validateExternalUrl(finalYouTubeTarget)) {
       throw new Error("YouTube track URL must be a valid HTTPS link.");
     }
 
@@ -559,9 +593,9 @@ export async function syncPlaylistMemberships(
       const validation = validatePlaylistDestination("apple_music", m.appleTargetUrl);
       if (!validation.valid) throw new Error(validation.issue);
     }
-    if (m.youtubeTargetUrl && existing?.youtubeTargetUrl !== m.youtubeTargetUrl) {
-      const platform = inferPlaylistPlatform(m.youtubeTargetUrl, "youtube_music");
-      const validation = validatePlaylistDestination(platform, m.youtubeTargetUrl);
+    if (finalYouTubeTarget && existing?.youtubeTargetUrl !== finalYouTubeTarget) {
+      const platform = inferPlaylistPlatform(finalYouTubeTarget, "youtube_music");
+      const validation = validatePlaylistDestination(platform, finalYouTubeTarget);
       if (!validation.valid) throw new Error(validation.issue);
     }
   }
@@ -610,7 +644,9 @@ export async function syncPlaylistMemberships(
             spotifyTrackUrl: m.spotifyTrackUrl.trim(),
             spotifyTargetMode: m.spotifyTargetMode,
             appleTargetUrl: m.appleTargetUrl.trim(),
-            youtubeTargetUrl: m.youtubeTargetUrl.trim(),
+            youtubeTargetUrl: m.youtubeTargetUrl && playlist.youtubePlaylistUrl
+              ? buildYouTubePlaylistContextUrl(m.youtubeTargetUrl, playlist.youtubePlaylistUrl).targetUrl
+              : m.youtubeTargetUrl.trim(),
             isActive: m.isActive
           }
         });
@@ -668,6 +704,19 @@ export async function syncReleasePlaylistMemberships(
 
       if (!playlist) {
         throw new Error("Playlist not found.");
+      }
+
+      if (m.youtubeTargetUrl && playlist.youtubePlaylistUrl) {
+        try {
+          m.youtubeTargetUrl = buildYouTubePlaylistContextUrl(
+            m.youtubeTargetUrl,
+            playlist.youtubePlaylistUrl
+          ).targetUrl;
+        } catch (error) {
+          throw new Error(
+            `Failed to generate YouTube playlist context link: ${error instanceof Error ? error.message : "Invalid YouTube URL."}`
+          );
+        }
       }
 
       if (m.spotifyTargetMode === "generated") {
