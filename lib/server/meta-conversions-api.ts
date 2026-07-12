@@ -4,7 +4,7 @@ import {createHash} from "node:crypto";
 
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 
-export type MetaConversionsEventName = "ViewContent" | "Lead";
+export type MetaConversionsEventName = "ViewContent" | "Lead" | "StreamingOutboundClick";
 
 type MetaConversionsEventInput = {
   eventId: string;
@@ -17,6 +17,10 @@ type MetaConversionsEventInput = {
   visitorId?: string;
   releaseId?: string | null;
   releaseTitle?: string;
+  page?: string;
+  playlistId?: string | null;
+  playlistSlug?: string;
+  platform?: string;
   linkLabel?: string;
   linkType?: string;
   targetUrl?: string;
@@ -78,13 +82,15 @@ function compactRecord<T extends Record<string, unknown>>(record: T) {
 function buildCustomData(input: MetaConversionsEventInput) {
   return compactRecord({
     content_category:
-      input.eventName === "Lead" ? "streaming_outbound_click" : "music_release",
+      input.eventName === "StreamingOutboundClick" ? "streaming_outbound_click" : "music_release",
     content_ids: input.releaseId ? [input.releaseId] : undefined,
     content_name: clean(input.releaseTitle),
     content_type: "music_release",
     link_label: clean(input.linkLabel),
-    page: "links",
-    platform: clean(input.linkType),
+    page: clean(input.page) || "links",
+    playlist_id: clean(input.playlistId),
+    playlist_slug: clean(input.playlistSlug),
+    platform: clean(input.platform) || clean(input.linkType),
     target_url: clean(input.targetUrl),
     utm_source: clean(input.utmSource),
     utm_medium: clean(input.utmMedium),

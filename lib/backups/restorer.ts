@@ -13,7 +13,7 @@ type EncryptedPayload = {
   version: 1;
 };
 
-type SnapshotRecord = Record<string, unknown> & {id: string};
+type SnapshotRecord = Record<string, unknown> & {id?: string};
 
 type Snapshot = {
   exportedAt?: string;
@@ -23,6 +23,8 @@ type Snapshot = {
   releaseCategoryAssignments?: SnapshotRecord[];
   releaseTasks?: SnapshotRecord[];
   releaseStreamingLinks?: SnapshotRecord[];
+  playlists?: SnapshotRecord[];
+  playlistReleases?: SnapshotRecord[];
   copyEntries?: SnapshotRecord[];
   siteSettings?: SnapshotRecord[];
   subscribers?: SnapshotRecord[];
@@ -44,6 +46,8 @@ const dateFieldsByModel: Record<string, string[]> = {
   releaseCategoryAssignment: ["createdAt", "updatedAt"],
   releaseTask: ["createdAt", "updatedAt"],
   releaseStreamingLink: ["createdAt", "updatedAt"],
+  playlist: ["createdAt", "updatedAt"],
+  playlistRelease: ["createdAt", "updatedAt"],
   copyEntry: ["createdOn", "updatedOn"],
   siteSettings: ["createdOn", "updatedOn"],
   subscriber: ["createdAt", "updatedAt", "unsubscribedAt"],
@@ -61,6 +65,7 @@ const dateFieldsByModel: Record<string, string[]> = {
 const compositeUniqueKeys: Record<string, string[]> = {
   releaseCategoryAssignment: ["categoryId", "releaseId"],
   releaseStreamingLink: ["releaseId", "platform"],
+  playlistRelease: ["playlistId", "releaseId"],
   adCreativeCopyLink: ["adCreativeReportId", "copyEntryId"]
 };
 
@@ -240,14 +245,16 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
     "releaseStreamingLink",
     snapshot.releaseStreamingLinks
   );
+  counts.playlists = await upsertMany("playlist", snapshot.playlists);
+  counts.playlistReleases = await upsertMany("playlistRelease", snapshot.playlistReleases);
   counts.copyEntries = await upsertMany("copyEntry", snapshot.copyEntries);
   counts.siteSettings = await upsertMany("siteSettings", snapshot.siteSettings);
   counts.subscribers = await upsertMany("subscriber", snapshot.subscribers);
   counts.emailCampaigns = await upsertMany("emailCampaign", snapshot.emailCampaigns);
   counts.emailSendLogs = await upsertMany("emailSendLog", snapshot.emailSendLogs);
+  counts.shortLinks = await upsertMany("shortLink", snapshot.shortLinks);
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
   counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
-  counts.shortLinks = await upsertMany("shortLink", snapshot.shortLinks);
   counts.adImportBatches = await upsertMany("adImportBatch", snapshot.adImportBatches);
   counts.adCreativeReports = await upsertMany("adCreativeReport", snapshot.adCreativeReports);
   counts.adCreativeCopyLinks = await upsertMany(

@@ -6,7 +6,8 @@ import {
   buildSpotifyPlaylistContextUrl
 } from "@/lib/spotify-links";
 import type {Playlist, PlaylistRelease, Release} from "@prisma/client";
-import type {PlaylistRecord, PlaylistReleaseRecord} from "@/lib/types";
+import type {PlaylistAnalyticsSummary, PlaylistRecord, PlaylistReleaseRecord, PlaylistReadiness} from "@/lib/types";
+import {inferPlaylistPlatform, validatePlaylistDestination} from "@/lib/playlist-analytics";
 
 // Mapping helpers
 function toPlaylistRecord(
@@ -118,6 +119,144 @@ export async function readPlaylistWithMemberships(id: string) {
   return {
     playlist: toPlaylistRecord(playlist),
     memberships: playlist.releases.map(toPlaylistReleaseRecord)
+  };
+}
+
+function toReadiness(issues: string[], blocked: boolean): PlaylistReadiness {
+  return {
+    status: blocked ? "Blocked" : issues.length > 0 ? "Needs review" : "Ready",
+    issues
+  };
+}
+
+function percentage(numerator: number, denominator: number) {
+  return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
+}
+
+export async function readPlaylistAnalytics(
+  playlistId: string,
+  days = 30
+): Promise<PlaylistAnalyticsSummary | null> {
+  const safeDays = Math.min(Math.max(days, 7), 120);
+  const startDate = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+  const playlist = await prisma.playlist.findUnique({
+    where: {id: playlistId},
+    include: {
+      releases: {
+        orderBy: {position: "asc"},
+        include: {release: {select: {id: true, isPublished: true, title: true}}}
+      }
+    }
+  });
+  if (!playlist) return null;
+
+  const [events, shortLinks] = await Promise.all([
+    prisma.analyticsEvent.findMany({
+      orderBy: {createdAt: "asc"},
+      where: {
+        OR: [
+          {playlistId},
+          {hubPath: `/listen/${playlist.slug}`},
+          {path: {startsWith: `/listen/${playlist.slug}/`}}
+        ],
+        createdAt: {gte: startDate},
+        eventType: {in: ["playlist_page_view", "playlist_track_click"]}
+      }
+    }),
+    prisma.shortLink.findMany({
+      select: {clickCount: true, status: true},
+      where: {
+        deletedAt: null,
+        destinationUrl: {contains: `/listen/${playlist.slug}`}
+      }
+    })
+  ]);
+
+  const views = events.filter((event) => event.eventType === "playlist_page_view");
+  const clicks = events.filter((event) => event.eventType === "playlist_track_click");
+  const legacyViews = views.filter((view) => !view.entryType);
+  const firstViewBySession = new Map<string, string>();
+  for (const view of legacyViews) {
+    const sessionKey = view.sessionId || view.visitorId || view.id;
+    if (!firstViewBySession.has(sessionKey)) firstViewBySession.set(sessionKey, view.id);
+  }
+  const arrivals = views.filter((view) =>
+    view.entryType
+      ? view.entryType !== "internal_navigation"
+      : firstViewBySession.get(view.sessionId || view.visitorId || view.id) === view.id
+  );
+  const unique = (values: string[]) => new Set(values.filter(Boolean)).size;
+  const countBy = (values: string[]) => {
+    const counts = new Map<string, number>();
+    for (const value of values) {
+      const label = value.trim() || "Direct / Unknown";
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return Array.from(counts, ([label, count]) => ({label, count})).sort((a, b) => b.count - a.count);
+  };
+
+  const publicIssues: string[] = [];
+  const paidIssues: string[] = [];
+  const active = playlist.releases.filter((membership) => membership.isActive);
+  const published = active.filter((membership) => membership.release.isPublished);
+  if (!playlist.isPublic) publicIssues.push("Playlist is not published.");
+  if (published.length === 0) publicIssues.push("The playlist contains no published members.");
+  if (playlist.featuredReleaseId && !active.some((item) => item.releaseId === playlist.featuredReleaseId)) {
+    publicIssues.push("The featured release is no longer an active playlist member.");
+  }
+  for (const membership of published) {
+    const destinations = [
+      ["spotify", membership.spotifyTargetUrl],
+      ["apple_music", membership.appleTargetUrl],
+      [inferPlaylistPlatform(membership.youtubeTargetUrl, "youtube_music"), membership.youtubeTargetUrl]
+    ] as const;
+    if (!destinations.some(([, value]) => value.trim())) {
+      paidIssues.push(`${membership.release.title} has no music-platform destination.`);
+      continue;
+    }
+    for (const [platform, value] of destinations) {
+      if (!value.trim()) continue;
+      const validation = validatePlaylistDestination(platform, value);
+      if (!validation.valid) paidIssues.push(`${membership.release.title}: ${validation.issue}`);
+    }
+  }
+
+  const releasePerformance = published.map((membership) => {
+    const releaseViews = views.filter((event) => event.releaseId === membership.releaseId);
+    const releaseClicks = clicks.filter((event) => event.releaseId === membership.releaseId);
+    return {
+      releaseId: membership.releaseId,
+      title: membership.release.title,
+      views: releaseViews.length,
+      outboundClicks: releaseClicks.length,
+      uniqueClickers: unique(releaseClicks.map((event) => event.visitorId)),
+      clickThroughRate: percentage(releaseClicks.length, releaseViews.length)
+    };
+  });
+
+  return {
+    days: safeDays,
+    updatedAt: new Date().toISOString(),
+    overview: {
+      contentViews: views.length,
+      measuredArrivals: arrivals.length,
+      uniqueVisitors: unique(views.map((event) => event.visitorId)),
+      sessions: unique(views.map((event) => event.sessionId)),
+      outboundClicks: clicks.length,
+      uniqueClickers: unique(clicks.map((event) => event.visitorId)),
+      viewToStreamIntentRate: percentage(clicks.length, views.length)
+    },
+    publicReadiness: toReadiness(publicIssues, published.length === 0),
+    paidReadiness: toReadiness(paidIssues, paidIssues.length > 0),
+    platformBreakdown: countBy(clicks.map((event) => event.platform || event.linkType || event.linkLabel)),
+    sourceBreakdown: countBy(arrivals.map((event) => event.utmSource || event.originalReferrer || "Direct / Unknown")),
+    campaignBreakdown: countBy(arrivals.map((event) => event.utmCampaign || "No campaign")),
+    releasePerformance,
+    shortLinks: {
+      activeCount: shortLinks.filter((link) => link.status === "ACTIVE").length,
+      allTimeClicks: shortLinks.reduce((sum, link) => sum + link.clickCount, 0),
+      measuredArrivals: arrivals.filter((event) => Boolean(event.shortLinkId)).length
+    }
   };
 }
 
@@ -377,7 +516,13 @@ export async function syncPlaylistMemberships(
     throw new Error("Duplicate release memberships are not allowed.");
   }
 
-  // Validate URLs
+  const existingMemberships = await prisma.playlistRelease.findMany({
+    where: {playlistId}
+  });
+  const existingByRelease = new Map(existingMemberships.map((item) => [item.releaseId, item]));
+
+  // Validate new and changed URLs. Unchanged legacy mismatches remain editable elsewhere
+  // but continue to appear in paid-readiness diagnostics.
   for (const m of memberships) {
     if (m.appleTargetUrl && !validateExternalUrl(m.appleTargetUrl)) {
       throw new Error("Apple track URL must be a valid HTTPS link.");
@@ -399,9 +544,25 @@ export async function syncPlaylistMemberships(
         if (!validateExternalUrl(m.spotifyTargetUrl)) {
           throw new Error("Spotify Target URL must be a valid HTTPS link.");
         }
+        const existing = existingByRelease.get(m.releaseId);
+        if (existing?.spotifyTargetUrl !== m.spotifyTargetUrl) {
+          const validation = validatePlaylistDestination("spotify", m.spotifyTargetUrl);
+          if (!validation.valid) throw new Error(validation.issue);
+        }
       }
     } else {
       throw new Error(`Invalid Spotify Target Mode: ${m.spotifyTargetMode}`);
+    }
+
+    const existing = existingByRelease.get(m.releaseId);
+    if (m.appleTargetUrl && existing?.appleTargetUrl !== m.appleTargetUrl) {
+      const validation = validatePlaylistDestination("apple_music", m.appleTargetUrl);
+      if (!validation.valid) throw new Error(validation.issue);
+    }
+    if (m.youtubeTargetUrl && existing?.youtubeTargetUrl !== m.youtubeTargetUrl) {
+      const platform = inferPlaylistPlatform(m.youtubeTargetUrl, "youtube_music");
+      const validation = validatePlaylistDestination(platform, m.youtubeTargetUrl);
+      if (!validation.valid) throw new Error(validation.issue);
     }
   }
 

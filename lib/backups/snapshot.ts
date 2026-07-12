@@ -57,13 +57,15 @@ function countSnapshotTables(snapshot: Record<string, unknown>) {
 export async function createDatabaseSnapshotArtifact() {
   const snapshot = {
     exportedAt: new Date().toISOString(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     adminUsers: await prisma.adminUser.findMany(),
     releases: await prisma.release.findMany(),
     releaseCategories: await prisma.releaseCategory.findMany(),
     releaseCategoryAssignments: await prisma.releaseCategoryAssignment.findMany(),
     releaseTasks: await prisma.releaseTask.findMany(),
     releaseStreamingLinks: await prisma.releaseStreamingLink.findMany(),
+    playlists: await prisma.playlist.findMany(),
+    playlistReleases: await prisma.playlistRelease.findMany(),
     copyEntries: await prisma.copyEntry.findMany(),
     siteSettings: await prisma.siteSettings.findMany(),
     subscribers: await prisma.subscriber.findMany(),

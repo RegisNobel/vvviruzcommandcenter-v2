@@ -18,13 +18,13 @@ import {
 import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
-  getSpotifyEmbedUrl,
   getYouTubeEmbedUrl,
   formatCollaboratorsList
 } from "@/lib/public-utils";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
-import {PublicReleaseCard} from "@/components/public-release-card";
+import {LyricsContent} from "@/components/lyrics-content";
+import {PublicRelatedReleaseItem} from "@/components/public-related-release-item";
 
 type ReleasePageParams = {
   slug: string;
@@ -98,13 +98,14 @@ export default async function PublicReleaseDetailPage({
   const [relatedReleases] = await Promise.all([
     getRelatedPublishedReleases(release.id, release.type)
   ]);
-  const spotifyEmbedUrl = getSpotifyEmbedUrl(release.spotify_url);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(
     release.featured_video_url || release.youtube_url
   );
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const aboutText = (release.public_long_description || release.public_description || "").trim();
   const hasPublicLyrics = release.public_lyrics_enabled && Boolean(release.lyrics.trim());
+  const hasRelatedReleases = relatedReleases.length > 0;
+  const hasRightRail = Boolean(youtubeEmbedUrl) || hasRelatedReleases;
   const content = siteSettings.site_content.release;
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
@@ -131,51 +132,36 @@ export default async function PublicReleaseDetailPage({
         </Link>
 
         <section className="public-panel overflow-hidden px-5 py-7 sm:px-9 sm:py-10">
-          <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:gap-12">
-            <div className="contents">
-              <div className="order-1 public-art-frame overflow-hidden rounded-xl border border-white/10 lg:col-start-1 lg:row-start-1">
-                <div className="relative aspect-square w-full">
-                  {release.cover_art_path ? (
-                    <Image
-                      alt={coverArtAltText}
-                      className="object-cover"
-                      data-release-cover
-                      fill
-                      priority
-                      sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(46vw - 74px), 542px"
-                      src={release.cover_art_path}
-                    />
-                  ) : (
-                    <div className="public-art-placeholder flex-col justify-end px-7 py-7 text-left">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b861]">
-                        vvviruz archive
-                      </span>
-                      <strong className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-[#fff5df]">
-                        {release.title}
-                      </strong>
-                      <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9da7b1]">
-                        {siteSettings.artist_name}
-                      </span>
-                    </div>
-                  )}
-                </div>
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-12 xl:gap-14">
+            <div className="public-art-frame overflow-hidden rounded-xl border border-white/10">
+              <div className="relative aspect-square w-full">
+                {release.cover_art_path ? (
+                  <Image
+                    alt={coverArtAltText}
+                    className="object-cover"
+                    data-release-cover
+                    fill
+                    priority
+                    sizes="(max-width: 639px) calc(100vw - 64px), (max-width: 1023px) calc(100vw - 112px), (max-width: 1343px) calc(44vw - 74px), 520px"
+                    src={release.cover_art_path}
+                  />
+                ) : (
+                  <div className="public-art-placeholder flex-col justify-end px-7 py-7 text-left">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b861]">
+                      vvviruz archive
+                    </span>
+                    <strong className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-[#fff5df]">
+                      {release.title}
+                    </strong>
+                    <span className="mt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9da7b1]">
+                      {siteSettings.artist_name}
+                    </span>
+                  </div>
+                )}
               </div>
-
-              {hasPublicLyrics ? (
-                <article
-                  aria-label={`${release.title} lyrics`}
-                  className="order-3 mt-7 max-h-[24rem] overflow-y-auto border-l border-white/10 pl-4 pr-3 text-left scrollbar-thin scrollbar-thumb-white/15 hover:scrollbar-thumb-white/25 lg:col-start-1 lg:row-start-2"
-                  tabIndex={0}
-                >
-                  <p className="public-eyebrow">{content.lyrics_heading}</p>
-                  <pre className="mt-5 whitespace-pre-wrap font-sans text-sm leading-8 text-[#d7dde3] sm:text-[15px]">
-                    {release.lyrics}
-                  </pre>
-                </article>
-              ) : null}
             </div>
 
-            <div className="order-2 lg:col-start-2 lg:row-span-2">
+            <div className="min-w-0">
               <div className="public-eyebrow flex flex-wrap items-center gap-3">
                 <span>{release.type}</span>
                 <span className="text-[#746842]">/</span>
@@ -210,7 +196,7 @@ export default async function PublicReleaseDetailPage({
               ) : null}
 
               <div className="mt-8 border-t border-white/10 pt-5">
-                <p className="public-eyebrow">Listen now</p>
+                <h2 className="public-eyebrow">Listen now</h2>
                 <PublicPlatformLinks
                   appleMusicUrl={release.apple_music_url}
                   className="mt-5"
@@ -222,85 +208,95 @@ export default async function PublicReleaseDetailPage({
 
               {aboutText ? (
                 <div className="mt-8 max-w-2xl text-left">
-                  <p className="public-eyebrow">About this track</p>
+                  <h2 className="public-eyebrow">About this track</h2>
                   <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
                     {aboutText}
                   </p>
                 </div>
               ) : null}
-
             </div>
           </div>
         </section>
 
-        {spotifyEmbedUrl || youtubeEmbedUrl ? (
-          <section className="grid gap-6 xl:grid-cols-2">
-            {spotifyEmbedUrl ? (
-              <article className="public-panel px-5 py-5">
-                <p className="public-eyebrow">
-                  {content.spotify_heading}
-                </p>
-                <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
-                  <iframe
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    className="h-[352px] w-full"
-                    loading="lazy"
-                    src={spotifyEmbedUrl}
-                    title={`${release.title} on Spotify`}
-                  />
-                </div>
-              </article>
-            ) : null}
-
-            {youtubeEmbedUrl ? (
-              <article className="public-panel px-5 py-5">
-                <p className="public-eyebrow">
-                  {content.video_heading}
-                </p>
-                <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
-                  <iframe
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="aspect-video w-full"
-                    loading="lazy"
-                    src={youtubeEmbedUrl}
-                    title={`${release.title} video`}
-                  />
-                </div>
-              </article>
-            ) : null}
-          </section>
-        ) : null}
-
-        {relatedReleases.length > 0 ? (
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="public-eyebrow">
-                  {content.related_releases_eyebrow}
-                </p>
-                <h2 className="public-heading mt-3 text-3xl font-semibold">
-                  {content.related_releases_heading}
-                </h2>
-              </div>
-              <Link
-                className="border-b border-transparent pb-1 text-sm font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
-                href="/music"
-              >
-                {content.related_releases_view_all_label}
-              </Link>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {relatedReleases.map((relatedRelease) => (
-                <PublicReleaseCard
-                  fallbackText={siteSettings.artist_name}
-                  key={relatedRelease.id}
-                  platformLabels={platformLabels}
-                  release={relatedRelease}
+        {hasPublicLyrics || hasRightRail ? (
+          <section
+            className={
+              hasPublicLyrics && hasRightRail
+                ? "grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)] lg:items-start lg:gap-12 xl:gap-16"
+                : hasPublicLyrics
+                  ? "max-w-4xl"
+                  : "mx-auto max-w-2xl"
+            }
+          >
+            {hasPublicLyrics ? (
+              <article aria-label={`${release.title} lyrics`} className="min-w-0 py-2 text-left">
+                <h2 className="public-eyebrow">{content.lyrics_heading}</h2>
+                <LyricsContent
+                  className="mt-6"
+                  headingClassName="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.22em] text-[#d8b861] first:mt-0"
+                  lineClassName="font-sans text-[15px] leading-[1.8] text-[#d7dde3] sm:text-base"
+                  lyrics={release.lyrics}
+                  spacerClassName="h-4"
                 />
-              ))}
-            </div>
+              </article>
+            ) : null}
+
+            {hasRightRail ? (
+              <aside aria-label={`${release.title} media and related releases`} className="space-y-10">
+                {youtubeEmbedUrl ? (
+                  <article className="public-panel px-5 py-5">
+                    <h2 className="public-eyebrow">
+                      {content.video_heading}
+                    </h2>
+                    <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+                      <iframe
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="aspect-video w-full"
+                        loading="lazy"
+                        src={youtubeEmbedUrl}
+                        title={`${release.title} video`}
+                      />
+                    </div>
+                  </article>
+                ) : null}
+
+                {hasRelatedReleases ? (
+                  <section aria-labelledby="related-releases-heading" className="space-y-4">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="public-eyebrow">
+                          {content.related_releases_eyebrow}
+                        </p>
+                        <h2
+                          className="public-heading mt-2 text-2xl font-semibold"
+                          id="related-releases-heading"
+                        >
+                          {content.related_releases_heading}
+                        </h2>
+                      </div>
+                      <Link
+                        className="shrink-0 border-b border-transparent pb-1 text-xs font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
+                        href="/music"
+                      >
+                        {content.related_releases_view_all_label}
+                      </Link>
+                    </div>
+
+                    <div className="space-y-3">
+                      {relatedReleases.map((relatedRelease) => (
+                        <PublicRelatedReleaseItem
+                          fallbackText={siteSettings.artist_name}
+                          key={relatedRelease.id}
+                          platformLabels={platformLabels}
+                          release={relatedRelease}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+              </aside>
+            ) : null}
           </section>
         ) : null}
       </div>

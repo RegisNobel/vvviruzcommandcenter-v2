@@ -165,8 +165,7 @@ export default async function PublicExclusivesPage({
 
               {derivedTitle && (
                 <div className="mt-6 inline-flex flex-col items-center">
-                  <span className="text-xs uppercase tracking-widest text-[#c9a347]/80">Current Preview</span>
-                  <span className="mt-1 text-lg font-bold text-[#f7f1e6]">{derivedTitle}</span>
+                  <span className="text-lg font-bold text-[#f7f1e6]">{derivedTitle}</span>
                   {derivedDescription && (
                     <span className="mt-1 max-w-md text-xs text-[#a0aab5]">{derivedDescription}</span>
                   )}

@@ -3,7 +3,7 @@ import {headers} from "next/headers";
 import {notFound} from "next/navigation";
 
 import {PlaylistEditor} from "@/components/playlist-editor";
-import {readPlaylistWithMemberships} from "@/lib/repositories/playlists";
+import {readPlaylistAnalytics, readPlaylistWithMemberships} from "@/lib/repositories/playlists";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +33,11 @@ export default async function AdminPlaylistDetailPage({
   params: Promise<{id: string}>;
 }) {
   const {id} = await params;
-  const [baseUrl, playlistData, releases] = await Promise.all([
+  const [baseUrl, playlistData, releases, analytics] = await Promise.all([
     getBaseUrl(),
     readPlaylistWithMemberships(id),
-    readReleaseSummaries()
+    readReleaseSummaries(),
+    readPlaylistAnalytics(id)
   ]);
 
   if (!playlistData) {
@@ -51,6 +52,7 @@ export default async function AdminPlaylistDetailPage({
           memberships={playlistData.memberships}
           playlist={playlistData.playlist}
           releaseOptions={releases}
+          analytics={analytics}
         />
       </div>
     </main>

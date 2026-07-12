@@ -41,4 +41,4 @@ storage/uploads/*
 test.js
 test-results/
 playwright-report/
-
+.artifacts/

@@ -382,15 +382,22 @@ model EmailSendLog {
 
 model AnalyticsEvent {
   id          String   @id
+  eventId     String?
   eventType   String
   page        String
   path        String   @default("")
   hubPath     String   @default("")
+  playlistId  String?
+  playlistSlug String  @default("")
+  shortLinkId String?
   releaseId   String?
+  platform    String   @default("")
+  entryType   String   @default("")
   linkType    String   @default("")
   linkLabel   String   @default("")
   targetUrl   String   @default("")
   referrer    String   @default("")
+  originalReferrer String @default("")
   userAgent   String   @default("")
   visitorId   String   @default("")
   sessionId   String   @default("")
@@ -399,13 +406,18 @@ model AnalyticsEvent {
   utmCampaign String   @default("")
   utmContent  String   @default("")
   utmTerm     String   @default("")
+  fbclid      String   @default("")
   country     String   @default("")
   createdAt   DateTime
 
+  @@unique([eventId, eventType])
   @@index([page, createdAt])
   @@index([eventType, createdAt])
   @@index([releaseId, createdAt])
   @@index([visitorId, createdAt])
+  @@index([playlistId, eventType, createdAt])
+  @@index([playlistId, releaseId, createdAt])
+  @@index([shortLinkId, createdAt])
 }
 
 model PublicRateLimit {
@@ -577,4 +589,3 @@ model PlaylistRelease {
   @@index([playlistId, position])
   @@index([releaseId])
 }
-

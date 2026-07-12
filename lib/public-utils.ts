@@ -52,6 +52,35 @@ export function formatPublicReleaseDate(value: string) {
   }).format(date);
 }
 
+export function getPublicCardTitleSize(
+  title: string,
+  variant: "standard" | "compact" = "standard"
+) {
+  const characterCount = Array.from(title.trim()).length;
+
+  if (variant === "compact") {
+    if (characterCount > 44) {
+      return "text-sm";
+    }
+
+    if (characterCount > 30) {
+      return "text-base";
+    }
+
+    return "text-lg";
+  }
+
+  if (characterCount > 44) {
+    return "text-lg";
+  }
+
+  if (characterCount > 30) {
+    return "text-xl";
+  }
+
+  return "text-2xl";
+}
+
 export function getSpotifyEmbedUrl(url: string | null | undefined) {
   const value = safeText(url);
 
@@ -205,4 +234,3 @@ export function formatCollaboratorsList(names: string[] | string | null | undefi
   if (parsedNames.length === 2) return `${parsedNames[0]} & ${parsedNames[1]}`;
   return `${parsedNames.slice(0, -1).join(", ")} & ${parsedNames[parsedNames.length - 1]}`;
 }
-

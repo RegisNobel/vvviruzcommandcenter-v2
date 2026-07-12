@@ -37,13 +37,20 @@ export type PublicAnalyticsEventInput = {
     | "exclusive_preview_open"
     | "exclusive_discord_cta";
   page: "links" | "vault" | "playlist" | "preview";
+  eventId?: string | null;
   path?: string;
   hubPath?: string;
+  playlistId?: string | null;
+  playlistSlug?: string;
+  shortLinkId?: string | null;
   releaseId?: string | null;
+  platform?: string;
+  entryType?: string;
   linkType?: string;
   linkLabel?: string;
   targetUrl?: string;
   referrer?: string;
+  originalReferrer?: string;
   userAgent?: string;
   visitorId?: string;
   sessionId?: string;
@@ -52,6 +59,7 @@ export type PublicAnalyticsEventInput = {
   utmCampaign?: string;
   utmContent?: string;
   utmTerm?: string;
+  fbclid?: string;
   country?: string;
 };
 
@@ -87,18 +95,24 @@ function normalize(value: string | null | undefined) {
 }
 
 export async function recordPublicAnalyticsEvent(input: PublicAnalyticsEventInput) {
-  return prisma.analyticsEvent.create({
-    data: {
+  const data = {
       id: createId(),
+      eventId: normalize(input.eventId) || null,
       eventType: input.eventType,
       page: input.page,
       path: normalize(input.path),
       hubPath: normalize(input.hubPath),
+      playlistId: normalize(input.playlistId) || null,
+      playlistSlug: normalize(input.playlistSlug),
+      shortLinkId: normalize(input.shortLinkId) || null,
       releaseId: normalize(input.releaseId) || null,
+      platform: normalize(input.platform),
+      entryType: normalize(input.entryType),
       linkType: normalize(input.linkType),
       linkLabel: normalize(input.linkLabel),
       targetUrl: normalize(input.targetUrl),
       referrer: normalize(input.referrer),
+      originalReferrer: normalize(input.originalReferrer),
       userAgent: normalize(input.userAgent),
       visitorId: normalize(input.visitorId),
       sessionId: normalize(input.sessionId),
@@ -107,9 +121,24 @@ export async function recordPublicAnalyticsEvent(input: PublicAnalyticsEventInpu
       utmCampaign: normalize(input.utmCampaign),
       utmContent: normalize(input.utmContent),
       utmTerm: normalize(input.utmTerm),
+      fbclid: normalize(input.fbclid),
       country: normalize(input.country),
       createdAt: new Date()
-    }
+  };
+
+  if (!data.eventId) {
+    return prisma.analyticsEvent.create({data});
+  }
+
+  return prisma.analyticsEvent.upsert({
+    where: {
+      eventId_eventType: {
+        eventId: data.eventId,
+        eventType: data.eventType
+      }
+    },
+    create: data,
+    update: {}
   });
 }
 

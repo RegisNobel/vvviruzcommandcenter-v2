@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
+  getPublicCardTitleSize,
   formatCollaboratorsList
 } from "@/lib/public-utils";
 import type {PublicReleaseRecord} from "@/lib/types";
@@ -27,6 +28,7 @@ export function PublicReleaseCard({
 }) {
   const collaboratorName = release.collaborator ? formatCollaboratorsList(release.collaborator_name) : "";
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
+  const titleSizeClass = getPublicCardTitleSize(release.title);
 
   return (
     <article className="public-release-card group">
@@ -66,22 +68,32 @@ export function PublicReleaseCard({
           <span>{formatPublicReleaseDate(release.release_date)}</span>
         </div>
 
-        <div className="mt-4">
-          <Link href={`/music/${release.slug}`}>
-            <h3 className="line-clamp-2 min-h-[3.5rem] text-2xl font-semibold leading-7 tracking-[-0.04em] text-[#fff8ec] transition group-hover:text-[#f1ca61]">
+        <div className="mt-4 grid grid-rows-[1.75rem_1.25rem_4.5rem] gap-y-2">
+          <Link className="block min-w-0" href={`/music/${release.slug}`}>
+            <h3
+              className={`truncate font-semibold leading-7 tracking-[-0.04em] text-[#fff8ec] transition group-hover:text-[#f1ca61] ${titleSizeClass}`}
+              title={release.title}
+            >
               {release.title}
             </h3>
           </Link>
-          <div className="mt-2 min-h-5">
+          <div className="min-h-5 overflow-hidden">
             {collaboratorName ? (
-              <p className="text-xs font-semibold text-[#e3c16e]">
+              <p
+                className="truncate text-xs font-semibold leading-5 text-[#e3c16e]"
+                title={`with ${collaboratorName}`}
+              >
                 with {collaboratorName}
               </p>
             ) : null}
           </div>
-          <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#aeb6c0]">
-            {release.public_description}
-          </p>
+          <div className="min-h-[4.5rem] overflow-hidden">
+            {release.public_description ? (
+              <p className="line-clamp-3 text-sm leading-6 text-[#aeb6c0]">
+                {release.public_description}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <PublicPlatformLinks

@@ -16,25 +16,29 @@ import {
   ChevronDown,
   Trash2,
   Star,
-  Plus
+  Plus,
+  BarChart3
 } from "lucide-react";
 import {parseSpotifyResourceUrl} from "@/lib/spotify-links";
 import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
-import type {PlaylistRecord, PlaylistReleaseRecord, ReleaseSummary} from "@/lib/types";
+import type {PlaylistAnalyticsSummary, PlaylistRecord, PlaylistReleaseRecord, ReleaseSummary} from "@/lib/types";
+import {PlaylistAnalyticsPanel} from "@/components/playlist-analytics-panel";
 
 export function PlaylistEditor({
   playlist: initialPlaylist,
   memberships: initialMemberships,
   releaseOptions,
-  baseUrl
+  baseUrl,
+  analytics
 }: {
   playlist: PlaylistRecord;
   memberships: PlaylistReleaseRecord[];
   releaseOptions: ReleaseSummary[];
   baseUrl: string;
+  analytics: PlaylistAnalyticsSummary | null;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"general" | "platforms" | "memberships" | "campaigns">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "platforms" | "memberships" | "campaigns" | "analytics">("general");
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -418,6 +422,19 @@ export function PlaylistEditor({
           <span className="inline-flex items-center gap-1.5">
             <ExternalLink size={14} />
             Campaign Links
+          </span>
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "analytics"
+              ? "border-brand-primary text-brand-primary"
+              : "border-transparent text-muted hover:text-ink"
+          }`}
+          onClick={() => setActiveTab("analytics")}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <BarChart3 size={14} />
+            Analytics
           </span>
         </button>
       </div>
@@ -958,6 +975,9 @@ export function PlaylistEditor({
             )}
           </div>
         </section>
+      )}
+      {activeTab === "analytics" && analytics && (
+        <PlaylistAnalyticsPanel analytics={analytics} />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import type {
   SiteSettingsRecord
 } from "@/lib/types";
 import {formatCollaboratorsList} from "@/lib/public-utils";
+import {normalizePlaylistPlatform, withApprovedAttribution} from "@/lib/playlist-analytics";
 
 function getUtmParams() {
   if (typeof window === "undefined") {
@@ -36,20 +37,80 @@ function getUtmParams() {
   };
 }
 
-function trackEvent(playlistSlug: string, releaseId: string, payload: Record<string, any>) {
+function createEventId(prefix: string) {
+  const randomId = window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+  return `${prefix}.${Date.now()}.${randomId}`;
+}
+
+function withInternalNavigationMarker(path: string, attributionQuery: string) {
+  const attributed = withApprovedAttribution(path, new URLSearchParams(attributionQuery));
+  return `${attributed}${attributed.includes("?") ? "&" : "?"}vcc_nav=internal`;
+}
+
+function getOriginalReferrer(playlistId: string) {
+  try {
+    const key = `vcc_playlist_referrer_${playlistId}`;
+    const saved = window.sessionStorage.getItem(key);
+    if (saved !== null) return saved;
+    const referrer = document.referrer && new URL(document.referrer).origin !== window.location.origin
+      ? document.referrer
+      : "";
+    window.sessionStorage.setItem(key, referrer);
+    return referrer;
+  } catch {
+    return "";
+  }
+}
+
+function trackMetaPixel(
+  method: "track" | "trackCustom",
+  eventName: string,
+  params: Record<string, string | string[]>,
+  eventId: string,
+  attempt = 0
+) {
+  if (typeof window.fbq !== "function") {
+    if (attempt < 10) {
+      window.setTimeout(
+        () => trackMetaPixel(method, eventName, params, eventId, attempt + 1),
+        250
+      );
+    }
+    return;
+  }
+  window.fbq(method, eventName, params, {eventID: eventId});
+}
+
+function trackEvent(
+  playlistId: string,
+  playlistSlug: string,
+  releaseId: string,
+  eventId: string,
+  payload: Record<string, unknown>
+) {
   const utm = getUtmParams();
+  const params = new URLSearchParams(window.location.search);
   const body = JSON.stringify({
+    eventId,
     page: "playlist",
     path: `${window.location.pathname}${window.location.search}`,
     hubPath: `/listen/${playlistSlug}`,
+    playlistId,
+    playlistSlug,
     releaseId,
+    originalReferrer: getOriginalReferrer(playlistId),
+    fbclid: params.get("fbclid") || "",
+    shortLinkContext: params.get("sl_ctx") || "",
     ...utm,
     ...payload
   });
 
   if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/analytics/track", new Blob([body], {type: "application/json"}));
-    return;
+    const queued = navigator.sendBeacon(
+      "/api/analytics/track",
+      new Blob([body], {type: "application/json"})
+    );
+    if (queued) return;
   }
 
   void fetch("/api/analytics/track", {
@@ -75,16 +136,16 @@ function resolvePrimaryTrackTarget(
     return { platform: "spotify", url: spotify, label: "Spotify" };
   }
   if (platformLower === "apple" && apple) {
-    return { platform: "apple", url: apple, label: "Apple Music" };
+    return { platform: "apple_music", url: apple, label: "Apple Music" };
   }
   if (platformLower === "youtube" && youtube) {
-    return { platform: "youtube", url: youtube, label: "YouTube Music" };
+    return { platform: "youtube_music", url: youtube, label: "YouTube Music" };
   }
 
   // Fallbacks in priority order
   if (spotify) return { platform: "spotify", url: spotify, label: "Spotify" };
-  if (apple) return { platform: "apple", url: apple, label: "Apple Music" };
-  if (youtube) return { platform: "youtube", url: youtube, label: "YouTube Music" };
+  if (apple) return { platform: "apple_music", url: apple, label: "Apple Music" };
+  if (youtube) return { platform: "youtube_music", url: youtube, label: "YouTube Music" };
 
   return null;
 }
@@ -101,11 +162,11 @@ function getSecondaryTrackTargets(
   if (primaryPlatform !== "spotify" && spotify) {
     targets.push({ platform: "spotify", url: spotify, label: "Spotify" });
   }
-  if (primaryPlatform !== "apple" && apple) {
-    targets.push({ platform: "apple", url: apple, label: "Apple Music" });
+  if (primaryPlatform !== "apple_music" && apple) {
+    targets.push({ platform: "apple_music", url: apple, label: "Apple Music" });
   }
-  if (primaryPlatform !== "youtube" && youtube) {
-    targets.push({ platform: "youtube", url: youtube, label: "YouTube Music" });
+  if (primaryPlatform !== "youtube_music" && youtube) {
+    targets.push({ platform: "youtube_music", url: youtube, label: "YouTube Music" });
   }
 
   return targets;
@@ -115,28 +176,68 @@ export function PublicPlaylistCampaignView({
   playlist,
   focusedMembership,
   previewMemberships,
-  siteSettings
+  siteSettings,
+  attributionQuery
 }: {
   playlist: PlaylistRecord;
   focusedMembership: PlaylistReleaseRecord;
   previewMemberships: PlaylistReleaseRecord[];
   siteSettings: SiteSettingsRecord;
+  attributionQuery: string;
 }) {
+  const pageViewEventId = useRef<string | null>(null);
+  if (!pageViewEventId.current && typeof window !== "undefined") {
+    pageViewEventId.current = createEventId("playlist-view-content");
+  }
+
   // Log page view on mount
   useEffect(() => {
-    trackEvent(playlist.slug, focusedMembership.releaseId, {
-      eventType: "playlist_page_view"
+    const eventId = pageViewEventId.current || createEventId("playlist-view-content");
+    const utm = getUtmParams();
+    trackEvent(playlist.id, playlist.slug, focusedMembership.releaseId, eventId, {
+      eventType: "playlist_page_view",
+      entryType: new URLSearchParams(window.location.search).get("vcc_nav") === "internal"
+        ? "internal_navigation"
+        : undefined,
+      metaEventName: "ViewContent"
     });
-  }, [playlist.slug, focusedMembership.releaseId]);
+    trackMetaPixel("track", "ViewContent", {
+      content_ids: [focusedMembership.releaseId],
+      content_name: focusedMembership.release_title || "Playlist release",
+      content_type: "music_release",
+      page: "playlist",
+      playlist_id: playlist.id,
+      playlist_slug: playlist.slug,
+      utm_source: utm.utmSource,
+      utm_medium: utm.utmMedium,
+      utm_campaign: utm.utmCampaign,
+      utm_content: utm.utmContent,
+      utm_term: utm.utmTerm
+    }, eventId);
+  }, [playlist.id, playlist.slug, focusedMembership.releaseId, focusedMembership.release_title]);
 
   // Track click handler
   const handleTrackClick = (platform: string, targetUrl: string) => {
-    trackEvent(playlist.slug, focusedMembership.releaseId, {
+    const normalizedPlatform = normalizePlaylistPlatform(platform);
+    const eventId = createEventId("playlist-streaming-click");
+    trackEvent(playlist.id, playlist.slug, focusedMembership.releaseId, eventId, {
       eventType: "playlist_track_click",
-      linkType: "track",
-      linkLabel: platform,
-      targetUrl
+      linkType: normalizedPlatform,
+      linkLabel: normalizedPlatform,
+      platform: normalizedPlatform,
+      targetUrl,
+      metaEventName: "StreamingOutboundClick"
     });
+    trackMetaPixel("trackCustom", "StreamingOutboundClick", {
+      content_category: "streaming_outbound_click",
+      content_ids: [focusedMembership.releaseId],
+      content_name: focusedMembership.release_title || "Playlist release",
+      content_type: "music_release",
+      page: "playlist",
+      playlist_id: playlist.id,
+      playlist_slug: playlist.slug,
+      platform: normalizedPlatform
+    }, eventId);
   };
 
   // Resolve platform buttons
@@ -268,9 +369,12 @@ export function PublicPlaylistCampaignView({
                   : siteSettings.artist_name;
 
                 return (
-                  <Link
+              <Link
                     className="group flex items-center gap-4 p-4 hover:bg-white/[0.03] transition-colors"
-                    href={`/listen/${playlist.slug}/${m.release_slug}`}
+                href={withInternalNavigationMarker(
+                  `/listen/${playlist.slug}/${m.release_slug}`,
+                  attributionQuery
+                )}
                     key={m.releaseId}
                   >
                     <div className="relative h-12 w-12 shrink-0 rounded-xl overflow-hidden bg-black/40 border border-white/5">

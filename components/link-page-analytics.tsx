@@ -90,8 +90,11 @@ function track(payload: Record<string, string | undefined>) {
   });
 
   if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/analytics/track", new Blob([body], {type: "application/json"}));
-    return;
+    const queued = navigator.sendBeacon(
+      "/api/analytics/track",
+      new Blob([body], {type: "application/json"})
+    );
+    if (queued) return;
   }
 
   void fetch("/api/analytics/track", {
@@ -111,6 +114,7 @@ export function LinkPageAnalytics({releaseId, releaseTitle, hubPath = "/links"}:
 
     track({
       eventType: "links_page_view",
+      eventId: viewContentEventId,
       metaEventId: viewContentEventId,
       metaEventName: "ViewContent",
       releaseId,
@@ -146,11 +150,12 @@ export function LinkPageAnalytics({releaseId, releaseTitle, hubPath = "/links"}:
 
       track({
         eventType: target.dataset.analyticsEvent || "links_link_click",
+        eventId: leadEventId,
         releaseId,
         linkType,
         linkLabel,
         metaEventId: leadEventId,
-        metaEventName: shouldTrackMetaConversion ? "Lead" : undefined,
+        metaEventName: shouldTrackMetaConversion ? "StreamingOutboundClick" : undefined,
         releaseTitle,
         targetUrl,
         hubPath
@@ -180,9 +185,6 @@ export function LinkPageAnalytics({releaseId, releaseTitle, hubPath = "/links"}:
         leadEventId
       );
 
-      trackMetaPixel("track", "Lead", {
-        ...metaClickParams
-      }, leadEventId);
     }
 
     document.addEventListener("click", handleClick);

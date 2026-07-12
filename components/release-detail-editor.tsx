@@ -18,6 +18,7 @@ const ReleaseIntelligencePanel = dynamic(
   { ssr: false }
 );
 import {StickyActionDock} from "@/components/sticky-action-dock";
+import {LyricsContent} from "@/components/lyrics-content";
 import {
   Activity,
   AlertTriangle,
@@ -46,6 +47,7 @@ import {
 } from "lucide-react";
 
 import {AUTOSAVE_INTERVAL_MS} from "@/lib/constants";
+import {normalizeLyrics} from "@/lib/lyrics";
 import {parseCollaborators, formatCollaboratorsList} from "@/lib/public-utils";
 import {
   calculateReleaseProgress,
@@ -780,9 +782,11 @@ export function ReleaseDetailEditor({
   ) => {
     // Sanitize collaborators before saving
     const parsed = parseCollaborators(releaseToSave.collaborator_name);
+    const submittedDraftSnapshot = serializeRelease(releaseToSave);
     const sanitizedRelease = {
       ...releaseToSave,
-      collaborator_name: parsed.join(", ")
+      collaborator_name: parsed.join(", "),
+      lyrics: normalizeLyrics(releaseToSave.lyrics)
     };
     const snapshot = serializeRelease(sanitizedRelease);
     const previousSnapshot = lastSavedSnapshotRef.current;
@@ -810,10 +814,16 @@ export function ReleaseDetailEditor({
       }
 
       lastSavedSnapshotRef.current = serializeRelease(payload.release);
-      setRelease(payload.release);
-      setCollaborators(parseCollaborators(payload.release.collaborator_name));
+      const hasNewerDraft =
+        latestDraftSnapshotRef.current !== submittedDraftSnapshot;
+
+      if (!hasNewerDraft) {
+        setRelease(payload.release);
+        setCollaborators(parseCollaborators(payload.release.collaborator_name));
+      }
+
       setSaveState("saved");
-      setHasPendingChanges(latestDraftSnapshotRef.current !== snapshot);
+      setHasPendingChanges(hasNewerDraft);
 
       if (options?.successMessage !== null) {
         setMessage(options?.successMessage ?? "Changes saved.");
@@ -1949,17 +1959,56 @@ export function ReleaseDetailEditor({
                 </p>
               </div>
 
-              <textarea
-                className={`${pageInputClass} min-h-[220px]`}
-                onChange={(event) =>
-                  updateRelease((current) => ({
-                    ...current,
-                    lyrics: event.target.value
-                  }))
-                }
-                placeholder="Paste or write the full lyrics here..."
-                value={release.lyrics}
-              />
+              <div className="grid gap-5 xl:grid-cols-2">
+                <div className="min-w-0 space-y-3">
+                  <textarea
+                    className={`${pageInputClass} min-h-[320px] font-mono leading-7`}
+                    onChange={(event) =>
+                      updateRelease((current) => ({
+                        ...current,
+                        lyrics: event.target.value
+                      }))
+                    }
+                    placeholder="Paste or write the full lyrics here..."
+                    value={release.lyrics}
+                  />
+                  <p className="text-xs leading-5 text-[var(--text-secondary)]">
+                    Use one line per lyric line. Add bracketed headings such as
+                    [Verse 1], [Chorus], and [Outro]. Leave a blank line between
+                    sections.
+                  </p>
+                  <details className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-input)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+                    <summary className="cursor-pointer font-semibold text-[var(--text-primary)]">
+                      Formatting example
+                    </summary>
+                    <pre className="mt-3 whitespace-pre-wrap font-mono text-xs leading-6 text-[var(--text-secondary)]">
+                      {`[Verse 1]\nFirst lyric line\nSecond lyric line\n\n[Chorus]\nFirst chorus line\nSecond chorus line`}
+                    </pre>
+                  </details>
+                </div>
+
+                <div className="min-w-0 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-input)]">
+                  <div className="border-b border-[var(--border-default)] px-4 py-3">
+                    <p className={pageLabelClass}>Public Preview</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">
+                      Matches the formatting used on the public release page.
+                    </p>
+                  </div>
+                  <div className="max-h-[520px] min-h-[320px] overflow-y-auto px-4 py-5 sm:px-5">
+                    <LyricsContent
+                      emptyState={
+                        <p className="text-sm text-[var(--text-muted)]">
+                          Lyrics preview will appear here.
+                        </p>
+                      }
+                      headingClassName="mb-3 mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand-primary)] first:mt-0"
+                      lineClassName="text-sm leading-7 text-[var(--text-primary)]"
+                      lyrics={release.lyrics}
+                      spacerClassName="h-4"
+                    />
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>

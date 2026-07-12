@@ -32,7 +32,9 @@
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
     "build:vercel": "npm run db:push:postgres -- --accept-data-loss && npm run db:generate:postgres && next build",
     "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts",
-    "test:previews": "tsx scripts/test-preview-player.ts"
+    "test:lyrics": "tsx scripts/test-lyrics-formatting.ts",
+    "test:playlist-analytics": "tsx scripts/test-playlist-analytics.ts",
+    "analytics:backfill-playlists": "tsx scripts/backfill-playlist-analytics.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

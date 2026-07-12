@@ -471,6 +471,23 @@ npm run normalize:releases
 
 ## Recent Updates
 
+### 2026-07-11 - Public Release Lyrics Layout v1
+
+- Split public release detail pages into a compact artwork-and-identity hero followed by an editorial lyrics and media area.
+- Moved full lyrics into the primary left reading column with normal document scrolling, preserved stored line breaks, and removed the fixed-height nested lyrics scrollbar.
+- Kept the optional YouTube video in a responsive supporting rail, removed the Spotify iframe while preserving the Spotify listening action, and retained analytics, routes, metadata, structured data, and related-release behavior.
+- Standardized shared public release cards into consistent title, collaborator, and three-line description rows so card actions align across the homepage, music library, and related releases.
+- Removed the redundant `Current Preview` micro-label from Exclusives while preserving its configured preview title and delivery behavior.
+- Verified the layout at 375px, 768px, 1024px, and 1440px with no horizontal overflow and graceful collapse when lyrics or media are unavailable.
+
+### 2026-07-10 - Playlist Analytics Readiness v1
+
+- Added stable playlist and event identity to first-party analytics, signed Short Link attribution handoff, UTM/fbclid preservation through playlist redirects and member navigation, original-referrer capture, sendBeacon fallback, and server-side event deduplication.
+- Added separate measured-arrival and content-view semantics so internal playlist navigation cannot inflate paid landing counts; outbound actions are labeled stream-intent clicks rather than verified streams.
+- Extended existing Attribution, Ad Lab follow-through, Meta Pixel/CAPI, encrypted/offsite backups, and restore flows to support playlists without creating a separate analytics system or summing overlapping Meta snapshots.
+- Added a compact Playlist Detail Analytics tab with public and paid readiness, a 30-day first-party funnel, release/platform/source/campaign breakdowns, and clearly labeled lifetime Short Link totals.
+- Added strict validation for newly changed platform destinations while retaining legacy mismatches as actionable paid-readiness issues, plus the rerunnable `npm run analytics:backfill-playlists` command for historical playlist events.
+
 ### 2026-07-10 - Signal Console Design Sweep and Public Listening Polish
 
 - **Command Center visual system**:

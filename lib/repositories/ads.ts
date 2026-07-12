@@ -671,7 +671,7 @@ async function createLinkFollowThrough(reports: AdCreativeReportRecord[]) {
 
   const events = await prisma.analyticsEvent.findMany({
     where: {
-      page: "links",
+      page: {in: ["links", "playlist"]},
       utmSource: "meta"
     }
   });
@@ -689,16 +689,21 @@ async function createLinkFollowThrough(reports: AdCreativeReportRecord[]) {
 
       return Boolean(normalizedAdName && normalizeMetaAdName(event.utmContent) === normalizedAdName);
     });
-    const views = matchingEvents.filter((event) => event.eventType === "links_page_view").length;
-    const clicks = matchingEvents.filter((event) => event.eventType === "links_link_click");
+    const views = matchingEvents.filter((event) =>
+      event.eventType === "links_page_view" ||
+      (event.eventType === "playlist_page_view" && event.entryType !== "internal_navigation")
+    ).length;
+    const clicks = matchingEvents.filter((event) =>
+      event.eventType === "links_link_click" || event.eventType === "playlist_track_click"
+    );
     const spotify = clicks.filter((event) =>
-      `${event.linkLabel} ${event.linkType}`.toLowerCase().includes("spotify")
+      `${event.platform} ${event.linkLabel} ${event.linkType}`.toLowerCase().includes("spotify")
     ).length;
     const apple = clicks.filter((event) =>
-      `${event.linkLabel} ${event.linkType}`.toLowerCase().includes("apple")
+      `${event.platform} ${event.linkLabel} ${event.linkType}`.toLowerCase().includes("apple")
     ).length;
     const youtube = clicks.filter((event) =>
-      `${event.linkLabel} ${event.linkType}`.toLowerCase().includes("youtube")
+      `${event.platform} ${event.linkLabel} ${event.linkType}`.toLowerCase().includes("youtube")
     ).length;
     const outboundStreamingClicks = clicks.length;
     const metaClicks = report.link_clicks ?? 0;

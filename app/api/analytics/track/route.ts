@@ -5,7 +5,10 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 
 import {recordPublicAnalyticsEvent} from "@/lib/repositories/analytics";
+import {prisma} from "@/lib/db/prisma";
 import {sendMetaConversionsApiEvent} from "@/lib/server/meta-conversions-api";
+import {verifyShortLinkAttributionToken} from "@/lib/server/short-link-attribution";
+import {consumeRateLimit, getClientIpAddress as getRateLimitIp} from "@/lib/public-rate-limit";
 import {createId} from "@/lib/utils";
 
 const analyticsEventSchema = z.object({
@@ -43,19 +46,27 @@ const analyticsEventSchema = z.object({
     "exclusive_discord_cta"
   ]),
   page: z.enum(["links", "vault", "playlist", "preview"]),
-  path: z.string().default(""),
-  hubPath: z.string().default(""),
+  eventId: z.string().max(200).optional(),
+  path: z.string().max(1000).default(""),
+  hubPath: z.string().max(500).default(""),
+  playlistId: z.string().max(200).nullish(),
+  playlistSlug: z.string().max(200).default(""),
+  shortLinkContext: z.string().max(1000).default(""),
   releaseId: z.string().nullish(),
-  linkType: z.string().default(""),
-  linkLabel: z.string().default(""),
-  targetUrl: z.string().default(""),
+  platform: z.enum(["spotify", "apple_music", "youtube_music", "youtube", "other"]).optional(),
+  entryType: z.enum(["external", "short_link", "internal_navigation", "direct"]).optional(),
+  originalReferrer: z.string().max(1000).default(""),
+  fbclid: z.string().max(500).default(""),
+  linkType: z.string().max(100).default(""),
+  linkLabel: z.string().max(200).default(""),
+  targetUrl: z.string().max(2000).default(""),
   utmSource: z.string().default(""),
   utmMedium: z.string().default(""),
   utmCampaign: z.string().default(""),
   utmContent: z.string().default(""),
   utmTerm: z.string().default(""),
   metaEventId: z.string().max(200).default(""),
-  metaEventName: z.enum(["ViewContent", "Lead"]).optional(),
+  metaEventName: z.enum(["ViewContent", "Lead", "StreamingOutboundClick"]).optional(),
   releaseTitle: z.string().default("")
 }).superRefine((event, ctx) => {
   const isLinksEvent =
@@ -102,6 +113,18 @@ const analyticsEventSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Unsupported analytics event for page."
+    });
+  }
+  if (isPlaylistEvent && !(event.eventId || event.metaEventId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Playlist analytics require an event ID."
+    });
+  }
+  if (event.eventType === "playlist_track_click" && !event.platform) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Playlist outbound clicks require a normalized platform."
     });
   }
 });
@@ -156,9 +179,48 @@ export async function POST(request: Request) {
 
   try {
     const parsed = analyticsEventSchema.parse(await request.json());
+    const eventId = parsed.eventId || parsed.metaEventId || "";
+    const shortLinkId = parsed.shortLinkContext
+      ? verifyShortLinkAttributionToken(parsed.shortLinkContext)
+      : null;
+    const rateLimit = await consumeRateLimit({
+      bucket: "public-analytics",
+      key: getRateLimitIp(request),
+      maxAttempts: 240,
+      windowMs: 60_000,
+      blockMs: 60_000
+    });
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json({message: "Analytics rate limit reached."}, {status: 429});
+    }
+
+    let entryType = parsed.entryType || "";
+    if (parsed.eventType === "playlist_page_view" && parsed.playlistId) {
+      const priorPageView = await prisma.analyticsEvent.findFirst({
+        select: {id: true},
+        where: {
+          eventType: "playlist_page_view",
+          playlistId: parsed.playlistId,
+          sessionId
+        }
+      });
+      entryType = parsed.entryType === "internal_navigation"
+        ? "internal_navigation"
+        : shortLinkId
+          ? "short_link"
+          : parsed.utmSource || parsed.utmCampaign || parsed.utmContent || parsed.fbclid || parsed.originalReferrer
+            ? "external"
+            : priorPageView
+              ? "internal_navigation"
+              : "direct";
+    }
 
     await recordPublicAnalyticsEvent({
       ...parsed,
+      eventId,
+      shortLinkId,
+      entryType,
       releaseId: parsed.releaseId ?? null,
       referrer: request.headers.get("referer") || "",
       userAgent: request.headers.get("user-agent") || "",
@@ -167,9 +229,9 @@ export async function POST(request: Request) {
       country: request.headers.get("x-vercel-ip-country") || ""
     });
 
-    if (parsed.page === "links" && parsed.metaEventName && parsed.metaEventId) {
+    if ((parsed.page === "links" || parsed.page === "playlist") && parsed.metaEventName && eventId) {
       await sendMetaConversionsApiEvent({
-        eventId: parsed.metaEventId,
+        eventId,
         eventName: parsed.metaEventName,
         eventSourceUrl: toEventSourceUrl(request, parsed.path),
         clientIpAddress: getClientIpAddress(request),
@@ -178,6 +240,10 @@ export async function POST(request: Request) {
         fbp: readCookieValue(cookieHeader, "_fbp"),
         linkLabel: parsed.linkLabel,
         linkType: parsed.linkType,
+        page: parsed.page,
+        playlistId: parsed.playlistId ?? null,
+        playlistSlug: parsed.playlistSlug,
+        platform: parsed.platform,
         releaseId: parsed.releaseId ?? null,
         releaseTitle: parsed.releaseTitle,
         targetUrl: parsed.targetUrl,

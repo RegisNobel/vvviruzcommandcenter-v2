@@ -5,7 +5,25 @@ import {readReleaseAdMetrics, readLatestAdCampaignLearningForRelease, resolveEff
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {getUnifiedCampaignRecommendation} from "@/lib/ads/recommendations";
 
-const streamingLinkTypes = new Set(["apple-music", "spotify", "youtube-music", "youtube-video"]);
+const streamingLinkTypes = new Set([
+  "apple-music",
+  "apple_music",
+  "spotify",
+  "youtube-music",
+  "youtube_music",
+  "youtube-video",
+  "youtube"
+]);
+
+function isExperienceView(event: {eventType: string; entryType: string}) {
+  return event.eventType === "links_page_view" ||
+    (event.eventType === "playlist_page_view" && event.entryType !== "internal_navigation");
+}
+
+function isStreamingClick(event: {eventType: string; linkType: string; platform: string}) {
+  return (event.eventType === "links_link_click" || event.eventType === "playlist_track_click") &&
+    streamingLinkTypes.has(event.platform || event.linkType);
+}
 
 type CampaignDashboardInput = {
   releaseId?: string;
@@ -273,7 +291,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     prisma.analyticsEvent.groupBy({
       by: ["releaseId"],
       where: {
-        page: "links",
+        page: {in: ["links", "playlist"]},
         releaseId: {
           not: null
         }
@@ -345,7 +363,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         createdAt: "desc"
       },
       where: {
-        page: "links",
+        page: {in: ["links", "playlist"]},
         releaseId: selectedRelease.id,
         createdAt: {
           gte: startDate
@@ -378,9 +396,11 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     }),
     readLatestAdCampaignLearningForRelease(selectedRelease.id)
   ]);
-  const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
-  const allClicks = analyticsEvents.filter((event) => event.eventType === "links_link_click");
-  const streamingClicks = allClicks.filter((event) => streamingLinkTypes.has(event.linkType));
+  const views = analyticsEvents.filter(isExperienceView);
+  const allClicks = analyticsEvents.filter((event) =>
+    event.eventType === "links_link_click" || event.eventType === "playlist_track_click"
+  );
+  const streamingClicks = allClicks.filter(isStreamingClick);
   const trendDaysLimit = Math.min(Math.max(input.trendDays ?? 14, 7), 90);
   const dailyBuckets = createDailyBuckets(trendDaysLimit);
   const platformCounts = new Map<string, number>();
@@ -395,11 +415,11 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     const bucket = dailyBuckets.get(key);
 
     if (bucket) {
-      if (event.eventType === "links_page_view") {
+      if (isExperienceView(event)) {
         bucket.views += 1;
       }
 
-      if (event.eventType === "links_link_click" && streamingLinkTypes.has(event.linkType)) {
+      if (isStreamingClick(event)) {
         bucket.streamingClicks += 1;
       }
     }
@@ -413,18 +433,19 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         attributionEventCounts.get(attributionKey) ??
         createEmptyAttributionEventCounts(event.utmCampaign, event.utmContent);
 
-      if (event.eventType === "links_page_view") {
+      if (isExperienceView(event)) {
         current.linksPageViews += 1;
       }
 
-      if (event.eventType === "links_link_click" && streamingLinkTypes.has(event.linkType)) {
+      if (isStreamingClick(event)) {
         current.streamingClicks += 1;
 
-        if (event.linkType === "spotify") {
+        const platform = event.platform || event.linkType;
+        if (platform === "spotify") {
           current.spotifyClicks += 1;
-        } else if (event.linkType === "apple-music") {
+        } else if (platform === "apple-music" || platform === "apple_music") {
           current.appleMusicClicks += 1;
-        } else if (event.linkType === "youtube-music" || event.linkType === "youtube-video") {
+        } else if (["youtube-music", "youtube_music", "youtube-video", "youtube"].includes(platform)) {
           current.youtubeClicks += 1;
         }
       }
@@ -432,16 +453,20 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       attributionEventCounts.set(attributionKey, current);
     }
 
-    if (event.eventType === "links_link_click") {
+    if (event.eventType === "links_link_click" || event.eventType === "playlist_track_click") {
       increment(linkCounts, getLinkLabel(event));
 
-      if (streamingLinkTypes.has(event.linkType)) {
-        increment(platformCounts, event.linkLabel || event.linkType);
+      if (isStreamingClick(event)) {
+        increment(platformCounts, event.platform || event.linkLabel || event.linkType);
       }
     }
   }
 
   const linksViews = views.length;
+  const linkHubViews = views.filter((event) => event.page === "links").length;
+  const playlistArrivals = views.filter((event) => event.page === "playlist").length;
+  const linkHubStreamingClicks = streamingClicks.filter((event) => event.page === "links").length;
+  const playlistStreamingClicks = streamingClicks.filter((event) => event.page === "playlist").length;
   const streamingClickCount = streamingClicks.length;
   const metaClicks = adMetrics.total_link_clicks;
   const metaLandingPageViews = adMetrics.total_landing_page_views;
@@ -665,7 +690,13 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       view_to_stream_rate: viewToStreamRate,
       meta_click_to_stream_rate: clickToStreamRate,
       utm_coverage_rate: utmCoverageRate,
-      cost_per_streaming_click: costPerStreamingClick
+      cost_per_streaming_click: costPerStreamingClick,
+      experience_breakdown: {
+        link_hub_views: linkHubViews,
+        playlist_arrivals: playlistArrivals,
+        link_hub_streaming_clicks: linkHubStreamingClicks,
+        playlist_streaming_clicks: playlistStreamingClicks
+      }
     },
     funnel: [
       {
@@ -681,7 +712,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         value: metaLandingPageViews
       },
       {
-        label: "/links views",
+        label: "Tracked destination views",
         value: linksViews
       },
       {

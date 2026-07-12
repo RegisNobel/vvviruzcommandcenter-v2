@@ -399,6 +399,7 @@ export async function resolveShortLinkRedirect(slug: string) {
   if (status === "PAUSED") {
     return {
       destinationUrl: null,
+      id: link.id,
       status
     };
   }
@@ -417,6 +418,7 @@ export async function resolveShortLinkRedirect(slug: string) {
 
   return {
     destinationUrl: link.destinationUrl,
+    id: link.id,
     status
   };
 }

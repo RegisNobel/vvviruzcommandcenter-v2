@@ -524,7 +524,7 @@ export default async function AdminAttributionPage({
               <MetricCard
                 icon={Link2}
                 label="UTM Coverage"
-                note="Tracked /links views with campaign or content UTM values."
+                note="Tracked /links and playlist arrivals with campaign or content UTM values."
                 value={formatOptionalPercent(commandDashboard.overview.utm_coverage_rate)}
               />
               <FunnelVerdictCard value={commandDashboard.recommended_next_move} />
@@ -562,8 +562,8 @@ export default async function AdminAttributionPage({
                   value={formatNumber(commandDashboard.funnel[2]?.value ?? 0)}
                 />
                 <FunnelStage
-                  helper={`${formatOptionalPercent(commandDashboard.overview.tracked_view_coverage_rate)} of Meta LPV tracked first-party.`}
-                  label="/links views"
+                  helper={`${formatOptionalPercent(commandDashboard.overview.tracked_view_coverage_rate)} tracked: ${formatNumber(commandDashboard.overview.experience_breakdown.link_hub_views)} /links + ${formatNumber(commandDashboard.overview.experience_breakdown.playlist_arrivals)} playlist.`}
+                  label="Tracked destination views"
                   value={formatNumber(commandDashboard.funnel[3]?.value ?? 0)}
                 />
                 <FunnelStage
@@ -668,17 +668,17 @@ export default async function AdminAttributionPage({
                     value={formatOptionalPercent(commandDashboard.tracking_health.utm_coverage_rate)}
                   />
                   <FunnelStage
-                    helper="First-party /links views divided by Meta landing page views."
+                    helper="First-party /links views and playlist arrivals divided by Meta landing page views."
                     label="Tracked LPV coverage"
                     value={formatOptionalPercent(commandDashboard.tracking_health.tracked_view_coverage_rate)}
                   />
                   <FunnelStage
-                    helper="Tracked /links views without campaign/content attribution."
+                    helper="Tracked destination views without campaign/content attribution."
                     label="Views without UTM"
                     value={formatNumber(commandDashboard.tracking_health.views_without_utm)}
                   />
                   <FunnelStage
-                    helper="Meta LPV minus first-party /links views. Privacy tools can create some gap."
+                    helper="Meta LPV minus first-party tracked destination views. Privacy tools can create some gap."
                     label="Estimated untracked views"
                     value={formatNumber(commandDashboard.tracking_health.estimated_untracked_views)}
                   />

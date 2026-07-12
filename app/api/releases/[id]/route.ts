@@ -8,6 +8,7 @@ import {z} from "zod";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {touchCopy} from "@/lib/copy";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
+import {normalizeLyrics} from "@/lib/lyrics";
 import {readCopy, readCopiesByReleaseId, saveCopy} from "@/lib/server/copies";
 import {deleteRelease, readRelease, saveRelease} from "@/lib/server/releases";
 import {
@@ -57,7 +58,13 @@ export async function PUT(
 
   try {
     const {id} = await params;
-    const release = hydrateRelease((await request.json()) as Partial<ReleaseRecord>);
+    const hydratedRelease = hydrateRelease(
+      (await request.json()) as Partial<ReleaseRecord>
+    );
+    const release = {
+      ...hydratedRelease,
+      lyrics: normalizeLyrics(hydratedRelease.lyrics)
+    };
 
     if (release.id !== id) {
       return NextResponse.json({message: "Release id mismatch."}, {status: 400});

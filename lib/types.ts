@@ -426,6 +426,43 @@ export type PlaylistReleaseRecord = {
   release_is_published?: boolean;
 };
 
+export type PlaylistReadiness = {
+  status: "Ready" | "Needs review" | "Blocked";
+  issues: string[];
+};
+
+export type PlaylistAnalyticsSummary = {
+  days: number;
+  updatedAt: string;
+  overview: {
+    contentViews: number;
+    measuredArrivals: number;
+    uniqueVisitors: number;
+    sessions: number;
+    outboundClicks: number;
+    uniqueClickers: number;
+    viewToStreamIntentRate: number | null;
+  };
+  publicReadiness: PlaylistReadiness;
+  paidReadiness: PlaylistReadiness;
+  platformBreakdown: Array<{label: string; count: number}>;
+  sourceBreakdown: Array<{label: string; count: number}>;
+  campaignBreakdown: Array<{label: string; count: number}>;
+  releasePerformance: Array<{
+    releaseId: string;
+    title: string;
+    views: number;
+    outboundClicks: number;
+    uniqueClickers: number;
+    clickThroughRate: number | null;
+  }>;
+  shortLinks: {
+    activeCount: number;
+    allTimeClicks: number;
+    measuredArrivals: number;
+  };
+};
+
 
 export type SubscriberRecord = {
   id: string;
