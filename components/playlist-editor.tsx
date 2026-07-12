@@ -770,7 +770,7 @@ export function PlaylistEditor({
 
                         <div>
                           <label className="text-[11px] uppercase tracking-wider font-semibold text-muted">
-                            YouTube Track URL
+                            YouTube Video / Context URL
                           </label>
                           <input
                             className="field-input py-1 px-2 text-xs w-full mt-1.5 font-mono"
@@ -780,6 +780,11 @@ export function PlaylistEditor({
                             placeholder="https://youtube.com/watch?v=..."
                             value={m.youtubeTargetUrl}
                           />
+                          {youtubePlaylistUrl && (
+                            <p className="mt-1.5 text-[11px] leading-4 text-muted">
+                              A YouTube video link is saved in this playlist&apos;s playback context.
+                            </p>
+                          )}
                         </div>
                       </div>
 

@@ -245,6 +245,10 @@ export function PublicPlaylistCampaignView({
   const secondaryTargets = primaryTarget
     ? getSecondaryTrackTargets(focusedMembership, primaryTarget.platform)
     : [];
+  const youtubeTarget = primaryTarget?.platform === "youtube_music"
+    ? primaryTarget
+    : secondaryTargets.find((target) => target.platform === "youtube_music");
+  const textTargets = secondaryTargets.filter((target) => target.platform !== "youtube_music");
 
   const artistDisplay = focusedMembership.release_collaborator
     ? `${siteSettings.artist_name} feat. ${formatCollaboratorsList(focusedMembership.release_collaborator_name)}`
@@ -280,11 +284,6 @@ export function PublicPlaylistCampaignView({
         
         {/* 1. Focused Release Hero */}
         <section className="text-center space-y-6">
-          {/* Playlist Context Pill */}
-          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/20 bg-[#c9a347]/5 px-3.5 py-1 text-[#d8b864] shadow-sm">
-            Part of {playlist.name}
-          </div>
-
           {/* Artwork Container */}
           <div className="public-art-stage relative mx-auto aspect-square w-[320px] overflow-hidden sm:w-[360px]">
             {focusedMembership.release_cover_art_path ? (
@@ -306,7 +305,7 @@ export function PublicPlaylistCampaignView({
           {/* Text block */}
           <div className="space-y-2 px-2">
             <h1
-              className="mx-auto max-w-full truncate whitespace-nowrap text-3xl font-bold tracking-tight text-[#f3ede2]"
+              className="mx-auto max-w-full text-balance break-words text-2xl font-bold leading-tight tracking-tight text-[#f3ede2] sm:text-3xl"
               title={`${artistDisplay} - ${focusedMembership.release_title}`}
             >
               {artistDisplay} - {focusedMembership.release_title}
@@ -320,26 +319,43 @@ export function PublicPlaylistCampaignView({
         </section>
 
         {/* 2. Primary Track CTA */}
-        {primaryTarget && (
-          <section className="px-2">
-            <a
-              className="public-action-primary group flex w-full gap-3 py-4 shadow-[0_0_40px_rgba(201,163,71,0.18)]"
-              href={primaryTarget.url}
-              onClick={() => handleTrackClick(primaryTarget.platform, primaryTarget.url)}
-              target="_blank"
-            >
-              <Play className="fill-current text-[#090b0e]" size={16} />
-              <span className="text-center leading-none">
-                Listen to {focusedMembership.release_title} on {primaryTarget.label}
-              </span>
-            </a>
+        {(primaryTarget || youtubeTarget) && (
+          <section className="space-y-3 px-2">
+            {primaryTarget && primaryTarget.platform !== "youtube_music" && (
+              <a
+                className="public-action-primary group flex w-full gap-3 py-4 shadow-[0_0_40px_rgba(201,163,71,0.18)]"
+                href={primaryTarget.url}
+                onClick={() => handleTrackClick(primaryTarget.platform, primaryTarget.url)}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <Play className="fill-current text-[#090b0e]" size={16} />
+                <span className="text-center leading-none">
+                  Listen to {focusedMembership.release_title} on {primaryTarget.label}
+                </span>
+              </a>
+            )}
+            {youtubeTarget && (
+              <a
+                className="group flex w-full items-center justify-center gap-3 rounded-md border border-[#ff3855] bg-[#e11d2e] px-5 py-4 text-sm font-semibold text-white shadow-[0_0_34px_rgba(225,29,46,0.2)] transition hover:border-[#ff5a6e] hover:bg-[#f02a3d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6678]/70"
+                href={youtubeTarget.url}
+                onClick={() => handleTrackClick(youtubeTarget.platform, youtubeTarget.url)}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <Play className="fill-current" size={16} />
+                <span className="text-center leading-none">
+                  Watch {focusedMembership.release_title} on YouTube
+                </span>
+              </a>
+            )}
           </section>
         )}
 
         {/* 3. Secondary Track Platform Links */}
-        {secondaryTargets.length > 0 && (
+        {textTargets.length > 0 && (
           <section className="text-center text-xs text-[#969ca5] font-semibold tracking-wide space-x-1">
-            {secondaryTargets.map((target, idx) => (
+            {textTargets.map((target, idx) => (
               <span key={target.platform}>
                 <a
                   className="hover:text-[#ebe5d9] transition px-1"
@@ -349,7 +365,7 @@ export function PublicPlaylistCampaignView({
                 >
                   {target.label}
                 </a>
-                {idx < secondaryTargets.length - 1 && <span className="opacity-40">·</span>}
+                {idx < textTargets.length - 1 && <span className="opacity-40"> / </span>}
               </span>
             ))}
           </section>
@@ -395,7 +411,7 @@ export function PublicPlaylistCampaignView({
 
                     <div className="min-w-0 flex-1 space-y-1">
                       <h4
-                        className="truncate text-sm font-bold text-[#f3ede2] transition group-hover:text-[#c9a347]"
+                        className="break-words text-sm font-bold leading-5 text-[#f3ede2] transition group-hover:text-[#c9a347]"
                         title={`${previewArtist} - ${m.release_title}`}
                       >
                         {previewArtist} - {m.release_title}
