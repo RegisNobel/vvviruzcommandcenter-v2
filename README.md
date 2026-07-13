@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-12 - Public-site music-first architecture:** The homepage now leads with one deterministic featured release, supporting featured music, DB-backed project/series cards, a compact Built for Motion feature, Pick A Poison discovery, and a music-focused Insider Access CTA. Homepage actions use minimal first-party analytics events, mobile navigation prioritizes Music and the current release, the About page now leads with artist/music context, and the retired Brand Pillars carousel/editor surface has been removed while its stored settings remain backward-compatible.
+
 `vvviruz' command center` is a local-first creative operating system for managing music releases, tracking collaborations and features, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
 
 It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.

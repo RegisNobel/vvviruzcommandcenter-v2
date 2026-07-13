@@ -35,8 +35,12 @@ export type PublicAnalyticsEventInput = {
     | "exclusive_claim_success"
     | "exclusive_email_unlock_success"
     | "exclusive_preview_open"
-    | "exclusive_discord_cta";
-  page: "links" | "vault" | "playlist" | "preview";
+    | "exclusive_discord_cta"
+    | "homepage_primary_cta_click"
+    | "project_card_click"
+    | "workout_collection_click"
+    | "homepage_exclusives_click";
+  page: "home" | "links" | "vault" | "playlist" | "preview";
   eventId?: string | null;
   path?: string;
   hubPath?: string;

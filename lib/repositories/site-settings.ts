@@ -67,6 +67,10 @@ const DEFAULT_EXCLUSIVE_SUCCESS_MESSAGE =
   "You're in. Your Insider Access is unlocked.";
 const DEFAULT_EXCLUSIVE_DUPLICATE_MESSAGE =
   "You're already on the list. Your Insider Access is unlocked.";
+const LEGACY_ABOUT_INTRO =
+  "vvviruz is an artist and creator blending music, fitness, nerd culture, languages and self-improvement into one evolving brand.";
+const LEGACY_ABOUT_PHILOSOPHY =
+  "The goal is simple: Create consistently, improve publicly, and build something that does not fit in one box.";
 
 function hasLegacyEncoding(value: string) {
   return value.includes("â");
@@ -186,13 +190,13 @@ function createDefaultSiteContent(): SiteContentSettings {
     narrative_heading: "A structured look at the world behind the catalog.",
     intro_heading: "Intro",
     intro_text:
-      "vvviruz exists at the intersection of sound, systems, and self-evolution. What started as music quickly expanded into something more deliberate.",
+      "vvviruz is a high-energy music artist blending bilingual and trilingual rap with anime, gaming, ambition, and pressure-tested performance.",
     philosophy_heading: "Philosophy",
     philosophy_text:
-      "A space where creativity, discipline, and experimentation all operate at the same time.",
+      "Nerd culture shapes the stories. Fitness shapes the discipline and performance. Every lane feeds back into the music.",
     closing_heading: "Closing Line",
     closing_text:
-      "There’s the raw side. High-energy records designed for impact. Gym speakers.",
+      "There is the raw side: high-energy records designed for impact, movement, and repeat plays.",
     connect_heading: "Tap into the signal.",
     connect_empty_text: "Social links coming soon.",
     contact_microcopy: "For collaborations, media, or direct inquiries, reach out here.",
@@ -328,6 +332,8 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
   const normalizedExclusiveConsentLabel = input?.exclusive?.consent_label?.trim();
   const exclusiveUnlockExperience =
     input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience;
+  const normalizedAboutIntro = input?.about?.intro_text?.trim();
+  const normalizedAboutPhilosophy = input?.about?.philosophy_text?.trim();
 
   return {
     metadata: {
@@ -394,7 +400,15 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     about: {
       ...defaults.about,
       ...input?.about,
-      artist_image_file: normalizedArtistImageFile || defaults.about.artist_image_file
+      artist_image_file: normalizedArtistImageFile || defaults.about.artist_image_file,
+      intro_text:
+        normalizedAboutIntro === LEGACY_ABOUT_INTRO
+          ? defaults.about.intro_text
+          : normalizedAboutIntro || defaults.about.intro_text,
+      philosophy_text:
+        normalizedAboutPhilosophy === LEGACY_ABOUT_PHILOSOPHY
+          ? defaults.about.philosophy_text
+          : normalizedAboutPhilosophy || defaults.about.philosophy_text
     },
     analytics: {
       ...defaults.analytics,

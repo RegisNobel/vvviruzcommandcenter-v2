@@ -43,9 +43,13 @@ const analyticsEventSchema = z.object({
     "exclusive_claim_success",
     "exclusive_email_unlock_success",
     "exclusive_preview_open",
-    "exclusive_discord_cta"
+    "exclusive_discord_cta",
+    "homepage_primary_cta_click",
+    "project_card_click",
+    "workout_collection_click",
+    "homepage_exclusives_click"
   ]),
-  page: z.enum(["links", "vault", "playlist", "preview"]),
+  page: z.enum(["home", "links", "vault", "playlist", "preview"]),
   eventId: z.string().max(200).optional(),
   path: z.string().max(1000).default(""),
   hubPath: z.string().max(500).default(""),
@@ -108,8 +112,16 @@ const analyticsEventSchema = z.object({
       "exclusive_preview_open",
       "exclusive_discord_cta"
     ].includes(event.eventType);
+  const isHomepageEvent =
+    event.page === "home" &&
+    [
+      "homepage_primary_cta_click",
+      "project_card_click",
+      "workout_collection_click",
+      "homepage_exclusives_click"
+    ].includes(event.eventType);
 
-  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent && !isPreviewEvent) {
+  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent && !isPreviewEvent && !isHomepageEvent) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Unsupported analytics event for page."
@@ -119,6 +131,12 @@ const analyticsEventSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Playlist analytics require an event ID."
+    });
+  }
+  if (isHomepageEvent && !(event.eventId || event.metaEventId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Homepage analytics require an event ID."
     });
   }
   if (event.eventType === "playlist_track_click" && !event.platform) {

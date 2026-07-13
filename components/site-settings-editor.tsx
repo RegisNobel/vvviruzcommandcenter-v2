@@ -5,7 +5,6 @@ import {Save, Settings2, Globe2, ArrowLeft} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 
 import type {
-  BrandPillar,
   ReleaseSummary,
   SiteSettingsRecord,
   SocialLink
@@ -143,24 +142,6 @@ export function SiteSettingsEditor({
         [section]: {
           ...current.site_content[section],
           [key]: value
-        }
-      }
-    }));
-  }
-
-  function updateBrandPillar(
-    pillarIndex: number,
-    patch: Partial<BrandPillar>
-  ) {
-    setSettings((current) => ({
-      ...current,
-      site_content: {
-        ...current.site_content,
-        home: {
-          ...current.site_content.home,
-          brand_pillars: current.site_content.home.brand_pillars.map((pillar, index) =>
-            index === pillarIndex ? {...pillar, ...patch} : pillar
-          )
         }
       }
     }));
@@ -708,32 +689,6 @@ export function SiteSettingsEditor({
             </label>
 
             <label className="space-y-2">
-              <span className="field-label">Featured Eyebrow</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent(
-                    "home",
-                    "featured_releases_eyebrow",
-                    event.target.value
-                  )
-                }
-                value={settings.site_content.home.featured_releases_eyebrow}
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="field-label">Secondary CTA Label</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("home", "secondary_cta_label", event.target.value)
-                }
-                value={settings.site_content.home.secondary_cta_label}
-              />
-            </label>
-
-            <label className="space-y-2">
               <span className="field-label">Exclusive CTA Label</span>
               <input
                 className="field-input"
@@ -744,28 +699,14 @@ export function SiteSettingsEditor({
               />
             </label>
 
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Featured Empty State</span>
-              <textarea
-                className="field-input min-h-[110px]"
-                onChange={(event) =>
-                  updateSiteContent(
-                    "home",
-                    "featured_releases_empty_text",
-                    event.target.value
-                  )
-                }
-                value={settings.site_content.home.featured_releases_empty_text}
-              />
-            </label>
-
             <div className="space-y-3 md:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <span className="field-label">Featured Releases</span>
                   <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Pick up to 3 releases for the hero area. If none are selected, the
-                    homepage falls back to the current featured public release.
+                    Pick up to 3 releases. The first becomes the homepage hero and the
+                    others appear as supporting featured music. Empty slots use the
+                    newest featured public releases in a stable order.
                   </p>
                 </div>
                 <span className="pill">
@@ -875,89 +816,6 @@ export function SiteSettingsEditor({
               />
             </label>
 
-            <label className="space-y-2">
-              <span className="field-label">Brand Pillars Eyebrow</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("home", "brand_pillars_eyebrow", event.target.value)
-                }
-                value={settings.site_content.home.brand_pillars_eyebrow}
-              />
-            </label>
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="field-label">Brand Pillars Heading</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("home", "brand_pillars_heading", event.target.value)
-                }
-                value={settings.site_content.home.brand_pillars_heading}
-              />
-            </label>
-
-            <div className="space-y-3 md:col-span-2">
-              <div>
-                <span className="field-label">Brand Pillar Cards</span>
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Update the carousel copy and image for each pillar. Add more files to
-                  `storage/site_icons` if you want extra image options here.
-                </p>
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-2">
-                {settings.site_content.home.brand_pillars.map((pillar, index) => (
-                  <div
-                    className="rounded-lg border border-edge bg-input p-4"
-                    key={pillar.id}
-                  >
-                    <p className="field-label">Pillar {index + 1}</p>
-
-                    <div className="mt-4 space-y-4">
-                      <label className="space-y-2">
-                        <span className="field-label">Title</span>
-                        <input
-                          className="field-input"
-                          onChange={(event) =>
-                            updateBrandPillar(index, {title: event.target.value})
-                          }
-                          value={pillar.title}
-                        />
-                      </label>
-
-                      <label className="space-y-2">
-                        <span className="field-label">Description</span>
-                        <textarea
-                          className="field-input min-h-[120px]"
-                          onChange={(event) =>
-                            updateBrandPillar(index, {description: event.target.value})
-                          }
-                          value={pillar.description}
-                        />
-                      </label>
-
-                      <label className="space-y-2">
-                        <span className="field-label">Carousel Image</span>
-                        <select
-                          className="field-input"
-                          onChange={(event) =>
-                            updateBrandPillar(index, {imageFile: event.target.value})
-                          }
-                          value={pillar.imageFile}
-                        >
-                          {siteIconOptions.map((fileName) => (
-                            <option key={fileName} value={fileName}>
-                              {fileName}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 

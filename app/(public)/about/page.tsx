@@ -154,15 +154,21 @@ export default async function PublicAboutPage() {
           <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#c9a347]/10 blur-[130px]" />
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-stretch">
             <div className="flex h-full items-center justify-center p-4 sm:p-6 sm:p-8">
-              <div className="public-quiet-card w-full max-w-3xl px-5 py-5 text-center sm:px-8 sm:py-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8d949d]">
+              <div className="w-full max-w-3xl px-2 py-5 sm:px-6 sm:py-8">
+                <p className="public-eyebrow">
                   {content.statement_heading}
                 </p>
-                <div className="mt-3 space-y-2 text-lg leading-8 text-[#e7dfcf]">
+                <h1 className="public-heading mt-4 text-5xl font-semibold sm:text-6xl">
+                  {siteSettings.artist_name}
+                </h1>
+                <div className="mt-5 space-y-2 text-lg leading-8 text-[#e7dfcf]">
                   {artistStatementLines.map((line, index) => (
                     <p key={`${line}-${index}`}>{line}</p>
                   ))}
                 </div>
+                <Link className="public-action-primary mt-7" href="/music">
+                  Explore the music
+                </Link>
               </div>
             </div>
 
@@ -229,6 +235,26 @@ export default async function PublicAboutPage() {
                 </p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="public-panel-quiet py-9 text-center sm:py-12">
+          <div className="mx-auto max-w-3xl px-5">
+            <p className="public-eyebrow">Start with the catalog</p>
+            <h2 className="public-heading mt-4 text-3xl font-semibold sm:text-4xl">
+              The clearest introduction is the music
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#aeb6c0]">
+              Explore the releases, recurring projects, and latest records shaping the vvviruz sound.
+            </p>
+            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link className="public-action-primary" href="/music">
+                Explore music
+              </Link>
+              <Link className="public-action-secondary" href="/links">
+                Play the latest release
+              </Link>
+            </div>
           </div>
         </section>
 

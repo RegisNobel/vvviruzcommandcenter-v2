@@ -3,6 +3,11 @@ import {unstable_cache} from "next/cache";
 
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
+import {
+  HOMEPAGE_PROJECT_LIMIT,
+  isHomepageProjectEligible,
+  mergeHomepageFeaturedReleases
+} from "@/lib/homepage-brand";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/types";
 
@@ -179,7 +184,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings-v3"],
+  ["public-site-settings-v4"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }
@@ -321,17 +326,15 @@ const getCachedHomepageFeaturedReleases = unstable_cache(
           }
         : {})
     },
-    select: publicReleaseSelect
+    select: publicReleaseSelect,
+    orderBy: [{isFeatured: "desc"}, ...newestPublicReleaseOrder],
+    take: Math.max(0, 3 - selected.length)
   });
-  const randomExtras = await Promise.all(
-    shuffleItems(extraPool)
-      .slice(0, Math.max(0, 3 - selected.length))
-      .map(toPublicRelease)
-  );
+  const deterministicExtras = await Promise.all(extraPool.map(toPublicRelease));
 
-  return [...selected, ...randomExtras].slice(0, 3);
+  return mergeHomepageFeaturedReleases(selected, deterministicExtras);
   },
-  ["public-homepage-featured-releases"],
+  ["public-homepage-featured-releases-v2"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases]
   }
@@ -345,6 +348,101 @@ export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) 
     .join("|");
 
   return getCachedHomepageFeaturedReleases(selectedReleaseIdsKey);
+}
+
+export type HomepageProjectCard = {
+  description: string;
+  id: string;
+  name: string;
+  releaseCount: number;
+  representativeRelease: PublicReleaseRecord;
+  slug: string;
+};
+
+const getCachedHomepageProjects = unstable_cache(
+  async (): Promise<HomepageProjectCard[]> => {
+    const categories = await prisma.releaseCategory.findMany({
+      where: {
+        releases: {
+          some: {
+            release: {
+              isPublished: true
+            }
+          }
+        }
+      },
+      select: {
+        description: true,
+        id: true,
+        name: true,
+        releases: {
+          where: {
+            release: {
+              isPublished: true
+            }
+          },
+          select: {
+            sortOrder: true,
+            release: {
+              select: publicReleaseSelect
+            }
+          },
+          orderBy: [{sortOrder: "asc"}]
+        },
+        slug: true
+      },
+      orderBy: [{sortOrder: "asc"}, {name: "asc"}]
+    });
+
+    const eligibleCategories = categories
+      .filter((category) =>
+        isHomepageProjectEligible({
+          releaseCount: category.releases.length,
+          slug: category.slug
+        })
+      )
+      .slice(0, HOMEPAGE_PROJECT_LIMIT);
+
+    return Promise.all(
+      eligibleCategories.map(async (category) => {
+        const representativeAssignment = [...category.releases].sort((left, right) => {
+          if (left.release.isFeatured !== right.release.isFeatured) {
+            return left.release.isFeatured ? -1 : 1;
+          }
+
+          const leftDate = left.release.releaseDate?.getTime() ?? 0;
+          const rightDate = right.release.releaseDate?.getTime() ?? 0;
+
+          if (leftDate !== rightDate) {
+            return rightDate - leftDate;
+          }
+
+          return left.sortOrder - right.sortOrder;
+        })[0];
+
+        return {
+          description: category.description,
+          id: category.id,
+          name: category.name,
+          releaseCount: category.releases.length,
+          representativeRelease: await toPublicRelease(representativeAssignment.release),
+          slug: category.slug
+        };
+      })
+    );
+  },
+  ["public-homepage-projects-v1"],
+  {
+    tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
+  }
+);
+
+export async function getHomepageProjects() {
+  return getCachedHomepageProjects();
+}
+
+export async function getBuiltForMotionRelease() {
+  return getCachedPublishedReleaseBySlug("beast-mode");
 }
 
 const getCachedPublishedReleases = unstable_cache(
@@ -576,5 +674,3 @@ const getCachedCanPubliclyReadCoverAsset = unstable_cache(
 export async function canPubliclyReadCoverAsset(fileName: string) {
   return getCachedCanPubliclyReadCoverAsset(fileName);
 }
-
-

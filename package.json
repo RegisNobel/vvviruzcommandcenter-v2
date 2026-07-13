@@ -34,6 +34,7 @@
     "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts",
     "test:lyrics": "tsx scripts/test-lyrics-formatting.ts",
     "test:playlist-analytics": "tsx scripts/test-playlist-analytics.ts",
+    "test:homepage-brand": "tsx scripts/test-homepage-brand-architecture.ts",
     "test:youtube-links": "tsx scripts/test-youtube-links.ts",
     "analytics:backfill-playlists": "tsx scripts/backfill-playlist-analytics.ts"
   },

@@ -17,8 +17,15 @@ function isCurrentRoute(pathname: string, href: string) {
 export function PublicMobileNav({items}: {items: PublicNavItem[]}) {
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const primaryItems = items.slice(0, 2);
-  const moreItems = items.slice(2);
+  const musicItem = items.find((item) => item.href === "/music");
+  const currentReleaseItem = items.find((item) => /^\/links\d*$/.test(item.href));
+  const primaryItems = [musicItem, currentReleaseItem]
+    .filter((item): item is PublicNavItem => Boolean(item))
+    .filter((item, index, list) => list.findIndex((candidate) => candidate.href === item.href) === index)
+    .slice(0, 2);
+  const moreItems = items.filter(
+    (item) => !primaryItems.some((primaryItem) => primaryItem.href === item.href)
+  );
   const hasCurrentMoreItem = moreItems.some((item) => isCurrentRoute(pathname, item.href));
 
   useEffect(() => {
