@@ -13,9 +13,8 @@ export async function PublicSiteChrome({
   siteSettings: SiteSettingsRecord;
 }) {
   const navItems = [
-    {href: "/", label: siteSettings.site_content.chrome.nav_home_label},
     {href: "/music", label: siteSettings.site_content.chrome.nav_music_label},
-    {href: "/about", label: siteSettings.site_content.chrome.nav_about_label},
+    {href: "/projects", label: "Projects"}
   ];
 
   if (siteSettings.nav_hubs && siteSettings.nav_hubs.length > 0) {
@@ -30,6 +29,7 @@ export async function PublicSiteChrome({
   }
 
   navItems.push({href: "/exclusives", label: "Exclusives"});
+  navItems.push({href: "/about", label: siteSettings.site_content.chrome.nav_about_label});
 
   if (siteSettings.site_content.commissions?.is_enabled) {
     navItems.push({href: "/commissions", label: "Commissions"});

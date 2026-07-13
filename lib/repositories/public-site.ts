@@ -5,9 +5,14 @@ import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
 import {
   HOMEPAGE_PROJECT_LIMIT,
-  isHomepageProjectEligible,
   mergeHomepageFeaturedReleases
 } from "@/lib/homepage-brand";
+import {
+  PUBLIC_PROJECT_SLUGS,
+  evaluatePublicProjectEligibility,
+  isAllowlistedPublicProjectSlug,
+  type PublicProjectRecord
+} from "@/lib/public-projects";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/types";
 
@@ -107,6 +112,15 @@ const publicReleaseSelect = {
   }
 } satisfies Prisma.ReleaseSelect;
 
+const publicProjectReleaseSelect = {
+  ...publicReleaseSelect,
+  lyrics: false
+} satisfies Prisma.ReleaseSelect;
+
+type PublicProjectReleaseModel = Prisma.ReleaseGetPayload<{
+  select: typeof publicProjectReleaseSelect;
+}>;
+
 async function toPublicRelease(release: PublicReleaseModel): Promise<PublicReleaseRecord> {
   const blobOrigin = await getBlobOrigin();
   return {
@@ -143,6 +157,12 @@ async function toPublicRelease(release: PublicReleaseModel): Promise<PublicRelea
     created_on: release.createdOn.toISOString(),
     updated_on: release.updatedOn.toISOString()
   };
+}
+
+async function toPublicProjectRelease(
+  release: PublicProjectReleaseModel
+): Promise<PublicReleaseRecord> {
+  return toPublicRelease({...release, lyrics: ""});
 }
 
 async function rewriteSiteSettingsUrls(settings: SiteSettingsRecord): Promise<SiteSettingsRecord> {
@@ -350,31 +370,115 @@ export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) 
   return getCachedHomepageFeaturedReleases(selectedReleaseIdsKey);
 }
 
-export type HomepageProjectCard = {
-  description: string;
-  id: string;
-  name: string;
-  releaseCount: number;
-  representativeRelease: PublicReleaseRecord;
-  slug: string;
-};
+type PublicProjectModel = Prisma.ReleaseCategoryGetPayload<{
+  select: {
+    description: true;
+    id: true;
+    name: true;
+    slug: true;
+    sortOrder: true;
+    updatedAt: true;
+    releases: {
+      select: {
+        sortOrder: true;
+        release: {select: typeof publicProjectReleaseSelect};
+      };
+    };
+  };
+}>;
 
-const getCachedHomepageProjects = unstable_cache(
-  async (): Promise<HomepageProjectCard[]> => {
+function compareProjectAssignments(
+  left: PublicProjectModel["releases"][number],
+  right: PublicProjectModel["releases"][number]
+) {
+  if (left.sortOrder !== right.sortOrder) {
+    return left.sortOrder - right.sortOrder;
+  }
+
+  const leftDate = left.release.releaseDate?.getTime() ?? 0;
+  const rightDate = right.release.releaseDate?.getTime() ?? 0;
+
+  if (leftDate !== rightDate) {
+    return rightDate - leftDate;
+  }
+
+  return left.release.slug.localeCompare(right.release.slug);
+}
+
+function selectRepresentativeAssignment(category: PublicProjectModel) {
+  const orderedAssignments = [...category.releases].sort(compareProjectAssignments);
+  const featuredAssignment = orderedAssignments.find(
+    (assignment) => assignment.release.isFeatured
+  );
+
+  if (featuredAssignment) {
+    return featuredAssignment;
+  }
+
+  return [...orderedAssignments].sort((left, right) => {
+    const leftDate = left.release.releaseDate?.getTime() ?? 0;
+    const rightDate = right.release.releaseDate?.getTime() ?? 0;
+
+    return rightDate - leftDate || compareProjectAssignments(left, right);
+  })[0];
+}
+
+async function toPublicProject(category: PublicProjectModel): Promise<PublicProjectRecord | null> {
+  const eligibility = evaluatePublicProjectEligibility({
+    description: category.description,
+    name: category.name,
+    publicReleaseSlugs: category.releases.map((assignment) => assignment.release.slug),
+    slug: category.slug
+  });
+
+  if (!eligibility.eligible) {
+    return null;
+  }
+
+  const orderedAssignments = [...category.releases].sort(compareProjectAssignments);
+  const representativeAssignment = selectRepresentativeAssignment(category);
+
+  if (!representativeAssignment) {
+    return null;
+  }
+
+  const releases = await Promise.all(
+    orderedAssignments.map((assignment) => toPublicProjectRelease(assignment.release))
+  );
+  const latestRelease = [...releases].sort((left, right) => {
+    const leftDate = left.release_date ? new Date(left.release_date).getTime() : 0;
+    const rightDate = right.release_date ? new Date(right.release_date).getTime() : 0;
+
+    return rightDate - leftDate || left.slug.localeCompare(right.slug);
+  })[0];
+  const updatedAt = [category.updatedAt, ...category.releases.map((item) => item.release.updatedOn)]
+    .sort((left, right) => right.getTime() - left.getTime())[0];
+
+  return {
+    description: category.description.trim(),
+    id: category.id,
+    latestRelease,
+    name: category.name.trim(),
+    releaseCount: releases.length,
+    releases,
+    representativeRelease: await toPublicProjectRelease(representativeAssignment.release),
+    slug: eligibility.slug,
+    updatedAt: updatedAt.toISOString()
+  };
+}
+
+const getCachedEligiblePublicProjects = unstable_cache(
+  async (): Promise<PublicProjectRecord[]> => {
     const categories = await prisma.releaseCategory.findMany({
       where: {
-        releases: {
-          some: {
-            release: {
-              isPublished: true
-            }
-          }
-        }
+        slug: {in: [...PUBLIC_PROJECT_SLUGS]}
       },
       select: {
         description: true,
         id: true,
         name: true,
+        sortOrder: true,
+        updatedAt: true,
         releases: {
           where: {
             release: {
@@ -384,7 +488,7 @@ const getCachedHomepageProjects = unstable_cache(
           select: {
             sortOrder: true,
             release: {
-              select: publicReleaseSelect
+              select: publicProjectReleaseSelect
             }
           },
           orderBy: [{sortOrder: "asc"}]
@@ -394,51 +498,42 @@ const getCachedHomepageProjects = unstable_cache(
       orderBy: [{sortOrder: "asc"}, {name: "asc"}]
     });
 
-    const eligibleCategories = categories
-      .filter((category) =>
-        isHomepageProjectEligible({
-          releaseCount: category.releases.length,
-          slug: category.slug
-        })
-      )
-      .slice(0, HOMEPAGE_PROJECT_LIMIT);
+    const projects = await Promise.all(categories.map(toPublicProject));
 
-    return Promise.all(
-      eligibleCategories.map(async (category) => {
-        const representativeAssignment = [...category.releases].sort((left, right) => {
-          if (left.release.isFeatured !== right.release.isFeatured) {
-            return left.release.isFeatured ? -1 : 1;
-          }
-
-          const leftDate = left.release.releaseDate?.getTime() ?? 0;
-          const rightDate = right.release.releaseDate?.getTime() ?? 0;
-
-          if (leftDate !== rightDate) {
-            return rightDate - leftDate;
-          }
-
-          return left.sortOrder - right.sortOrder;
-        })[0];
-
-        return {
-          description: category.description,
-          id: category.id,
-          name: category.name,
-          releaseCount: category.releases.length,
-          representativeRelease: await toPublicRelease(representativeAssignment.release),
-          slug: category.slug
-        };
-      })
-    );
+    return projects.filter((project): project is PublicProjectRecord => Boolean(project));
   },
-  ["public-homepage-projects-v1"],
+  ["eligible-public-projects-v1"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
   }
 );
 
+export async function getEligiblePublicProjects() {
+  return getCachedEligiblePublicProjects();
+}
+
+export async function getEligiblePublicProjectSlugs() {
+  const projects = await getCachedEligiblePublicProjects();
+
+  return projects.map((project) => project.slug);
+}
+
+export async function getPublicProjectBySlug(slug: string) {
+  const normalizedSlug = slug.trim().toLowerCase();
+
+  if (!isAllowlistedPublicProjectSlug(normalizedSlug)) {
+    return null;
+  }
+
+  const projects = await getCachedEligiblePublicProjects();
+
+  return projects.find((project) => project.slug === normalizedSlug) ?? null;
+}
+
 export async function getHomepageProjects() {
-  return getCachedHomepageProjects();
+  const projects = await getCachedEligiblePublicProjects();
+
+  return projects.slice(0, HOMEPAGE_PROJECT_LIMIT);
 }
 
 export async function getBuiltForMotionRelease() {
@@ -633,7 +728,8 @@ const getCachedPublishedReleaseSlugs = unstable_cache(
       isPublished: true
     },
     select: {
-      slug: true
+      slug: true,
+      updatedOn: true
     }
   }),
   ["public-release-slugs"],

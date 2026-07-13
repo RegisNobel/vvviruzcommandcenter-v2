@@ -3,7 +3,6 @@ import type {PublicReleaseRecord} from "@/lib/types";
 
 export const HOMEPAGE_FEATURED_LIMIT = 3;
 export const HOMEPAGE_PROJECT_LIMIT = 4;
-export const HOMEPAGE_PROJECT_MIN_RELEASES = 2;
 
 export type HomepageStreamingTarget = {
   href: string;
@@ -57,14 +56,4 @@ export function mergeHomepageFeaturedReleases<T extends {id: string}>(
   }
 
   return releases;
-}
-
-export function isHomepageProjectEligible(input: {
-  releaseCount: number;
-  slug: string;
-}) {
-  return (
-    input.slug.trim().toLowerCase() !== "vault" &&
-    input.releaseCount >= HOMEPAGE_PROJECT_MIN_RELEASES
-  );
 }

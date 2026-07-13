@@ -45,11 +45,14 @@ const analyticsEventSchema = z.object({
     "exclusive_preview_open",
     "exclusive_discord_cta",
     "homepage_primary_cta_click",
+    "projects_index_view",
     "project_card_click",
+    "project_hub_release_click",
+    "release_project_link_click",
     "workout_collection_click",
     "homepage_exclusives_click"
   ]),
-  page: z.enum(["home", "links", "vault", "playlist", "preview"]),
+  page: z.enum(["home", "links", "projects", "release", "vault", "playlist", "preview"]),
   eventId: z.string().max(200).optional(),
   path: z.string().max(1000).default(""),
   hubPath: z.string().max(500).default(""),
@@ -120,8 +123,23 @@ const analyticsEventSchema = z.object({
       "workout_collection_click",
       "homepage_exclusives_click"
     ].includes(event.eventType);
+  const isProjectsEvent =
+    event.page === "projects" &&
+    ["projects_index_view", "project_card_click", "project_hub_release_click"].includes(
+      event.eventType
+    );
+  const isReleaseProjectEvent =
+    event.page === "release" && event.eventType === "release_project_link_click";
 
-  if (!isLinksEvent && !isVaultEvent && !isPlaylistEvent && !isPreviewEvent && !isHomepageEvent) {
+  if (
+    !isLinksEvent &&
+    !isVaultEvent &&
+    !isPlaylistEvent &&
+    !isPreviewEvent &&
+    !isHomepageEvent &&
+    !isProjectsEvent &&
+    !isReleaseProjectEvent
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Unsupported analytics event for page."
@@ -143,6 +161,12 @@ const analyticsEventSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Playlist outbound clicks require a normalized platform."
+    });
+  }
+  if ((isProjectsEvent || isReleaseProjectEvent) && !(event.eventId || event.metaEventId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Project analytics require an event ID."
     });
   }
 });

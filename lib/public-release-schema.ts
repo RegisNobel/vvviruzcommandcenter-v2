@@ -1,10 +1,15 @@
 import "server-only";
 
-import type {PublicReleaseRecord} from "@/lib/types";
+import type {PublicReleaseCategory, PublicReleaseRecord} from "@/lib/types";
+import {getPublicProjectPath, getPublicProjectSeriesId} from "@/lib/public-projects";
+import {
+  getPublicHttpUrl,
+  getPublicSiteBaseUrl,
+  getPublicSiteUrl
+} from "@/lib/public-site-url";
 
 import {
   getPublicReleaseDiscoveryMetadata,
-  normalizeExternalUrl,
   parseCollaborators
 } from "@/lib/public-utils";
 
@@ -12,36 +17,9 @@ type JsonObject = Record<string, unknown>;
 
 type PublicReleaseJsonLdInput = {
   artistName: string;
+  projectCategories?: PublicReleaseCategory[];
   release: PublicReleaseRecord;
 };
-
-function getPublicSiteBaseUrl() {
-  const value =
-    process.env.PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "http://localhost:3000";
-
-  return value.replace(/\/+$/, "");
-}
-
-function getHttpUrl(value: string | null | undefined, baseUrl: string) {
-  const trimmed = typeof value === "string" ? value.trim() : "";
-  const url = trimmed.startsWith("/") ? trimmed : normalizeExternalUrl(trimmed);
-
-  if (!url) {
-    return "";
-  }
-
-  try {
-    const parsed = trimmed.startsWith("/") ? new URL(url, baseUrl) : new URL(url);
-
-    return parsed.protocol === "http:" || parsed.protocol === "https:"
-      ? parsed.toString()
-      : "";
-  } catch {
-    return "";
-  }
-}
 
 function compactObject<T extends JsonObject>(value: T): T {
   return Object.fromEntries(
@@ -68,15 +46,17 @@ export function stringifyJsonLd(value: JsonObject) {
 
 export function buildPublicReleaseJsonLd({
   artistName,
+  projectCategories = [],
   release
 }: PublicReleaseJsonLdInput) {
   const baseUrl = getPublicSiteBaseUrl();
-  const canonicalUrl = `${baseUrl}/music/${encodeURIComponent(release.slug)}`;
-  const categoryWorks = release.categories.map((category) =>
+  const canonicalUrl = getPublicSiteUrl(`/music/${encodeURIComponent(release.slug)}`);
+  const categoryWorks = projectCategories.map((category) =>
     compactObject({
       "@type": "CreativeWorkSeries",
+      "@id": getPublicProjectSeriesId(baseUrl, category.slug),
       name: category.name,
-      url: `${baseUrl}/music?category=${encodeURIComponent(category.slug)}`
+      url: getPublicSiteUrl(getPublicProjectPath(category.slug))
     })
   );
   const {
@@ -92,14 +72,14 @@ export function buildPublicReleaseJsonLd({
   const sameAs = Array.from(
     new Set(
       [
-        getHttpUrl(release.spotify_url, baseUrl),
-        getHttpUrl(release.apple_music_url, baseUrl),
-        getHttpUrl(release.youtube_url, baseUrl),
-        getHttpUrl(release.featured_video_url, baseUrl)
+        getPublicHttpUrl(release.spotify_url),
+        getPublicHttpUrl(release.apple_music_url),
+        getPublicHttpUrl(release.youtube_url),
+        getPublicHttpUrl(release.featured_video_url)
       ].filter(Boolean)
     )
   );
-  const image = getHttpUrl(release.cover_art_path, baseUrl);
+  const image = getPublicHttpUrl(release.cover_art_path);
   const collaborators = parseCollaborators(release.collaborator_name);
   const hasPublicLyrics =
     release.public_lyrics_enabled && release.lyrics.trim().length > 0;
@@ -133,7 +113,7 @@ export function buildPublicReleaseJsonLd({
             })
           )
         : undefined,
-    genre: [release.type, ...release.categories.map((category) => category.name)],
+    genre: release.type === "nerdcore" ? ["Nerdcore"] : undefined,
     isPartOf: categoryWorks,
     keywords: [release.type, ...release.categories.map((category) => category.name)],
     sameAs,
@@ -149,23 +129,57 @@ export function buildPublicReleaseJsonLd({
       : undefined
   });
 
+  const breadcrumbItems = projectCategories.length === 1
+    ? [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: getPublicSiteUrl("/")
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Projects",
+          item: getPublicSiteUrl("/projects")
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: projectCategories[0].name,
+          item: getPublicSiteUrl(getPublicProjectPath(projectCategories[0].slug))
+        },
+        {
+          "@type": "ListItem",
+          position: 4,
+          name: release.title,
+          item: canonicalUrl
+        }
+      ]
+    : [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: getPublicSiteUrl("/")
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Music",
+          item: getPublicSiteUrl("/music")
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: release.title,
+          item: canonicalUrl
+        }
+      ];
   const breadcrumbList = {
     "@type": "BreadcrumbList",
     "@id": `${canonicalUrl}#breadcrumb`,
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Music",
-        item: `${baseUrl}/music`
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: release.title,
-        item: canonicalUrl
-      }
-    ]
+    itemListElement: breadcrumbItems
   };
 
   return {

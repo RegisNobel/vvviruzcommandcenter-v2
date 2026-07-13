@@ -2,6 +2,8 @@
 
 > **2026-07-12 - Public-site music-first architecture:** The homepage now leads with one deterministic featured release, supporting featured music, DB-backed project/series cards, a compact Built for Motion feature, Pick A Poison discovery, and a music-focused Insider Access CTA. Homepage actions use minimal first-party analytics events, mobile navigation prioritizes Music and the current release, the About page now leads with artist/music context, and the retired Brand Pillars carousel/editor surface has been removed while its stored settings remain backward-compatible.
 
+> **2026-07-13 - Public project discovery:** Approved `ReleaseCategory` records now power `/projects` and `/projects/[slug]` hubs, homepage and release-page internal links, canonical handling for legacy category filters, structured project entities, sitemap coverage, and first-party project exploration events. Project descriptions remain database-managed, and Off the Grid is prepared as a future category without exposing an empty public hub.
+
 `vvviruz' command center` is a local-first creative operating system for managing music releases, tracking collaborations and features, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
 
 It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.
@@ -38,6 +40,8 @@ Public-facing artist hub with these routes:
 - `/`
 - `/music`
 - `/music/[slug]`
+- `/projects`
+- `/projects/[slug]`
 - `/about`
 - `/links`
 - `/exclusives`
@@ -472,6 +476,13 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-07-13 - Project Hubs, Internal Linking, and Search Context
+
+- Added controlled project discovery routes backed by existing release categories, with one shared allowlist and eligibility helper.
+- Moved project-specific navigation out of the `/music` filter header while preserving legacy category URLs with `noindex, follow` and project canonicals.
+- Added stable project structured-data IDs, corrected release genre output, expanded breadcrumbs, sitemap/robots coverage, and first-party project exploration events.
+- Added a controlled content update script for Multiversus, Switch Series, Lover Boy, Massive Imitation, and future Off the Grid groundwork.
 
 ### 2026-07-12 - Brand Pillar Visual Refresh
 

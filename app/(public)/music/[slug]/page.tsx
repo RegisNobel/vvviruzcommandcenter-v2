@@ -7,6 +7,7 @@ import {notFound} from "next/navigation";
 import type {Metadata} from "next";
 
 import {
+  getEligiblePublicProjects,
   getPublishedReleaseBySlug,
   getRelatedPublishedReleases,
   getSiteSettings
@@ -25,6 +26,8 @@ import {
 import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {LyricsContent} from "@/components/lyrics-content";
 import {PublicRelatedReleaseItem} from "@/components/public-related-release-item";
+import {ProjectTrackedLink} from "@/components/public-project-analytics";
+import {getPublicProjectPath} from "@/lib/public-projects";
 
 type ReleasePageParams = {
   slug: string;
@@ -59,6 +62,7 @@ export async function generateMetadata({
   return {
     title: seoTitle,
     description: metaDescription,
+    alternates: {canonical: `/music/${encodeURIComponent(release.slug)}`},
     openGraph: {
       title: socialShareTitle,
       description: socialShareDescription,
@@ -86,9 +90,10 @@ export default async function PublicReleaseDetailPage({
   params: Promise<ReleasePageParams>;
 }) {
   const {slug} = await params;
-  const [release, siteSettings] = await Promise.all([
+  const [release, siteSettings, eligibleProjects] = await Promise.all([
     getPublishedReleaseBySlug(slug),
-    getSiteSettings()
+    getSiteSettings(),
+    getEligiblePublicProjects()
   ]);
 
   if (!release) {
@@ -98,6 +103,10 @@ export default async function PublicReleaseDetailPage({
   const [relatedReleases] = await Promise.all([
     getRelatedPublishedReleases(release.id, release.type)
   ]);
+  const eligibleProjectSlugs = new Set<string>(eligibleProjects.map((project) => project.slug));
+  const projectCategories = release.categories.filter((category) =>
+    eligibleProjectSlugs.has(category.slug)
+  );
   const youtubeEmbedUrl = getYouTubeEmbedUrl(
     release.featured_video_url || release.youtube_url
   );
@@ -114,6 +123,7 @@ export default async function PublicReleaseDetailPage({
   };
   const releaseJsonLd = buildPublicReleaseJsonLd({
     artistName: siteSettings.artist_name,
+    projectCategories,
     release
   });
 
@@ -124,12 +134,28 @@ export default async function PublicReleaseDetailPage({
         type="application/ld+json"
       />
       <div className="space-y-12">
-        <Link
-          className="inline-flex items-center gap-2 border-b border-transparent pb-1 text-sm font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
-          href="/music"
-        >
-          {content.back_to_music_label}
-        </Link>
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-[#9da7b1]">
+          <Link className="transition hover:text-[#fff8ec]" href="/">Home</Link>
+          <span aria-hidden="true">/</span>
+          {projectCategories.length === 1 ? (
+            <>
+              <Link className="transition hover:text-[#fff8ec]" href="/projects">Projects</Link>
+              <span aria-hidden="true">/</span>
+              <Link
+                className="transition hover:text-[#fff8ec]"
+                href={getPublicProjectPath(projectCategories[0].slug)}
+              >
+                {projectCategories[0].name}
+              </Link>
+            </>
+          ) : (
+            <Link className="transition hover:text-[#fff8ec]" href="/music">
+              Music
+            </Link>
+          )}
+          <span aria-hidden="true">/</span>
+          <span aria-current="page" className="text-[#e3c16e]">{release.title}</span>
+        </nav>
 
         <section className="public-panel overflow-hidden px-5 py-7 sm:px-9 sm:py-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-12 xl:gap-14">
@@ -183,15 +209,30 @@ export default async function PublicReleaseDetailPage({
                   <span className="public-eyebrow">
                     Part of
                   </span>
-                  {release.categories.map((category) => (
-                    <Link
-                      className="public-filter-chip public-filter-chip-active py-1 text-xs"
-                      href={`/music?category=${encodeURIComponent(category.slug)}`}
-                      key={category.id}
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
+                  {release.categories.map((category) =>
+                    eligibleProjectSlugs.has(category.slug) ? (
+                      <ProjectTrackedLink
+                        categorySlug={category.slug}
+                        className="public-filter-chip public-filter-chip-active py-1 text-xs"
+                        eventType="release_project_link_click"
+                        href={getPublicProjectPath(category.slug)}
+                        key={category.id}
+                        page="release"
+                        releaseId={release.id}
+                        sourcePage="release-detail"
+                      >
+                        {category.name}
+                      </ProjectTrackedLink>
+                    ) : (
+                      <Link
+                        className="public-filter-chip py-1 text-xs"
+                        href={`/music?category=${encodeURIComponent(category.slug)}`}
+                        key={category.id}
+                      >
+                        {category.name}
+                      </Link>
+                    )
+                  )}
                 </div>
               ) : null}
 

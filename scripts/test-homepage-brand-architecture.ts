@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 
 import {
   getHomepageStreamingTarget,
-  isHomepageProjectEligible,
   mergeHomepageFeaturedReleases
 } from "../lib/homepage-brand";
 
@@ -41,22 +40,6 @@ function run() {
     getHomepageStreamingTarget({apple_music_url: "", spotify_url: "", youtube_url: ""}),
     null,
     "The homepage must not label an internal release page as a streaming destination."
-  );
-
-  assert.equal(
-    isHomepageProjectEligible({releaseCount: 2, slug: "multiversus"}),
-    true,
-    "Projects with at least two public releases should be eligible."
-  );
-  assert.equal(
-    isHomepageProjectEligible({releaseCount: 1, slug: "switch"}),
-    false,
-    "Single-release categories should not be promoted as established projects."
-  );
-  assert.equal(
-    isHomepageProjectEligible({releaseCount: 8, slug: "vault"}),
-    false,
-    "The Vault category is not a public music project card."
   );
 
   console.log("Homepage brand architecture checks passed.");

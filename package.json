@@ -35,6 +35,8 @@
     "test:lyrics": "tsx scripts/test-lyrics-formatting.ts",
     "test:playlist-analytics": "tsx scripts/test-playlist-analytics.ts",
     "test:homepage-brand": "tsx scripts/test-homepage-brand-architecture.ts",
+    "test:public-projects": "tsx scripts/test-public-projects.ts",
+    "content:update-public-projects": "tsx scripts/update-public-project-descriptions.ts",
     "test:youtube-links": "tsx scripts/test-youtube-links.ts",
     "analytics:backfill-playlists": "tsx scripts/backfill-playlist-analytics.ts"
   },

@@ -7,6 +7,7 @@ import {ArrowUpRight, Dumbbell, Play, Sparkles} from "lucide-react";
 import {HomepageTrackedLink} from "@/components/homepage-tracked-link";
 import {PublicReleaseCard} from "@/components/public-release-card";
 import {getHomepageStreamingTarget} from "@/lib/homepage-brand";
+import {getPublicProjectPath} from "@/lib/public-projects";
 import {
   formatCollaboratorsList,
   getPublicReleaseDiscoveryMetadata,
@@ -200,7 +201,7 @@ export default async function PublicHomePage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {projects.map((project) => {
                 const release = project.representativeRelease;
-                const href = `/music?category=${encodeURIComponent(project.slug)}`;
+                const href = getPublicProjectPath(project.slug);
 
                 return (
                   <HomepageTrackedLink
@@ -232,9 +233,8 @@ export default async function PublicHomePage() {
                       <strong className="mt-3 text-xl tracking-[-0.03em] text-[#fff8ec]">
                         {project.name}
                       </strong>
-                      <span className="mt-3 text-sm leading-6 text-[#aeb6c0]">
-                        {project.description.trim() ||
-                          `Explore ${project.releaseCount} connected releases in ${project.name}.`}
+                      <span className="mt-3 line-clamp-4 text-sm leading-6 text-[#aeb6c0]">
+                        {project.description}
                       </span>
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-[#e3c16e]">
                         Enter project <ArrowUpRight size={15} />

@@ -37,10 +37,13 @@ export type PublicAnalyticsEventInput = {
     | "exclusive_preview_open"
     | "exclusive_discord_cta"
     | "homepage_primary_cta_click"
+    | "projects_index_view"
     | "project_card_click"
+    | "project_hub_release_click"
+    | "release_project_link_click"
     | "workout_collection_click"
     | "homepage_exclusives_click";
-  page: "home" | "links" | "vault" | "playlist" | "preview";
+  page: "home" | "links" | "projects" | "release" | "vault" | "playlist" | "preview";
   eventId?: string | null;
   path?: string;
   hubPath?: string;

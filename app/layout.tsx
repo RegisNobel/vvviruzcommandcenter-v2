@@ -5,9 +5,9 @@ import "@/app/globals.css";
 import {PublicMetaPixel} from "@/components/public-meta-pixel";
 
 import {getSiteSettings} from "@/lib/repositories/public-site";
+import {getPublicSiteBaseUrl} from "@/lib/public-site-url";
 
-const publicSiteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const publicSiteUrl = getPublicSiteBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicSiteUrl),

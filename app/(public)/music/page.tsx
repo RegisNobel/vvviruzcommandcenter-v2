@@ -1,10 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import {ArrowUpRight} from "lucide-react";
 
 import type {Metadata} from "next";
 
 import {
+  getEligiblePublicProjectSlugs,
+  getEligiblePublicProjects,
   getPublicReleaseCategories,
   getPublishedReleases,
   getSiteSettings
@@ -15,12 +18,27 @@ import type {ReleaseType} from "@/lib/types";
 import {PublicMusicLibrary} from "@/components/public-music-library";
 import {PublicAppearsOnLibrary} from "@/components/public-appears-on-library";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const siteSettings = await getSiteSettings();
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<{category?: string; type?: string; view?: string}>;
+}): Promise<Metadata> {
+  const {category, type, view} = await searchParams;
+  const [siteSettings, eligibleProjectSlugs] = await Promise.all([
+    getSiteSettings(),
+    getEligiblePublicProjectSlugs()
+  ]);
+  const normalizedCategory = category?.trim().toLowerCase() || "";
+  const isFiltered = Boolean(normalizedCategory || type?.trim() || view?.trim());
+  const canonical = eligibleProjectSlugs.some((slug) => slug === normalizedCategory)
+    ? `/projects/${encodeURIComponent(normalizedCategory)}`
+    : "/music";
 
   return {
     title: siteSettings.site_content.metadata.music_page_title,
-    description: siteSettings.site_content.metadata.music_page_description
+    description: siteSettings.site_content.metadata.music_page_description,
+    alternates: {canonical},
+    robots: isFiltered ? {index: false, follow: true} : {index: true, follow: true}
   };
 }
 
@@ -42,15 +60,16 @@ export default async function PublicMusicPage({
   
   const activeCategory = category?.trim() || "";
   const activeType = activeCategory ? "all" : normalizeReleaseType(type);
-  const [siteSettings, categories, releases, appearsOnRecords] = await Promise.all([
+  const [siteSettings, releases, appearsOnRecords, categories, eligibleProjects] = await Promise.all([
     getSiteSettings(),
-    getPublicReleaseCategories(),
     getPublishedReleases({
       ...(activeCategory ? {categorySlug: activeCategory} : {}),
       type: activeType,
       ...(activeType === "all" ? {} : {type: activeType})
     }),
-    isAppearsOn ? getPublicAppearsOn() : Promise.resolve([])
+    isAppearsOn ? getPublicAppearsOn() : Promise.resolve([]),
+    activeCategory ? getPublicReleaseCategories() : Promise.resolve([]),
+    activeCategory ? getEligiblePublicProjects() : Promise.resolve([])
   ]);
   const content = siteSettings.site_content.music;
   const platformLabels = {
@@ -69,14 +88,11 @@ export default async function PublicMusicPage({
       href: "/music?type=mainstream",
       label: content.mainstream_label,
       value: "mainstream"
-    },
-    ...categories.map((releaseCategory) => ({
-      href: `/music?category=${encodeURIComponent(releaseCategory.slug)}`,
-      label: releaseCategory.name,
-      value: `category:${releaseCategory.slug}`
-    }))
+    }
   ];
   const activeFilterValue = activeCategory ? `category:${activeCategory}` : activeType;
+  const activeCategoryRecord = categories.find((item) => item.slug === activeCategory);
+  const activeProject = eligibleProjects.find((item) => item.slug === activeCategory);
 
   return (
     <main className="px-4 py-10 sm:px-6 lg:px-8">
@@ -107,8 +123,8 @@ export default async function PublicMusicPage({
             </div>
 
             {!isAppearsOn && (
-              <div className="relative -mr-5 sm:mr-0">
-                <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0 sm:pr-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap gap-2">
                   {filterOptions.map((option) => {
                     const isActive = activeFilterValue === option.value;
 
@@ -127,13 +143,35 @@ export default async function PublicMusicPage({
                     );
                   })}
                 </div>
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-[#111419] to-transparent sm:hidden"
-                />
+                <Link
+                  className="inline-flex min-h-9 items-center gap-2 border-l border-white/10 pl-3 text-sm font-semibold text-[#e3c16e] transition hover:text-[#fff2c8]"
+                  href="/projects"
+                >
+                  Browse Projects
+                  <ArrowUpRight aria-hidden="true" size={15} />
+                </Link>
               </div>
             )}
           </div>
+
+          {!isAppearsOn && activeCategory ? (
+            <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#aeb6c0]">
+              <span>
+                Showing: <strong className="text-[#fff8ec]">{activeCategoryRecord?.name || activeCategory}</strong>
+              </span>
+              {activeProject ? (
+                <Link
+                  className="font-semibold text-[#e3c16e] transition hover:text-[#fff2c8]"
+                  href={`/projects/${encodeURIComponent(activeProject.slug)}`}
+                >
+                  Open project hub
+                </Link>
+              ) : null}
+              <Link className="font-semibold text-[#cbd1d8] transition hover:text-white" href="/music">
+                Clear filter
+              </Link>
+            </div>
+          ) : null}
         </section>
 
         {isAppearsOn ? (

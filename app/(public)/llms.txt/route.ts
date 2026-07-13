@@ -2,13 +2,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import {NextResponse} from "next/server";
+import {getPublicSiteBaseUrl} from "@/lib/public-site-url";
 
 export async function GET() {
-  const baseUrl = (
-    process.env.PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://vvviruz.com"
-  ).replace(/\/+$/, "");
+  const baseUrl = getPublicSiteBaseUrl();
 
   const content = `# vvviruz
 
@@ -22,6 +19,7 @@ vvviruz.com is the official public artist hub for music releases, lyrics when pu
 
 - Home: ${baseUrl}/
 - Music Catalog: ${baseUrl}/music
+- Projects: ${baseUrl}/projects
 - Links Hub: ${baseUrl}/links
 - Early Access / Exclusives: ${baseUrl}/exclusives
 - Vault: ${baseUrl}/vault
@@ -34,11 +32,10 @@ The /music page is the canonical public catalog for vvviruz releases. Public rel
 
 ## Major Projects and Series
 
-- Multiversus: versus-style tracks connecting similar characters or archetypes across fictional universes.
-- Switch Series: multilingual records built around switching languages, flows, and cultural references.
-- Massive Imitation: reinterpretation-style tracks inspired by known songs and reshaped through vvviruz’s voice.
-- Lover Boy: romantic and emotional records.
-- Fitness / Gym Records: high-energy motivational music.
+- Multiversus: nerdcore battle songs that bring characters from different fictional universes face-to-face.
+- Switch Series: transformation-focused records built around switching languages, flows, cadences, perspectives, or delivery styles.
+- Massive Imitation: a five-track project about influence, reinvention, ambition, and identity.
+- Lover Boy: melodic records exploring attraction, attachment, longing, communication, and vulnerability.
 
 ## Early Access and Exclusives
 
