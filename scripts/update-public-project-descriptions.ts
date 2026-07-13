@@ -40,6 +40,7 @@ Instead of overthinking every line, Off the Grid prioritizes energy, attitude, i
 ] as const;
 
 async function run() {
+  const force = process.argv.includes("--force");
   const lastCategory = await prisma.releaseCategory.findFirst({
     orderBy: {sortOrder: "desc"},
     select: {sortOrder: true}
@@ -50,18 +51,24 @@ async function run() {
   for (const project of projects) {
     const existing = await prisma.releaseCategory.findUnique({
       where: {slug: project.slug},
-      select: {id: true}
+      select: {description: true, id: true}
     });
 
     if (existing) {
-      await prisma.releaseCategory.update({
-        where: {id: existing.id},
-        data: {
-          description: project.description,
-          name: project.name,
-          updatedAt: now
-        }
-      });
+      if (!existing.description.trim() || force) {
+        await prisma.releaseCategory.update({
+          where: {id: existing.id},
+          data: {
+            description: project.description,
+            ...(force ? {name: project.name} : {}),
+            updatedAt: now
+          }
+        });
+      } else {
+        console.log(
+          `Skipped ${project.name}; an admin-authored description already exists. Use --force to replace it.`
+        );
+      }
       continue;
     }
 

@@ -53,6 +53,7 @@ export default async function AdminSitePage() {
           exclusiveTrackArtOptions={exclusiveTrackArtOptions}
           exclusiveTrackFileOptions={exclusiveTrackFileOptions}
           initialSiteSettings={siteSettings}
+          releaseCategories={releaseCategories}
           releaseOptions={releaseSummaries}
           siteIconOptions={siteIconOptions}
           vaultReleaseIds={vaultReleaseIds}
@@ -68,6 +69,7 @@ export default async function AdminSitePage() {
         />
 
         <ReleaseCategorySettingsPanel
+          approvedProjectSlugs={siteSettings.site_content.projects.approved_slugs}
           initialCategories={releaseCategories}
           releaseOptions={releaseSummaries}
         />

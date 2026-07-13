@@ -57,3 +57,24 @@ export function mergeHomepageFeaturedReleases<T extends {id: string}>(
 
   return releases;
 }
+
+export function moveHomepageFeaturedRelease(
+  releaseIds: string[],
+  releaseId: string,
+  direction: -1 | 1
+) {
+  const currentIndex = releaseIds.indexOf(releaseId);
+  const nextIndex = currentIndex + direction;
+
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= releaseIds.length) {
+    return releaseIds;
+  }
+
+  const reordered = [...releaseIds];
+  [reordered[currentIndex], reordered[nextIndex]] = [
+    reordered[nextIndex],
+    reordered[currentIndex]
+  ];
+
+  return reordered;
+}

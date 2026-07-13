@@ -8,9 +8,8 @@ import {
   mergeHomepageFeaturedReleases
 } from "@/lib/homepage-brand";
 import {
-  PUBLIC_PROJECT_SLUGS,
   evaluatePublicProjectEligibility,
-  isAllowlistedPublicProjectSlug,
+  normalizeApprovedPublicProjectSlugs,
   type PublicProjectRecord
 } from "@/lib/public-projects";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
@@ -204,7 +203,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings-v4"],
+  ["public-site-settings-v5"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }
@@ -423,13 +422,16 @@ function selectRepresentativeAssignment(category: PublicProjectModel) {
   })[0];
 }
 
-async function toPublicProject(category: PublicProjectModel): Promise<PublicProjectRecord | null> {
+async function toPublicProject(
+  category: PublicProjectModel,
+  approvedProjectSlugs: ReadonlySet<string>
+): Promise<PublicProjectRecord | null> {
   const eligibility = evaluatePublicProjectEligibility({
     description: category.description,
     name: category.name,
     publicReleaseSlugs: category.releases.map((assignment) => assignment.release.slug),
     slug: category.slug
-  });
+  }, approvedProjectSlugs);
 
   if (!eligibility.eligible) {
     return null;
@@ -468,10 +470,19 @@ async function toPublicProject(category: PublicProjectModel): Promise<PublicProj
 }
 
 const getCachedEligiblePublicProjects = unstable_cache(
-  async (): Promise<PublicProjectRecord[]> => {
+  async (approvedProjectSlugsKey: string): Promise<PublicProjectRecord[]> => {
+    const approvedProjectSlugs = normalizeApprovedPublicProjectSlugs(
+      approvedProjectSlugsKey.split("|").filter(Boolean)
+    );
+
+    if (approvedProjectSlugs.length === 0) {
+      return [];
+    }
+
+    const approvedProjectSlugSet = new Set(approvedProjectSlugs);
     const categories = await prisma.releaseCategory.findMany({
       where: {
-        slug: {in: [...PUBLIC_PROJECT_SLUGS]}
+        slug: {in: approvedProjectSlugs}
       },
       select: {
         description: true,
@@ -498,46 +509,66 @@ const getCachedEligiblePublicProjects = unstable_cache(
       orderBy: [{sortOrder: "asc"}, {name: "asc"}]
     });
 
-    const projects = await Promise.all(categories.map(toPublicProject));
+    const projects = await Promise.all(
+      categories.map((category) => toPublicProject(category, approvedProjectSlugSet))
+    );
+    const projectBySlug = new Map(
+      projects
+        .filter((project): project is PublicProjectRecord => Boolean(project))
+        .map((project) => [project.slug, project])
+    );
 
-    return projects.filter((project): project is PublicProjectRecord => Boolean(project));
+    return approvedProjectSlugs
+      .map((slug) => projectBySlug.get(slug))
+      .filter((project): project is PublicProjectRecord => Boolean(project));
   },
-  ["eligible-public-projects-v1"],
+  ["eligible-public-projects-v2"],
   {
-    tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
+    tags: [
+      PUBLIC_CACHE_TAGS.releases,
+      PUBLIC_CACHE_TAGS.releaseCategories,
+      PUBLIC_CACHE_TAGS.siteSettings
+    ]
   }
 );
 
 export async function getEligiblePublicProjects() {
-  return getCachedEligiblePublicProjects();
+  const siteSettings = await getSiteSettings();
+  const approvedProjectSlugs = normalizeApprovedPublicProjectSlugs(
+    siteSettings.site_content.projects?.approved_slugs
+  );
+
+  return getCachedEligiblePublicProjects(approvedProjectSlugs.join("|"));
 }
 
 export async function getEligiblePublicProjectSlugs() {
-  const projects = await getCachedEligiblePublicProjects();
+  const projects = await getEligiblePublicProjects();
 
   return projects.map((project) => project.slug);
 }
 
 export async function getPublicProjectBySlug(slug: string) {
   const normalizedSlug = slug.trim().toLowerCase();
-
-  if (!isAllowlistedPublicProjectSlug(normalizedSlug)) {
-    return null;
-  }
-
-  const projects = await getCachedEligiblePublicProjects();
+  const projects = await getEligiblePublicProjects();
 
   return projects.find((project) => project.slug === normalizedSlug) ?? null;
 }
 
 export async function getHomepageProjects() {
-  const projects = await getCachedEligiblePublicProjects();
+  const projects = await getEligiblePublicProjects();
 
   return projects.slice(0, HOMEPAGE_PROJECT_LIMIT);
 }
 
-export async function getBuiltForMotionRelease() {
-  return getCachedPublishedReleaseBySlug("beast-mode");
+export async function getBuiltForMotionRelease(releaseId = "") {
+  const normalizedReleaseId = releaseId.trim();
+
+  if (!normalizedReleaseId) {
+    return getCachedPublishedReleaseBySlug("beast-mode");
+  }
+
+  const releases = await getCachedPublishedFeaturedReleasesByIds(normalizedReleaseId);
+  return releases[0] ?? null;
 }
 
 const getCachedPublishedReleases = unstable_cache(

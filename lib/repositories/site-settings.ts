@@ -6,6 +6,7 @@ import {
   DEFAULT_SITE_LOGO_FILE,
   resolveBrandPillarImageFile
 } from "@/lib/site-assets";
+import {PUBLIC_PROJECT_SLUGS, normalizeApprovedPublicProjectSlugs} from "@/lib/public-projects";
 import type {
   BrandPillar,
   LinkHubItem,
@@ -125,10 +126,15 @@ function createDefaultSiteContent(): SiteContentSettings {
     hero_badge_text: "Official artist hub",
     secondary_cta_label: "Explore Music",
     exclusive_cta_label: "Get the exclusive track",
+    exclusive_cta_heading: "Hear what is coming before the public drop",
+    exclusive_cta_description:
+      "Join Insider Access for unreleased previews, early updates, and the private vvviruz community.",
     featured_releases_eyebrow: "Featured Now",
       featured_releases_empty_text:
         "Select up to three releases from Public Site settings to feature them here.",
       featured_release_ids: [],
+      built_for_motion_enabled: true,
+      built_for_motion_release_id: "",
       recent_releases_eyebrow: "Recent Releases",
       recent_releases_heading: "Pick A Poison",
       recent_releases_view_all_label: "View all",
@@ -171,6 +177,9 @@ function createDefaultSiteContent(): SiteContentSettings {
             "Systems, tools, and experimentation stay close to the music and the brand around it."
         }
       ]
+    },
+    projects: {
+      approved_slugs: [...PUBLIC_PROJECT_SLUGS]
     },
     music: {
       page_eyebrow: "Discography",
@@ -392,6 +401,13 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           )
         };
       })
+    },
+    projects: {
+      ...defaults.projects,
+      ...input?.projects,
+      approved_slugs: normalizeApprovedPublicProjectSlugs(
+        input?.projects?.approved_slugs ?? defaults.projects.approved_slugs
+      )
     },
     music: {
       ...defaults.music,

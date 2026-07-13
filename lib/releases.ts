@@ -395,6 +395,8 @@ export function summarizeRelease(release: ReleaseRecord): ReleaseSummary {
     id: release.id,
     title: release.title,
     slug: release.slug,
+    cover_art_path: release.cover_art_path,
+    is_published: release.is_published,
     pinned: release.pinned,
     type: release.type,
     status: getReleaseStageLabel(release),

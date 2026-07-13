@@ -16,7 +16,7 @@ const categorySchema = z.object({
   id: z.string().trim().optional(),
   name: z.string().trim().min(1, "Category name is required."),
   slug: z.string().trim().optional(),
-  description: z.string().default(""),
+  description: z.string().trim().max(5000).default(""),
   sort_order: z.number().int().min(0).optional(),
   release_ids: z.array(z.string().trim()).default([])
 });

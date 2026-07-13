@@ -1,14 +1,31 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import {Save, Settings2, Globe2, ArrowLeft} from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  CheckCircle2,
+  ExternalLink,
+  Globe2,
+  Save,
+  Settings2
+} from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 
 import type {
+  ReleaseCategoryRecord,
   ReleaseSummary,
   SiteSettingsRecord,
   SocialLink
 } from "@/lib/types";
+import {HOMEPAGE_PROJECT_LIMIT, moveHomepageFeaturedRelease} from "@/lib/homepage-brand";
+import {
+  evaluatePublicProjectEligibility,
+  getPublicProjectPath
+} from "@/lib/public-projects";
 import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
@@ -22,6 +39,7 @@ type SiteSettingsEditorProps = {
   exclusiveTrackArtOptions: string[];
   exclusiveTrackFileOptions: string[];
   initialSiteSettings: SiteSettingsRecord;
+  releaseCategories: ReleaseCategoryRecord[];
   releaseOptions: ReleaseSummary[];
   siteIconOptions: string[];
   vaultReleaseIds?: string[];
@@ -49,10 +67,32 @@ function parseLinkRows<T extends SocialLink>(value: string): T[] {
     });
 }
 
+function getProjectEligibilityMessage(
+  reason: ReturnType<typeof evaluatePublicProjectEligibility>["reason"]
+) {
+  switch (reason) {
+    case "missing-slug":
+      return "The category needs a valid slug.";
+    case "missing-name":
+      return "The category needs a public name.";
+    case "missing-description":
+      return "Add a project description in Music Categories.";
+    case "insufficient-public-releases":
+      return "At least two published releases are required.";
+    case "missing-public-release-slug":
+      return "A published release is missing its public URL slug.";
+    case "not-allowlisted":
+      return "This category is not approved as a public project.";
+    default:
+      return "Eligible for public project surfaces.";
+  }
+}
+
 export function SiteSettingsEditor({
   exclusiveTrackArtOptions,
   exclusiveTrackFileOptions,
   initialSiteSettings,
+  releaseCategories,
   releaseOptions,
   siteIconOptions,
   vaultReleaseIds
@@ -62,6 +102,7 @@ export function SiteSettingsEditor({
     serializeLinkRows(initialSiteSettings.social_links)
   );
   const [featuredReleaseQuery, setFeaturedReleaseQuery] = useState("");
+  const [projectCandidateSlug, setProjectCandidateSlug] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [isCommandDockVisible, setIsCommandDockVisible] = useState(false);
@@ -118,6 +159,10 @@ export function SiteSettingsEditor({
 
     return releaseOptions
       .filter((release) => {
+        if (!release.is_published) {
+          return false;
+        }
+
         if (selectedIds.has(release.id)) {
           return false;
         }
@@ -130,6 +175,87 @@ export function SiteSettingsEditor({
       })
       .slice(0, 12);
   }, [featuredReleaseQuery, releaseOptions, settings.site_content.home.featured_release_ids]);
+
+  const releaseOptionsById = useMemo(
+    () => new Map(releaseOptions.map((release) => [release.id, release])),
+    [releaseOptions]
+  );
+  const approvedProjectSlugs = settings.site_content.projects.approved_slugs;
+  const approvedProjectSlugSet = useMemo(
+    () => new Set(approvedProjectSlugs),
+    [approvedProjectSlugs]
+  );
+  const projectRows = useMemo(
+    () =>
+      approvedProjectSlugs.map((slug, index) => {
+        const category = releaseCategories.find((item) => item.slug === slug);
+        const publishedReleases = category
+          ? category.release_ids
+              .map((releaseId) => releaseOptionsById.get(releaseId))
+              .filter(
+                (release): release is ReleaseSummary => Boolean(release?.is_published)
+              )
+          : [];
+        const eligibility = evaluatePublicProjectEligibility(
+          {
+            description: category?.description,
+            name: category?.name,
+            publicReleaseSlugs: publishedReleases.map((release) => release.slug),
+            slug
+          },
+          approvedProjectSlugSet
+        );
+
+        return {
+          category,
+          eligibility,
+          index,
+          publishedReleases,
+          slug
+        };
+      }),
+    [approvedProjectSlugs, approvedProjectSlugSet, releaseCategories, releaseOptionsById]
+  );
+  const eligibleProjectSlugs = projectRows
+    .filter((row) => row.eligibility.eligible)
+    .map((row) => row.slug);
+  const availableProjectCategories = releaseCategories.filter(
+    (category) => !approvedProjectSlugSet.has(category.slug)
+  );
+  const configuredBuiltForMotionRelease = settings.site_content.home.built_for_motion_release_id
+    ? releaseOptionsById.get(settings.site_content.home.built_for_motion_release_id)
+    : releaseOptions.find((release) => release.slug === "beast-mode");
+  const missingFeaturedReleaseIds = settings.site_content.home.featured_release_ids.filter(
+    (releaseId) => !releaseOptionsById.has(releaseId)
+  );
+  const publicReadinessWarnings = [
+    ...(settings.site_content.home.featured_release_ids.length === 0
+      ? ["Homepage hero is using the deterministic release fallback."]
+      : []),
+    ...selectedFeaturedReleases
+      .filter((release) => !release.is_published)
+      .map((release) => `${release.title} is selected for the homepage but is not public.`),
+    ...(missingFeaturedReleaseIds.length > 0
+      ? ["A saved homepage release no longer exists."]
+      : []),
+    ...(settings.site_content.home.built_for_motion_enabled &&
+    !configuredBuiltForMotionRelease?.is_published
+      ? ["Built for Motion has no valid public release."]
+      : []),
+    ...(!settings.site_content.about.statement_heading.trim() ||
+    !settings.site_content.about.statement_text.trim() ||
+    !settings.site_content.about.intro_heading.trim() ||
+    !settings.site_content.about.intro_text.trim()
+      ? ["About positioning is incomplete."]
+      : []),
+    ...projectRows
+      .filter((row) => !row.eligibility.eligible)
+      .map(
+        (row) =>
+          `${row.category?.name || row.slug}: ${getProjectEligibilityMessage(row.eligibility.reason)}`
+      ),
+    ...(eligibleProjectSlugs.length === 0 ? ["No projects are currently public."] : [])
+  ];
 
   function updateSiteContent<
     TSection extends keyof SiteSettingsRecord["site_content"],
@@ -186,6 +312,99 @@ export function SiteSettingsEditor({
         }
       };
     });
+  }
+
+  function moveFeaturedRelease(releaseId: string, direction: -1 | 1) {
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        home: {
+          ...current.site_content.home,
+          featured_release_ids: moveHomepageFeaturedRelease(
+            current.site_content.home.featured_release_ids,
+            releaseId,
+            direction
+          )
+        }
+      }
+    }));
+  }
+
+  function clearMissingFeaturedReleases() {
+    const existingReleaseIds = new Set(releaseOptions.map((release) => release.id));
+
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        home: {
+          ...current.site_content.home,
+          featured_release_ids: current.site_content.home.featured_release_ids.filter(
+            (releaseId) => existingReleaseIds.has(releaseId)
+          )
+        }
+      }
+    }));
+  }
+
+  function addApprovedProject() {
+    if (!projectCandidateSlug || approvedProjectSlugSet.has(projectCandidateSlug)) {
+      return;
+    }
+
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        projects: {
+          approved_slugs: [
+            ...current.site_content.projects.approved_slugs,
+            projectCandidateSlug
+          ]
+        }
+      }
+    }));
+    setProjectCandidateSlug("");
+  }
+
+  function removeApprovedProject(slug: string) {
+    const category = releaseCategories.find((item) => item.slug === slug);
+    const shouldRemove = window.confirm(
+      `Remove ${category?.name || slug} from public projects? The category and release assignments will remain available for legacy music filters.`
+    );
+
+    if (!shouldRemove) {
+      return;
+    }
+
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        projects: {
+          approved_slugs: current.site_content.projects.approved_slugs.filter(
+            (value) => value !== slug
+          )
+        }
+      }
+    }));
+  }
+
+  function moveApprovedProject(slug: string, direction: -1 | 1) {
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        projects: {
+          approved_slugs: moveHomepageFeaturedRelease(
+            current.site_content.projects.approved_slugs,
+            slug,
+            direction
+          )
+        }
+      }
+    }));
   }
 
   async function handleSave() {
@@ -295,6 +514,7 @@ export function SiteSettingsEditor({
           {href: "#metadata-seo", label: "Metadata"},
           {href: "#site-chrome", label: "Chrome"},
           {href: "#home-page", label: "Home"},
+          {href: "#public-projects", label: "Projects"},
           {href: "#music-page", label: "Music"},
           {href: "#about-page", label: "About"},
           {href: "#platform-labels", label: "Platforms"},
@@ -303,6 +523,7 @@ export function SiteSettingsEditor({
           {href: "#tracking-settings", label: "Tracking"},
           {href: "#release-page", label: "Release"},
           {href: "#social-links", label: "Social"},
+          {href: "#public-readiness", label: "Readiness"},
           {href: "#vault-settings", label: "Vault"},
           {href: "#commissions-settings", label: "Commissions"}
         ].map((item) => (
@@ -716,22 +937,107 @@ export function SiteSettingsEditor({
 
               {selectedFeaturedReleases.length > 0 ? (
                 <div className="grid gap-3 md:grid-cols-3">
-                  {selectedFeaturedReleases.map((release) => (
-                    <button
-                      className="rounded-md border border-[rgba(246,201,69,0.25)] bg-brand-primary-soft px-4 py-4 text-left transition hover:border-[rgba(246,201,69,0.45)] hover:bg-brand-primary-soft"
+                  {selectedFeaturedReleases.map((release, index) => (
+                    <article
+                      className="rounded-md border border-[rgba(246,201,69,0.25)] bg-brand-primary-soft p-4"
                       key={release.id}
-                      onClick={() => toggleFeaturedRelease(release.id)}
-                      type="button"
                     >
-                      <p className="text-sm font-semibold text-ink">{release.title}</p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">
-                        {release.type} • {release.status}
-                      </p>
-                      <p className="mt-3 text-xs font-semibold text-[#d5b15b]">
-                        Remove
-                      </p>
-                    </button>
+                      <div className="flex items-start gap-3">
+                        <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-edge bg-surface">
+                          {release.cover_art_path ? (
+                            <Image
+                              alt={`${release.title} cover`}
+                              className="object-cover"
+                              fill
+                              sizes="56px"
+                              src={release.cover_art_path}
+                              unoptimized
+                            />
+                          ) : null}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="pill text-[10px]">
+                            {index === 0 ? "Homepage hero" : `Supporting ${index}`}
+                          </span>
+                          <p className="mt-2 truncate text-sm font-semibold text-ink">
+                            {release.title}
+                          </p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
+                            {release.release_date || "Date pending"}
+                          </p>
+                          {release.collaborator_name.trim() ? (
+                            <p className="mt-1 truncate text-xs text-muted">
+                              with {release.collaborator_name}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {!release.is_published ? (
+                        <p className="mt-3 flex items-center gap-2 text-xs text-amber-300">
+                          <AlertTriangle size={13} /> No longer public; fallback will render.
+                        </p>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          aria-label={`Move ${release.title} earlier`}
+                          className="action-button-secondary !px-2 !py-2"
+                          disabled={index === 0}
+                          onClick={() => moveFeaturedRelease(release.id, -1)}
+                          type="button"
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                        <button
+                          aria-label={`Move ${release.title} later`}
+                          className="action-button-secondary !px-2 !py-2"
+                          disabled={index === selectedFeaturedReleases.length - 1}
+                          onClick={() => moveFeaturedRelease(release.id, 1)}
+                          type="button"
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                        <button
+                          className="action-button-secondary !px-3 !py-2 text-xs"
+                          onClick={() => toggleFeaturedRelease(release.id)}
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                        <Link
+                          className="action-button-secondary !px-2 !py-2"
+                          href={`/admin/releases/${release.id}`}
+                          title="Open release editor"
+                        >
+                          <ExternalLink size={14} />
+                        </Link>
+                        {release.is_published ? (
+                          <Link
+                            className="action-button-secondary !px-2 !py-2"
+                            href={`/music/${release.slug}`}
+                            target="_blank"
+                            title="Open public release"
+                          >
+                            <Globe2 size={14} />
+                          </Link>
+                        ) : null}
+                      </div>
+                    </article>
                   ))}
+                </div>
+              ) : null}
+
+              {missingFeaturedReleaseIds.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                  <span>A saved featured release no longer exists.</span>
+                  <button
+                    className="action-button-secondary !px-3 !py-2 text-xs"
+                    onClick={clearMissingFeaturedReleases}
+                    type="button"
+                  >
+                    Clear stale selections
+                  </button>
                 </div>
               ) : null}
 
@@ -816,7 +1122,288 @@ export function SiteSettingsEditor({
               />
             </label>
 
+            <div className="space-y-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <span className="field-label">Built for Motion</span>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Select the published release used by the homepage movement feature.
+                    Leaving it blank preserves the Beast Mode fallback.
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-secondary">
+                  <input
+                    checked={settings.site_content.home.built_for_motion_enabled}
+                    onChange={(event) =>
+                      updateSiteContent(
+                        "home",
+                        "built_for_motion_enabled",
+                        event.target.checked
+                      )
+                    }
+                    type="checkbox"
+                  />
+                  Show section
+                </label>
+              </div>
+
+              <label className="space-y-2">
+                <span className="field-label">Featured Release</span>
+                <select
+                  className="field-input"
+                  onChange={(event) =>
+                    updateSiteContent(
+                      "home",
+                      "built_for_motion_release_id",
+                      event.target.value
+                    )
+                  }
+                  value={settings.site_content.home.built_for_motion_release_id}
+                >
+                  <option value="">Beast Mode fallback</option>
+                  {releaseOptions
+                    .filter((release) => release.is_published)
+                    .map((release) => (
+                      <option key={release.id} value={release.id}>
+                        {release.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              {configuredBuiltForMotionRelease ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-edge bg-surface-elevated px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">
+                      {configuredBuiltForMotionRelease.title}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {configuredBuiltForMotionRelease.is_published
+                        ? "Public and ready"
+                        : "Not public; this section will stay hidden"}
+                    </p>
+                  </div>
+                  {configuredBuiltForMotionRelease.is_published ? (
+                    <Link
+                      className="action-button-secondary !px-3 !py-2 text-xs"
+                      href={`/music/${configuredBuiltForMotionRelease.slug}`}
+                      target="_blank"
+                    >
+                      Public preview <ExternalLink size={13} />
+                    </Link>
+                  ) : null}
+                </div>
+              ) : settings.site_content.home.built_for_motion_enabled ? (
+                <p className="flex items-center gap-2 text-sm text-amber-300">
+                  <AlertTriangle size={14} /> No valid Built for Motion release is available.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <span className="field-label">Homepage Exclusives CTA</span>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  The section remains tied to the existing Insider Access offer and route.
+                </p>
+              </div>
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">Heading</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateSiteContent("home", "exclusive_cta_heading", event.target.value)
+                  }
+                  value={settings.site_content.home.exclusive_cta_heading}
+                />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">Description</span>
+                <textarea
+                  className="field-input min-h-[96px]"
+                  onChange={(event) =>
+                    updateSiteContent(
+                      "home",
+                      "exclusive_cta_description",
+                      event.target.value
+                    )
+                  }
+                  value={settings.site_content.home.exclusive_cta_description}
+                />
+              </label>
+            </div>
+
           </div>
+        </section>
+
+        <section
+          className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5"
+          id="public-projects"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="field-label">Public Projects</p>
+              <h3 className="mt-3 text-2xl font-semibold text-ink">
+                Approval, order, and eligibility
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                Approved categories are evaluated by the shared public project rules.
+                Approval never bypasses missing descriptions or the two-published-release requirement.
+              </p>
+            </div>
+            <span className="pill">
+              {eligibleProjectSlugs.length}/{approvedProjectSlugs.length} public
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {projectRows.map((row) => {
+              const category = row.category;
+              const isEligible = row.eligibility.eligible;
+              const homepageIndex = eligibleProjectSlugs.indexOf(row.slug);
+              const appearsOnHomepage =
+                isEligible && homepageIndex >= 0 && homepageIndex < HOMEPAGE_PROJECT_LIMIT;
+              const artworkRelease = row.publishedReleases.find(
+                (release) => release.cover_art_path
+              );
+
+              return (
+                <article className="rounded-lg border border-edge bg-surface p-4" key={row.slug}>
+                  <div className="grid gap-4 lg:grid-cols-[72px_minmax(0,1fr)_auto] lg:items-start">
+                    <span className="relative h-[72px] w-[72px] overflow-hidden rounded-md border border-edge bg-surface-elevated">
+                      {artworkRelease?.cover_art_path ? (
+                        <Image
+                          alt={`${category?.name || row.slug} artwork preview`}
+                          className="object-cover"
+                          fill
+                          sizes="72px"
+                          src={artworkRelease.cover_art_path}
+                          unoptimized
+                        />
+                      ) : null}
+                    </span>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-lg font-semibold text-ink">
+                          {category?.name || row.slug}
+                        </h4>
+                        <span
+                          className={`pill text-[10px] ${
+                            isEligible
+                              ? "border-emerald-400/30 text-emerald-200"
+                              : "border-amber-400/30 text-amber-200"
+                          }`}
+                        >
+                          {isEligible ? "Public" : "Approved, not eligible"}
+                        </span>
+                        {appearsOnHomepage ? (
+                          <span className="pill text-[10px]">Homepage</span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted">
+                        {row.slug} / {row.publishedReleases.length} published releases
+                      </p>
+                      <p
+                        className={`mt-3 flex items-center gap-2 text-sm ${
+                          isEligible ? "text-emerald-300" : "text-amber-200"
+                        }`}
+                      >
+                        {isEligible ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                        {getProjectEligibilityMessage(row.eligibility.reason)}
+                      </p>
+                      {!artworkRelease?.cover_art_path ? (
+                        <p className="mt-2 text-xs text-muted">
+                          Representative artwork is unavailable; the public placeholder will be used.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <button
+                        aria-label={`Move ${category?.name || row.slug} earlier`}
+                        className="action-button-secondary !px-2 !py-2"
+                        disabled={row.index === 0}
+                        onClick={() => moveApprovedProject(row.slug, -1)}
+                        type="button"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        aria-label={`Move ${category?.name || row.slug} later`}
+                        className="action-button-secondary !px-2 !py-2"
+                        disabled={row.index === projectRows.length - 1}
+                        onClick={() => moveApprovedProject(row.slug, 1)}
+                        type="button"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <a
+                        className="action-button-secondary !px-3 !py-2 text-xs"
+                        href="#music-categories"
+                      >
+                        Edit content
+                      </a>
+                      {isEligible ? (
+                        <Link
+                          className="action-button-secondary !px-2 !py-2"
+                          href={getPublicProjectPath(row.slug)}
+                          target="_blank"
+                          title="Open public project"
+                        >
+                          <ExternalLink size={14} />
+                        </Link>
+                      ) : null}
+                      <button
+                        className="action-button-secondary !px-3 !py-2 text-xs"
+                        onClick={() => removeApprovedProject(row.slug)}
+                        type="button"
+                      >
+                        Remove approval
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+
+            {projectRows.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-edge px-4 py-7 text-center text-sm text-muted">
+                No categories are approved as public projects. The Projects index will remain empty.
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-5 grid gap-3 rounded-lg border border-edge bg-input p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <label className="space-y-2">
+              <span className="field-label">Add Existing Category</span>
+              <select
+                className="field-input"
+                onChange={(event) => setProjectCandidateSlug(event.target.value)}
+                value={projectCandidateSlug}
+              >
+                <option value="">Select a category</option>
+                {availableProjectCategories.map((category) => (
+                  <option key={category.id} value={category.slug}>
+                    {category.name} ({category.slug})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="action-button-primary"
+              disabled={!projectCandidateSlug}
+              onClick={addApprovedProject}
+              type="button"
+            >
+              Approve Project
+            </button>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-muted">
+            Names, slugs, descriptions, and release assignments remain owned by Music Categories below.
+            Removing approval never deletes those records or their legacy music filters.
+          </p>
         </section>
 
         <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="music-page">
@@ -1466,6 +2053,87 @@ export function SiteSettingsEditor({
           />
         </div>
       </div>
+
+      <section
+        className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5"
+        id="public-readiness"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="field-label">Public Readiness</p>
+            <h3 className="mt-3 text-2xl font-semibold text-ink">
+              Preview the current public configuration
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              Warnings describe incomplete public surfaces without blocking unrelated settings.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              publicReadinessWarnings.length === 0
+                ? "border-emerald-400/30 text-emerald-200"
+                : "border-amber-400/30 text-amber-200"
+            }`}
+          >
+            {publicReadinessWarnings.length === 0
+              ? "Public surfaces ready"
+              : `${publicReadinessWarnings.length} items to review`}
+          </span>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[
+            ["Homepage", "/"],
+            ["Music", "/music"],
+            ["Projects", "/projects"],
+            ["About", "/about"],
+            ["Exclusives", "/exclusives"]
+          ].map(([label, href]) => (
+            <Link
+              className="action-button-secondary !px-3 !py-2 text-xs"
+              href={href}
+              key={href}
+              target="_blank"
+            >
+              {label} <ExternalLink size={13} />
+            </Link>
+          ))}
+          {eligibleProjectSlugs.map((slug) => (
+            <Link
+              className="action-button-secondary !px-3 !py-2 text-xs"
+              href={getPublicProjectPath(slug)}
+              key={slug}
+              target="_blank"
+            >
+              {releaseCategories.find((category) => category.slug === slug)?.name || slug}
+              <ExternalLink size={13} />
+            </Link>
+          ))}
+          {selectedFeaturedReleases[0]?.is_published ? (
+            <Link
+              className="action-button-secondary !px-3 !py-2 text-xs"
+              href={`/music/${selectedFeaturedReleases[0].slug}`}
+              target="_blank"
+            >
+              Current hero <ExternalLink size={13} />
+            </Link>
+          ) : null}
+        </div>
+
+        {publicReadinessWarnings.length > 0 ? (
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {publicReadinessWarnings.map((warning) => (
+              <p
+                className="flex items-start gap-2 rounded-md border border-amber-400/20 bg-amber-400/10 px-3 py-3 text-sm text-amber-100"
+                key={warning}
+              >
+                <AlertTriangle className="mt-0.5 shrink-0" size={14} />
+                {warning}
+              </p>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
       <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">

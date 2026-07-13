@@ -3,9 +3,19 @@ export const dynamic = "force-dynamic";
 
 import {NextResponse} from "next/server";
 import {getPublicSiteBaseUrl} from "@/lib/public-site-url";
+import {getEligiblePublicProjects} from "@/lib/repositories/public-site";
 
 export async function GET() {
   const baseUrl = getPublicSiteBaseUrl();
+  const projects = await getEligiblePublicProjects();
+  const projectSection = projects.length
+    ? projects
+        .map(
+          (project) =>
+            `### ${project.name}\n\n- URL: ${baseUrl}/projects/${encodeURIComponent(project.slug)}\n- Published releases: ${project.releaseCount}\n\n${project.description}`
+        )
+        .join("\n\n")
+    : "No public project hubs are currently eligible.";
 
   const content = `# vvviruz
 
@@ -32,10 +42,7 @@ The /music page is the canonical public catalog for vvviruz releases. Public rel
 
 ## Major Projects and Series
 
-- Multiversus: nerdcore battle songs that bring characters from different fictional universes face-to-face.
-- Switch Series: transformation-focused records built around switching languages, flows, cadences, perspectives, or delivery styles.
-- Massive Imitation: a five-track project about influence, reinvention, ambition, and identity.
-- Lover Boy: melodic records exploring attraction, attachment, longing, communication, and vulnerability.
+${projectSection}
 
 ## Early Access and Exclusives
 

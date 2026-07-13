@@ -6,7 +6,9 @@ import {revalidateTag} from "next/cache";
 import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
+import {prisma} from "@/lib/db/prisma";
 import {normalizeExclusiveDeliverySettings} from "@/lib/exclusive-offer-safety";
+import {PUBLIC_PROJECT_SLUGS} from "@/lib/public-projects";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {readSiteSettings, writeSiteSettings} from "@/lib/repositories/site-settings";
 import {createId} from "@/lib/utils";
@@ -121,10 +123,42 @@ const siteSettingsSchema = z.object({
     home: z.object({
       hero_badge_text: z.string().default(""),
       secondary_cta_label: z.string().default(""),
-      exclusive_cta_label: z.string().default(""),
+      exclusive_cta_label: z
+        .string()
+        .trim()
+        .min(1)
+        .max(80)
+        .default("Get the exclusive track"),
+      exclusive_cta_heading: z
+        .string()
+        .trim()
+        .min(1)
+        .max(120)
+        .default("Hear what is coming before the public drop"),
+      exclusive_cta_description: z
+        .string()
+        .trim()
+        .min(1)
+        .max(360)
+        .default(
+          "Join Insider Access for unreleased previews, early updates, and the private vvviruz community."
+        ),
       featured_releases_eyebrow: z.string().default(""),
       featured_releases_empty_text: z.string().default(""),
-      featured_release_ids: z.array(z.string().trim()).max(3).default([]),
+      featured_release_ids: z
+        .array(z.string().trim().min(1))
+        .max(3)
+        .default([])
+        .superRefine((values, ctx) => {
+          if (new Set(values).size !== values.length) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Homepage featured releases cannot contain duplicates."
+            });
+          }
+        }),
+      built_for_motion_enabled: z.boolean().default(true),
+      built_for_motion_release_id: z.string().trim().default(""),
       recent_releases_eyebrow: z.string().default(""),
       recent_releases_heading: z.string().default(""),
       recent_releases_view_all_label: z.string().default(""),
@@ -132,6 +166,32 @@ const siteSettingsSchema = z.object({
       brand_pillars_heading: z.string().default(""),
       brand_pillars: z.array(brandPillarSchema).default([])
     }),
+    projects: z
+      .object({
+        approved_slugs: z
+          .array(
+            z
+              .string()
+              .trim()
+              .min(1)
+              .max(80)
+              .regex(
+                /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                "Project slugs must use lowercase letters, numbers, and hyphens."
+              )
+          )
+          .max(24)
+          .default([...PUBLIC_PROJECT_SLUGS])
+          .superRefine((values, ctx) => {
+            if (new Set(values).size !== values.length) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Approved public projects cannot contain duplicate slugs."
+              });
+            }
+          })
+      })
+      .default({approved_slugs: [...PUBLIC_PROJECT_SLUGS]}),
     music: z.object({
       page_eyebrow: z.string().default(""),
       page_heading: z.string().default(""),
@@ -278,10 +338,48 @@ export async function PUT(request: Request) {
     );
   }
 
+  const featuredReleaseIds = parsed.data.site_content.home.featured_release_ids;
+  const builtForMotionReleaseId = parsed.data.site_content.home.built_for_motion_release_id;
+  const referencedReleaseIds = Array.from(
+    new Set([...featuredReleaseIds, builtForMotionReleaseId].filter(Boolean))
+  );
+
+  if (referencedReleaseIds.length > 0) {
+    const releases = await prisma.release.findMany({
+      where: {id: {in: referencedReleaseIds}},
+      select: {id: true}
+    });
+    const foundIds = new Set(releases.map((release) => release.id));
+    const missingId = referencedReleaseIds.find((releaseId) => !foundIds.has(releaseId));
+
+    if (missingId) {
+      return NextResponse.json(
+        {message: `A selected homepage release no longer exists (${missingId}).`},
+        {status: 400}
+      );
+    }
+  }
+
+  const approvedProjectSlugs = parsed.data.site_content.projects.approved_slugs;
+  if (approvedProjectSlugs.length > 0) {
+    const categories = await prisma.releaseCategory.findMany({
+      where: {slug: {in: approvedProjectSlugs}},
+      select: {slug: true}
+    });
+    const foundSlugs = new Set(categories.map((category) => category.slug));
+    const missingSlug = approvedProjectSlugs.find((slug) => !foundSlugs.has(slug));
+
+    if (missingSlug) {
+      return NextResponse.json(
+        {message: `Public project category \"${missingSlug}\" no longer exists.`},
+        {status: 400}
+      );
+    }
+  }
+
   // Exclusives Associated Release validation
   const exclusive = parsed.data.site_content.exclusive;
   if (exclusive.release_id) {
-    const { prisma } = await import("@/lib/db/prisma");
     const { readRelease } = await import("@/lib/repositories/releases");
 
     try {
@@ -327,6 +425,3 @@ export async function PUT(request: Request) {
     );
   }
 }
-
-
-

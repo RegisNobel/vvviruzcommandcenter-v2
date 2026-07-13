@@ -28,7 +28,11 @@ export default async function PublicHomePage() {
     await Promise.all([
       getHomepageFeaturedReleases(siteSettings.site_content.home.featured_release_ids),
       getHomepageProjects(),
-      getBuiltForMotionRelease(),
+      siteSettings.site_content.home.built_for_motion_enabled
+        ? getBuiltForMotionRelease(
+            siteSettings.site_content.home.built_for_motion_release_id
+          )
+        : Promise.resolve(null),
       getRandomPublishedReleases(3),
       readPublicExclusiveOffer()
     ]);
@@ -324,10 +328,10 @@ export default async function PublicHomePage() {
             <div className="relative mx-auto max-w-3xl">
               <p className="public-eyebrow">From the vault</p>
               <h2 className="public-heading mt-4 text-3xl font-semibold sm:text-5xl">
-                Hear what is coming before the public drop
+                {content.exclusive_cta_heading}
               </h2>
               <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-[#b8c0ca]">
-                Join Insider Access for unreleased previews, early updates, and the private vvviruz community.
+                {content.exclusive_cta_description}
               </p>
               <HomepageTrackedLink
                 className="public-action-primary mt-8"

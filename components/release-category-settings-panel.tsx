@@ -9,6 +9,7 @@ import {createId} from "@/lib/utils";
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 type ReleaseCategorySettingsPanelProps = {
+  approvedProjectSlugs?: string[];
   initialCategories: ReleaseCategoryRecord[];
   releaseOptions: ReleaseSummary[];
 };
@@ -53,6 +54,7 @@ async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
 }
 
 export function ReleaseCategorySettingsPanel({
+  approvedProjectSlugs = [],
   initialCategories,
   releaseOptions
 }: ReleaseCategorySettingsPanelProps) {
@@ -160,7 +162,7 @@ export function ReleaseCategorySettingsPanel({
   }
 
   return (
-    <section className="panel space-y-6 px-6 py-7">
+    <section className="panel scroll-mt-36 space-y-6 px-6 py-7" id="music-categories">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="pill">
@@ -168,12 +170,12 @@ export function ReleaseCategorySettingsPanel({
             Music Categories
           </div>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-ink">
-            Public music project filters
+            Music categories and project content
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-            Add manual project categories like Multiversus, Switch Series, or Lover
-            Boy EP, then attach existing releases so visitors can filter the public
-            music page by project.
+            Manage the category records that organize releases and supply public-project
+            names, descriptions, slugs, and assignments. Project approval and ordering
+            remain in the Public Projects section above.
           </p>
         </div>
 
@@ -251,16 +253,37 @@ export function ReleaseCategorySettingsPanel({
               </label>
 
               <label className="space-y-2 md:col-span-2">
-                <span className="field-label">Description</span>
+                <span className="flex flex-wrap items-center justify-between gap-2 field-label">
+                  <span>Description</span>
+                  <span>{category.description.length} characters</span>
+                </span>
                 <textarea
                   className="field-input min-h-[96px]"
                   onChange={(event) =>
                     updateCategory(category.id, {description: event.target.value})
                   }
-                  placeholder="Optional public context for this project/category."
+                  placeholder="Public context for this project or category."
                   value={category.description}
                 />
+                {approvedProjectSlugs.includes(category.slug) ? (
+                  <span className="block text-xs leading-5 text-muted">
+                    Approved public projects need a description before their hub can appear.
+                  </span>
+                ) : null}
               </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {approvedProjectSlugs.includes(category.slug) ? (
+                <span className="pill border-brand-primary/30 text-brand-primary">
+                  Approved public project
+                </span>
+              ) : (
+                <span className="pill">Music category</span>
+              )}
+              <p className="text-xs text-muted">
+                Changing a slug changes its public project URL and can affect saved links.
+              </p>
             </div>
 
             <div className="inset-surface mt-5 p-4">

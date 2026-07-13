@@ -121,15 +121,22 @@ export type SiteContentSettings = {
     hero_badge_text: string;
     secondary_cta_label: string;
     exclusive_cta_label: string;
+    exclusive_cta_heading: string;
+    exclusive_cta_description: string;
     featured_releases_eyebrow: string;
     featured_releases_empty_text: string;
     featured_release_ids: string[];
+    built_for_motion_enabled: boolean;
+    built_for_motion_release_id: string;
     recent_releases_eyebrow: string;
     recent_releases_heading: string;
     recent_releases_view_all_label: string;
     brand_pillars_eyebrow: string;
     brand_pillars_heading: string;
     brand_pillars: BrandPillar[];
+  };
+  projects: {
+    approved_slugs: string[];
   };
   music: {
     page_eyebrow: string;
@@ -288,6 +295,8 @@ export type ReleaseSummary = {
   id: string;
   title: string;
   slug: string;
+  cover_art_path: string;
+  is_published: boolean;
   pinned: boolean;
   type: ReleaseType;
   status: ReleaseStageLabel;

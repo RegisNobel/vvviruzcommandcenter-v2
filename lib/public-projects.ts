@@ -21,7 +21,7 @@ export type PublicProjectEligibilityReason =
   | "missing-public-release-slug";
 
 export type PublicProjectEligibility =
-  | {eligible: true; reason: null; slug: PublicProjectSlug}
+  | {eligible: true; reason: null; slug: string}
   | {eligible: false; reason: PublicProjectEligibilityReason; slug: string};
 
 export type PublicProjectRecord = {
@@ -32,7 +32,7 @@ export type PublicProjectRecord = {
   releaseCount: number;
   releases: PublicReleaseRecord[];
   representativeRelease: PublicReleaseRecord;
-  slug: PublicProjectSlug;
+  slug: string;
   updatedAt: string;
 };
 
@@ -48,19 +48,41 @@ export function isAllowlistedPublicProjectSlug(
   return PUBLIC_PROJECT_SLUGS.includes(slug as PublicProjectSlug);
 }
 
-export function evaluatePublicProjectEligibility(input: {
-  description: string | null | undefined;
-  name: string | null | undefined;
-  publicReleaseSlugs: Array<string | null | undefined>;
-  slug: string | null | undefined;
-}): PublicProjectEligibility {
+export function normalizeApprovedPublicProjectSlugs(
+  values: readonly string[] | null | undefined
+) {
+  return Array.from(
+    new Set(
+      (values ?? PUBLIC_PROJECT_SLUGS)
+        .map((value) => normalize(value).toLowerCase())
+        .filter(Boolean)
+    )
+  );
+}
+
+export function isApprovedPublicProjectSlug(
+  value: string | null | undefined,
+  approvedSlugs: ReadonlySet<string>
+) {
+  return approvedSlugs.has(normalize(value).toLowerCase());
+}
+
+export function evaluatePublicProjectEligibility(
+  input: {
+    description: string | null | undefined;
+    name: string | null | undefined;
+    publicReleaseSlugs: Array<string | null | undefined>;
+    slug: string | null | undefined;
+  },
+  approvedProjectSlugs: ReadonlySet<string> = new Set(PUBLIC_PROJECT_SLUGS)
+): PublicProjectEligibility {
   const slug = normalize(input.slug).toLowerCase();
 
   if (!slug) {
     return {eligible: false, reason: "missing-slug", slug};
   }
 
-  if (!isAllowlistedPublicProjectSlug(slug)) {
+  if (!isApprovedPublicProjectSlug(slug, approvedProjectSlugs)) {
     return {eligible: false, reason: "not-allowlisted", slug};
   }
 

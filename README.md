@@ -4,6 +4,8 @@
 
 > **2026-07-13 - Public project discovery:** Approved `ReleaseCategory` records now power `/projects` and `/projects/[slug]` hubs, homepage and release-page internal links, canonical handling for legacy category filters, structured project entities, sitemap coverage, and first-party project exploration events. Project descriptions remain database-managed, and Off the Grid is prepared as a future category without exposing an empty public hub.
 
+> **2026-07-13 - Public Site Settings Phase 3:** `/admin/site` now manages the ordered homepage hero/supporting releases, approved public-project order and eligibility diagnostics, Built for Motion source, and homepage Exclusives CTA copy. Existing categories remain the source of truth for project names, descriptions, and release assignments; technical SEO, eligibility thresholds, analytics events, and structured-data policy remain code-controlled.
+
 `vvviruz' command center` is a local-first creative operating system for managing music releases, tracking collaborations and features, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
 
 It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.
@@ -476,6 +478,15 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-07-13 - Public Site Settings Admin Controls
+
+- Clarified the homepage music hierarchy so the first configured release is the hero and the next two are ordered supporting releases, with cover previews, reorder controls, public/admin links, collaborator context, stale-record cleanup, and deterministic fallback guidance.
+- Added an ordered, SiteSettings-backed public-project approval list while preserving the existing hardcoded slugs as a backward-compatible fallback; explicitly saving an empty list now intentionally hides all project hubs without deleting categories or assignments.
+- Added shared project eligibility diagnostics, homepage-placement status, artwork readiness, project preview links, and direct navigation to the existing category editor where public descriptions remain owned.
+- Added Built for Motion enable/source controls using published releases and a safe Beast Mode fallback, plus editable homepage Insider Access CTA heading and description.
+- Switched `llms.txt`, `/projects`, project hubs, and homepage project discovery to the same configured order and cache tags, and made the controlled project-description script preserve admin-authored copy unless `--force` is supplied.
+- No Prisma migration, duplicate project model, page builder, editable SEO policy, or analytics-event configuration was introduced.
 
 ### 2026-07-13 - Project Hubs, Internal Linking, and Search Context
 
