@@ -29,6 +29,7 @@ import {
 import {createId} from "@/lib/utils";
 
 import {ExclusiveOfferSettingsPanel} from "@/components/exclusive-offer-settings-panel";
+import {LockInSpotlight} from "@/components/lock-in-spotlight";
 import {StickyActionDock} from "@/components/sticky-action-dock";
 import {VaultSettingsPanel} from "@/components/vault-settings-panel";
 import {CommissionsSettingsPanel} from "@/components/commissions-settings-panel";
@@ -223,17 +224,32 @@ export function SiteSettingsEditor({
   const availableProjectCategories = releaseCategories.filter(
     (category) => !approvedProjectSlugSet.has(category.slug)
   );
-  const selectedLockInReleaseIds = settings.site_content.home.built_for_motion_release_ids;
-  const configuredLockInReleases = selectedLockInReleaseIds.length > 0
-    ? selectedLockInReleaseIds
-        .map((releaseId) => releaseOptionsById.get(releaseId))
-        .filter((release): release is ReleaseSummary => Boolean(release))
-    : [releaseOptions.find((release) => release.slug === "beast-mode")].filter(
-        (release): release is ReleaseSummary => Boolean(release)
-      );
+  const spotlightReleaseId = settings.site_content.home.lock_in_spotlight_release_id;
+  const explicitlySelectedSpotlightRelease = spotlightReleaseId
+    ? releaseOptionsById.get(spotlightReleaseId) ?? null
+    : null;
+  const legacySpotlightRelease = settings.site_content.home.built_for_motion_release_ids
+    .map((releaseId) => releaseOptionsById.get(releaseId))
+    .find((release) => release?.is_published && release.slug.trim()) ??
+    (settings.site_content.home.built_for_motion_release_id
+      ? releaseOptionsById.get(settings.site_content.home.built_for_motion_release_id)
+      : null);
+  const beastModeFallbackRelease = releaseOptions.find(
+    (release) => release.slug === "beast-mode" && release.is_published
+  );
+  const resolvedSpotlightRelease =
+    (explicitlySelectedSpotlightRelease?.is_published &&
+    explicitlySelectedSpotlightRelease.slug.trim()
+      ? explicitlySelectedSpotlightRelease
+      : null) ||
+    (legacySpotlightRelease?.is_published && legacySpotlightRelease.slug.trim()
+      ? legacySpotlightRelease
+      : null) ||
+    beastModeFallbackRelease ||
+    null;
   const filteredLockInReleaseOptions = releaseOptions
     .filter((release) => {
-      if (!release.is_published || selectedLockInReleaseIds.includes(release.id)) {
+      if (!release.is_published || release.id === spotlightReleaseId) {
         return false;
       }
 
@@ -241,9 +257,31 @@ export function SiteSettingsEditor({
       return !query || release.title.toLowerCase().includes(query);
     })
     .slice(0, 12);
-  const missingLockInReleaseIds = selectedLockInReleaseIds.filter(
-    (releaseId) => !releaseOptionsById.has(releaseId)
+  const missingSpotlightRelease = Boolean(
+    spotlightReleaseId && !explicitlySelectedSpotlightRelease
   );
+  const spotlightReadinessWarnings = [
+    ...(missingSpotlightRelease ? ["The selected spotlight release no longer exists."] : []),
+    ...(explicitlySelectedSpotlightRelease && !explicitlySelectedSpotlightRelease.is_published
+      ? ["The selected spotlight release is not publicly published, so a fallback will be used."]
+      : []),
+    ...(explicitlySelectedSpotlightRelease && !explicitlySelectedSpotlightRelease.slug.trim()
+      ? ["The selected spotlight release is missing its public URL."]
+      : []),
+    ...(resolvedSpotlightRelease && !resolvedSpotlightRelease.cover_art_path
+      ? ["The spotlight release has no cover art. The public fallback treatment will be used."]
+      : []),
+    ...(resolvedSpotlightRelease &&
+    settings.site_content.home.featured_release_ids.includes(resolvedSpotlightRelease.id)
+      ? ["This release is also configured for the homepage hero. Repetition may be intentional during a campaign."]
+      : []),
+    ...(!settings.site_content.home.lock_in_spotlight_headline.trim()
+      ? ["Add a public spotlight headline."]
+      : []),
+    ...(!settings.site_content.home.lock_in_spotlight_cta_label.trim()
+      ? ["Add a spotlight CTA label."]
+      : [])
+  ];
   const aboutPositioningMissingFields = [
     !settings.site_content.about.statement_heading.trim() ? "Artist Statement heading" : "",
     !settings.site_content.about.statement_text.trim() ? "Artist Statement copy" : "",
@@ -263,9 +301,8 @@ export function SiteSettingsEditor({
     ...(missingFeaturedReleaseIds.length > 0
       ? ["A saved homepage release no longer exists."]
       : []),
-    ...(settings.site_content.home.built_for_motion_enabled &&
-    configuredLockInReleases.every((release) => !release.is_published)
-      ? ["Lock-In Rotation has no valid public release."]
+    ...(settings.site_content.home.built_for_motion_enabled && !resolvedSpotlightRelease
+      ? ["Lock-In Spotlight has no valid public release."]
       : []),
     ...(aboutPositioningMissingFields.length > 0
       ? [`About positioning is missing: ${aboutPositioningMissingFields.join(", ")}.`]
@@ -353,46 +390,9 @@ export function SiteSettingsEditor({
     }));
   }
 
-  function setLockInReleaseIds(releaseIds: string[]) {
-    setSettings((current) => ({
-      ...current,
-      site_content: {
-        ...current.site_content,
-        home: {
-          ...current.site_content.home,
-          built_for_motion_release_id: releaseIds[0] ?? "",
-          built_for_motion_release_ids: releaseIds
-        }
-      }
-    }));
-  }
-
-  function toggleLockInRelease(releaseId: string) {
-    if (selectedLockInReleaseIds.includes(releaseId)) {
-      setLockInReleaseIds(selectedLockInReleaseIds.filter((value) => value !== releaseId));
-      return;
-    }
-
-    if (selectedLockInReleaseIds.length >= 6) {
-      setMessage("Lock-In Rotation can include up to 6 releases.");
-      setSaveState("idle");
-      return;
-    }
-
-    setLockInReleaseIds([...selectedLockInReleaseIds, releaseId]);
-  }
-
-  function moveLockInRelease(releaseId: string, direction: -1 | 1) {
-    setLockInReleaseIds(
-      moveHomepageFeaturedRelease(selectedLockInReleaseIds, releaseId, direction)
-    );
-  }
-
-  function clearMissingLockInReleases() {
-    const existingReleaseIds = new Set(releaseOptions.map((release) => release.id));
-    setLockInReleaseIds(
-      selectedLockInReleaseIds.filter((releaseId) => existingReleaseIds.has(releaseId))
-    );
+  function setLockInSpotlightReleaseId(releaseId: string) {
+    updateSiteContent("home", "lock_in_spotlight_release_id", releaseId);
+    setLockInReleaseQuery("");
   }
 
   function clearMissingFeaturedReleases() {
@@ -1186,13 +1186,13 @@ export function SiteSettingsEditor({
               />
             </label>
 
-            <div className="space-y-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2">
+            <div className="space-y-5 rounded-lg border border-edge bg-surface p-4 md:col-span-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <span className="field-label">Lock-In Rotation</span>
+                  <span className="field-label">Lock-In Spotlight</span>
                   <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
-                    Build an ordered homepage collection for gym, focus, gaming, and hype playlists.
-                    Select up to six published releases. With no selection, Beast Mode remains the fallback.
+                    Feature one release in a campaign-style homepage takeover. The saved legacy
+                    rotation remains untouched and is used only as a compatibility fallback.
                   </p>
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-secondary">
@@ -1207,149 +1207,172 @@ export function SiteSettingsEditor({
                     }
                     type="checkbox"
                   />
-                  Show section
+                  Show spotlight
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="field-label">Public Heading</span>
+                  <span className="field-label">Eyebrow</span>
                   <input
                     className="field-input"
-                    maxLength={80}
+                    maxLength={40}
                     onChange={(event) =>
-                      updateSiteContent("home", "built_for_motion_heading", event.target.value)
+                      updateSiteContent("home", "lock_in_spotlight_eyebrow", event.target.value)
                     }
-                    value={settings.site_content.home.built_for_motion_heading}
+                    value={settings.site_content.home.lock_in_spotlight_eyebrow}
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="field-label">Public Description</span>
+                  <span className="field-label">CTA Label</span>
                   <input
                     className="field-input"
-                    maxLength={240}
+                    maxLength={32}
                     onChange={(event) =>
-                      updateSiteContent(
-                        "home",
-                        "built_for_motion_description",
-                        event.target.value
-                      )
+                      updateSiteContent("home", "lock_in_spotlight_cta_label", event.target.value)
                     }
-                    value={settings.site_content.home.built_for_motion_description}
+                    value={settings.site_content.home.lock_in_spotlight_cta_label}
+                  />
+                </label>
+                <label className="space-y-2 md:col-span-2">
+                  <span className="field-label">Headline</span>
+                  <input
+                    className="field-input"
+                    maxLength={64}
+                    onChange={(event) =>
+                      updateSiteContent("home", "lock_in_spotlight_headline", event.target.value)
+                    }
+                    value={settings.site_content.home.lock_in_spotlight_headline}
+                  />
+                </label>
+                <label className="space-y-2 md:col-span-2">
+                  <span className="field-label">Statement</span>
+                  <input
+                    className="field-input"
+                    maxLength={120}
+                    onChange={(event) =>
+                      updateSiteContent("home", "lock_in_spotlight_statement", event.target.value)
+                    }
+                    value={settings.site_content.home.lock_in_spotlight_statement}
                   />
                 </label>
               </div>
 
-              {configuredLockInReleases.length > 0 ? (
-                <div className="space-y-2">
-                  {configuredLockInReleases.map((release, index) => (
-                    <article
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-edge bg-surface-elevated px-4 py-3"
-                      key={release.id}
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-ink">
-                          {index + 1}. {release.title}
-                        </p>
-                        <p className="mt-1 text-xs text-muted">Public and ready</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {selectedLockInReleaseIds.length > 0 ? (
-                          <>
-                            <button
-                              aria-label={`Move ${release.title} earlier`}
-                              className="action-button-secondary !px-2 !py-2"
-                              disabled={index === 0}
-                              onClick={() => moveLockInRelease(release.id, -1)}
-                              type="button"
-                            >
-                              <ArrowUp size={14} />
-                            </button>
-                            <button
-                              aria-label={`Move ${release.title} later`}
-                              className="action-button-secondary !px-2 !py-2"
-                              disabled={index === configuredLockInReleases.length - 1}
-                              onClick={() => moveLockInRelease(release.id, 1)}
-                              type="button"
-                            >
-                              <ArrowDown size={14} />
-                            </button>
-                            <button
-                              className="action-button-secondary !px-3 !py-2 text-xs"
-                              onClick={() => toggleLockInRelease(release.id)}
-                              type="button"
-                            >
-                              Remove
-                            </button>
-                          </>
-                        ) : (
-                          <span className="pill text-[10px]">Fallback</span>
-                        )}
-                        <Link
-                          className="action-button-secondary !px-2 !py-2"
-                          href={`/music/${release.slug}`}
-                          target="_blank"
-                          title="Open public release"
-                        >
-                          <ExternalLink size={14} />
-                        </Link>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : settings.site_content.home.built_for_motion_enabled ? (
-                <p className="flex items-center gap-2 text-sm text-amber-300">
-                  <AlertTriangle size={14} /> No valid Lock-In Rotation release is available.
-                </p>
-              ) : null}
-
-              {missingLockInReleaseIds.length > 0 ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-                  <span>A saved Lock-In Rotation release no longer exists.</span>
-                  <button
-                    className="action-button-secondary !px-3 !py-2 text-xs"
-                    onClick={clearMissingLockInReleases}
-                    type="button"
-                  >
-                    Clear stale selections
-                  </button>
-                </div>
-              ) : null}
-
-              <label className="space-y-2">
-                <span className="field-label">Add Releases</span>
-                <input
-                  className="field-input"
-                  onChange={(event) => setLockInReleaseQuery(event.target.value)}
-                  placeholder="Search published releases"
-                  value={lockInReleaseQuery}
-                />
-              </label>
-
-              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-edge bg-input p-3">
-                {filteredLockInReleaseOptions.length > 0 ? (
-                  filteredLockInReleaseOptions.map((release) => (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <span className="field-label">Spotlight Release</span>
+                    <p className="mt-1 text-xs text-muted">
+                      {spotlightReleaseId
+                        ? "Explicit selection"
+                        : resolvedSpotlightRelease
+                          ? "Compatibility fallback"
+                          : "No public fallback available"}
+                    </p>
+                  </div>
+                  {spotlightReleaseId ? (
                     <button
-                      className="flex w-full items-center justify-between gap-3 rounded-md border border-edge bg-surface px-4 py-3 text-left transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover"
-                      key={release.id}
-                      onClick={() => toggleLockInRelease(release.id)}
+                      className="action-button-secondary !px-3 !py-2 text-xs"
+                      onClick={() => setLockInSpotlightReleaseId("")}
                       type="button"
                     >
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{release.title}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                          {release.type} / {release.status}
-                        </p>
-                      </div>
-                      <span className="pill">Add</span>
+                      Use fallback
                     </button>
-                  ))
+                  ) : null}
+                </div>
+
+                {resolvedSpotlightRelease ? (
+                  <article className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-edge bg-surface-elevated px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{resolvedSpotlightRelease.title}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
+                        {resolvedSpotlightRelease.type} / {resolvedSpotlightRelease.status}
+                      </p>
+                    </div>
+                    <Link
+                      className="action-button-secondary !px-2 !py-2"
+                      href={`/music/${resolvedSpotlightRelease.slug}`}
+                      target="_blank"
+                      title="Open public release"
+                    >
+                      <ExternalLink size={14} />
+                    </Link>
+                  </article>
                 ) : (
-                  <p className="px-2 py-3 text-sm text-slate-500">
-                    No additional published releases match this search.
+                  <p className="flex items-center gap-2 text-sm text-amber-300">
+                    <AlertTriangle size={14} /> No valid public spotlight release is available.
                   </p>
                 )}
+
+                <label className="space-y-2">
+                  <span className="field-label">Choose Published Release</span>
+                  <input
+                    className="field-input"
+                    onChange={(event) => setLockInReleaseQuery(event.target.value)}
+                    placeholder="Search published releases"
+                    value={lockInReleaseQuery}
+                  />
+                </label>
+
+                <div className="max-h-60 space-y-2 overflow-y-auto rounded-lg border border-edge bg-input p-3">
+                  {filteredLockInReleaseOptions.length > 0 ? (
+                    filteredLockInReleaseOptions.map((release) => (
+                      <button
+                        className="flex w-full items-center justify-between gap-3 rounded-md border border-edge bg-surface px-4 py-3 text-left transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover"
+                        key={release.id}
+                        onClick={() => setLockInSpotlightReleaseId(release.id)}
+                        type="button"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-ink">{release.title}</p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">
+                            {release.type} / {release.status}
+                          </p>
+                        </div>
+                        <span className="pill">Select</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-2 py-3 text-sm text-muted">
+                      No additional published releases match this search.
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {spotlightReadinessWarnings.length > 0 ? (
+                <div className="space-y-2 rounded-md border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
+                  <p className="font-semibold">Readiness notes</p>
+                  {spotlightReadinessWarnings.map((warning) => (
+                    <p className="flex items-start gap-2" key={warning}>
+                      <AlertTriangle className="mt-0.5 shrink-0" size={14} /> {warning}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="flex items-center gap-2 text-sm text-emerald-300">
+                  <CheckCircle2 size={14} /> Spotlight ready
+                </p>
+              )}
+
+              {resolvedSpotlightRelease ? (
+                <div className="overflow-hidden rounded-md border border-edge">
+                  <LockInSpotlight
+                    ctaLabel={settings.site_content.home.lock_in_spotlight_cta_label}
+                    eyebrow={settings.site_content.home.lock_in_spotlight_eyebrow}
+                    headline={settings.site_content.home.lock_in_spotlight_headline}
+                    preview
+                    release={{
+                      coverArtAltText: `${resolvedSpotlightRelease.title} cover art`,
+                      coverArtPath: resolvedSpotlightRelease.cover_art_path,
+                      id: resolvedSpotlightRelease.id,
+                      slug: resolvedSpotlightRelease.slug,
+                      title: resolvedSpotlightRelease.title
+                    }}
+                    statement={settings.site_content.home.lock_in_spotlight_statement}
+                  />
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2 md:grid-cols-2">

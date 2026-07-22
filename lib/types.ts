@@ -141,6 +141,11 @@ export type SiteContentSettings = {
     built_for_motion_release_ids: string[];
     built_for_motion_heading: string;
     built_for_motion_description: string;
+    lock_in_spotlight_release_id: string;
+    lock_in_spotlight_eyebrow: string;
+    lock_in_spotlight_headline: string;
+    lock_in_spotlight_statement: string;
+    lock_in_spotlight_cta_label: string;
     recent_releases_eyebrow: string;
     recent_releases_heading: string;
     recent_releases_view_all_label: string;

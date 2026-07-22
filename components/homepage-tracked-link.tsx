@@ -6,6 +6,7 @@ import type {MouseEvent, ReactNode} from "react";
 type HomepageEventType =
   | "homepage_primary_cta_click"
   | "project_card_click"
+  | "homepage_spotlight_click"
   | "workout_collection_click"
   | "homepage_exclusives_click";
 

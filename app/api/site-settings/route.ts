@@ -30,6 +30,18 @@ const brandPillarSchema = z.object({
   imageFile: z.string().trim().default("")
 });
 
+function spotlightTextSchema(maxLength: number, defaultValue: string) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .max(maxLength)
+    .refine((value) => !/[<>\r\n]/.test(value), {
+      message: "Spotlight copy must be plain text on one line."
+    })
+    .default(defaultValue);
+}
+
 const exclusiveCommunityBenefitSchema = z.object({
   id: z
     .string()
@@ -175,6 +187,11 @@ const siteSettingsSchema = z.object({
       built_for_motion_description: z.string().trim().min(1).max(240).default(
         "High-energy tracks for training, focus, and full-send playlists."
       ),
+      lock_in_spotlight_release_id: z.string().trim().default(""),
+      lock_in_spotlight_eyebrow: spotlightTextSchema(40, "5:00 AM PROTOCOL"),
+      lock_in_spotlight_headline: spotlightTextSchema(64, "SURPASS YOUR LIMITS"),
+      lock_in_spotlight_statement: spotlightTextSchema(120, "IGNORE THE NOISE. LOCK IN."),
+      lock_in_spotlight_cta_label: spotlightTextSchema(32, "GO BEAST MODE"),
       recent_releases_eyebrow: z.string().default(""),
       recent_releases_heading: z.string().default(""),
       recent_releases_view_all_label: z.string().default(""),
@@ -360,7 +377,11 @@ export async function PUT(request: Request) {
       ? parsed.data.site_content.home.built_for_motion_release_ids
       : [parsed.data.site_content.home.built_for_motion_release_id].filter(Boolean);
   const referencedReleaseIds = Array.from(
-    new Set([...featuredReleaseIds, ...builtForMotionReleaseIds].filter(Boolean))
+    new Set([
+      ...featuredReleaseIds,
+      ...builtForMotionReleaseIds,
+      parsed.data.site_content.home.lock_in_spotlight_release_id
+    ].filter(Boolean))
   );
 
   if (referencedReleaseIds.length > 0) {

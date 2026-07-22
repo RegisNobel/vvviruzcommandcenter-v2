@@ -49,6 +49,7 @@ const analyticsEventSchema = z.object({
     "project_card_click",
     "project_hub_release_click",
     "release_project_link_click",
+    "homepage_spotlight_click",
     "workout_collection_click",
     "homepage_exclusives_click",
     "contextual_cta_click",
@@ -134,6 +135,7 @@ const analyticsEventSchema = z.object({
     [
       "homepage_primary_cta_click",
       "project_card_click",
+      "homepage_spotlight_click",
       "workout_collection_click",
       "homepage_exclusives_click",
       "latest_intel_view",

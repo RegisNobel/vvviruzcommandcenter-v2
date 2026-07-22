@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-22 - Lock-In Spotlight:** Replaced the homepage multi-release Lock-In Rotation with a single campaign-style takeover driven by a dedicated JSON-backed release selection and constrained copy fields. Public resolution safely falls back through the untouched legacy rotation and then published Beast Mode, the exact public component is reused in the admin preview, and spotlight CTA clicks now use a dedicated first-party analytics event.
+
 > **2026-07-19 - Lock-In Rotation:** The homepage high-energy spotlight now supports an ordered collection of up to six published releases instead of one hard-coded feature. Public Site Settings can edit the collection heading and description, search/add/reorder releases, and safely preserves the legacy Beast Mode fallback. Public readiness warnings now identify the exact missing About positioning field instead of showing a generic warning.
 
 > **2026-07-19 - Breaking Barz workflow + Latest Intel presentation:** Breaking Barz summaries now support 300 characters and use a simpler private Save / explicit Publish workflow without a separate operator-facing ready step. The homepage Latest Intel return loop now presents updates as a distinct editorial signal wire with a lead story, dated secondary headlines, and preserved first-party impression/click tracking.

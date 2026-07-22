@@ -218,7 +218,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings-v6"],
+  ["public-site-settings-v7"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }
@@ -616,6 +616,47 @@ export async function getBuiltForMotionReleases(releaseIds: string[] = [], legac
   }
 
   return getCachedPublishedFeaturedReleasesByIds(normalizedIds.join("|"));
+}
+
+export async function getLockInSpotlightRelease(
+  spotlightReleaseId = "",
+  legacyReleaseIds: string[] = [],
+  legacyReleaseId = ""
+) {
+  const normalizedSpotlightId = spotlightReleaseId.trim();
+
+  if (normalizedSpotlightId) {
+    const [selectedRelease] = await getCachedPublishedFeaturedReleasesByIds(
+      normalizedSpotlightId
+    );
+
+    if (selectedRelease) {
+      return selectedRelease;
+    }
+  }
+
+  const normalizedLegacyIds = legacyReleaseIds
+    .map((releaseId) => releaseId.trim())
+    .filter(Boolean)
+    .filter((releaseId, index, values) => values.indexOf(releaseId) === index);
+  const normalizedLegacyId = legacyReleaseId.trim();
+  const legacyCandidates = normalizedLegacyIds.length > 0
+    ? normalizedLegacyIds
+    : normalizedLegacyId
+      ? [normalizedLegacyId]
+      : [];
+
+  if (legacyCandidates.length > 0) {
+    const [legacyRelease] = await getCachedPublishedFeaturedReleasesByIds(
+      legacyCandidates.join("|")
+    );
+
+    if (legacyRelease) {
+      return legacyRelease;
+    }
+  }
+
+  return getCachedPublishedReleaseBySlug("beast-mode");
 }
 
 const getCachedPublishedReleases = unstable_cache(

@@ -41,6 +41,7 @@ export type PublicAnalyticsEventInput = {
     | "project_card_click"
     | "project_hub_release_click"
     | "release_project_link_click"
+    | "homepage_spotlight_click"
     | "workout_collection_click"
     | "homepage_exclusives_click"
     | "contextual_cta_click"

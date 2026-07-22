@@ -139,6 +139,11 @@ function createDefaultSiteContent(): SiteContentSettings {
       built_for_motion_heading: "Lock-In Rotation",
       built_for_motion_description:
         "High-energy tracks for training, focus, and full-send playlists.",
+      lock_in_spotlight_release_id: "",
+      lock_in_spotlight_eyebrow: "5:00 AM PROTOCOL",
+      lock_in_spotlight_headline: "SURPASS YOUR LIMITS",
+      lock_in_spotlight_statement: "IGNORE THE NOISE. LOCK IN.",
+      lock_in_spotlight_cta_label: "GO BEAST MODE",
       recent_releases_eyebrow: "Recent Releases",
       recent_releases_heading: "Pick A Poison",
       recent_releases_view_all_label: "View all",
@@ -398,6 +403,20 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
       built_for_motion_description:
         input?.home?.built_for_motion_description?.trim() ||
         defaults.home.built_for_motion_description,
+      lock_in_spotlight_release_id:
+        input?.home?.lock_in_spotlight_release_id?.trim() || "",
+      lock_in_spotlight_eyebrow:
+        input?.home?.lock_in_spotlight_eyebrow?.trim() ||
+        defaults.home.lock_in_spotlight_eyebrow,
+      lock_in_spotlight_headline:
+        input?.home?.lock_in_spotlight_headline?.trim() ||
+        defaults.home.lock_in_spotlight_headline,
+      lock_in_spotlight_statement:
+        input?.home?.lock_in_spotlight_statement?.trim() ||
+        defaults.home.lock_in_spotlight_statement,
+      lock_in_spotlight_cta_label:
+        input?.home?.lock_in_spotlight_cta_label?.trim() ||
+        defaults.home.lock_in_spotlight_cta_label,
       recent_releases_heading:
         !input?.home?.recent_releases_heading ||
         ["latest drops", "pick a glitch"].includes(
