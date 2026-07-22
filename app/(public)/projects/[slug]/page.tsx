@@ -6,10 +6,14 @@ import type {Metadata} from "next";
 import {notFound} from "next/navigation";
 
 import {PublicReleaseCard} from "@/components/public-release-card";
+import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {buildPublicProjectJsonLd} from "@/lib/public-project-schema";
 import {stringifyJsonLd} from "@/lib/public-release-schema";
 import {getPublicProjectPath} from "@/lib/public-projects";
-import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
+import {
+  formatPublicReleaseDate,
+  getPublicReleaseDiscoveryMetadata
+} from "@/lib/public-utils";
 import {
   getPublicProjectBySlug,
   getSiteSettings
@@ -30,7 +34,7 @@ export async function generateMetadata({
   }
 
   const canonical = getPublicProjectPath(project.slug);
-  const image = project.representativeRelease.cover_art_path;
+  const image = project.artworkPath || project.representativeRelease.cover_art_path;
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(project.representativeRelease);
 
   return {
@@ -41,7 +45,9 @@ export async function generateMetadata({
       title: project.name,
       description: project.description,
       url: canonical,
-      images: image ? [{url: image, alt: `${project.name}: ${coverArtAltText}`}] : []
+      images: image
+        ? [{url: image, alt: project.artworkAltText || `${project.name}: ${coverArtAltText}`}]
+        : []
     },
     twitter: {
       card: image ? "summary_large_image" : "summary",
@@ -75,6 +81,9 @@ export default async function PublicProjectPage({
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(
     project.representativeRelease
   );
+  const artworkPath = project.artworkPath || project.representativeRelease.cover_art_path;
+  const artworkAltText =
+    project.artworkAltText || `${project.name} project artwork, represented by ${coverArtAltText}`;
   const jsonLd = buildPublicProjectJsonLd({
     artistName: siteSettings.artist_name,
     project
@@ -98,19 +107,21 @@ export default async function PublicProjectPage({
         <section className="public-panel overflow-hidden px-5 py-7 sm:px-9 sm:py-10">
           <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:gap-12">
             <div className="public-art-frame relative aspect-square overflow-hidden rounded-xl border border-white/10">
-              {project.representativeRelease.cover_art_path ? (
+              {artworkPath ? (
                 <Image
-                  alt={`${project.name} project artwork, represented by ${coverArtAltText}`}
+                  alt={artworkAltText}
                   className="object-cover"
                   fill
                   priority
                   sizes="(max-width: 1023px) calc(100vw - 80px), 430px"
-                  src={project.representativeRelease.cover_art_path}
+                  src={artworkPath}
                 />
               ) : null}
             </div>
             <div>
-              <p className="public-eyebrow">vvviruz project</p>
+              <p className="public-eyebrow">
+                vvviruz {project.projectType === "series" ? "project" : project.projectType}
+              </p>
               <h1 className="public-heading mt-5 text-4xl font-semibold sm:text-6xl">
                 {project.name}
               </h1>
@@ -126,7 +137,19 @@ export default async function PublicProjectPage({
                 <span className="public-filter-chip">
                   Latest: {project.latestRelease.title}
                 </span>
+                {project.projectReleaseDate ? (
+                  <span className="public-filter-chip">
+                    Released {formatPublicReleaseDate(project.projectReleaseDate)}
+                  </span>
+                ) : null}
               </div>
+              <PublicPlatformLinks
+                appleMusicUrl={project.appleMusicUrl}
+                className="mt-7"
+                labels={platformLabels}
+                spotifyUrl={project.spotifyUrl}
+                youtubeUrl={project.youtubeUrl}
+              />
             </div>
           </div>
         </section>

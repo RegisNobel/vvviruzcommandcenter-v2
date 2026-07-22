@@ -104,6 +104,10 @@ type LegacyReleaseShape = Partial<ReleaseRecord> & {
   social_share_title?: string;
   socialShareDescription?: string;
   social_share_description?: string;
+  contextualCtaLabel?: string;
+  contextual_cta_label?: string;
+  contextualCtaUrl?: string;
+  contextual_cta_url?: string;
   featured_video_url?: string;
   public_lyrics_enabled?: boolean;
   is_published?: boolean;
@@ -207,6 +211,8 @@ export function createEmptyRelease(
       | "cover_art_alt_text"
       | "social_share_title"
       | "social_share_description"
+      | "contextual_cta_label"
+      | "contextual_cta_url"
       | "featured_video_url"
       | "public_lyrics_enabled"
       | "is_published"
@@ -245,6 +251,8 @@ export function createEmptyRelease(
     cover_art_alt_text: values?.cover_art_alt_text?.trim() || "",
     social_share_title: values?.social_share_title?.trim() || "",
     social_share_description: values?.social_share_description?.trim() || "",
+    contextual_cta_label: values?.contextual_cta_label?.trim() || "",
+    contextual_cta_url: values?.contextual_cta_url?.trim() || "",
     featured_video_url: values?.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(values?.public_lyrics_enabled),
     is_published: Boolean(values?.is_published),
@@ -349,6 +357,10 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
       input.social_share_description?.trim() ||
       input.socialShareDescription?.trim() ||
       "",
+    contextual_cta_label:
+      input.contextual_cta_label?.trim() || input.contextualCtaLabel?.trim() || "",
+    contextual_cta_url:
+      input.contextual_cta_url?.trim() || input.contextualCtaUrl?.trim() || "",
     featured_video_url: input.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(input.public_lyrics_enabled),
     is_published: Boolean(input.is_published),

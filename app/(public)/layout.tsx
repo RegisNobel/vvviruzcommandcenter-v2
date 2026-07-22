@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import type {Metadata} from "next";
 
 import {getSiteSettings} from "@/lib/repositories/public-site";
+import {listPublicFanUpdates} from "@/lib/repositories/fan-content";
 
 import {PublicSiteChrome} from "@/components/public-site-chrome";
 
@@ -24,9 +25,15 @@ export default async function PublicLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteSettings = await getSiteSettings();
+  const [siteSettings, latestIntel] = await Promise.all([
+    getSiteSettings(),
+    listPublicFanUpdates().catch(() => {
+      console.error("[latest-intel] Public Intel query failed; the rail was omitted.");
+      return [];
+    })
+  ]);
 
   return (
-    <PublicSiteChrome siteSettings={siteSettings}>{children}</PublicSiteChrome>
+    <PublicSiteChrome latestIntel={latestIntel} siteSettings={siteSettings}>{children}</PublicSiteChrome>
   );
 }

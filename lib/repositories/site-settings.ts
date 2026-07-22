@@ -135,6 +135,10 @@ function createDefaultSiteContent(): SiteContentSettings {
       featured_release_ids: [],
       built_for_motion_enabled: true,
       built_for_motion_release_id: "",
+      built_for_motion_release_ids: [],
+      built_for_motion_heading: "Lock-In Rotation",
+      built_for_motion_description:
+        "High-energy tracks for training, focus, and full-send playlists.",
       recent_releases_eyebrow: "Recent Releases",
       recent_releases_heading: "Pick A Poison",
       recent_releases_view_all_label: "View all",
@@ -377,6 +381,23 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           ?.map((value) => value.trim())
           .filter(Boolean)
           .slice(0, 3) || defaults.home.featured_release_ids,
+      built_for_motion_release_ids: (
+        input?.home?.built_for_motion_release_ids?.length
+          ? input.home.built_for_motion_release_ids
+          : input?.home?.built_for_motion_release_id
+            ? [input.home.built_for_motion_release_id]
+            : defaults.home.built_for_motion_release_ids
+      )
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .filter((value, index, values) => values.indexOf(value) === index)
+        .slice(0, 6),
+      built_for_motion_heading:
+        input?.home?.built_for_motion_heading?.trim() ||
+        defaults.home.built_for_motion_heading,
+      built_for_motion_description:
+        input?.home?.built_for_motion_description?.trim() ||
+        defaults.home.built_for_motion_description,
       recent_releases_heading:
         !input?.home?.recent_releases_heading ||
         ["latest drops", "pick a glitch"].includes(

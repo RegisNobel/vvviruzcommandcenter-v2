@@ -4,6 +4,7 @@ import {prisma} from "@/lib/db/prisma";
 import {toDate, toDateInputValue, toOptionalDate} from "@/lib/db/serialization";
 import {hasReleaseCoverArt, hydrateRelease, summarizeRelease} from "@/lib/releases";
 import {getReleasePlanningSnapshot} from "@/lib/release-planning";
+import {revalidateReleaseAnnotationsInTransaction} from "@/lib/repositories/fan-content";
 import type {
   ReleaseRecord,
   ReleaseStreamingLinks,
@@ -149,6 +150,8 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
     cover_art_alt_text: release.coverArtAltText,
     social_share_title: release.socialShareTitle,
     social_share_description: release.socialShareDescription,
+    contextual_cta_label: release.contextualCtaLabel,
+    contextual_cta_url: release.contextualCtaUrl,
     featured_video_url: release.featuredVideoUrl,
     public_lyrics_enabled: release.publicLyricsEnabled,
     is_published: release.isPublished,
@@ -343,6 +346,17 @@ export async function readRelease(releaseId: string): Promise<ReleaseRecord> {
 
 export async function saveRelease(release: ReleaseRecord) {
   const normalizedRelease = hydrateRelease(release);
+  const hasContextualLabel = Boolean(normalizedRelease.contextual_cta_label.trim());
+  const hasContextualUrl = Boolean(normalizedRelease.contextual_cta_url.trim());
+  if (hasContextualLabel !== hasContextualUrl) {
+    throw new Error("Contextual CTA label and URL must be provided together.");
+  }
+  if (hasContextualUrl && !normalizedRelease.contextual_cta_url.startsWith("/")) {
+    const contextualUrl = new URL(normalizedRelease.contextual_cta_url);
+    if (!new Set(["http:", "https:"]).has(contextualUrl.protocol)) {
+      throw new Error("Contextual CTA URL must be an internal path or an http/https URL.");
+    }
+  }
   const slug = await createUniqueReleaseSlug(
     normalizedRelease.slug || normalizedRelease.title,
     normalizedRelease.id
@@ -352,7 +366,11 @@ export async function saveRelease(release: ReleaseRecord) {
     normalizedRelease.cover_art?.url?.trim() ||
     "";
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const annotationRevalidation = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const previousRelease = await tx.release.findUnique({
+      where: {id: normalizedRelease.id},
+      select: {lyrics: true}
+    });
     await tx.release.upsert({
       where: {
         id: normalizedRelease.id
@@ -382,6 +400,8 @@ export async function saveRelease(release: ReleaseRecord) {
         coverArtAltText: normalizedRelease.cover_art_alt_text,
         socialShareTitle: normalizedRelease.social_share_title,
         socialShareDescription: normalizedRelease.social_share_description,
+        contextualCtaLabel: normalizedRelease.contextual_cta_label,
+        contextualCtaUrl: normalizedRelease.contextual_cta_url,
         spotifyUrl: normalizedRelease.streaming_links.spotify,
         appleMusicUrl: normalizedRelease.streaming_links.apple_music,
         youtubeUrl: normalizedRelease.streaming_links.youtube,
@@ -422,6 +442,8 @@ export async function saveRelease(release: ReleaseRecord) {
         coverArtAltText: normalizedRelease.cover_art_alt_text,
         socialShareTitle: normalizedRelease.social_share_title,
         socialShareDescription: normalizedRelease.social_share_description,
+        contextualCtaLabel: normalizedRelease.contextual_cta_label,
+        contextualCtaUrl: normalizedRelease.contextual_cta_url,
         spotifyUrl: normalizedRelease.streaming_links.spotify,
         appleMusicUrl: normalizedRelease.streaming_links.apple_music,
         youtubeUrl: normalizedRelease.streaming_links.youtube,
@@ -441,9 +463,22 @@ export async function saveRelease(release: ReleaseRecord) {
     });
 
     await replaceReleaseRelations(tx, normalizedRelease);
+
+    if (
+      previousRelease &&
+      previousRelease.lyrics !== normalizedRelease.lyrics
+    ) {
+      return revalidateReleaseAnnotationsInTransaction(tx, {
+        releaseId: normalizedRelease.id,
+        oldLyrics: previousRelease.lyrics,
+        newLyrics: normalizedRelease.lyrics
+      });
+    }
+
+    return {needsReanchoring: 0};
   });
 
-  return normalizedRelease.id;
+  return {releaseId: normalizedRelease.id, annotationRevalidation};
 }
 
 export async function deleteRelease(releaseId: string) {

@@ -1,12 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import Image from "next/image";
 import {redirect} from "next/navigation";
 import type {Metadata} from "next";
 import {Box, Disc, FileAudio, Star} from "lucide-react";
 
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {VaultPageAnalytics} from "@/components/vault-page-analytics";
+import {FanTrackedLink, VaultItemImpressions} from "@/components/public-fan-content-analytics";
+import {listPublicVaultItems} from "@/lib/repositories/fan-content";
 
 const BENEFIT_MARKERS = [Disc, FileAudio, Box, Star];
 
@@ -30,10 +33,12 @@ export default async function PublicVaultPage() {
   const benefits = vault.benefits.filter(
     (b) => b.title.trim() || b.description.trim()
   );
+  const items = await listPublicVaultItems();
 
   return (
     <main className="public-conversion-shell">
       <VaultPageAnalytics />
+      <VaultItemImpressions ids={items.map((item) => item.id)} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_33%),linear-gradient(180deg,rgba(5,6,9,0.96),rgba(7,9,13,1))]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.024)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[length:52px_52px] opacity-30" />
       <div className="pointer-events-none absolute left-1/2 top-24 h-64 w-64 -translate-x-1/2 rounded-full bg-[#c9a347]/10 blur-[90px]" />
@@ -92,6 +97,13 @@ export default async function PublicVaultPage() {
                 );
               })}
             </div>
+          </section>
+        ) : null}
+
+        {items.length > 0 ? (
+          <section className="relative mx-auto mt-12 max-w-[1120px]">
+            <div className="mb-6"><p className="public-eyebrow">Available from the Vault</p><h2 className="public-heading mt-3 text-3xl font-semibold">Direct-to-fan drops</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-[#a7b0ba]">Preview here, then complete checkout with the configured external storefront.</p></div>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <article className="public-panel overflow-hidden p-5" key={item.id}>{item.cover_art_url ? <div className="relative aspect-square overflow-hidden rounded-lg"><Image alt={`${item.title} artwork`} className="object-cover" fill sizes="(max-width:768px) 100vw, 33vw" src={item.cover_art_url}/></div> : null}<p className="public-eyebrow mt-5">{item.item_type}</p><h3 className="public-heading mt-2 text-2xl font-semibold">{item.title}</h3><p className="mt-3 text-sm leading-7 text-[#a7b0ba]">{item.description}</p>{item.price_label ? <p className="mt-4 font-semibold text-[#e3c16e]">{item.price_label}</p> : null}<div className="mt-5 flex flex-wrap gap-3">{item.preview_url ? <FanTrackedLink className="public-action-secondary" eventKey={item.id} eventType="vault_preview_click" href={item.preview_url} page="vault" target="_blank">Preview</FanTrackedLink> : null}{item.checkout_url ? <FanTrackedLink className="public-action-primary" eventKey={item.id} eventType="vault_checkout_click" href={item.checkout_url} page="vault" target="_blank">Get it</FanTrackedLink> : null}</div></article>)}</div>
           </section>
         ) : null}
       </div>

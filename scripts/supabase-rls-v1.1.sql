@@ -7,3 +7,8 @@
 
 alter table if exists public."CommissionRequest" enable row level security;
 alter table if exists public."short_links" enable row level security;
+alter table if exists public."OperationalHealthIssue" enable row level security;
+alter table if exists public."ReleaseAnnotation" enable row level security;
+alter table if exists public."ReleaseAnnotationSource" enable row level security;
+alter table if exists public."FanUpdate" enable row level security;
+alter table if exists public."VaultItem" enable row level security;

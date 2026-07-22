@@ -11,6 +11,7 @@ const navItems = [
   {href: "/admin/promo", label: "Promo"},
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
+  {href: "/admin/fan-content", label: "Fan Content"},
   {href: "/admin/commissions", label: "Commissions"},
   {href: "/admin/backups", label: "Backups"}
 ];

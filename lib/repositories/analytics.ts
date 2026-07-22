@@ -42,8 +42,19 @@ export type PublicAnalyticsEventInput = {
     | "project_hub_release_click"
     | "release_project_link_click"
     | "workout_collection_click"
-    | "homepage_exclusives_click";
-  page: "home" | "links" | "projects" | "release" | "vault" | "playlist" | "preview";
+    | "homepage_exclusives_click"
+    | "contextual_cta_click"
+    | "latest_intel_view"
+    | "latest_intel_click"
+    | "vault_item_view"
+    | "vault_preview_click"
+    | "vault_checkout_click"
+    | "breaking_barz_summary_view"
+    | "breaking_barz_open"
+    | "breaking_barz_next"
+    | "breaking_barz_previous"
+    | "breaking_barz_reference_click";
+  page: "home" | "links" | "projects" | "public" | "release" | "vault" | "playlist" | "preview";
   eventId?: string | null;
   path?: string;
   hubPath?: string;
@@ -55,6 +66,9 @@ export type PublicAnalyticsEventInput = {
   entryType?: string;
   linkType?: string;
   linkLabel?: string;
+  contentType?: string;
+  contentId?: string;
+  interactionSource?: string;
   targetUrl?: string;
   referrer?: string;
   originalReferrer?: string;
@@ -117,6 +131,9 @@ export async function recordPublicAnalyticsEvent(input: PublicAnalyticsEventInpu
       entryType: normalize(input.entryType),
       linkType: normalize(input.linkType),
       linkLabel: normalize(input.linkLabel),
+      contentType: normalize(input.contentType),
+      contentId: normalize(input.contentId),
+      interactionSource: normalize(input.interactionSource),
       targetUrl: normalize(input.targetUrl),
       referrer: normalize(input.referrer),
       originalReferrer: normalize(input.originalReferrer),

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {prisma} from "../lib/db/prisma";
+import {revalidateRestoredReleaseAnnotations} from "../lib/server/revalidate-restored-annotations";
 
 const snapshotPath =
   process.env.DB_SNAPSHOT_PATH ||
@@ -19,6 +20,10 @@ type Snapshot = {
   releaseStreamingLinks?: SnapshotRecord[];
   playlists?: SnapshotRecord[];
   playlistReleases?: SnapshotRecord[];
+  releaseAnnotations?: SnapshotRecord[];
+  releaseAnnotationSources?: SnapshotRecord[];
+  fanUpdates?: SnapshotRecord[];
+  vaultItems?: SnapshotRecord[];
   copyEntries?: SnapshotRecord[];
   siteSettings?: SnapshotRecord[];
   subscribers?: SnapshotRecord[];
@@ -37,12 +42,16 @@ type Snapshot = {
 const dateFieldsByModel: Record<string, string[]> = {
   adminUser: ["totpEnrolledAt", "createdAt", "updatedAt"],
   release: ["releaseDate", "createdOn", "updatedOn"],
-  releaseCategory: ["createdAt", "updatedAt"],
+  releaseCategory: ["projectReleaseDate", "createdAt", "updatedAt"],
   releaseCategoryAssignment: ["createdAt", "updatedAt"],
   releaseTask: ["createdAt", "updatedAt"],
   releaseStreamingLink: ["createdAt", "updatedAt"],
   playlist: ["createdAt", "updatedAt"],
   playlistRelease: ["createdAt", "updatedAt"],
+  releaseAnnotation: ["lastReviewedAt", "createdAt", "updatedAt"],
+  releaseAnnotationSource: ["createdAt", "updatedAt"],
+  fanUpdate: ["publishedAt", "createdAt", "updatedAt"],
+  vaultItem: ["publishedAt", "createdAt", "updatedAt"],
   copyEntry: ["createdOn", "updatedOn"],
   siteSettings: ["createdOn", "updatedOn"],
   subscriber: ["createdAt", "updatedAt", "unsubscribedAt"],
@@ -141,6 +150,13 @@ async function main() {
   );
   counts.playlists = await upsertMany("playlist", snapshot.playlists);
   counts.playlistReleases = await upsertMany("playlistRelease", snapshot.playlistReleases);
+  counts.releaseAnnotations = await upsertMany("releaseAnnotation", snapshot.releaseAnnotations);
+  counts.releaseAnnotationSources = await upsertMany("releaseAnnotationSource", snapshot.releaseAnnotationSources);
+  const annotationValidation = await revalidateRestoredReleaseAnnotations(prisma);
+  counts.releaseAnnotationsValid = annotationValidation.valid;
+  counts.releaseAnnotationsNeedingReanchoring = annotationValidation.needsReanchoring;
+  counts.fanUpdates = await upsertMany("fanUpdate", snapshot.fanUpdates);
+  counts.vaultItems = await upsertMany("vaultItem", snapshot.vaultItems);
   counts.copyEntries = await upsertMany("copyEntry", snapshot.copyEntries);
   counts.siteSettings = await upsertMany("siteSettings", snapshot.siteSettings);
   counts.subscribers = await upsertMany("subscriber", snapshot.subscribers);

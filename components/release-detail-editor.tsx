@@ -19,6 +19,7 @@ const ReleaseIntelligencePanel = dynamic(
 );
 import {StickyActionDock} from "@/components/sticky-action-dock";
 import {LyricsContent} from "@/components/lyrics-content";
+import {ReleaseAnnotationsEditor} from "@/components/release-annotations-editor";
 import {
   Activity,
   AlertTriangle,
@@ -89,7 +90,8 @@ import type {
   ShortLinkRecord,
   CreativePerformanceMemory,
   AdPerformanceTimeline,
-  CopyPerformanceMemory
+  CopyPerformanceMemory,
+  ReleaseAnnotationRecord
 } from "@/lib/types";
 import { PerformanceMemorySection } from "./performance-memory";
 import { getUnifiedCampaignRecommendation } from "@/lib/ads/recommendations";
@@ -111,6 +113,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 type ReleaseSaveResponse = {
   release?: ReleaseRecord;
   message?: string;
+  annotationRevalidation?: {needsReanchoring: number};
 };
 
 function serializeRelease(release: ReleaseRecord) {
@@ -406,7 +409,8 @@ export function ReleaseDetailEditor({
   utmCoverageRate = 0,
   reports = [],
   initialPlaylists = [],
-  initialPlaylistMemberships = []
+  initialPlaylistMemberships = [],
+  initialAnnotations = []
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -422,9 +426,11 @@ export function ReleaseDetailEditor({
   reports?: any[];
   initialPlaylists?: any[];
   initialPlaylistMemberships?: any[];
+  initialAnnotations?: ReleaseAnnotationRecord[];
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
+  const [annotationLyrics, setAnnotationLyrics] = useState(initialRelease.lyrics);
   const [collaborators, setCollaborators] = useState<string[]>(() =>
     parseCollaborators(initialRelease.collaborator_name)
   );
@@ -814,6 +820,7 @@ export function ReleaseDetailEditor({
       }
 
       lastSavedSnapshotRef.current = serializeRelease(payload.release);
+      setAnnotationLyrics(payload.release.lyrics);
       const hasNewerDraft =
         latestDraftSnapshotRef.current !== submittedDraftSnapshot;
 
@@ -826,7 +833,12 @@ export function ReleaseDetailEditor({
       setHasPendingChanges(hasNewerDraft);
 
       if (options?.successMessage !== null) {
-        setMessage(options?.successMessage ?? "Changes saved.");
+        const brokenCount = payload.annotationRevalidation?.needsReanchoring ?? 0;
+        setMessage(
+          brokenCount > 0
+            ? `${brokenCount} Breaking Barz annotation${brokenCount === 1 ? "" : "s"} need re-anchoring after this lyrics update. They are hidden publicly until corrected.`
+            : options?.successMessage ?? "Changes saved."
+        );
       }
     } catch (error) {
       lastSavedSnapshotRef.current = previousSnapshot;
@@ -1586,6 +1598,12 @@ export function ReleaseDetailEditor({
                     />
                   </label>
 
+                  <div className="grid gap-4 rounded-xl border border-edge bg-surface-elevated p-4 xl:col-span-2 xl:grid-cols-2">
+                    <div className="xl:col-span-2"><p className={pageLabelClass}>Contextual Fan CTA Override</p><p className="mt-2 text-sm leading-6 text-muted">Optional. Leave blank to automatically prioritize a project, playlist, Vault item, then the music catalog.</p></div>
+                    <label className="space-y-2"><span className={pageLabelClass}>Button label</span><input className={pageInputClass} onChange={(event) => updateRelease((current) => ({...current, contextual_cta_label: event.target.value}))} placeholder="Continue the story" value={release.contextual_cta_label}/></label>
+                    <label className="space-y-2"><span className={pageLabelClass}>Button URL</span><input className={pageInputClass} onChange={(event) => updateRelease((current) => ({...current, contextual_cta_url: event.target.value}))} placeholder="/projects/project or https://..." value={release.contextual_cta_url}/></label>
+                  </div>
+
                   <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 xl:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className={pageLabelClass}>Public metadata preview</p>
@@ -1841,6 +1859,12 @@ export function ReleaseDetailEditor({
                 </div>
               </div>
             </section>
+
+            <ReleaseAnnotationsEditor
+              initialAnnotations={initialAnnotations}
+              lyrics={annotationLyrics}
+              releaseId={release.id}
+            />
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>

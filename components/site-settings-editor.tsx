@@ -102,6 +102,7 @@ export function SiteSettingsEditor({
     serializeLinkRows(initialSiteSettings.social_links)
   );
   const [featuredReleaseQuery, setFeaturedReleaseQuery] = useState("");
+  const [lockInReleaseQuery, setLockInReleaseQuery] = useState("");
   const [projectCandidateSlug, setProjectCandidateSlug] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -222,9 +223,33 @@ export function SiteSettingsEditor({
   const availableProjectCategories = releaseCategories.filter(
     (category) => !approvedProjectSlugSet.has(category.slug)
   );
-  const configuredBuiltForMotionRelease = settings.site_content.home.built_for_motion_release_id
-    ? releaseOptionsById.get(settings.site_content.home.built_for_motion_release_id)
-    : releaseOptions.find((release) => release.slug === "beast-mode");
+  const selectedLockInReleaseIds = settings.site_content.home.built_for_motion_release_ids;
+  const configuredLockInReleases = selectedLockInReleaseIds.length > 0
+    ? selectedLockInReleaseIds
+        .map((releaseId) => releaseOptionsById.get(releaseId))
+        .filter((release): release is ReleaseSummary => Boolean(release))
+    : [releaseOptions.find((release) => release.slug === "beast-mode")].filter(
+        (release): release is ReleaseSummary => Boolean(release)
+      );
+  const filteredLockInReleaseOptions = releaseOptions
+    .filter((release) => {
+      if (!release.is_published || selectedLockInReleaseIds.includes(release.id)) {
+        return false;
+      }
+
+      const query = lockInReleaseQuery.trim().toLowerCase();
+      return !query || release.title.toLowerCase().includes(query);
+    })
+    .slice(0, 12);
+  const missingLockInReleaseIds = selectedLockInReleaseIds.filter(
+    (releaseId) => !releaseOptionsById.has(releaseId)
+  );
+  const aboutPositioningMissingFields = [
+    !settings.site_content.about.statement_heading.trim() ? "Artist Statement heading" : "",
+    !settings.site_content.about.statement_text.trim() ? "Artist Statement copy" : "",
+    !settings.site_content.about.intro_heading.trim() ? "Introduction heading" : "",
+    !settings.site_content.about.intro_text.trim() ? "Introduction copy" : ""
+  ].filter(Boolean);
   const missingFeaturedReleaseIds = settings.site_content.home.featured_release_ids.filter(
     (releaseId) => !releaseOptionsById.has(releaseId)
   );
@@ -239,14 +264,11 @@ export function SiteSettingsEditor({
       ? ["A saved homepage release no longer exists."]
       : []),
     ...(settings.site_content.home.built_for_motion_enabled &&
-    !configuredBuiltForMotionRelease?.is_published
-      ? ["Built for Motion has no valid public release."]
+    configuredLockInReleases.every((release) => !release.is_published)
+      ? ["Lock-In Rotation has no valid public release."]
       : []),
-    ...(!settings.site_content.about.statement_heading.trim() ||
-    !settings.site_content.about.statement_text.trim() ||
-    !settings.site_content.about.intro_heading.trim() ||
-    !settings.site_content.about.intro_text.trim()
-      ? ["About positioning is incomplete."]
+    ...(aboutPositioningMissingFields.length > 0
+      ? [`About positioning is missing: ${aboutPositioningMissingFields.join(", ")}.`]
       : []),
     ...projectRows
       .filter((row) => !row.eligibility.eligible)
@@ -329,6 +351,48 @@ export function SiteSettingsEditor({
         }
       }
     }));
+  }
+
+  function setLockInReleaseIds(releaseIds: string[]) {
+    setSettings((current) => ({
+      ...current,
+      site_content: {
+        ...current.site_content,
+        home: {
+          ...current.site_content.home,
+          built_for_motion_release_id: releaseIds[0] ?? "",
+          built_for_motion_release_ids: releaseIds
+        }
+      }
+    }));
+  }
+
+  function toggleLockInRelease(releaseId: string) {
+    if (selectedLockInReleaseIds.includes(releaseId)) {
+      setLockInReleaseIds(selectedLockInReleaseIds.filter((value) => value !== releaseId));
+      return;
+    }
+
+    if (selectedLockInReleaseIds.length >= 6) {
+      setMessage("Lock-In Rotation can include up to 6 releases.");
+      setSaveState("idle");
+      return;
+    }
+
+    setLockInReleaseIds([...selectedLockInReleaseIds, releaseId]);
+  }
+
+  function moveLockInRelease(releaseId: string, direction: -1 | 1) {
+    setLockInReleaseIds(
+      moveHomepageFeaturedRelease(selectedLockInReleaseIds, releaseId, direction)
+    );
+  }
+
+  function clearMissingLockInReleases() {
+    const existingReleaseIds = new Set(releaseOptions.map((release) => release.id));
+    setLockInReleaseIds(
+      selectedLockInReleaseIds.filter((releaseId) => existingReleaseIds.has(releaseId))
+    );
   }
 
   function clearMissingFeaturedReleases() {
@@ -1125,10 +1189,10 @@ export function SiteSettingsEditor({
             <div className="space-y-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <span className="field-label">Built for Motion</span>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Select the published release used by the homepage movement feature.
-                    Leaving it blank preserves the Beast Mode fallback.
+                  <span className="field-label">Lock-In Rotation</span>
+                  <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
+                    Build an ordered homepage collection for gym, focus, gaming, and hype playlists.
+                    Select up to six published releases. With no selection, Beast Mode remains the fallback.
                   </p>
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-secondary">
@@ -1147,57 +1211,145 @@ export function SiteSettingsEditor({
                 </label>
               </div>
 
-              <label className="space-y-2">
-                <span className="field-label">Featured Release</span>
-                <select
-                  className="field-input"
-                  onChange={(event) =>
-                    updateSiteContent(
-                      "home",
-                      "built_for_motion_release_id",
-                      event.target.value
-                    )
-                  }
-                  value={settings.site_content.home.built_for_motion_release_id}
-                >
-                  <option value="">Beast Mode fallback</option>
-                  {releaseOptions
-                    .filter((release) => release.is_published)
-                    .map((release) => (
-                      <option key={release.id} value={release.id}>
-                        {release.title}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="field-label">Public Heading</span>
+                  <input
+                    className="field-input"
+                    maxLength={80}
+                    onChange={(event) =>
+                      updateSiteContent("home", "built_for_motion_heading", event.target.value)
+                    }
+                    value={settings.site_content.home.built_for_motion_heading}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="field-label">Public Description</span>
+                  <input
+                    className="field-input"
+                    maxLength={240}
+                    onChange={(event) =>
+                      updateSiteContent(
+                        "home",
+                        "built_for_motion_description",
+                        event.target.value
+                      )
+                    }
+                    value={settings.site_content.home.built_for_motion_description}
+                  />
+                </label>
+              </div>
 
-              {configuredBuiltForMotionRelease ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-edge bg-surface-elevated px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">
-                      {configuredBuiltForMotionRelease.title}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      {configuredBuiltForMotionRelease.is_published
-                        ? "Public and ready"
-                        : "Not public; this section will stay hidden"}
-                    </p>
-                  </div>
-                  {configuredBuiltForMotionRelease.is_published ? (
-                    <Link
-                      className="action-button-secondary !px-3 !py-2 text-xs"
-                      href={`/music/${configuredBuiltForMotionRelease.slug}`}
-                      target="_blank"
+              {configuredLockInReleases.length > 0 ? (
+                <div className="space-y-2">
+                  {configuredLockInReleases.map((release, index) => (
+                    <article
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-edge bg-surface-elevated px-4 py-3"
+                      key={release.id}
                     >
-                      Public preview <ExternalLink size={13} />
-                    </Link>
-                  ) : null}
+                      <div>
+                        <p className="text-sm font-semibold text-ink">
+                          {index + 1}. {release.title}
+                        </p>
+                        <p className="mt-1 text-xs text-muted">Public and ready</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {selectedLockInReleaseIds.length > 0 ? (
+                          <>
+                            <button
+                              aria-label={`Move ${release.title} earlier`}
+                              className="action-button-secondary !px-2 !py-2"
+                              disabled={index === 0}
+                              onClick={() => moveLockInRelease(release.id, -1)}
+                              type="button"
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <button
+                              aria-label={`Move ${release.title} later`}
+                              className="action-button-secondary !px-2 !py-2"
+                              disabled={index === configuredLockInReleases.length - 1}
+                              onClick={() => moveLockInRelease(release.id, 1)}
+                              type="button"
+                            >
+                              <ArrowDown size={14} />
+                            </button>
+                            <button
+                              className="action-button-secondary !px-3 !py-2 text-xs"
+                              onClick={() => toggleLockInRelease(release.id)}
+                              type="button"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <span className="pill text-[10px]">Fallback</span>
+                        )}
+                        <Link
+                          className="action-button-secondary !px-2 !py-2"
+                          href={`/music/${release.slug}`}
+                          target="_blank"
+                          title="Open public release"
+                        >
+                          <ExternalLink size={14} />
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : settings.site_content.home.built_for_motion_enabled ? (
                 <p className="flex items-center gap-2 text-sm text-amber-300">
-                  <AlertTriangle size={14} /> No valid Built for Motion release is available.
+                  <AlertTriangle size={14} /> No valid Lock-In Rotation release is available.
                 </p>
               ) : null}
+
+              {missingLockInReleaseIds.length > 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                  <span>A saved Lock-In Rotation release no longer exists.</span>
+                  <button
+                    className="action-button-secondary !px-3 !py-2 text-xs"
+                    onClick={clearMissingLockInReleases}
+                    type="button"
+                  >
+                    Clear stale selections
+                  </button>
+                </div>
+              ) : null}
+
+              <label className="space-y-2">
+                <span className="field-label">Add Releases</span>
+                <input
+                  className="field-input"
+                  onChange={(event) => setLockInReleaseQuery(event.target.value)}
+                  placeholder="Search published releases"
+                  value={lockInReleaseQuery}
+                />
+              </label>
+
+              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-edge bg-input p-3">
+                {filteredLockInReleaseOptions.length > 0 ? (
+                  filteredLockInReleaseOptions.map((release) => (
+                    <button
+                      className="flex w-full items-center justify-between gap-3 rounded-md border border-edge bg-surface px-4 py-3 text-left transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover"
+                      key={release.id}
+                      onClick={() => toggleLockInRelease(release.id)}
+                      type="button"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-ink">{release.title}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
+                          {release.type} / {release.status}
+                        </p>
+                      </div>
+                      <span className="pill">Add</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-2 py-3 text-sm text-slate-500">
+                    No additional published releases match this search.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="grid gap-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2 md:grid-cols-2">

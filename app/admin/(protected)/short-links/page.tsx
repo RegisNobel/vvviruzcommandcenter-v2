@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {headers} from "next/headers";
 
 import {ShortLinksAdminPage} from "@/components/short-links-admin-page";
+import {readCopySummaries} from "@/lib/repositories/copies";
 import {readReleaseSummaries} from "@/lib/repositories/releases";
 import {
   readShortLinksForAdmin
@@ -61,10 +62,11 @@ export default async function AdminShortLinksPage({
 }) {
   const params = await searchParams;
   const statusFilter = normalizeShortLinkFilter(params.status);
-  const [baseUrl, links, releases] = await Promise.all([
+  const [baseUrl, links, releases, copies] = await Promise.all([
     getBaseUrl(),
     readShortLinksForAdmin(statusFilter),
-    readReleaseSummaries()
+    readReleaseSummaries(),
+    readCopySummaries()
   ]);
 
   const prefill = {
@@ -80,6 +82,7 @@ export default async function AdminShortLinksPage({
   return (
     <ShortLinksAdminPage
       baseUrl={baseUrl}
+      copyOptions={copies.filter((copy) => !copy.archived_at)}
       initialLinks={links}
       releaseOptions={releases}
       statusFilter={statusFilter}

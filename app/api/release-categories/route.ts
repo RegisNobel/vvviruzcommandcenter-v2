@@ -17,6 +17,13 @@ const categorySchema = z.object({
   name: z.string().trim().min(1, "Category name is required."),
   slug: z.string().trim().optional(),
   description: z.string().trim().max(5000).default(""),
+  project_type: z.enum(["series", "album", "ep", "mixtape"]).default("series"),
+  artwork_path: z.string().trim().max(2000).default(""),
+  artwork_alt_text: z.string().trim().max(300).default(""),
+  project_release_date: z.string().trim().max(20).default(""),
+  spotify_url: z.string().trim().max(2000).default(""),
+  apple_music_url: z.string().trim().max(2000).default(""),
+  youtube_url: z.string().trim().max(2000).default(""),
   sort_order: z.number().int().min(0).optional(),
   release_ids: z.array(z.string().trim()).default([])
 });

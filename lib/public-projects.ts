@@ -25,15 +25,22 @@ export type PublicProjectEligibility =
   | {eligible: false; reason: PublicProjectEligibilityReason; slug: string};
 
 export type PublicProjectRecord = {
+  appleMusicUrl: string;
+  artworkAltText: string;
+  artworkPath: string;
   description: string;
   id: string;
   latestRelease: PublicReleaseRecord;
   name: string;
+  projectReleaseDate: string;
+  projectType: "series" | "album" | "ep" | "mixtape";
   releaseCount: number;
   releases: PublicReleaseRecord[];
   representativeRelease: PublicReleaseRecord;
   slug: string;
+  spotifyUrl: string;
   updatedAt: string;
+  youtubeUrl: string;
 };
 
 function normalize(value: string | null | undefined) {

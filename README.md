@@ -1,5 +1,11 @@
 # vvviruz' command center
 
+> **2026-07-19 - Lock-In Rotation:** The homepage high-energy spotlight now supports an ordered collection of up to six published releases instead of one hard-coded feature. Public Site Settings can edit the collection heading and description, search/add/reorder releases, and safely preserves the legacy Beast Mode fallback. Public readiness warnings now identify the exact missing About positioning field instead of showing a generic warning.
+
+> **2026-07-19 - Breaking Barz workflow + Latest Intel presentation:** Breaking Barz summaries now support 300 characters and use a simpler private Save / explicit Publish workflow without a separate operator-facing ready step. The homepage Latest Intel return loop now presents updates as a distinct editorial signal wire with a lead story, dated secondary headlines, and preserved first-party impression/click tracking.
+
+> **2026-07-16 - Operator reliability and campaign setup:** Added reconciled operational health checks for backups, durable assets, public release essentials, streaming URL validity, email failures, stalled sends, and scheduled backup failures. The Releases page now opens with a compact Operator Queue for the next release, blocker, active campaign, latest decision, backup health, and highest-priority current issue. Short Links now includes an editable campaign naming and UTM generator that preserves the existing Meta CSV and Attribution contract (`Ad Name = utm_content`, release slug = `utm_campaign`). Resolved health issues are deleted instead of retained as a second analytics history.
+
 > **2026-07-12 - Public-site music-first architecture:** The homepage now leads with one deterministic featured release, supporting featured music, DB-backed project/series cards, a compact Built for Motion feature, Pick A Poison discovery, and a music-focused Insider Access CTA. Homepage actions use minimal first-party analytics events, mobile navigation prioritizes Music and the current release, the About page now leads with artist/music context, and the retired Brand Pillars carousel/editor surface has been removed while its stored settings remain backward-compatible.
 
 > **2026-07-13 - Public project discovery:** Approved `ReleaseCategory` records now power `/projects` and `/projects/[slug]` hubs, homepage and release-page internal links, canonical handling for legacy category filters, structured project entities, sitemap coverage, and first-party project exploration events. Project descriptions remain database-managed, and Off the Grid is prepared as a future category without exposing an empty public hub.
@@ -1474,6 +1480,7 @@ AnalyticsEvent
 AuthSession
 PublicRateLimit
 BackupRun
+OperationalHealthIssue
 CopyEntry
 CommissionRequest
 short_links
@@ -2101,3 +2108,29 @@ After applying RLS changes:
 ### 2026-04-21 01:55 -04:00
 
 - Completed the secure `/admin` lockdown with server-enforced auth, sessions, and TOTP-based 2FA.
+
+### 2026-07-16 - Fan knowledge and catalog foundation
+
+- Consolidated series, albums, EPs, and mixtapes into the existing Project records with ordered releases, project artwork, release dates, platform links, and format-aware structured data. Legacy `/albums` URLs permanently redirect into `/projects`.
+- Added deterministic release CTAs with optional Release Detail overrides and automatic project, playlist, Vault, or catalog fallback context.
+- Added approved-only structured release annotations for lyric, reference, story, and language explanations with optional source links.
+- Added a compact Latest Intel return feed and a release-linked or standalone Vault catalog with external checkout URLs only.
+- Added `/admin/fan-content` for managing annotations, Latest Intel entries, and Vault items; project and album-like content is managed once in Public Site settings.
+- Extended first-party analytics, sitemap output, Supabase RLS setup, and database snapshot export/restore coverage for all new content records.
+
+### 2026-07-17 - Breaking Barz anchor integrity
+
+- Reworked release annotations into Breaking Barz, with one canonical Unicode-normalized lyric document and zero-based, section-relative line anchors that ignore headings and spacer lines.
+- Added exact excerpt and lyric-document hashes, conservative re-anchoring after lyric edits, and atomic release saves that hide annotations whenever their selected bars cannot be mapped safely.
+- Consolidated annotation creation, repair, publishing, and archiving into Release Detail; `/admin/fan-content` now provides a cross-release readout instead of a competing editor.
+- Replaced detached public annotation cards with selectable inline lyric highlights, accessible range markers, delayed summaries, persistent desktop explanations, and a mobile bottom sheet using shareable `?bar=` state.
+- Extended generic first-party analytics and database snapshots for annotation interactions and anchor fields. Restores now revalidate every non-archived anchor and preserve broken content privately for manual repair.
+- Added focused anchor regression coverage for line insertion, edited bars, duplicate sections, ambiguous matches, and Unicode NFC handling.
+
+### 2026-07-20 - Site-wide Latest Intel return loop
+
+- Replaced the homepage-only Latest Intel block with one shared public rail sourced from the five newest published updates.
+- Added desktop-only sticky rotation, manual navigation, reduced-motion support, non-sticky mobile behavior, and centralized exclusions for conversion-focused routes.
+- Added Draft and Published admin groupings with edit, publish, and unpublish controls that preserve the original publication order.
+- Added tagged public-query caching and meaningful per-slide analytics that require 50% visibility for 750 milliseconds and deduplicate by Intel item and page visit.
+- Added a focused route-policy regression script through `npm run test:latest-intel`.

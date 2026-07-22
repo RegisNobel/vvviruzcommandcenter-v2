@@ -18,9 +18,11 @@ function getSongSection(token: string): string | null {
   if (t === "verse2" || t === "v2") return "verse2";
   if (t === "verse3" || t === "v3") return "verse3";
   if (t === "verse4" || t === "v4") return "verse4";
+  if (t === "verse") return "verse";
   if (t === "intro") return "intro";
   if (t === "bridge") return "bridge";
   if (t === "outro") return "outro";
+  if (t === "fullsong") return "fullsong";
   return null;
 }
 

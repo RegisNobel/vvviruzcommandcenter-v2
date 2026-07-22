@@ -15,7 +15,7 @@ import {
 } from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 import {
-  getBuiltForMotionRelease,
+  getBuiltForMotionReleases,
   getHomepageFeaturedReleases,
   getHomepageProjects,
   getRandomPublishedReleases,
@@ -24,15 +24,16 @@ import {
 
 export default async function PublicHomePage() {
   const siteSettings = await getSiteSettings();
-  const [featuredReleases, projects, motionRelease, randomReleases, exclusiveOfferState] =
+  const [featuredReleases, projects, motionReleases, randomReleases, exclusiveOfferState] =
     await Promise.all([
       getHomepageFeaturedReleases(siteSettings.site_content.home.featured_release_ids),
       getHomepageProjects(),
       siteSettings.site_content.home.built_for_motion_enabled
-        ? getBuiltForMotionRelease(
+        ? getBuiltForMotionReleases(
+            siteSettings.site_content.home.built_for_motion_release_ids,
             siteSettings.site_content.home.built_for_motion_release_id
           )
-        : Promise.resolve(null),
+        : Promise.resolve([]),
       getRandomPublishedReleases(3),
       readPublicExclusiveOffer()
     ]);
@@ -50,10 +51,6 @@ export default async function PublicHomePage() {
         ? normalizeExternalUrl(heroRelease.youtube_url)
         : "")
     : "";
-  const motionStreamingTarget = motionRelease
-    ? getHomepageStreamingTarget(motionRelease)
-    : null;
-
   return (
     <main className="public-page-wrap">
       <div className="space-y-16 sm:space-y-20">
@@ -251,46 +248,77 @@ export default async function PublicHomePage() {
           </section>
         ) : null}
 
-        {motionRelease ? (
-          <section className="public-panel-quiet relative overflow-hidden py-8 sm:py-10">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(246,201,69,0.08),transparent_50%)]" />
-            <div className="relative grid gap-6 px-2 sm:px-6 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-center">
-              <Link
-                className="public-art-stage relative aspect-square w-full max-w-[180px] overflow-hidden"
-                href={`/music/${motionRelease.slug}`}
-              >
-                {motionRelease.cover_art_path ? (
-                  <Image
-                    alt={getPublicReleaseDiscoveryMetadata(motionRelease).coverArtAltText}
-                    className="object-cover"
-                    fill
-                    sizes="180px"
-                    src={motionRelease.cover_art_path}
-                  />
-                ) : (
-                  <div className="public-art-placeholder px-4 text-center">{motionRelease.title}</div>
-                )}
-              </Link>
-              <div>
+        {motionReleases.length > 0 ? (
+          <section className="public-panel-quiet relative overflow-hidden px-5 py-8 sm:px-7 sm:py-10">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(246,201,69,0.11),transparent_34%),linear-gradient(90deg,rgba(246,201,69,0.04),transparent_55%)]" />
+            <div className="relative">
+              <div className="max-w-2xl">
                 <p className="public-eyebrow inline-flex items-center gap-2">
-                  <Dumbbell size={14} /> Built for motion
+                  <Dumbbell size={14} /> High-energy picks
                 </p>
-                <h2 className="public-heading mt-3 text-3xl font-semibold">{motionRelease.title}</h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-[#aeb6c0]">
-                  {motionRelease.public_description}
+                <h2 className="public-heading mt-3 text-3xl font-semibold sm:text-4xl">
+                  {content.built_for_motion_heading}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-[#aeb6c0]">
+                  {content.built_for_motion_description}
                 </p>
               </div>
-              <HomepageTrackedLink
-                className="public-action-secondary md:justify-self-end"
-                eventType="workout_collection_click"
-                href={motionStreamingTarget?.href || `/music/${motionRelease.slug}`}
-                linkLabel={motionRelease.title}
-                linkType={motionStreamingTarget?.platform || "release_detail"}
-                releaseId={motionRelease.id}
-                target={motionStreamingTarget ? "_blank" : undefined}
-              >
-                Play it loud <ArrowUpRight size={15} />
-              </HomepageTrackedLink>
+
+              <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {motionReleases.map((release) => {
+                  const streamingTarget = getHomepageStreamingTarget(release);
+
+                  return (
+                    <article
+                      className="group grid grid-cols-[88px_minmax(0,1fr)] gap-4 rounded-lg border border-white/10 bg-[#0d1116]/80 p-3 transition hover:-translate-y-0.5 hover:border-[rgba(246,201,69,0.32)] sm:grid-cols-[104px_minmax(0,1fr)]"
+                      key={release.id}
+                    >
+                      <Link
+                        className="public-art-stage relative aspect-square overflow-hidden rounded-md"
+                        href={`/music/${release.slug}`}
+                      >
+                        {release.cover_art_path ? (
+                          <Image
+                            alt={getPublicReleaseDiscoveryMetadata(release).coverArtAltText}
+                            className="object-cover transition duration-500 group-hover:scale-[1.035]"
+                            fill
+                            sizes="104px"
+                            src={release.cover_art_path}
+                          />
+                        ) : (
+                          <span className="public-art-placeholder px-2 text-center text-xs">
+                            {release.title}
+                          </span>
+                        )}
+                      </Link>
+                      <div className="flex min-w-0 flex-col py-1">
+                        <Link
+                          className="line-clamp-2 text-base font-semibold leading-5 text-[#fff8ec] transition hover:text-[#f1ca61]"
+                          href={`/music/${release.slug}`}
+                        >
+                          {release.title}
+                        </Link>
+                        {release.collaborator && release.collaborator_name.trim() ? (
+                          <span className="mt-1 line-clamp-1 text-xs font-semibold text-[#d9b85e]">
+                            with {formatCollaboratorsList(release.collaborator_name)}
+                          </span>
+                        ) : null}
+                        <HomepageTrackedLink
+                          className="mt-auto inline-flex items-center gap-1.5 pt-3 text-xs font-semibold text-[#e3c16e] hover:text-[#fff2c8]"
+                          eventType="workout_collection_click"
+                          href={streamingTarget?.href || `/music/${release.slug}`}
+                          linkLabel={release.title}
+                          linkType={streamingTarget?.platform || "release_detail"}
+                          releaseId={release.id}
+                          target={streamingTarget ? "_blank" : undefined}
+                        >
+                          Play it loud <ArrowUpRight size={13} />
+                        </HomepageTrackedLink>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           </section>
         ) : null}

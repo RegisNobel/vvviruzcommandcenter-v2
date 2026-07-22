@@ -50,9 +50,20 @@ const analyticsEventSchema = z.object({
     "project_hub_release_click",
     "release_project_link_click",
     "workout_collection_click",
-    "homepage_exclusives_click"
+    "homepage_exclusives_click",
+    "contextual_cta_click",
+    "latest_intel_view",
+    "latest_intel_click",
+    "vault_item_view",
+    "vault_preview_click",
+    "vault_checkout_click",
+    "breaking_barz_summary_view",
+    "breaking_barz_open",
+    "breaking_barz_next",
+    "breaking_barz_previous",
+    "breaking_barz_reference_click"
   ]),
-  page: z.enum(["home", "links", "projects", "release", "vault", "playlist", "preview"]),
+  page: z.enum(["home", "links", "projects", "public", "release", "vault", "playlist", "preview"]),
   eventId: z.string().max(200).optional(),
   path: z.string().max(1000).default(""),
   hubPath: z.string().max(500).default(""),
@@ -66,6 +77,9 @@ const analyticsEventSchema = z.object({
   fbclid: z.string().max(500).default(""),
   linkType: z.string().max(100).default(""),
   linkLabel: z.string().max(200).default(""),
+  contentType: z.string().max(100).default(""),
+  contentId: z.string().max(200).default(""),
+  interactionSource: z.string().max(100).default(""),
   targetUrl: z.string().max(2000).default(""),
   utmSource: z.string().default(""),
   utmMedium: z.string().default(""),
@@ -81,7 +95,7 @@ const analyticsEventSchema = z.object({
     (event.eventType === "links_page_view" || event.eventType === "links_link_click");
   const isVaultEvent =
     event.page === "vault" &&
-    (event.eventType === "vault_page_view" || event.eventType === "vault_cta_click");
+    ["vault_page_view", "vault_cta_click", "vault_item_view", "vault_preview_click", "vault_checkout_click"].includes(event.eventType);
   const isPlaylistEvent =
     event.page === "playlist" &&
     (event.eventType === "playlist_page_view" ||
@@ -121,7 +135,9 @@ const analyticsEventSchema = z.object({
       "homepage_primary_cta_click",
       "project_card_click",
       "workout_collection_click",
-      "homepage_exclusives_click"
+      "homepage_exclusives_click",
+      "latest_intel_view",
+      "latest_intel_click"
     ].includes(event.eventType);
   const isProjectsEvent =
     event.page === "projects" &&
@@ -129,7 +145,22 @@ const analyticsEventSchema = z.object({
       event.eventType
     );
   const isReleaseProjectEvent =
-    event.page === "release" && event.eventType === "release_project_link_click";
+    event.page === "release" && ["release_project_link_click", "contextual_cta_click"].includes(event.eventType);
+  const isBreakingBarzEvent =
+    event.page === "release" &&
+    [
+      "breaking_barz_summary_view",
+      "breaking_barz_open",
+      "breaking_barz_next",
+      "breaking_barz_previous",
+      "breaking_barz_reference_click"
+    ].includes(event.eventType) &&
+    event.contentType === "release_annotation";
+  const isLatestIntelEvent =
+    event.page === "public" &&
+    ["latest_intel_view", "latest_intel_click"].includes(event.eventType) &&
+    event.contentType === "latest_intel" &&
+    Boolean(event.contentId);
 
   if (
     !isLinksEvent &&
@@ -138,7 +169,9 @@ const analyticsEventSchema = z.object({
     !isPreviewEvent &&
     !isHomepageEvent &&
     !isProjectsEvent &&
-    !isReleaseProjectEvent
+    !isReleaseProjectEvent &&
+    !isBreakingBarzEvent &&
+    !isLatestIntelEvent
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -167,6 +200,15 @@ const analyticsEventSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Project analytics require an event ID."
+    });
+  }
+  if (["latest_intel_view", "latest_intel_click", "vault_item_view", "vault_preview_click", "vault_checkout_click", "contextual_cta_click"].includes(event.eventType) && !(event.eventId || event.metaEventId)) {
+    ctx.addIssue({code: z.ZodIssueCode.custom, message: "Fan content analytics require an event ID."});
+  }
+  if (isBreakingBarzEvent && (!(event.eventId || event.metaEventId) || !event.releaseId || !event.contentId)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Breaking Barz analytics require an event ID, release, and annotation."
     });
   }
 });

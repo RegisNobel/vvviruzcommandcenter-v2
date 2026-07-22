@@ -1,9 +1,14 @@
 "use client";
 
-import {Layers3, Plus, Save, Trash2} from "lucide-react";
+import Image from "next/image";
+import {Layers3, Plus, Save, Trash2, UploadCloud} from "lucide-react";
 import {useMemo, useState} from "react";
 
-import type {ReleaseCategoryRecord, ReleaseSummary} from "@/lib/types";
+import type {
+  ReleaseCategoryRecord,
+  ReleaseCoverUploadResponse,
+  ReleaseSummary
+} from "@/lib/types";
 import {createId} from "@/lib/utils";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -32,6 +37,13 @@ function createDraftCategory(index: number): ReleaseCategoryRecord {
     name: "",
     slug: "",
     description: "",
+    project_type: "series",
+    artwork_path: "",
+    artwork_alt_text: "",
+    project_release_date: "",
+    spotify_url: "",
+    apple_music_url: "",
+    youtube_url: "",
     sort_order: index,
     release_ids: [],
     created_at: now,
@@ -60,6 +72,7 @@ export function ReleaseCategorySettingsPanel({
 }: ReleaseCategorySettingsPanelProps) {
   const [categories, setCategories] = useState(initialCategories);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [uploadingArtworkId, setUploadingArtworkId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const releaseOptionsById = useMemo(
     () => new Map(releaseOptions.map((release) => [release.id, release])),
@@ -111,6 +124,35 @@ export function ReleaseCategorySettingsPanel({
     setCategories((current) => [...current, createDraftCategory(current.length)]);
     setMessage(null);
     setSaveState("idle");
+  }
+
+  async function uploadProjectArtwork(category: ReleaseCategoryRecord, file: File) {
+    setUploadingArtworkId(category.id);
+    setMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("previousPath", category.artwork_path);
+      const response = await fetch("/api/releases/cover-upload", {
+        method: "POST",
+        body: formData
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | (ReleaseCoverUploadResponse & {message?: string})
+        | null;
+
+      if (!response.ok || !payload?.asset?.url) {
+        throw new Error(payload?.message || "Unable to upload project artwork.");
+      }
+
+      updateCategory(category.id, {artwork_path: payload.asset.url});
+      setMessage("Project artwork uploaded. Save Projects to keep the change.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to upload project artwork.");
+    } finally {
+      setUploadingArtworkId(null);
+    }
   }
 
   function deleteCategory(categoryId: string) {
@@ -167,15 +209,15 @@ export function ReleaseCategorySettingsPanel({
         <div>
           <div className="pill">
             <Layers3 size={12} />
-            Music Categories
+            Projects + Categories
           </div>
           <h2 className="mt-4 text-3xl font-semibold tracking-tight text-ink">
-            Music categories and project content
+            Project and category content
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-            Manage the category records that organize releases and supply public-project
-            names, descriptions, slugs, and assignments. Project approval and ordering
-            remain in the Public Projects section above.
+            Manage the single project record that organizes releases, artwork, public
+            context, format, and ordered tracklists. Project approval and homepage
+            ordering remain in the Public Projects section above.
           </p>
         </div>
 
@@ -191,11 +233,11 @@ export function ReleaseCategorySettingsPanel({
           </span>
           <button className="action-button-secondary" onClick={addCategory} type="button">
             <Plus size={16} />
-            Add Category
+            Add Project
           </button>
           <button className="action-button-primary" onClick={() => void saveCategories()} type="button">
             <Save size={16} />
-            Save Categories
+            Save Projects
           </button>
         </div>
       </div>
@@ -225,7 +267,7 @@ export function ReleaseCategorySettingsPanel({
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="field-label">Category Name</span>
+                <span className="field-label">Project Name</span>
                 <input
                   className="field-input"
                   onChange={(event) =>
@@ -241,6 +283,36 @@ export function ReleaseCategorySettingsPanel({
               </label>
 
               <label className="space-y-2">
+                <span className="field-label">Project Kind</span>
+                <select
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {
+                      project_type: event.target.value as ReleaseCategoryRecord["project_type"]
+                    })
+                  }
+                  value={category.project_type}
+                >
+                  <option value="series">Series / collection</option>
+                  <option value="album">Album</option>
+                  <option value="ep">EP</option>
+                  <option value="mixtape">Mixtape</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="field-label">Project Release Date</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {project_release_date: event.target.value})
+                  }
+                  type="date"
+                  value={category.project_release_date}
+                />
+              </label>
+
+              <label className="space-y-2">
                 <span className="field-label">URL Slug</span>
                 <input
                   className="field-input"
@@ -249,6 +321,94 @@ export function ReleaseCategorySettingsPanel({
                   }
                   placeholder="multiversus"
                   value={category.slug}
+                />
+              </label>
+
+              <div className="space-y-3 md:col-span-2">
+                <span className="field-label">Project Artwork</span>
+                <div className="grid gap-4 rounded-xl border border-edge bg-surface p-4 sm:grid-cols-[120px_1fr] sm:items-center">
+                  <div className="relative aspect-square overflow-hidden rounded-lg border border-edge bg-input">
+                    {category.artwork_path ? (
+                      <Image
+                        alt={category.artwork_alt_text || `${category.name || "Project"} artwork`}
+                        className="object-cover"
+                        fill
+                        sizes="120px"
+                        src={category.artwork_path}
+                        unoptimized
+                      />
+                    ) : null}
+                  </div>
+                  <div className="space-y-3">
+                    <label className="action-button-secondary cursor-pointer">
+                      <UploadCloud size={16} />
+                      {uploadingArtworkId === category.id ? "Uploading..." : "Upload Artwork"}
+                      <input
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={uploadingArtworkId === category.id}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadProjectArtwork(category, file);
+                          event.currentTarget.value = "";
+                        }}
+                        type="file"
+                      />
+                    </label>
+                    <input
+                      className="field-input"
+                      onChange={(event) =>
+                        updateCategory(category.id, {artwork_path: event.target.value})
+                      }
+                      placeholder="Or paste an artwork URL"
+                      value={category.artwork_path}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">Artwork Alt Text</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {artwork_alt_text: event.target.value})
+                  }
+                  placeholder={`${category.name || "Project"} artwork`}
+                  value={category.artwork_alt_text}
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="field-label">Spotify URL</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {spotify_url: event.target.value})
+                  }
+                  value={category.spotify_url}
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="field-label">Apple Music URL</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {apple_music_url: event.target.value})
+                  }
+                  value={category.apple_music_url}
+                />
+              </label>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="field-label">YouTube URL</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateCategory(category.id, {youtube_url: event.target.value})
+                  }
+                  value={category.youtube_url}
                 />
               </label>
 

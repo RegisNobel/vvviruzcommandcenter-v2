@@ -53,6 +53,10 @@ export default async function PublicProjectsPage() {
             {projects.map((project, index) => {
               const release = project.representativeRelease;
               const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
+              const artworkPath = project.artworkPath || release.cover_art_path;
+              const artworkAltText =
+                project.artworkAltText ||
+                `${project.name} project artwork, represented by ${coverArtAltText}`;
               const href = getPublicProjectPath(project.slug);
 
               return (
@@ -67,14 +71,14 @@ export default async function PublicProjectsPage() {
                   >
                     <div className="grid sm:grid-cols-[0.72fr_1.28fr]">
                       <div className="public-art-frame relative aspect-square">
-                        {release.cover_art_path ? (
+                        {artworkPath ? (
                           <Image
-                            alt={`${project.name} project artwork, represented by ${coverArtAltText}`}
+                            alt={artworkAltText}
                             className="object-cover transition duration-500 group-hover:scale-[1.03]"
                             fill
                             priority={index < 2}
                             sizes="(max-width: 639px) calc(100vw - 40px), (max-width: 1279px) 36vw, 360px"
-                            src={release.cover_art_path}
+                            src={artworkPath}
                           />
                         ) : (
                           <div className="public-art-placeholder items-center justify-center">
@@ -84,6 +88,7 @@ export default async function PublicProjectsPage() {
                       </div>
                       <div className="flex min-h-full flex-col p-6 sm:p-7">
                         <p className="public-eyebrow">
+                          {project.projectType === "series" ? "series" : project.projectType} /{" "}
                           {project.releaseCount} {project.releaseCount === 1 ? "release" : "releases"}
                         </p>
                         <h2 className="public-heading mt-4 text-3xl font-semibold">

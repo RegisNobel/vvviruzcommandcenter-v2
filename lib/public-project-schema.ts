@@ -33,7 +33,10 @@ export function buildPublicProjectJsonLd({
   const projectPath = getPublicProjectPath(project.slug);
   const projectUrl = getPublicSiteUrl(projectPath);
   const seriesId = getPublicProjectSeriesId(baseUrl, project.slug);
-  const image = getPublicHttpUrl(project.representativeRelease.cover_art_path);
+  const image = getPublicHttpUrl(
+    project.artworkPath || project.representativeRelease.cover_art_path
+  );
+  const isAlbumLike = project.projectType !== "series";
   const releaseItems = project.releases.map((release, index) => ({
     "@type": "ListItem",
     position: index + 1,
@@ -59,7 +62,7 @@ export function buildPublicProjectJsonLd({
         breadcrumb: {"@id": `${projectUrl}#breadcrumb`}
       }),
       compactObject({
-        "@type": "CreativeWorkSeries",
+        "@type": isAlbumLike ? "MusicAlbum" : "CreativeWorkSeries",
         "@id": seriesId,
         name: project.name,
         url: projectUrl,
@@ -70,9 +73,17 @@ export function buildPublicProjectJsonLd({
           name: artistName,
           url: baseUrl
         },
+        additionalType: isAlbumLike ? project.projectType : undefined,
+        datePublished: project.projectReleaseDate || undefined,
+        sameAs: [project.spotifyUrl, project.appleMusicUrl, project.youtubeUrl].filter(Boolean),
         hasPart: project.releases.map((release) => ({
           "@id": `${getPublicSiteUrl(`/music/${encodeURIComponent(release.slug)}`)}#music-recording`
-        }))
+        })),
+        track: isAlbumLike
+          ? project.releases.map((release) => ({
+              "@id": `${getPublicSiteUrl(`/music/${encodeURIComponent(release.slug)}`)}#music-recording`
+            }))
+          : undefined
       }),
       {
         "@type": "ItemList",

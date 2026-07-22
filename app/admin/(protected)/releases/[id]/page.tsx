@@ -17,6 +17,7 @@ import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
 import {readPlaylists} from "@/lib/repositories/playlists";
 import {prisma} from "@/lib/db/prisma";
+import {listReleaseAnnotations} from "@/lib/repositories/fan-content";
 
 export default async function AdminReleaseDetailPage({
   params
@@ -38,7 +39,8 @@ export default async function AdminReleaseDetailPage({
       analyticsEvents,
       reports,
       playlists,
-      playlistMemberships
+      playlistMemberships,
+      annotations
     ] = await Promise.all([
       readRelease(id),
       readCopiesByReleaseId(id),
@@ -59,7 +61,8 @@ export default async function AdminReleaseDetailPage({
       readPlaylists({ archiveStatus: "active" }),
       prisma.playlistRelease.findMany({
         where: { releaseId: id }
-      })
+      }),
+      listReleaseAnnotations(id)
     ]);
 
     const views = analyticsEvents.filter((event) => event.eventType === "links_page_view");
@@ -85,6 +88,7 @@ export default async function AdminReleaseDetailPage({
         reports={reports}
         initialPlaylists={playlists}
         initialPlaylistMemberships={playlistMemberships}
+        initialAnnotations={annotations}
       />
     );
   } catch {

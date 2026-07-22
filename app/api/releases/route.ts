@@ -23,6 +23,8 @@ const createReleaseSchema = z.object({
   cover_art_alt_text: z.string().default(""),
   social_share_title: z.string().default(""),
   social_share_description: z.string().default(""),
+  contextual_cta_label: z.string().default(""),
+  contextual_cta_url: z.string().default(""),
   streaming_links: z
     .object({
       spotify: z.string().default(""),

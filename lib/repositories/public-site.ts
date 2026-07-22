@@ -38,6 +38,8 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
     coverArtAltText: true;
     socialShareTitle: true;
     socialShareDescription: true;
+    contextualCtaLabel: true;
+    contextualCtaUrl: true;
     spotifyUrl: true;
     appleMusicUrl: true;
     youtubeUrl: true;
@@ -55,6 +57,9 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
             name: true;
             slug: true;
             description: true;
+            projectType: true;
+            artworkPath: true;
+            artworkAltText: true;
           };
         };
       };
@@ -87,6 +92,8 @@ const publicReleaseSelect = {
   coverArtAltText: true,
   socialShareTitle: true,
   socialShareDescription: true,
+  contextualCtaLabel: true,
+  contextualCtaUrl: true,
   spotifyUrl: true,
   appleMusicUrl: true,
   youtubeUrl: true,
@@ -103,7 +110,10 @@ const publicReleaseSelect = {
           id: true,
           name: true,
           slug: true,
-          description: true
+          description: true,
+          projectType: true,
+          artworkPath: true,
+          artworkAltText: true
         }
       }
     },
@@ -138,6 +148,8 @@ async function toPublicRelease(release: PublicReleaseModel): Promise<PublicRelea
     cover_art_alt_text: release.coverArtAltText || "",
     social_share_title: release.socialShareTitle || "",
     social_share_description: release.socialShareDescription || "",
+    contextual_cta_label: release.contextualCtaLabel || "",
+    contextual_cta_url: release.contextualCtaUrl || "",
     spotify_url: release.spotifyUrl || "",
     apple_music_url: release.appleMusicUrl || "",
     youtube_url: release.youtubeUrl || "",
@@ -151,6 +163,9 @@ async function toPublicRelease(release: PublicReleaseModel): Promise<PublicRelea
       name: assignment.category.name,
       slug: assignment.category.slug,
       description: assignment.category.description,
+      project_type: assignment.category.projectType as PublicReleaseRecord["categories"][number]["project_type"],
+      artwork_path: rewriteAssetUrlToBlob(assignment.category.artworkPath, blobOrigin),
+      artwork_alt_text: assignment.category.artworkAltText,
       release_count: 0
     })),
     created_on: release.createdOn.toISOString(),
@@ -203,7 +218,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings-v5"],
+  ["public-site-settings-v6"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }
@@ -276,7 +291,7 @@ export async function getLinksPageRelease(selectedReleaseId: string) {
 
 const getCachedPublishedFeaturedReleasesByIds = unstable_cache(
   async (releaseIdsKey: string) => {
-  const normalizedIds = releaseIdsKey.split("|").filter(Boolean).slice(0, 3);
+  const normalizedIds = releaseIdsKey.split("|").filter(Boolean).slice(0, 6);
 
   if (normalizedIds.length === 0) {
     return [];
@@ -371,12 +386,19 @@ export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) 
 
 type PublicProjectModel = Prisma.ReleaseCategoryGetPayload<{
   select: {
+    appleMusicUrl: true;
+    artworkAltText: true;
+    artworkPath: true;
     description: true;
     id: true;
     name: true;
+    projectReleaseDate: true;
+    projectType: true;
     slug: true;
     sortOrder: true;
+    spotifyUrl: true;
     updatedAt: true;
+    youtubeUrl: true;
     releases: {
       select: {
         sortOrder: true;
@@ -447,6 +469,7 @@ async function toPublicProject(
   const releases = await Promise.all(
     orderedAssignments.map((assignment) => toPublicProjectRelease(assignment.release))
   );
+  const blobOrigin = await getBlobOrigin();
   const latestRelease = [...releases].sort((left, right) => {
     const leftDate = left.release_date ? new Date(left.release_date).getTime() : 0;
     const rightDate = right.release_date ? new Date(right.release_date).getTime() : 0;
@@ -457,15 +480,22 @@ async function toPublicProject(
     .sort((left, right) => right.getTime() - left.getTime())[0];
 
   return {
+    appleMusicUrl: category.appleMusicUrl,
+    artworkAltText: category.artworkAltText.trim(),
+    artworkPath: rewriteAssetUrlToBlob(category.artworkPath.trim(), blobOrigin),
     description: category.description.trim(),
     id: category.id,
     latestRelease,
     name: category.name.trim(),
+    projectReleaseDate: toDateInputValue(category.projectReleaseDate),
+    projectType: category.projectType as PublicProjectRecord["projectType"],
     releaseCount: releases.length,
     releases,
     representativeRelease: await toPublicProjectRelease(representativeAssignment.release),
     slug: eligibility.slug,
-    updatedAt: updatedAt.toISOString()
+    spotifyUrl: category.spotifyUrl,
+    updatedAt: updatedAt.toISOString(),
+    youtubeUrl: category.youtubeUrl
   };
 }
 
@@ -485,10 +515,16 @@ const getCachedEligiblePublicProjects = unstable_cache(
         slug: {in: approvedProjectSlugs}
       },
       select: {
+        appleMusicUrl: true,
+        artworkAltText: true,
+        artworkPath: true,
         description: true,
         id: true,
         name: true,
+        projectReleaseDate: true,
+        projectType: true,
         sortOrder: true,
+        spotifyUrl: true,
         updatedAt: true,
         releases: {
           where: {
@@ -504,7 +540,8 @@ const getCachedEligiblePublicProjects = unstable_cache(
           },
           orderBy: [{sortOrder: "asc"}]
         },
-        slug: true
+        slug: true,
+        youtubeUrl: true
       },
       orderBy: [{sortOrder: "asc"}, {name: "asc"}]
     });
@@ -522,7 +559,7 @@ const getCachedEligiblePublicProjects = unstable_cache(
       .map((slug) => projectBySlug.get(slug))
       .filter((project): project is PublicProjectRecord => Boolean(project));
   },
-  ["eligible-public-projects-v2"],
+  ["eligible-public-projects-v3"],
   {
     tags: [
       PUBLIC_CACHE_TAGS.releases,
@@ -560,15 +597,25 @@ export async function getHomepageProjects() {
   return projects.slice(0, HOMEPAGE_PROJECT_LIMIT);
 }
 
-export async function getBuiltForMotionRelease(releaseId = "") {
-  const normalizedReleaseId = releaseId.trim();
+export async function getBuiltForMotionReleases(releaseIds: string[] = [], legacyReleaseId = "") {
+  const normalizedIds = releaseIds
+    .map((releaseId) => releaseId.trim())
+    .filter(Boolean)
+    .filter((releaseId, index, values) => values.indexOf(releaseId) === index)
+    .slice(0, 6);
 
-  if (!normalizedReleaseId) {
-    return getCachedPublishedReleaseBySlug("beast-mode");
+  if (normalizedIds.length === 0) {
+    const normalizedLegacyId = legacyReleaseId.trim();
+
+    if (normalizedLegacyId) {
+      return getCachedPublishedFeaturedReleasesByIds(normalizedLegacyId);
+    }
+
+    const fallback = await getCachedPublishedReleaseBySlug("beast-mode");
+    return fallback ? [fallback] : [];
   }
 
-  const releases = await getCachedPublishedFeaturedReleasesByIds(normalizedReleaseId);
-  return releases[0] ?? null;
+  return getCachedPublishedFeaturedReleasesByIds(normalizedIds.join("|"));
 }
 
 const getCachedPublishedReleases = unstable_cache(

@@ -84,14 +84,15 @@ export async function PUT(
 
     const normalized = touchRelease(release);
 
-    await saveRelease(normalized);
+    const saveResult = await saveRelease(normalized);
 
     revalidateTag(PUBLIC_CACHE_TAGS.releases);
     revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
 
     return NextResponse.json({
       release: normalized,
-      summary: summarizeRelease(normalized)
+      summary: summarizeRelease(normalized),
+      annotationRevalidation: saveResult.annotationRevalidation
     });
   } catch {
     return NextResponse.json({message: "Release update failed."}, {status: 500});

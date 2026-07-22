@@ -3,11 +3,12 @@
 import {useDeferredValue, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {StickyContextBar} from "@/components/sticky-context-bar";
+import {AdminOperatorQueue} from "@/components/admin-operator-queue";
 import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
 
 import {getReleaseProgressTone} from "@/lib/releases";
-import type {ReleaseSummary} from "@/lib/types";
+import type {AdminOperatorQueueRecord, ReleaseSummary} from "@/lib/types";
 
 function formatReleaseType(value: "nerdcore" | "mainstream") {
   return value === "mainstream" ? "Mainstream" : "Nerdcore";
@@ -64,7 +65,15 @@ function getDiscoveryStatusClass(status: ReleaseSummary["discovery_status"]) {
   return "status-badge-danger";
 }
 
-export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
+export function ReleasesPageContent({
+  operatorQueue,
+  refreshOperationalHealthAction,
+  releases
+}: {
+  operatorQueue: AdminOperatorQueueRecord;
+  refreshOperationalHealthAction: () => Promise<void>;
+  releases: ReleaseSummary[];
+}) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const [releaseItems, setReleaseItems] = useState(releases);
@@ -207,6 +216,10 @@ export function ReleasesPageContent({releases}: {releases: ReleaseSummary[]}) {
           </div>
         </section>
 
+        <AdminOperatorQueue
+          queue={operatorQueue}
+          refreshAction={refreshOperationalHealthAction}
+        />
 
         <StickyContextBar
           className="hidden lg:block"

@@ -4,12 +4,16 @@ import Link from "next/link";
 import type {SiteSettingsRecord} from "@/lib/types";
 import {getSiteIconUrl} from "@/lib/site-assets";
 import {PublicMobileNav} from "@/components/public-mobile-nav";
+import {LatestIntelRail} from "@/components/latest-intel-rail";
+import type {PublicFanUpdate} from "@/lib/types";
 
 export async function PublicSiteChrome({
   children,
+  latestIntel,
   siteSettings
 }: {
   children: React.ReactNode;
+  latestIntel: PublicFanUpdate[];
   siteSettings: SiteSettingsRecord;
 }) {
   const navItems = [
@@ -114,6 +118,11 @@ export async function PublicSiteChrome({
           </nav>
         </div>
       </header>
+
+      <LatestIntelRail
+        configuredHubPaths={(siteSettings.nav_hubs || []).map((hub) => hub.path)}
+        items={latestIntel}
+      />
 
       <main className="public-canvas flex-grow">
         {children}

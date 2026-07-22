@@ -6,6 +6,7 @@ import {NextResponse} from "next/server";
 
 import {runAllBackups} from "@/lib/backups/runner";
 import {cleanupStalePublicRateLimits} from "@/lib/public-rate-limit";
+import {runOperationalHealthChecks} from "@/lib/repositories/operational-health";
 
 function isAuthorizedCronRequest(request: Request) {
   const cronSecret = process.env.CRON_SECRET?.trim();
@@ -26,10 +27,11 @@ export async function GET(request: Request) {
     cleanupStalePublicRateLimits(),
     runAllBackups()
   ]);
+  const health = await runOperationalHealthChecks();
   const {ok, results} = backupResult;
 
   return NextResponse.json(
-    {ok, results, maintenance: {publicRateLimitRowsDeleted: cleanupCount}},
+    {ok, results, health, maintenance: {publicRateLimitRowsDeleted: cleanupCount}},
     {status: ok ? 200 : 500}
   );
 }

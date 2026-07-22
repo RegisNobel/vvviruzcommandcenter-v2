@@ -24,10 +24,12 @@ import {
 } from "@/lib/public-utils";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
-import {LyricsContent} from "@/components/lyrics-content";
+import {BreakingBarzExperience} from "@/components/breaking-barz-experience";
 import {PublicRelatedReleaseItem} from "@/components/public-related-release-item";
 import {ProjectTrackedLink} from "@/components/public-project-analytics";
+import {FanTrackedLink} from "@/components/public-fan-content-analytics";
 import {getPublicProjectPath} from "@/lib/public-projects";
+import {listPublicAnnotations, resolveContextualFanCta} from "@/lib/repositories/fan-content";
 
 type ReleasePageParams = {
   slug: string;
@@ -100,8 +102,10 @@ export default async function PublicReleaseDetailPage({
     notFound();
   }
 
-  const [relatedReleases] = await Promise.all([
-    getRelatedPublishedReleases(release.id, release.type)
+  const [relatedReleases, annotations, contextualCta] = await Promise.all([
+    getRelatedPublishedReleases(release.id, release.type),
+    listPublicAnnotations(release.id),
+    resolveContextualFanCta(release)
   ]);
   const eligibleProjectSlugs = new Set<string>(eligibleProjects.map((project) => project.slug));
   const projectCategories = release.categories.filter((category) =>
@@ -126,6 +130,22 @@ export default async function PublicReleaseDetailPage({
     projectCategories,
     release
   });
+  const rightRail = hasRightRail ? <>
+    {youtubeEmbedUrl ? (
+      <article className="public-panel px-5 py-5">
+        <h2 className="public-eyebrow">{content.video_heading}</h2>
+        <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
+          <iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="aspect-video w-full" loading="lazy" src={youtubeEmbedUrl} title={`${release.title} video`}/>
+        </div>
+      </article>
+    ) : null}
+    {hasRelatedReleases ? (
+      <section aria-labelledby="related-releases-heading" className="space-y-4">
+        <div className="flex items-end justify-between gap-4"><div><p className="public-eyebrow">{content.related_releases_eyebrow}</p><h2 className="public-heading mt-2 text-2xl font-semibold" id="related-releases-heading">{content.related_releases_heading}</h2></div><Link className="shrink-0 border-b border-transparent pb-1 text-xs font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]" href="/music">{content.related_releases_view_all_label}</Link></div>
+        <div className="space-y-3">{relatedReleases.map((relatedRelease)=><PublicRelatedReleaseItem fallbackText={siteSettings.artist_name} key={relatedRelease.id} platformLabels={platformLabels} release={relatedRelease}/>)}</div>
+      </section>
+    ) : null}
+  </> : null;
 
   return (
     <main className="public-page-wrap">
@@ -259,87 +279,12 @@ export default async function PublicReleaseDetailPage({
           </div>
         </section>
 
-        {hasPublicLyrics || hasRightRail ? (
-          <section
-            className={
-              hasPublicLyrics && hasRightRail
-                ? "grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)] lg:items-start lg:gap-12 xl:gap-16"
-                : hasPublicLyrics
-                  ? "max-w-4xl"
-                  : "mx-auto max-w-2xl"
-            }
-          >
-            {hasPublicLyrics ? (
-              <article aria-label={`${release.title} lyrics`} className="min-w-0 py-2 text-left">
-                <h2 className="public-eyebrow">{content.lyrics_heading}</h2>
-                <LyricsContent
-                  className="mt-6"
-                  headingClassName="mb-3 mt-8 text-xs font-semibold uppercase tracking-[0.22em] text-[#d8b861] first:mt-0"
-                  lineClassName="font-sans text-[15px] leading-[1.8] text-[#d7dde3] sm:text-base"
-                  lyrics={release.lyrics}
-                  spacerClassName="h-4"
-                />
-              </article>
-            ) : null}
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div><p className="public-eyebrow">Continue exploring</p><h2 className="public-heading mt-3 text-3xl font-semibold">Follow the signal</h2></div>
+          <div className="lg:text-right"><p className="text-xs text-[#8f99a4]">{contextualCta.reason}</p><FanTrackedLink className="public-action-primary mt-3" eventKey={release.id} eventType="contextual_cta_click" href={contextualCta.href} page="release" releaseId={release.id}>{contextualCta.label}</FanTrackedLink></div>
+        </section>
 
-            {hasRightRail ? (
-              <aside aria-label={`${release.title} media and related releases`} className="space-y-10">
-                {youtubeEmbedUrl ? (
-                  <article className="public-panel px-5 py-5">
-                    <h2 className="public-eyebrow">
-                      {content.video_heading}
-                    </h2>
-                    <div className="mt-4 overflow-hidden rounded-lg border border-white/10">
-                      <iframe
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                        className="aspect-video w-full"
-                        loading="lazy"
-                        src={youtubeEmbedUrl}
-                        title={`${release.title} video`}
-                      />
-                    </div>
-                  </article>
-                ) : null}
-
-                {hasRelatedReleases ? (
-                  <section aria-labelledby="related-releases-heading" className="space-y-4">
-                    <div className="flex items-end justify-between gap-4">
-                      <div>
-                        <p className="public-eyebrow">
-                          {content.related_releases_eyebrow}
-                        </p>
-                        <h2
-                          className="public-heading mt-2 text-2xl font-semibold"
-                          id="related-releases-heading"
-                        >
-                          {content.related_releases_heading}
-                        </h2>
-                      </div>
-                      <Link
-                        className="shrink-0 border-b border-transparent pb-1 text-xs font-semibold text-[#e3c16e] transition hover:border-[rgba(246,201,69,0.7)] hover:text-[#fff2c8]"
-                        href="/music"
-                      >
-                        {content.related_releases_view_all_label}
-                      </Link>
-                    </div>
-
-                    <div className="space-y-3">
-                      {relatedReleases.map((relatedRelease) => (
-                        <PublicRelatedReleaseItem
-                          fallbackText={siteSettings.artist_name}
-                          key={relatedRelease.id}
-                          platformLabels={platformLabels}
-                          release={relatedRelease}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-              </aside>
-            ) : null}
-          </section>
-        ) : null}
+        {hasPublicLyrics ? <BreakingBarzExperience annotations={annotations} lyrics={release.lyrics} lyricsHeading={content.lyrics_heading} rail={hasRightRail ? rightRail : null} releaseId={release.id} releaseTitle={release.title}/> : hasRightRail ? <aside className="mx-auto max-w-2xl space-y-10">{rightRail}</aside> : null}
       </div>
     </main>
   );

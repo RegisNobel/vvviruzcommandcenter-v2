@@ -77,6 +77,13 @@ export type ReleaseCategoryRecord = {
   name: string;
   slug: string;
   description: string;
+  project_type: "series" | "album" | "ep" | "mixtape";
+  artwork_path: string;
+  artwork_alt_text: string;
+  project_release_date: string;
+  spotify_url: string;
+  apple_music_url: string;
+  youtube_url: string;
   sort_order: number;
   release_ids: string[];
   created_at: string;
@@ -88,6 +95,9 @@ export type PublicReleaseCategory = {
   name: string;
   slug: string;
   description: string;
+  project_type: "series" | "album" | "ep" | "mixtape";
+  artwork_path: string;
+  artwork_alt_text: string;
   release_count: number;
 };
 
@@ -128,6 +138,9 @@ export type SiteContentSettings = {
     featured_release_ids: string[];
     built_for_motion_enabled: boolean;
     built_for_motion_release_id: string;
+    built_for_motion_release_ids: string[];
+    built_for_motion_heading: string;
+    built_for_motion_description: string;
     recent_releases_eyebrow: string;
     recent_releases_heading: string;
     recent_releases_view_all_label: string;
@@ -276,6 +289,8 @@ export type ReleaseRecord = {
   cover_art_alt_text: string;
   social_share_title: string;
   social_share_description: string;
+  contextual_cta_label: string;
+  contextual_cta_url: string;
   featured_video_url: string;
   public_lyrics_enabled: boolean;
   is_published: boolean;
@@ -351,6 +366,8 @@ export type PublicReleaseRecord = {
   cover_art_alt_text: string;
   social_share_title: string;
   social_share_description: string;
+  contextual_cta_label: string;
+  contextual_cta_url: string;
   spotify_url: string;
   apple_music_url: string;
   youtube_url: string;
@@ -362,6 +379,53 @@ export type PublicReleaseRecord = {
   categories: PublicReleaseCategory[];
   created_on: string;
   updated_on: string;
+};
+
+export type PublicReleaseAnnotation = {
+  id: string;
+  type: string;
+  lyric_excerpt: string;
+  summary: string;
+  title: string;
+  explanation: string;
+  confidence: string;
+  anchor_version: number;
+  section_key: string;
+  section_occurrence: number;
+  start_line_index: number;
+  end_line_index: number;
+  sources: Array<{label: string; url: string}>;
+};
+
+export type ReleaseAnnotationRecord = PublicReleaseAnnotation & {
+  release_id: string;
+  status: "draft" | "ready" | "needs_reanchoring" | "archived";
+  is_public: boolean;
+  sort_order: number;
+  anchor_error: string;
+  updated_at: string;
+};
+
+export type PublicFanUpdate = {
+  id: string;
+  type: string;
+  title: string;
+  summary: string;
+  href: string;
+  published_at: string;
+};
+
+export type PublicVaultItem = {
+  id: string;
+  release_id: string | null;
+  title: string;
+  slug: string;
+  item_type: string;
+  description: string;
+  cover_art_url: string;
+  preview_url: string;
+  price_label: string;
+  checkout_url: string;
 };
 
 export type SiteSettingsRecord = {
@@ -835,6 +899,65 @@ export type AppearsOnRecord = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+};
+
+export type OperationalHealthCategory =
+  | "assets"
+  | "backups"
+  | "email"
+  | "public-site"
+  | "scheduled-operations"
+  | "streaming";
+
+export type OperationalHealthSeverity = "critical" | "warning";
+
+export type OperationalHealthIssueRecord = {
+  id: string;
+  check_key: string;
+  category: OperationalHealthCategory;
+  severity: OperationalHealthSeverity;
+  title: string;
+  message: string;
+  action_path: string;
+  entity_type: string;
+  entity_id: string;
+  detected_at: string;
+  updated_at: string;
+};
+
+export type AdminOperatorQueueRecord = {
+  next_release: {
+    id: string;
+    title: string;
+    release_date: string;
+    stage: ReleaseStageLabel;
+    action_path: string;
+  } | null;
+  primary_blocker: {
+    label: string;
+    detail: string;
+    action_path: string;
+  };
+  active_campaign: {
+    batch_id: string;
+    label: string;
+    release_title: string;
+    action_path: string;
+  } | null;
+  latest_decision: {
+    label: string;
+    release_title: string;
+    reviewed_at: string;
+    action_path: string;
+  } | null;
+  backup_health: {
+    status: "healthy" | "warning" | "critical";
+    label: string;
+    detail: string;
+    action_path: string;
+  };
+  critical_issue: OperationalHealthIssueRecord | null;
+  issue_count: number;
 };
 
 export type ShortLinkStatus = "ACTIVE" | "ARCHIVED" | "PAUSED";

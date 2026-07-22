@@ -159,6 +159,22 @@ const siteSettingsSchema = z.object({
         }),
       built_for_motion_enabled: z.boolean().default(true),
       built_for_motion_release_id: z.string().trim().default(""),
+      built_for_motion_release_ids: z
+        .array(z.string().trim().min(1))
+        .max(6)
+        .default([])
+        .superRefine((values, ctx) => {
+          if (new Set(values).size !== values.length) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Lock-In Rotation cannot contain duplicate releases."
+            });
+          }
+        }),
+      built_for_motion_heading: z.string().trim().min(1).max(80).default("Lock-In Rotation"),
+      built_for_motion_description: z.string().trim().min(1).max(240).default(
+        "High-energy tracks for training, focus, and full-send playlists."
+      ),
       recent_releases_eyebrow: z.string().default(""),
       recent_releases_heading: z.string().default(""),
       recent_releases_view_all_label: z.string().default(""),
@@ -339,9 +355,12 @@ export async function PUT(request: Request) {
   }
 
   const featuredReleaseIds = parsed.data.site_content.home.featured_release_ids;
-  const builtForMotionReleaseId = parsed.data.site_content.home.built_for_motion_release_id;
+  const builtForMotionReleaseIds =
+    parsed.data.site_content.home.built_for_motion_release_ids.length > 0
+      ? parsed.data.site_content.home.built_for_motion_release_ids
+      : [parsed.data.site_content.home.built_for_motion_release_id].filter(Boolean);
   const referencedReleaseIds = Array.from(
-    new Set([...featuredReleaseIds, builtForMotionReleaseId].filter(Boolean))
+    new Set([...featuredReleaseIds, ...builtForMotionReleaseIds].filter(Boolean))
   );
 
   if (referencedReleaseIds.length > 0) {
@@ -410,6 +429,11 @@ export async function PUT(request: Request) {
       ...parsed.data,
       site_content: {
         ...parsed.data.site_content,
+        home: {
+          ...parsed.data.site_content.home,
+          built_for_motion_release_id: builtForMotionReleaseIds[0] ?? "",
+          built_for_motion_release_ids: builtForMotionReleaseIds
+        },
         exclusive: normalizeExclusiveDeliverySettings(parsed.data.site_content.exclusive)
       }
     });

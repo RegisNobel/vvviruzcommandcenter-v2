@@ -26,7 +26,14 @@ import {
   utmSourcePresets,
   type UtmFields
 } from "@/lib/short-link-url";
+import {
+  campaignPhaseOptions,
+  campaignPlatformOptions,
+  campaignVisualOptions,
+  generateCampaignNaming
+} from "@/lib/campaign-naming";
 import type {
+  CopySummary,
   ReleaseSummary,
   ShortLinkAdminFilter,
   ShortLinkRecord,
@@ -118,12 +125,14 @@ function createDestinationDrafts(links: ShortLinkRecord[]) {
 
 export function ShortLinksAdminPage({
   baseUrl,
+  copyOptions,
   initialLinks,
   releaseOptions,
   statusFilter,
   prefill
 }: {
   baseUrl: string;
+  copyOptions: CopySummary[];
   initialLinks: ShortLinkRecord[];
   releaseOptions: ReleaseSummary[];
   statusFilter: ShortLinkAdminFilter;
@@ -143,6 +152,13 @@ export function ShortLinksAdminPage({
   const [releaseId, setReleaseId] = useState(prefill?.releaseId || "");
   const [campaignLabel, setCampaignLabel] = useState(prefill?.campaignLabel || "");
   const [contentLabel, setContentLabel] = useState(prefill?.contentLabel || "");
+  const [selectedCopyId, setSelectedCopyId] = useState("");
+  const [visual, setVisual] = useState("amv");
+  const [revision, setRevision] = useState("rev1");
+  const [platform, setPlatform] = useState("meta");
+  const [audience, setAudience] = useState("broad");
+  const [phase, setPhase] = useState("launch");
+  const [adName, setAdName] = useState("");
   const [utmFields, setUtmFields] = useState<UtmFields>(() => ({
     utm_source: prefill?.utmSource || "",
     utm_medium: prefill?.utmMedium || "",
@@ -168,6 +184,10 @@ export function ShortLinksAdminPage({
       return "";
     }
   }, [destinationUrl, utmFields]);
+  const filteredCopyOptions = useMemo(
+    () => copyOptions.filter((copy) => !releaseId || copy.release_id === releaseId),
+    [copyOptions, releaseId]
+  );
 
   useEffect(() => {
     setContextDrafts(createContextDrafts(initialLinks));
@@ -187,11 +207,52 @@ export function ShortLinksAdminPage({
     }));
   }, [releaseId, releaseOptions]);
 
+  useEffect(() => {
+    if (
+      selectedCopyId &&
+      !filteredCopyOptions.some((copy) => copy.id === selectedCopyId)
+    ) {
+      setSelectedCopyId("");
+    }
+  }, [filteredCopyOptions, selectedCopyId]);
+
   function updateUtmField(key: keyof UtmFields, value: string) {
     setUtmFields((current) => ({
       ...current,
       [key]: value
     }));
+  }
+
+  function updateAdName(value: string) {
+    setAdName(value);
+    setContentLabel(value);
+    updateUtmField("utm_content", value);
+  }
+
+  function handleGenerateCampaignContext() {
+    const release = releaseOptions.find((option) => option.id === releaseId);
+
+    if (!release) {
+      setMessage("Select a release before generating campaign context.");
+      return;
+    }
+
+    const copy = filteredCopyOptions.find((option) => option.id === selectedCopyId) ?? null;
+    const generated = generateCampaignNaming({
+      audience,
+      copy,
+      phase,
+      platform,
+      releaseSlug: release.slug,
+      revision,
+      visual
+    });
+
+    setAdName(generated.adName);
+    setCampaignLabel(generated.campaignLabel);
+    setContentLabel(generated.contentLabel);
+    setUtmFields(generated.utm);
+    setMessage("Campaign name, Short Link context, and UTM fields generated. Review and edit before saving.");
   }
 
   function handleCreate() {
@@ -214,6 +275,8 @@ export function ShortLinksAdminPage({
         setReleaseId("");
         setCampaignLabel("");
         setContentLabel("");
+        setSelectedCopyId("");
+        setAdName("");
         setUtmFields({});
         await navigator.clipboard?.writeText(getShortUrl(baseUrl, result.link.slug));
         setCopiedSlug(result.link.slug);
@@ -411,15 +474,26 @@ export function ShortLinksAdminPage({
             </button>
           </div>
 
-          <div className="rounded-lg border border-edge bg-surface-elevated p-4">
-            <p className="field-label">Attribution handoff</p>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Optional context lets Attribution connect short-link clicks back to a
-              release, campaign, or creative label without adding another analytics
-              surface here.
-            </p>
+          <div className="rounded-lg border border-[rgba(96,165,250,0.24)] bg-[rgba(96,165,250,0.05)] p-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="field-label">Campaign Naming + UTM Generator</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                  Build parser-safe Meta names and matching Short Link context from the
+                  release, copy angle, visual, revision, platform, audience, and phase.
+                  Every generated value remains editable.
+                </p>
+              </div>
+              <button
+                className="action-button-secondary"
+                onClick={handleGenerateCampaignContext}
+                type="button"
+              >
+                Generate context
+              </button>
+            </div>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="block">
                 <span className="field-label">Release</span>
                 <select
@@ -437,23 +511,82 @@ export function ShortLinksAdminPage({
               </label>
 
               <label className="block">
-                <span className="field-label">Campaign Label</span>
-                <input
+                <span className="field-label">Copy Angle</span>
+                <select
                   className="field-input mt-2"
-                  onChange={(event) => setCampaignLabel(event.target.value)}
-                  placeholder="Mad Bunny rollout"
-                  value={campaignLabel}
-                />
+                  onChange={(event) => setSelectedCopyId(event.target.value)}
+                  value={selectedCopyId}
+                >
+                  <option value="">Unlinked copy</option>
+                  {filteredCopyOptions.map((copy) => (
+                    <option key={copy.id} value={copy.id}>
+                      {copy.hook_type.replace(/-/g, " ")} / {copy.hook.slice(0, 70)}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="block">
-                <span className="field-label">Content Label</span>
+                <span className="field-label">Visual</span>
                 <input
                   className="field-input mt-2"
-                  onChange={(event) => setContentLabel(event.target.value)}
-                  placeholder="AMV hook test"
-                  value={contentLabel}
+                  list="campaign-visual-options"
+                  onChange={(event) => setVisual(event.target.value)}
+                  placeholder="amv"
+                  value={visual}
                 />
+                <datalist id="campaign-visual-options">
+                  {campaignVisualOptions.map((option) => <option key={option} value={option} />)}
+                </datalist>
+              </label>
+
+              <label className="block">
+                <span className="field-label">Revision</span>
+                <input className="field-input mt-2" onChange={(event) => setRevision(event.target.value)} value={revision} />
+              </label>
+
+              <label className="block">
+                <span className="field-label">Platform</span>
+                <select className="field-input mt-2" onChange={(event) => setPlatform(event.target.value)} value={platform}>
+                  {campaignPlatformOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="field-label">Audience</span>
+                <input className="field-input mt-2" onChange={(event) => setAudience(event.target.value)} placeholder="broad or anime-fans" value={audience} />
+              </label>
+
+              <label className="block">
+                <span className="field-label">Phase</span>
+                <select className="field-input mt-2" onChange={(event) => setPhase(event.target.value)} value={phase}>
+                  {campaignPhaseOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              <label className="block lg:col-span-3">
+                <span className="field-label">Ad Name / utm_content</span>
+                <input
+                  className="field-input mt-2 font-mono"
+                  onChange={(event) => updateAdName(event.target.value)}
+                  placeholder="release_visual_songsection_rev1_meta_broad_launch_copyangle"
+                  value={adName}
+                />
+                <span className="mt-1 block text-[10px] text-muted">
+                  Keep this exact value as the Meta ad name. Edits also update Content Label and utm_content.
+                </span>
+              </label>
+
+              <label className="block">
+                <span className="field-label">Campaign Label</span>
+                <input className="field-input mt-2" onChange={(event) => setCampaignLabel(event.target.value)} placeholder="mad_bunny_launch_meta_broad" value={campaignLabel} />
+              </label>
+
+              <label className="block lg:col-span-2">
+                <span className="field-label">Short Link Content Label</span>
+                <input className="field-input mt-2" onChange={(event) => setContentLabel(event.target.value)} placeholder="Creative identifier" value={contentLabel} />
               </label>
             </div>
           </div>
