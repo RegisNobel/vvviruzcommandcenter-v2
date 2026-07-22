@@ -38,7 +38,7 @@ export default async function PublicHomePage() {
       readPublicExclusiveOffer()
     ]);
   const content = siteSettings.site_content.home;
-  const [heroRelease, ...supportingFeaturedReleases] = featuredReleases;
+  const heroRelease = featuredReleases[0];
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
     apple_music: siteSettings.site_content.platforms.apple_music_label,
@@ -161,32 +161,6 @@ export default async function PublicHomePage() {
             </div>
           )}
         </section>
-
-        {supportingFeaturedReleases.length > 0 ? (
-          <section className="space-y-5">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="public-eyebrow">Featured music</p>
-                <h2 className="public-heading mt-3 text-3xl font-semibold sm:text-4xl">
-                  More from the catalog
-                </h2>
-              </div>
-              <Link className="text-sm font-semibold text-[#e3c16e] hover:text-[#fff2c8]" href="/music">
-                View all music
-              </Link>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2">
-              {supportingFeaturedReleases.map((release) => (
-                <PublicReleaseCard
-                  fallbackText={siteSettings.artist_name}
-                  key={release.id}
-                  platformLabels={platformLabels}
-                  release={release}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         {projects.length > 0 ? (
           <section className="space-y-5">
