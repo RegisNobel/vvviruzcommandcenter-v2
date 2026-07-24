@@ -1598,12 +1598,6 @@ export function ReleaseDetailEditor({
                     />
                   </label>
 
-                  <div className="grid gap-4 rounded-xl border border-edge bg-surface-elevated p-4 xl:col-span-2 xl:grid-cols-2">
-                    <div className="xl:col-span-2"><p className={pageLabelClass}>Contextual Fan CTA Override</p><p className="mt-2 text-sm leading-6 text-muted">Optional. Leave blank to automatically prioritize a project, playlist, Vault item, then the music catalog.</p></div>
-                    <label className="space-y-2"><span className={pageLabelClass}>Button label</span><input className={pageInputClass} onChange={(event) => updateRelease((current) => ({...current, contextual_cta_label: event.target.value}))} placeholder="Continue the story" value={release.contextual_cta_label}/></label>
-                    <label className="space-y-2"><span className={pageLabelClass}>Button URL</span><input className={pageInputClass} onChange={(event) => updateRelease((current) => ({...current, contextual_cta_url: event.target.value}))} placeholder="/projects/project or https://..." value={release.contextual_cta_url}/></label>
-                  </div>
-
                   <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 xl:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className={pageLabelClass}>Public metadata preview</p>

@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-22 - Public homepage and release hierarchy polish:** Promoted the configured Lock-In Spotlight into the primary homepage hero with the previous featured-release hero retained as a safe fallback, prevented the hero release from repeating in Pick A Poison, stabilized compact streaming controls into a single-row grid, removed the generic public release fallback CTA, and aligned the lyrics experience with the public console language through an uppercase title, console-style section dividers, integrated Breaking Barz status, and squared annotation markers.
+
 > **2026-07-22 - Lock-In Spotlight:** Replaced the homepage multi-release Lock-In Rotation with a single campaign-style takeover driven by a dedicated JSON-backed release selection and constrained copy fields. Public resolution safely falls back through the untouched legacy rotation and then published Beast Mode, the exact public component is reused in the admin preview, and spotlight CTA clicks now use a dedicated first-party analytics event.
 
 > **2026-07-19 - Lock-In Rotation:** The homepage high-energy spotlight now supports an ordered collection of up to six published releases instead of one hard-coded feature. Public Site Settings can edit the collection heading and description, search/add/reorder releases, and safely preserves the legacy Beast Mode fallback. Public readiness warnings now identify the exact missing About positioning field instead of showing a generic warning.

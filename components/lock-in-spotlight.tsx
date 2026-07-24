@@ -14,6 +14,7 @@ export type LockInSpotlightRelease = {
 };
 
 type LockInSpotlightProps = {
+  asHero?: boolean;
   ctaLabel: string;
   eyebrow: string;
   headline: string;
@@ -23,6 +24,7 @@ type LockInSpotlightProps = {
 };
 
 export function LockInSpotlight({
+  asHero = false,
   ctaLabel,
   eyebrow,
   headline,
@@ -30,6 +32,7 @@ export function LockInSpotlight({
   release,
   statement
 }: LockInSpotlightProps) {
+  const Heading = asHero ? "h1" : "h2";
   const destination = `/music/${release.slug}`;
   const actionClassName =
     "group/action inline-flex min-h-12 items-center justify-center gap-3 border border-[rgba(246,201,69,0.58)] bg-[#f6c945] px-6 py-3 text-sm font-black uppercase tracking-[0.15em] text-[#090b0e] transition duration-300 hover:border-[#ffe58d] hover:bg-[#ffe078] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f6c945] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b0e]";
@@ -52,9 +55,9 @@ export function LockInSpotlight({
       <div className="relative grid min-h-[480px] items-center gap-10 px-5 py-12 sm:px-8 sm:py-14 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:px-12 lg:py-16">
         <div className="relative z-10 max-w-3xl">
           <p className="public-eyebrow">{eyebrow}</p>
-          <h2 className="public-heading mt-5 max-w-[12ch] text-[clamp(2.75rem,7vw,6.5rem)] font-black uppercase leading-[0.87] tracking-[-0.055em] text-[#fff8ec]">
+          <Heading className="public-heading mt-5 max-w-[12ch] text-[clamp(2.75rem,7vw,6.5rem)] font-black uppercase leading-[0.87] tracking-[-0.055em] text-[#fff8ec]">
             {headline}
-          </h2>
+          </Heading>
           <p className="mt-7 max-w-xl text-sm font-bold uppercase tracking-[0.18em] text-[#d7dde5] sm:text-base">
             {statement}
           </p>

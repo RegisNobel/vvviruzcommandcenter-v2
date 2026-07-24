@@ -25,7 +25,13 @@ import {
 
 export default async function PublicHomePage() {
   const siteSettings = await getSiteSettings();
-  const [featuredReleases, projects, spotlightRelease, randomReleases, exclusiveOfferState] =
+  const [
+    featuredReleases,
+    projects,
+    spotlightRelease,
+    randomReleasePool,
+    exclusiveOfferState
+  ] =
     await Promise.all([
       getHomepageFeaturedReleases(siteSettings.site_content.home.featured_release_ids),
       getHomepageProjects(),
@@ -36,11 +42,15 @@ export default async function PublicHomePage() {
             siteSettings.site_content.home.built_for_motion_release_id
           )
         : Promise.resolve(null),
-      getRandomPublishedReleases(3),
+      getRandomPublishedReleases(4),
       readPublicExclusiveOffer()
     ]);
   const content = siteSettings.site_content.home;
   const heroRelease = featuredReleases[0];
+  const primaryHomepageRelease = spotlightRelease || heroRelease;
+  const randomReleases = randomReleasePool
+    .filter((release) => release.id !== primaryHomepageRelease?.id)
+    .slice(0, 3);
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
     apple_music: siteSettings.site_content.platforms.apple_music_label,
@@ -56,7 +66,23 @@ export default async function PublicHomePage() {
   return (
     <main className="public-page-wrap">
       <div className="space-y-16 sm:space-y-20">
-        <section className="public-panel public-hero relative overflow-hidden px-5 py-7 sm:px-8 sm:py-10 lg:px-12">
+        {spotlightRelease ? (
+          <LockInSpotlight
+            asHero
+            ctaLabel={content.lock_in_spotlight_cta_label || "GO BEAST MODE"}
+            eyebrow={content.lock_in_spotlight_eyebrow || "5:00 AM PROTOCOL"}
+            headline={content.lock_in_spotlight_headline || "SURPASS YOUR LIMITS"}
+            release={{
+              coverArtAltText: getPublicReleaseDiscoveryMetadata(spotlightRelease).coverArtAltText,
+              coverArtPath: spotlightRelease.cover_art_path,
+              id: spotlightRelease.id,
+              slug: spotlightRelease.slug,
+              title: spotlightRelease.title
+            }}
+            statement={content.lock_in_spotlight_statement || "IGNORE THE NOISE. LOCK IN."}
+          />
+        ) : (
+          <section className="public-panel public-hero relative overflow-hidden px-5 py-7 sm:px-8 sm:py-10 lg:px-12">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(246,201,69,0.2),transparent_36%),linear-gradient(135deg,rgba(246,201,69,0.07),transparent_48%)]" />
           {heroRelease ? (
             <div className="relative grid gap-8 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-center md:gap-8 lg:gap-12">
@@ -162,7 +188,8 @@ export default async function PublicHomePage() {
               </Link>
             </div>
           )}
-        </section>
+          </section>
+        )}
 
         {projects.length > 0 ? (
           <section className="space-y-5">
@@ -222,22 +249,6 @@ export default async function PublicHomePage() {
               })}
             </div>
           </section>
-        ) : null}
-
-        {spotlightRelease ? (
-          <LockInSpotlight
-            ctaLabel={content.lock_in_spotlight_cta_label || "GO BEAST MODE"}
-            eyebrow={content.lock_in_spotlight_eyebrow || "5:00 AM PROTOCOL"}
-            headline={content.lock_in_spotlight_headline || "SURPASS YOUR LIMITS"}
-            release={{
-              coverArtAltText: getPublicReleaseDiscoveryMetadata(spotlightRelease).coverArtAltText,
-              coverArtPath: spotlightRelease.cover_art_path,
-              id: spotlightRelease.id,
-              slug: spotlightRelease.slug,
-              title: spotlightRelease.title
-            }}
-            statement={content.lock_in_spotlight_statement || "IGNORE THE NOISE. LOCK IN."}
-          />
         ) : null}
 
         <section className="space-y-5">

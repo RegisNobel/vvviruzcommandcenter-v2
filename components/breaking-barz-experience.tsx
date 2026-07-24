@@ -151,13 +151,26 @@ export function BreakingBarzExperience({
 
   const hasRail=Boolean(rail)||annotations.length>0;
   return <>
-    {annotations.length ? <div className="mb-6 rounded-lg border border-[#c9a347]/25 bg-[#c9a347]/[0.06] px-4 py-3"><p className="public-eyebrow">Breaking Barz</p><p className="mt-1 text-sm text-[#aeb6c0]">{annotations.length} annotated moment{annotations.length===1?"":"s"}. Highlighted lyrics include references, wordplay, and track context.</p></div> : null}
-    <section className={hasRail?"grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)] lg:items-start lg:gap-12 xl:gap-16":"max-w-4xl"}>
-      <article aria-label={`${releaseTitle} lyrics`} className="min-w-0 py-2 text-left">
-        <h2 className="public-eyebrow">{lyricsHeading}</h2>
-        <div className="mt-6 min-w-0 max-w-full">
+    <div className="mb-8 flex flex-col gap-5 border-b border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <h2 className="public-heading text-3xl font-black uppercase tracking-[0.08em] text-[#fff8ec] sm:text-4xl" id="release-lyrics-heading">
+        {lyricsHeading}
+      </h2>
+      {annotations.length ? (
+        <div className="inline-flex w-fit items-center gap-3 border border-[#c9a347]/30 bg-[#c9a347]/[0.06] px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d8b861]">
+          <BookOpen aria-hidden="true" size={14} />
+          <span>Breaking Barz</span>
+          <span aria-hidden="true" className="text-[#746842]">{"//"}</span>
+          <span className="text-[#d7dde3]">
+            {annotations.length} annotated moment{annotations.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      ) : null}
+    </div>
+    <section aria-labelledby="release-lyrics-heading" className={hasRail?"grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,0.9fr)] lg:items-start lg:gap-12 xl:gap-16":"max-w-4xl"}>
+      <article aria-label={`${releaseTitle} lyrics`} className="min-w-0 border-l border-white/[0.07] py-2 pl-4 text-left sm:pl-7">
+        <div className="min-w-0 max-w-full">
           {document.tokens.map((token)=>{
-            if(token.type==="heading")return <h3 className="mb-3 mt-8 max-w-full whitespace-pre-wrap break-words text-xs font-semibold uppercase tracking-[0.22em] text-[#d8b861] first:mt-0" key={token.key}>{token.text}</h3>;
+            if(token.type==="heading")return <h3 className="mb-5 mt-10 flex max-w-full items-center gap-3 font-mono text-[10px] font-semibold uppercase tracking-[0.19em] text-[#d8b861] first:mt-0" key={token.key}><span className="shrink-0 whitespace-pre-wrap break-words">{token.text}</span><span aria-hidden="true" className="h-px min-w-8 flex-1 bg-[linear-gradient(90deg,rgba(201,163,71,0.42),transparent)]" /></h3>;
             if(token.type==="spacer")return <div aria-hidden="true" className="h-4" key={token.key}/>;
             const annotation=annotationForLine(token.sectionKey,token.sectionOccurrence,token.lineIndex);
             if(!annotation)return <div className="max-w-full whitespace-pre-wrap break-words font-sans text-[15px] leading-[1.8] text-[#d7dde3] sm:text-base" key={token.key}>{token.text}</div>;
@@ -165,7 +178,7 @@ export function BreakingBarzExperience({
             const isEnd=token.lineIndex===annotation.end_line_index;
             const isSelected=selected?.id===annotation.id;
             return <Fragment key={token.key}><div className={`group relative -mx-2 cursor-pointer border-l-2 px-2 pr-12 font-sans text-[15px] leading-[1.8] transition sm:pr-2 sm:text-base ${isStart?"rounded-t-md pt-1":""} ${isEnd?"rounded-b-md pb-1":""} ${isSelected?"border-[#f6c945] bg-[#c9a347]/15 text-[#fff8ec]":"border-[#c9a347]/55 bg-[#c9a347]/[0.07] text-[#d7dde3] hover:bg-[#c9a347]/[0.12]"}`} data-breaking-barz-range onClick={(event)=>handleTextClick(event,annotation)} onMouseEnter={()=>startSummary(annotation)} onMouseLeave={stopSummary}>
-              {isStart?<button aria-label={`Open Breaking Barz explanation for: ${annotation.lyric_excerpt}`} className="absolute right-0 top-0 flex min-h-11 min-w-11 items-center justify-center rounded-full border border-[#c9a347]/40 bg-[#111318] text-[#e3c16e] transition hover:border-[#e3c16e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] sm:-left-9 sm:right-auto" onBlur={stopSummary} onClick={(event)=>{event.stopPropagation();open(annotation,"marker");}} onFocus={()=>startSummary(annotation)} ref={(node)=>{if(node)markerRefs.current.set(annotation.id,node);else markerRefs.current.delete(annotation.id);}} type="button"><BookOpen size={16}/></button>:null}
+              {isStart?<button aria-label={`Open Breaking Barz explanation for: ${annotation.lyric_excerpt}`} className="absolute right-0 top-0 flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-[#c9a347]/40 bg-[#111318] text-[#e3c16e] transition hover:border-[#e3c16e] hover:bg-[#c9a347]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f6c945] sm:-left-9 sm:right-auto" onBlur={stopSummary} onClick={(event)=>{event.stopPropagation();open(annotation,"marker");}} onFocus={()=>startSummary(annotation)} ref={(node)=>{if(node)markerRefs.current.set(annotation.id,node);else markerRefs.current.delete(annotation.id);}} type="button"><BookOpen size={16}/></button>:null}
               <span className="whitespace-pre-wrap break-words">{token.text}</span>
               {isStart&&summaryId===annotation.id&&!selected?<div className="absolute right-0 top-full z-20 mt-2 w-[min(340px,calc(100vw-3rem))] rounded-lg border border-[#c9a347]/30 bg-[#12151a] p-4 shadow-2xl sm:left-2 sm:right-auto" role="status"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#e3c16e]">{annotationTypeLabel(annotation.type)}</p><p className="mt-2 text-sm leading-6 text-[#d7dde3]">{annotation.summary}</p><p className="mt-2 text-xs font-semibold text-[#fff2c8]">Click the highlight for the full breakdown.</p></div>:null}
             </div></Fragment>;

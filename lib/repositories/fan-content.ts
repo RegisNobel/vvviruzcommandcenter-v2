@@ -12,7 +12,6 @@ import type {
 } from "@/lib/types";
 import {createId, slugify} from "@/lib/utils";
 import {LATEST_INTEL_PUBLIC_LIMIT} from "@/lib/latest-intel";
-import {getPublicProjectBySlug} from "@/lib/repositories/public-site";
 import {
   createReleaseAnnotationAnchor,
   rebaseReleaseAnnotationAnchor,
@@ -422,30 +421,4 @@ export async function listPublicFanUpdates(limit = LATEST_INTEL_PUBLIC_LIMIT): P
 export async function listPublicVaultItems(): Promise<PublicVaultItem[]> {
   const rows = await prisma.vaultItem.findMany({where: {status: "public"}, orderBy: [{sortOrder: "asc"}, {publishedAt: "desc"}]});
   return rows.map((row) => ({id: row.id, release_id: row.releaseId, title: row.title, slug: row.slug, item_type: row.itemType, description: row.description, cover_art_url: row.coverArtUrl, preview_url: row.previewUrl, price_label: row.priceLabel, checkout_url: row.checkoutUrl}));
-}
-
-export async function resolveContextualFanCta(release: {id: string; slug: string; contextual_cta_label?: string | null; contextual_cta_url?: string | null; categories: Array<{name: string; slug: string}>}) {
-  const manualLabel = release.contextual_cta_label?.trim() ?? "";
-  const manualUrl = release.contextual_cta_url?.trim() ?? "";
-
-  if (manualLabel && manualUrl) {
-    try { return {label: manualLabel, href: requirePublicUrl(manualUrl, "CTA URL"), reason: "Manual release override"}; } catch { /* Fall through to safe automatic context. */ }
-  }
-  const category = release.categories[0];
-  if (category) {
-    const publicProject = await getPublicProjectBySlug(category.slug);
-    if (publicProject) {
-      return {
-        label: `Continue ${publicProject.name}`,
-        href: `/projects/${encodeURIComponent(publicProject.slug)}`,
-        reason: `${publicProject.projectType} context`
-      };
-    }
-    return {label: `Explore ${category.name}`, href: `/music?category=${encodeURIComponent(category.slug)}`, reason: "Category context"};
-  }
-  const playlist = await prisma.playlistRelease.findFirst({where: {releaseId: release.id, isActive: true, playlist: {isPublic: true, isArchived: false}}, include: {playlist: true}, orderBy: {position: "asc"}});
-  if (playlist) return {label: `Keep listening: ${playlist.playlist.name}`, href: `/listen/${playlist.playlist.slug}/${release.slug}`, reason: "Playlist context"};
-  const vaultItem = await prisma.vaultItem.findFirst({where: {releaseId: release.id, status: "public"}});
-  if (vaultItem) return {label: "Open in the Vault", href: "/vault", reason: "Vault context"};
-  return {label: "Explore more music", href: "/music", reason: "Catalog fallback"};
 }

@@ -27,9 +27,8 @@ import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {BreakingBarzExperience} from "@/components/breaking-barz-experience";
 import {PublicRelatedReleaseItem} from "@/components/public-related-release-item";
 import {ProjectTrackedLink} from "@/components/public-project-analytics";
-import {FanTrackedLink} from "@/components/public-fan-content-analytics";
 import {getPublicProjectPath} from "@/lib/public-projects";
-import {listPublicAnnotations, resolveContextualFanCta} from "@/lib/repositories/fan-content";
+import {listPublicAnnotations} from "@/lib/repositories/fan-content";
 
 type ReleasePageParams = {
   slug: string;
@@ -102,10 +101,9 @@ export default async function PublicReleaseDetailPage({
     notFound();
   }
 
-  const [relatedReleases, annotations, contextualCta] = await Promise.all([
+  const [relatedReleases, annotations] = await Promise.all([
     getRelatedPublishedReleases(release.id, release.type),
-    listPublicAnnotations(release.id),
-    resolveContextualFanCta(release)
+    listPublicAnnotations(release.id)
   ]);
   const eligibleProjectSlugs = new Set<string>(eligibleProjects.map((project) => project.slug));
   const projectCategories = release.categories.filter((category) =>
@@ -277,11 +275,6 @@ export default async function PublicReleaseDetailPage({
               ) : null}
             </div>
           </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div><p className="public-eyebrow">Continue exploring</p><h2 className="public-heading mt-3 text-3xl font-semibold">Follow the signal</h2></div>
-          <div className="lg:text-right"><p className="text-xs text-[#8f99a4]">{contextualCta.reason}</p><FanTrackedLink className="public-action-primary mt-3" eventKey={release.id} eventType="contextual_cta_click" href={contextualCta.href} page="release" releaseId={release.id}>{contextualCta.label}</FanTrackedLink></div>
         </section>
 
         {hasPublicLyrics ? <BreakingBarzExperience annotations={annotations} lyrics={release.lyrics} lyricsHeading={content.lyrics_heading} rail={hasRightRail ? rightRail : null} releaseId={release.id} releaseTitle={release.title}/> : hasRightRail ? <aside className="mx-auto max-w-2xl space-y-10">{rightRail}</aside> : null}

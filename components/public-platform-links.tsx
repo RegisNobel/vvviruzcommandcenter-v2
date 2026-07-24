@@ -58,30 +58,43 @@ export function PublicPlatformLinks({
     apple_music: normalizeExternalUrl(appleMusicUrl),
     youtube: normalizeExternalUrl(youtubeUrl)
   };
+  const availablePlatforms = platformConfig.filter((platform) => links[platform.key]);
+  const compactGridClassName =
+    availablePlatforms.length === 3
+      ? "grid-cols-3"
+      : availablePlatforms.length === 2
+        ? "grid-cols-2"
+        : "grid-cols-1";
 
   return (
-    <div className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap ${className}`.trim()}>
-      {platformConfig.map((platform) => {
+    <div
+      className={`${
+        compact
+          ? `grid ${compactGridClassName} gap-2`
+          : "flex flex-col gap-3 sm:flex-row sm:flex-wrap"
+      } ${className}`.trim()}
+    >
+      {availablePlatforms.map((platform) => {
         const href = links[platform.key];
-
-        if (!href) {
-          return null;
-        }
 
         const Icon = platform.icon;
 
         return (
           <Link
-            className={`inline-flex w-full items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition sm:w-auto ${platform.colorClassName} ${
-              compact ? "px-3 py-1.5 text-xs" : ""
+            className={`inline-flex min-w-0 items-center justify-center rounded-md border font-semibold transition ${platform.colorClassName} ${
+              compact
+                ? "w-full gap-1.5 px-2 py-1.5 text-[11px] sm:text-xs"
+                : "w-full gap-2 px-4 py-2 text-sm sm:w-auto"
             }`}
             href={href}
             key={platform.key}
             rel="noreferrer"
             target="_blank"
           >
-            <Icon size={compact ? 14 : 16} />
-            {resolvedLabels[platform.key]}
+            <Icon className="shrink-0" size={compact ? 13 : 16} />
+            <span className={compact ? "min-w-0 truncate whitespace-nowrap" : ""}>
+              {resolvedLabels[platform.key]}
+            </span>
           </Link>
         );
       })}
