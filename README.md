@@ -1,5 +1,11 @@
 # vvviruz' command center
 
+> **2026-07-25 - Sticky Public Site section rail:** Public Site Management now keeps its complete section navigation in a viewport-bounded sticky rail on wide desktop screens. Mobile and narrower laptop layouts retain the existing wrapped navigation above the editor, preserving every anchor while making long desktop editing sessions faster.
+
+> **2026-07-25 - Operator Queue public release export:** Added an admin-only CSV export to the Releases Operator Queue. The download includes every publicly visible release with its title, UPC, and ISRC, retaining blank code cells so catalog metadata gaps remain visible.
+
+> **2026-07-25 - Public Site Management field cleanup:** Corrected the section navigation so Project Content, Link Hubs, Playlists, and Appears On open their actual management surfaces in page order. Retired redundant public/editor fields for the Music eyebrow, About statement heading, Insider Access headline/subtext/brand line, community subheadline/CTA heading, and Commissions page title while preserving their stored settings for backup compatibility.
+
 > **2026-07-25 - Attribution decision-surface cleanup:** Reorganized Attribution around one release-level funnel verdict, five essential KPIs, explicit Meta/first-party/lifetime measurement windows, stricter campaign-plus-content UTM match coverage, and a compact `/links` versus playlist experience split. Daily trends and the Meta match matrix are collapsed by default, Short Links is now a lifecycle summary instead of a second management table, and global raw `/links` diagnostics are queried only when explicitly loaded. Ad Lab remains the owner of creative diagnosis and Release Detail remains the owner of campaign strategy.
 
 > **2026-07-25 - Playlist campaign convention:** Promo Home now documents separate naming and UTM conventions for single-release `/links` ads and playlist `/listen/[playlist]/[release]` ads. Both preserve the parser-safe creative name and `Ad Name = utm_content`; playlist campaigns add the playlist slug to `utm_campaign` so Attribution can distinguish landing experiences without fragmenting Ad Lab creative analysis.

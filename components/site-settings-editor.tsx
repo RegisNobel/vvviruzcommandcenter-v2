@@ -46,6 +46,29 @@ type SiteSettingsEditorProps = {
   vaultReleaseIds?: string[];
 };
 
+const siteSettingsSectionLinks = [
+  {href: "#core-profile", label: "Core"},
+  {href: "#metadata-seo", label: "Metadata"},
+  {href: "#site-chrome", label: "Chrome"},
+  {href: "#home-page", label: "Home"},
+  {href: "#public-projects", label: "Project Approval"},
+  {href: "#music-categories", label: "Project Content"},
+  {href: "#music-page", label: "Music"},
+  {href: "#about-page", label: "About"},
+  {href: "#platform-labels", label: "Platforms"},
+  {href: "#links-page", label: "Link Hub Defaults"},
+  {href: "#link-hubs", label: "Link Hubs"},
+  {href: "#playlists", label: "Playlists"},
+  {href: "#exclusives-settings", label: "Exclusives"},
+  {href: "#tracking-settings", label: "Tracking"},
+  {href: "#release-page", label: "Release"},
+  {href: "#social-links", label: "Social"},
+  {href: "#vault-settings", label: "Vault"},
+  {href: "#commissions-settings", label: "Commissions"},
+  {href: "#public-readiness", label: "Readiness"},
+  {href: "#appears-on", label: "Appears On"}
+] as const;
+
 function serializeLinkRows(items: Array<{label: string; url: string}>) {
   return items.map((item) => `${item.label} | ${item.url}`).join("\n");
 }
@@ -240,7 +263,6 @@ export function SiteSettingsEditor({
       : [])
   ];
   const aboutPositioningMissingFields = [
-    !settings.site_content.about.statement_heading.trim() ? "Artist Statement heading" : "",
     !settings.site_content.about.statement_text.trim() ? "Artist Statement copy" : "",
     !settings.site_content.about.intro_heading.trim() ? "Introduction heading" : "",
     !settings.site_content.about.intro_text.trim() ? "Introduction copy" : ""
@@ -438,26 +460,9 @@ export function SiteSettingsEditor({
 
       <nav
         aria-label="Public site settings sections"
-        className="command-surface mb-6 flex flex-wrap gap-2 px-4 py-3"
+        className="command-surface mb-6 flex flex-wrap gap-2 px-4 py-3 xl:hidden"
       >
-        {[
-          {href: "#core-profile", label: "Core"},
-          {href: "#metadata-seo", label: "Metadata"},
-          {href: "#site-chrome", label: "Chrome"},
-          {href: "#home-page", label: "Home"},
-          {href: "#public-projects", label: "Projects"},
-          {href: "#music-page", label: "Music"},
-          {href: "#about-page", label: "About"},
-          {href: "#platform-labels", label: "Platforms"},
-          {href: "#links-page", label: "Link Hub Defaults"},
-          {href: "#exclusives-settings", label: "Exclusives"},
-          {href: "#tracking-settings", label: "Tracking"},
-          {href: "#release-page", label: "Release"},
-          {href: "#social-links", label: "Social"},
-          {href: "#public-readiness", label: "Readiness"},
-          {href: "#vault-settings", label: "Vault"},
-          {href: "#commissions-settings", label: "Commissions"}
-        ].map((item) => (
+        {siteSettingsSectionLinks.map((item) => (
           <a
             className="rounded-md border border-edge-strong bg-surface-elevated px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-secondary transition hover:border-[rgba(246,201,69,0.45)] hover:bg-surface-hover hover:text-primary"
             href={item.href}
@@ -468,7 +473,8 @@ export function SiteSettingsEditor({
         ))}
       </nav>
 
-      <section className="command-surface space-y-6 px-5 py-6 pb-36 sm:px-6 sm:py-7">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_220px]">
+      <section className="command-surface min-w-0 space-y-6 px-5 py-6 pb-36 sm:px-6 sm:py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="pill">
@@ -479,9 +485,9 @@ export function SiteSettingsEditor({
               Public profile and website copy
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Everything on the public site that is not release-specific lives here.
-              Releases still own release content, but all global site copy, labels,
-              headings, pills, and fallback text are editable from this page.
+              Manage the global public copy, navigation, projects, landing experiences,
+              and operational settings that still require regular updates. Releases
+              continue to own release-specific content.
             </p>
           </div>
         </div>
@@ -1280,17 +1286,6 @@ export function SiteSettingsEditor({
 
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="field-label">Page Eyebrow</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("music", "page_eyebrow", event.target.value)
-                }
-                value={settings.site_content.music.page_eyebrow}
-              />
-            </label>
-
-            <label className="space-y-2">
               <span className="field-label">Page Heading</span>
               <input
                 className="field-input"
@@ -1365,17 +1360,6 @@ export function SiteSettingsEditor({
           </div>
 
           <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <label className="space-y-2">
-              <span className="field-label">Statement Heading</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("about", "statement_heading", event.target.value)
-                }
-                value={settings.site_content.about.statement_heading}
-              />
-            </label>
-
             <label className="space-y-2 md:col-span-2">
               <span className="field-label">Statement Text</span>
               <textarea
@@ -2035,6 +2019,31 @@ export function SiteSettingsEditor({
         </div>
       ) : null}
       </section>
+      <aside className="sticky top-[96px] hidden max-h-[calc(100vh-190px)] overflow-y-auto xl:block">
+        <nav
+          aria-label="Public site settings sections"
+          className="command-surface p-3"
+        >
+          <div className="border-b border-edge px-2 pb-3">
+            <p className="table-label">Jump to section</p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              Public site controls
+            </p>
+          </div>
+          <div className="mt-2 grid gap-1">
+            {siteSettingsSectionLinks.map((item) => (
+              <a
+                className="rounded-md border border-transparent px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-secondary transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover hover:text-primary"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </nav>
+      </aside>
+      </div>
     </>
   );
 }

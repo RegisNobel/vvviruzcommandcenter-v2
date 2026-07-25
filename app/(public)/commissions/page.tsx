@@ -66,14 +66,11 @@ export default async function CommissionsPage() {
       <div className="relative mx-auto max-w-5xl py-8 sm:py-12">
         {/* Hero Section */}
         <div className="public-hero public-panel text-center">
-          <div className="public-eyebrow inline-flex items-center gap-2 rounded-full border border-[#c9a347]/20 bg-[#c9a347]/10 px-4 py-1.5 text-[#d7b663]">
+          <h1 className="public-eyebrow inline-flex items-center gap-2 rounded-full border border-[#c9a347]/20 bg-[#c9a347]/10 px-4 py-1.5 text-[#d7b663]">
             <Sparkles size={14} />
             {commissions.page_eyebrow}
-          </div>
-          <h1 className="mx-auto mt-8 max-w-3xl text-4xl font-semibold tracking-tight text-[#f7f1e6] sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[1.05]">
-            {commissions.page_title}
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#b6bec7]">
+          <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-[#b6bec7]">
             {commissions.page_subtitle}
           </p>
         </div>

@@ -98,10 +98,7 @@ export default async function PublicMusicPage({
     <main className="px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1320px] space-y-10">
         <section className="public-panel overflow-hidden px-5 py-9 sm:px-9 sm:py-11">
-          <p className="public-eyebrow">
-            {content.page_eyebrow}
-          </p>
-          <h1 className="public-heading mt-4 max-w-4xl text-4xl font-semibold sm:text-6xl">
+          <h1 className="public-heading max-w-4xl text-4xl font-semibold sm:text-6xl">
             {content.page_heading}
           </h1>
           <p className="public-copy mt-5 max-w-3xl text-sm leading-7 sm:text-base">

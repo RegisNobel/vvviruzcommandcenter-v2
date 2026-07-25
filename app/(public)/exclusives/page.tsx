@@ -67,12 +67,6 @@ export default async function PublicExclusivesPage({
   const derivedTitle = offer.exclusive_track_title.trim() || release?.title || "Upcoming Preview";
   const derivedArtwork = offer.exclusive_track_art_path.trim() || release?.coverArtPath || "";
   const derivedDescription = offer.exclusive_track_description.trim() || release?.publicDescription || "";
-  const activePreviewHeadline = isUnlocked
-    ? offer.success_heading.trim() || "Insider Access Unlocked"
-    : offer.headline.trim();
-  const activePreviewSubtext = isUnlocked
-    ? offer.success_message.trim() || "You have unlocked early access previews."
-    : offer.subtext.trim();
 
   // Determine preview availability
   let isPreviewActive = offer.exclusive_track_enabled && Boolean(offer.private_external_url.trim());
@@ -140,9 +134,9 @@ export default async function PublicExclusivesPage({
       <div className="relative mx-auto max-w-[1160px]">
         <section className="public-panel relative mx-auto max-w-[1120px] overflow-hidden px-5 py-8 text-center sm:px-7 sm:py-12 lg:px-10">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(201,163,71,0.72),transparent)]" />
-          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
+          <h1 className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
             {offer.badge_text || "Insider Access"}
-          </div>
+          </h1>
 
           {isPreviewActive ? (
             <>
@@ -161,37 +155,22 @@ export default async function PublicExclusivesPage({
                 </div>
               ) : null}
 
-              {activePreviewHeadline ? (
-                <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
-                  {activePreviewHeadline}
-                </h1>
-              ) : null}
-
-              {activePreviewSubtext ? (
-                <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
-                  {activePreviewSubtext}
-                </p>
-              ) : null}
-
               {derivedTitle && (
-                <div className="mt-5 inline-flex flex-col items-center">
-                  <span className="text-lg font-bold text-[#f7f1e6]">{derivedTitle}</span>
+                <div className="mt-7 inline-flex flex-col items-center">
+                  <h1 className="text-3xl font-semibold tracking-[-0.045em] text-[#f7f1e6] sm:text-4xl">
+                    {derivedTitle}
+                  </h1>
                   {derivedDescription && (
-                    <span className="mt-1 max-w-md text-xs text-[#a0aab5]">{derivedDescription}</span>
+                    <p className="mt-3 max-w-xl text-sm leading-7 text-[#a0aab5]">
+                      {derivedDescription}
+                    </p>
                   )}
                 </div>
               )}
             </>
           ) : (
             <>
-              <h1 className="mx-auto mt-7 max-w-2xl text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-[2.85rem] sm:leading-[1.02]">
-                {offer.headline || "Join Insider Access"}
-              </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#d1d8df] sm:text-lg">
-                {offer.subtext || "Get early access to unreleased tracks, drafts, and updates."}
-              </p>
-
-              <div className="public-status-strip mt-8 px-6 py-8 text-center">
+              <div className="public-status-strip mt-7 px-6 py-8 text-center">
                 <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">Preview Status</span>
                 <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">Next preview coming soon</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-[#98a1aa]">
@@ -200,12 +179,6 @@ export default async function PublicExclusivesPage({
               </div>
             </>
           )}
-
-          {offer.brand_line.trim() ? (
-            <p className="mt-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#d2af5a]">
-              {offer.brand_line}
-            </p>
-          ) : null}
 
           <div className="mx-auto mt-8 max-w-[640px] text-left">
             {isUnlocked ? (
@@ -261,11 +234,8 @@ export default async function PublicExclusivesPage({
               <h2 className="text-3xl font-semibold tracking-[-0.055em] text-[#f7f1e6] sm:text-5xl sm:leading-[1.04]">
                 {offer.community_headline}
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-8 text-[#e8dcc3]">
-                {offer.community_subheadline}
-              </p>
               {offer.community_microcopy.trim() ? (
-                <p className="mx-auto mt-3 max-w-xl text-sm uppercase tracking-[0.18em] text-[#8f98a3]">
+                <p className="mx-auto mt-4 max-w-xl text-sm uppercase tracking-[0.18em] text-[#8f98a3]">
                   {offer.community_microcopy}
                 </p>
               ) : null}
@@ -303,10 +273,7 @@ export default async function PublicExclusivesPage({
             ) : null}
 
             <div className="mx-auto mt-10 max-w-2xl border-y border-[#c9a347]/22 bg-[linear-gradient(135deg,rgba(201,163,71,0.12),rgba(8,10,13,0.68))] px-5 py-7 text-center sm:px-8">
-              <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[#f7f1e6]">
-                {offer.community_cta_heading}
-              </h3>
-              <div className="mt-6 flex justify-center">
+              <div className="flex justify-center">
                 {discordInviteUrl ? (
                   <TrackedExternalLink
                     className="public-action-primary w-full px-6 py-4 sm:w-auto"

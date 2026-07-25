@@ -5,7 +5,10 @@ import type {AppearsOnRecord} from "@/lib/types";
 
 export function AppearsOnSettingsPanel({records}: {records: AppearsOnRecord[]}) {
   return (
-    <section className="command-surface space-y-6 px-5 py-6 sm:px-6 sm:py-7">
+    <section
+      className="command-surface scroll-mt-36 space-y-6 px-5 py-6 sm:px-6 sm:py-7"
+      id="appears-on"
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="pill">

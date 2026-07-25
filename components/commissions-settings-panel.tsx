@@ -49,15 +49,6 @@ export function CommissionsSettingsPanel({
             />
           </label>
 
-          <label className="space-y-2">
-            <span className="field-label">Page Title</span>
-            <input
-              className="field-input"
-              onChange={(e) => updateField("page_title", e.target.value)}
-              value={commissionsSettings.page_title}
-            />
-          </label>
-
           <label className="space-y-2 md:col-span-2">
             <span className="field-label">Page Subtitle</span>
             <textarea

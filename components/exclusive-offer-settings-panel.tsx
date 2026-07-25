@@ -204,33 +204,6 @@ export function ExclusiveOfferSettingsPanel({
             />
           </label>
 
-          <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Headline</span>
-            <input
-              className="field-input"
-              onChange={(event) => updateExclusiveOffer({headline: event.target.value})}
-              value={exclusiveOffer.headline}
-            />
-          </label>
-
-          <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Subtext</span>
-            <textarea
-              className="field-input min-h-[110px]"
-              onChange={(event) => updateExclusiveOffer({subtext: event.target.value})}
-              value={exclusiveOffer.subtext}
-            />
-          </label>
-
-          <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Brand Line</span>
-            <input
-              className="field-input"
-              onChange={(event) => updateExclusiveOffer({brand_line: event.target.value})}
-              value={exclusiveOffer.brand_line}
-            />
-          </label>
-
           <label className="space-y-2">
             <span className="field-label">Name Field Label</span>
             <input
@@ -533,17 +506,6 @@ export function ExclusiveOfferSettingsPanel({
           </label>
 
           <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Community Subheadline</span>
-            <input
-              className="field-input"
-              onChange={(event) =>
-                updateExclusiveOffer({community_subheadline: event.target.value})
-              }
-              value={exclusiveOffer.community_subheadline}
-            />
-          </label>
-
-          <label className="space-y-2 md:col-span-2">
             <span className="field-label">Community Microcopy</span>
             <input
               className="field-input"
@@ -551,17 +513,6 @@ export function ExclusiveOfferSettingsPanel({
                 updateExclusiveOffer({community_microcopy: event.target.value})
               }
               value={exclusiveOffer.community_microcopy}
-            />
-          </label>
-
-          <label className="space-y-2 md:col-span-2">
-            <span className="field-label">CTA Block Heading</span>
-            <input
-              className="field-input"
-              onChange={(event) =>
-                updateExclusiveOffer({community_cta_heading: event.target.value})
-              }
-              value={exclusiveOffer.community_cta_heading}
             />
           </label>
 

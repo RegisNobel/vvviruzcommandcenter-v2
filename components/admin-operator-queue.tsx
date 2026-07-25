@@ -1,5 +1,5 @@
 import Link from "next/link";
-import {Activity, ArrowUpRight, RefreshCw} from "lucide-react";
+import {Activity, ArrowUpRight, Download, RefreshCw} from "lucide-react";
 
 import type {AdminOperatorQueueRecord} from "@/lib/types";
 
@@ -55,6 +55,28 @@ function QueueCell({
   );
 }
 
+function ExportQueueCell() {
+  return (
+    <form action="/api/releases/export" className="min-w-0" method="get">
+      <button
+        className="group h-full w-full rounded-lg border border-[rgba(96,165,250,0.3)] bg-[rgba(96,165,250,0.07)] px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-brand-primary/50"
+        type="submit"
+      >
+        <span className="flex items-center justify-between gap-3">
+          <span className="table-label">Export</span>
+          <Download className="shrink-0 text-muted transition group-hover:text-brand-primary" size={14} />
+        </span>
+        <span className="mt-3 block text-sm font-semibold text-ink">
+          Public song codes
+        </span>
+        <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted">
+          Download titles, UPCs, and ISRCs for public releases.
+        </span>
+      </button>
+    </form>
+  );
+}
+
 export function AdminOperatorQueue({
   queue,
   refreshAction
@@ -92,7 +114,7 @@ export function AdminOperatorQueue({
         </div>
       </div>
 
-      <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 xl:grid-cols-6">
+      <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4 2xl:grid-cols-7">
         <QueueCell
           detail={nextRelease ? `${formatDate(nextRelease.release_date)} / ${nextRelease.stage}` : "Add the next planned release."}
           href={nextRelease?.action_path ?? "/admin/releases/new"}
@@ -133,6 +155,7 @@ export function AdminOperatorQueue({
           tone={issue?.severity ?? "healthy"}
           value={issue?.title ?? "None detected"}
         />
+        <ExportQueueCell />
       </div>
     </section>
   );

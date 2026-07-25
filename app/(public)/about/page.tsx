@@ -155,10 +155,7 @@ export default async function PublicAboutPage() {
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-stretch">
             <div className="flex h-full items-center justify-center p-4 sm:p-6 sm:p-8">
               <div className="w-full max-w-3xl px-2 py-5 sm:px-6 sm:py-8">
-                <p className="public-eyebrow">
-                  {content.statement_heading}
-                </p>
-                <h1 className="public-heading mt-4 text-5xl font-semibold sm:text-6xl">
+                <h1 className="public-heading text-5xl font-semibold sm:text-6xl">
                   {siteSettings.artist_name}
                 </h1>
                 <div className="mt-5 space-y-2 text-lg leading-8 text-[#e7dfcf]">
