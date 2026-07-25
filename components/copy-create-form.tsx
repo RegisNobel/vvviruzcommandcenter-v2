@@ -5,6 +5,7 @@ import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, PlusCircle} from "lucide-react";
 
+import {ReleasePicker} from "@/components/release-picker";
 import {
   contentTypeOptions,
   formatContentType,
@@ -131,26 +132,21 @@ export function CopyCreateForm({
               </select>
             </label>
 
-            <label className="space-y-2">
+            <div className="space-y-2">
               <span className="field-label">Attach to Release</span>
-              <select
-                className="field-input"
-                onChange={(event) =>
+              <ReleasePicker
+                ariaLabel="Attach copy to release"
+                emptyOption={{label: "No Release / Standalone", value: ""}}
+                onValueChange={(releaseId) =>
                   setForm((current) => ({
                     ...current,
-                    release_id: event.target.value || null
+                    release_id: releaseId || null
                   }))
                 }
+                releases={releases}
                 value={form.release_id ?? ""}
-              >
-                <option value="">No Release / Standalone</option>
-                {releases.map((release) => (
-                  <option key={release.id} value={release.id}>
-                    {release.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+            </div>
 
             <div className="md:col-span-2">
               <p className="field-label">Creative Strategy</p>

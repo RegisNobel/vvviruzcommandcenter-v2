@@ -10,7 +10,8 @@ import {
   readCreativePerformanceMemory,
   readAdPerformanceTimeline,
   readCopyPerformanceMemory,
-  readReleaseAdReports
+  readReleaseAdReports,
+  readReleaseAdTestHistory
 } from "@/lib/repositories/ads";
 import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
@@ -38,6 +39,7 @@ export default async function AdminReleaseDetailPage({
       copyPerformanceMemory,
       analyticsEvents,
       reports,
+      historicalReports,
       playlists,
       playlistMemberships,
       annotations
@@ -58,6 +60,7 @@ export default async function AdminReleaseDetailPage({
         }
       }),
       readReleaseAdReports(id),
+      readReleaseAdTestHistory(id),
       readPlaylists({ archiveStatus: "active" }),
       prisma.playlistRelease.findMany({
         where: { releaseId: id }
@@ -86,6 +89,7 @@ export default async function AdminReleaseDetailPage({
         streamingClicksCount={streamingClicks.length}
         utmCoverageRate={utmCoverageRate}
         reports={reports}
+        historicalReports={historicalReports}
         initialPlaylists={playlists}
         initialPlaylistMemberships={playlistMemberships}
         initialAnnotations={annotations}

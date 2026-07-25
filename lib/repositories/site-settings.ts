@@ -118,7 +118,7 @@ function createDefaultSiteContent(): SiteContentSettings {
       nav_home_label: "Home",
       nav_music_label: "Music",
       nav_about_label: "About",
-      nav_links_label: "New Release",
+      nav_links_label: "On Repeat",
       nav_exclusive_label: "Exclusives",
       footer_copyright_text: `Copyright ${new Date().getFullYear()} vvviruz. All rights reserved.`
     },
@@ -128,7 +128,7 @@ function createDefaultSiteContent(): SiteContentSettings {
     exclusive_cta_label: "Get the exclusive track",
     exclusive_cta_heading: "Hear what is coming before the public drop",
     exclusive_cta_description:
-      "Join Insider Access for unreleased previews, early updates, and the private vvviruz community.",
+      "Get Insider Access for unreleased previews, early updates, and the private vvviruz community.",
     featured_releases_eyebrow: "Featured Now",
       featured_releases_empty_text:
         "Select up to three releases from Public Site settings to feature them here.",
@@ -344,10 +344,12 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
   const normalizedBrandMarkFile = input?.chrome?.brand_mark_file?.trim();
   const normalizedArtistImageFile = input?.about?.artist_image_file?.trim();
   const normalizedExclusiveNavLabel = input?.chrome?.nav_exclusive_label?.trim();
+  const normalizedLinksNavLabel = input?.chrome?.nav_links_label?.trim();
   const normalizedExclusivePageTitle = input?.metadata?.exclusive_page_title?.trim();
   const normalizedCommunityHeadline = input?.exclusive?.community_headline?.trim();
   const normalizedCommunityCtaLabel = input?.exclusive?.community_cta_label?.trim();
   const normalizedExclusiveConsentLabel = input?.exclusive?.consent_label?.trim();
+  const normalizedExclusiveCtaDescription = input?.home?.exclusive_cta_description?.trim();
   const exclusiveUnlockExperience =
     input?.exclusive?.unlock_experience || defaults.exclusive.unlock_experience;
   const normalizedAboutIntro = input?.about?.intro_text?.trim();
@@ -373,14 +375,22 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
           ? defaults.chrome.nav_exclusive_label
           : normalizedExclusiveNavLabel,
       nav_links_label:
-        !input?.chrome?.nav_links_label ||
-        input.chrome.nav_links_label === "Links"
+        !normalizedLinksNavLabel ||
+        ["links", "new release", "latest release"].includes(
+          normalizedLinksNavLabel.toLowerCase()
+        )
           ? defaults.chrome.nav_links_label
-          : input.chrome.nav_links_label
+          : normalizedLinksNavLabel
     },
     home: {
       ...defaults.home,
       ...input?.home,
+      exclusive_cta_description:
+        !normalizedExclusiveCtaDescription ||
+        normalizedExclusiveCtaDescription ===
+          "Join Insider Access for unreleased previews, early updates, and the private vvviruz community."
+          ? defaults.home.exclusive_cta_description
+          : normalizedExclusiveCtaDescription,
       featured_release_ids:
         input?.home?.featured_release_ids
           ?.map((value) => value.trim())

@@ -102,7 +102,8 @@ export default function ReleaseIntelligencePanel({
   streamingClicksCount = 0,
   utmCoverageRate = 0,
   releaseId,
-  reports = []
+  reports = [],
+  historicalReports = []
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   latestAdLearning: AdCampaignLearningRecord | null;
@@ -111,6 +112,7 @@ export default function ReleaseIntelligencePanel({
   utmCoverageRate?: number;
   releaseId: string;
   reports?: any[];
+  historicalReports?: any[];
 }) {
   const promoVerdict = useMemo(() => getReleasePromoVerdict(adMetrics, latestAdLearning), [adMetrics, latestAdLearning]);
   const promoStyle = useMemo(() => getVerdictStyle(promoVerdict), [promoVerdict]);
@@ -163,9 +165,10 @@ export default function ReleaseIntelligencePanel({
         next_test: latestAdLearning.next_test,
         updated_at: latestAdLearning.updated_at
       } : null,
-      reports
+      reports,
+      historicalReports
     });
-  }, [adMetrics, latestAdLearning, reports]);
+  }, [adMetrics, historicalReports, latestAdLearning, reports]);
 
   return (
     <div className="command-surface space-y-5 p-5">

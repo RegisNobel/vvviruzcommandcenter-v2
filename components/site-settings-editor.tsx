@@ -21,7 +21,7 @@ import type {
   SiteSettingsRecord,
   SocialLink
 } from "@/lib/types";
-import {HOMEPAGE_PROJECT_LIMIT, moveHomepageFeaturedRelease} from "@/lib/homepage-brand";
+import {HOMEPAGE_PROJECT_LIMIT, moveOrderedItem} from "@/lib/homepage-brand";
 import {
   evaluatePublicProjectEligibility,
   getPublicProjectPath
@@ -102,7 +102,6 @@ export function SiteSettingsEditor({
   const [socialLinksText, setSocialLinksText] = useState(
     serializeLinkRows(initialSiteSettings.social_links)
   );
-  const [featuredReleaseQuery, setFeaturedReleaseQuery] = useState("");
   const [lockInReleaseQuery, setLockInReleaseQuery] = useState("");
   const [projectCandidateSlug, setProjectCandidateSlug] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -146,37 +145,6 @@ export function SiteSettingsEditor({
 
     return "Manual save";
   }, [saveState]);
-
-  const selectedFeaturedReleases = useMemo(
-    () =>
-      settings.site_content.home.featured_release_ids
-        .map((releaseId) => releaseOptions.find((release) => release.id === releaseId))
-        .filter((release): release is ReleaseSummary => Boolean(release)),
-    [releaseOptions, settings.site_content.home.featured_release_ids]
-  );
-
-  const filteredReleaseOptions = useMemo(() => {
-    const selectedIds = new Set(settings.site_content.home.featured_release_ids);
-    const query = featuredReleaseQuery.trim().toLowerCase();
-
-    return releaseOptions
-      .filter((release) => {
-        if (!release.is_published) {
-          return false;
-        }
-
-        if (selectedIds.has(release.id)) {
-          return false;
-        }
-
-        if (!query) {
-          return true;
-        }
-
-        return release.title.toLowerCase().includes(query);
-      })
-      .slice(0, 12);
-  }, [featuredReleaseQuery, releaseOptions, settings.site_content.home.featured_release_ids]);
 
   const releaseOptionsById = useMemo(
     () => new Map(releaseOptions.map((release) => [release.id, release])),
@@ -228,23 +196,16 @@ export function SiteSettingsEditor({
   const explicitlySelectedSpotlightRelease = spotlightReleaseId
     ? releaseOptionsById.get(spotlightReleaseId) ?? null
     : null;
-  const legacySpotlightRelease = settings.site_content.home.built_for_motion_release_ids
-    .map((releaseId) => releaseOptionsById.get(releaseId))
-    .find((release) => release?.is_published && release.slug.trim()) ??
-    (settings.site_content.home.built_for_motion_release_id
-      ? releaseOptionsById.get(settings.site_content.home.built_for_motion_release_id)
-      : null);
+  const validExplicitSpotlightRelease =
+    explicitlySelectedSpotlightRelease?.is_published &&
+    explicitlySelectedSpotlightRelease.slug.trim()
+      ? explicitlySelectedSpotlightRelease
+      : null;
   const beastModeFallbackRelease = releaseOptions.find(
     (release) => release.slug === "beast-mode" && release.is_published
   );
   const resolvedSpotlightRelease =
-    (explicitlySelectedSpotlightRelease?.is_published &&
-    explicitlySelectedSpotlightRelease.slug.trim()
-      ? explicitlySelectedSpotlightRelease
-      : null) ||
-    (legacySpotlightRelease?.is_published && legacySpotlightRelease.slug.trim()
-      ? legacySpotlightRelease
-      : null) ||
+    validExplicitSpotlightRelease ||
     beastModeFallbackRelease ||
     null;
   const filteredLockInReleaseOptions = releaseOptions
@@ -271,10 +232,6 @@ export function SiteSettingsEditor({
     ...(resolvedSpotlightRelease && !resolvedSpotlightRelease.cover_art_path
       ? ["The spotlight release has no cover art. The public fallback treatment will be used."]
       : []),
-    ...(resolvedSpotlightRelease &&
-    settings.site_content.home.featured_release_ids.includes(resolvedSpotlightRelease.id)
-      ? ["This release is also configured for the homepage hero. Repetition may be intentional during a campaign."]
-      : []),
     ...(!settings.site_content.home.lock_in_spotlight_headline.trim()
       ? ["Add a public spotlight headline."]
       : []),
@@ -288,22 +245,7 @@ export function SiteSettingsEditor({
     !settings.site_content.about.intro_heading.trim() ? "Introduction heading" : "",
     !settings.site_content.about.intro_text.trim() ? "Introduction copy" : ""
   ].filter(Boolean);
-  const missingFeaturedReleaseIds = settings.site_content.home.featured_release_ids.filter(
-    (releaseId) => !releaseOptionsById.has(releaseId)
-  );
   const publicReadinessWarnings = [
-    ...(settings.site_content.home.featured_release_ids.length === 0
-      ? ["Homepage hero is using the deterministic release fallback."]
-      : []),
-    ...selectedFeaturedReleases
-      .filter((release) => !release.is_published)
-      .map((release) => `${release.title} is selected for the homepage but is not public.`),
-    ...(missingFeaturedReleaseIds.length > 0
-      ? ["A saved homepage release no longer exists."]
-      : []),
-    ...(settings.site_content.home.built_for_motion_enabled && !resolvedSpotlightRelease
-      ? ["Lock-In Spotlight has no valid public release."]
-      : []),
     ...(aboutPositioningMissingFields.length > 0
       ? [`About positioning is missing: ${aboutPositioningMissingFields.join(", ")}.`]
       : []),
@@ -332,84 +274,9 @@ export function SiteSettingsEditor({
     }));
   }
 
-  function toggleFeaturedRelease(releaseId: string) {
-    const selectedIds = settings.site_content.home.featured_release_ids;
-
-    if (selectedIds.includes(releaseId)) {
-      setSettings((current) => ({
-        ...current,
-        site_content: {
-          ...current.site_content,
-          home: {
-            ...current.site_content.home,
-            featured_release_ids: current.site_content.home.featured_release_ids.filter(
-              (value) => value !== releaseId
-            )
-          }
-        }
-      }));
-
-      return;
-    }
-
-    if (selectedIds.length >= 3) {
-      setMessage("You can feature up to 3 releases on the homepage.");
-      setSaveState("idle");
-
-      return;
-    }
-
-    setSettings((current) => {
-      return {
-        ...current,
-        site_content: {
-          ...current.site_content,
-          home: {
-            ...current.site_content.home,
-            featured_release_ids: [...current.site_content.home.featured_release_ids, releaseId]
-          }
-        }
-      };
-    });
-  }
-
-  function moveFeaturedRelease(releaseId: string, direction: -1 | 1) {
-    setSettings((current) => ({
-      ...current,
-      site_content: {
-        ...current.site_content,
-        home: {
-          ...current.site_content.home,
-          featured_release_ids: moveHomepageFeaturedRelease(
-            current.site_content.home.featured_release_ids,
-            releaseId,
-            direction
-          )
-        }
-      }
-    }));
-  }
-
   function setLockInSpotlightReleaseId(releaseId: string) {
     updateSiteContent("home", "lock_in_spotlight_release_id", releaseId);
     setLockInReleaseQuery("");
-  }
-
-  function clearMissingFeaturedReleases() {
-    const existingReleaseIds = new Set(releaseOptions.map((release) => release.id));
-
-    setSettings((current) => ({
-      ...current,
-      site_content: {
-        ...current.site_content,
-        home: {
-          ...current.site_content.home,
-          featured_release_ids: current.site_content.home.featured_release_ids.filter(
-            (releaseId) => existingReleaseIds.has(releaseId)
-          )
-        }
-      }
-    }));
   }
 
   function addApprovedProject() {
@@ -461,7 +328,7 @@ export function SiteSettingsEditor({
       site_content: {
         ...current.site_content,
         projects: {
-          approved_slugs: moveHomepageFeaturedRelease(
+          approved_slugs: moveOrderedItem(
             current.site_content.projects.approved_slugs,
             slug,
             direction
@@ -917,7 +784,7 @@ export function SiteSettingsEditor({
             </label>
 
             <label className="space-y-2">
-              <span className="field-label">Nav Links Label</span>
+              <span className="field-label">On Repeat Nav Label</span>
               <input
                 className="field-input"
                 onChange={(event) =>
@@ -963,17 +830,6 @@ export function SiteSettingsEditor({
 
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="field-label">Hero Badge</span>
-              <input
-                className="field-input"
-                onChange={(event) =>
-                  updateSiteContent("home", "hero_badge_text", event.target.value)
-                }
-                value={settings.site_content.home.hero_badge_text}
-              />
-            </label>
-
-            <label className="space-y-2">
               <span className="field-label">Exclusive CTA Label</span>
               <input
                 className="field-input"
@@ -983,163 +839,6 @@ export function SiteSettingsEditor({
                 value={settings.site_content.home.exclusive_cta_label}
               />
             </label>
-
-            <div className="space-y-3 md:col-span-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <span className="field-label">Featured Releases</span>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Pick up to 3 releases. The first becomes the homepage hero and the
-                    others appear as supporting featured music. Empty slots use the
-                    newest featured public releases in a stable order.
-                  </p>
-                </div>
-                <span className="pill">
-                  {settings.site_content.home.featured_release_ids.length}/3 selected
-                </span>
-              </div>
-
-              {selectedFeaturedReleases.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-3">
-                  {selectedFeaturedReleases.map((release, index) => (
-                    <article
-                      className="rounded-md border border-[rgba(246,201,69,0.25)] bg-brand-primary-soft p-4"
-                      key={release.id}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-edge bg-surface">
-                          {release.cover_art_path ? (
-                            <Image
-                              alt={`${release.title} cover`}
-                              className="object-cover"
-                              fill
-                              sizes="56px"
-                              src={release.cover_art_path}
-                              unoptimized
-                            />
-                          ) : null}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="pill text-[10px]">
-                            {index === 0 ? "Homepage hero" : `Supporting ${index}`}
-                          </span>
-                          <p className="mt-2 truncate text-sm font-semibold text-ink">
-                            {release.title}
-                          </p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">
-                            {release.release_date || "Date pending"}
-                          </p>
-                          {release.collaborator_name.trim() ? (
-                            <p className="mt-1 truncate text-xs text-muted">
-                              with {release.collaborator_name}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {!release.is_published ? (
-                        <p className="mt-3 flex items-center gap-2 text-xs text-amber-300">
-                          <AlertTriangle size={13} /> No longer public; fallback will render.
-                        </p>
-                      ) : null}
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          aria-label={`Move ${release.title} earlier`}
-                          className="action-button-secondary !px-2 !py-2"
-                          disabled={index === 0}
-                          onClick={() => moveFeaturedRelease(release.id, -1)}
-                          type="button"
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                        <button
-                          aria-label={`Move ${release.title} later`}
-                          className="action-button-secondary !px-2 !py-2"
-                          disabled={index === selectedFeaturedReleases.length - 1}
-                          onClick={() => moveFeaturedRelease(release.id, 1)}
-                          type="button"
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                        <button
-                          className="action-button-secondary !px-3 !py-2 text-xs"
-                          onClick={() => toggleFeaturedRelease(release.id)}
-                          type="button"
-                        >
-                          Remove
-                        </button>
-                        <Link
-                          className="action-button-secondary !px-2 !py-2"
-                          href={`/admin/releases/${release.id}`}
-                          title="Open release editor"
-                        >
-                          <ExternalLink size={14} />
-                        </Link>
-                        {release.is_published ? (
-                          <Link
-                            className="action-button-secondary !px-2 !py-2"
-                            href={`/music/${release.slug}`}
-                            target="_blank"
-                            title="Open public release"
-                          >
-                            <Globe2 size={14} />
-                          </Link>
-                        ) : null}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-
-              {missingFeaturedReleaseIds.length > 0 ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
-                  <span>A saved featured release no longer exists.</span>
-                  <button
-                    className="action-button-secondary !px-3 !py-2 text-xs"
-                    onClick={clearMissingFeaturedReleases}
-                    type="button"
-                  >
-                    Clear stale selections
-                  </button>
-                </div>
-              ) : null}
-
-              <label className="space-y-2">
-                <span className="field-label">Find Releases</span>
-                <input
-                  className="field-input"
-                  onChange={(event) => setFeaturedReleaseQuery(event.target.value)}
-                  placeholder="Search by release title"
-                  value={featuredReleaseQuery}
-                />
-              </label>
-
-              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-edge bg-input p-3">
-                {filteredReleaseOptions.length > 0 ? (
-                  filteredReleaseOptions.map((release) => (
-                    <button
-                      className="flex w-full items-center justify-between gap-3 rounded-md border border-edge bg-surface px-4 py-3 text-left transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover"
-                      key={release.id}
-                      onClick={() => toggleFeaturedRelease(release.id)}
-                      type="button"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{release.title}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                          {release.type} • {release.status}
-                        </p>
-                      </div>
-                      <span className="pill">Add</span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-2 py-3 text-sm text-slate-500">
-                    No releases match this search.
-                  </p>
-                )}
-              </div>
-            </div>
 
             <label className="space-y-2">
               <span className="field-label">Recent Releases Eyebrow</span>
@@ -1191,24 +890,14 @@ export function SiteSettingsEditor({
                 <div>
                   <span className="field-label">Lock-In Spotlight</span>
                   <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
-                    Feature one release in a campaign-style homepage takeover. The saved legacy
-                    rotation remains untouched and is used only as a compatibility fallback.
+                    The homepage always opens with this campaign-style takeover. Choose one
+                    published release, or leave the selection blank to use Beast Mode and the
+                    branded Lock-In Protocol fallback.
                   </p>
                 </div>
-                <label className="inline-flex items-center gap-2 text-sm font-semibold text-secondary">
-                  <input
-                    checked={settings.site_content.home.built_for_motion_enabled}
-                    onChange={(event) =>
-                      updateSiteContent(
-                        "home",
-                        "built_for_motion_enabled",
-                        event.target.checked
-                      )
-                    }
-                    type="checkbox"
-                  />
-                  Show spotlight
-                </label>
+                <span className="pill border-emerald-400/30 text-emerald-200">
+                  Homepage primary
+                </span>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -1263,11 +952,11 @@ export function SiteSettingsEditor({
                   <div>
                     <span className="field-label">Spotlight Release</span>
                     <p className="mt-1 text-xs text-muted">
-                      {spotlightReleaseId
+                      {validExplicitSpotlightRelease
                         ? "Explicit selection"
                         : resolvedSpotlightRelease
-                          ? "Compatibility fallback"
-                          : "No public fallback available"}
+                          ? "Beast Mode fallback"
+                          : "Lock-In Protocol fallback"}
                     </p>
                   </div>
                   {spotlightReleaseId ? (
@@ -1276,7 +965,7 @@ export function SiteSettingsEditor({
                       onClick={() => setLockInSpotlightReleaseId("")}
                       type="button"
                     >
-                      Use fallback
+                      Use Beast Mode fallback
                     </button>
                   ) : null}
                 </div>
@@ -1299,8 +988,8 @@ export function SiteSettingsEditor({
                     </Link>
                   </article>
                 ) : (
-                  <p className="flex items-center gap-2 text-sm text-amber-300">
-                    <AlertTriangle size={14} /> No valid public spotlight release is available.
+                  <p className="flex items-center gap-2 text-sm text-blue-200">
+                    <CheckCircle2 size={14} /> The branded Lock-In Protocol fallback will render.
                   </p>
                 )}
 
@@ -1355,24 +1044,26 @@ export function SiteSettingsEditor({
                 </p>
               )}
 
-              {resolvedSpotlightRelease ? (
-                <div className="overflow-hidden rounded-md border border-edge">
-                  <LockInSpotlight
-                    ctaLabel={settings.site_content.home.lock_in_spotlight_cta_label}
-                    eyebrow={settings.site_content.home.lock_in_spotlight_eyebrow}
-                    headline={settings.site_content.home.lock_in_spotlight_headline}
-                    preview
-                    release={{
-                      coverArtAltText: `${resolvedSpotlightRelease.title} cover art`,
-                      coverArtPath: resolvedSpotlightRelease.cover_art_path,
-                      id: resolvedSpotlightRelease.id,
-                      slug: resolvedSpotlightRelease.slug,
-                      title: resolvedSpotlightRelease.title
-                    }}
-                    statement={settings.site_content.home.lock_in_spotlight_statement}
-                  />
-                </div>
-              ) : null}
+              <div className="overflow-hidden rounded-md border border-edge">
+                <LockInSpotlight
+                  ctaLabel={settings.site_content.home.lock_in_spotlight_cta_label}
+                  eyebrow={settings.site_content.home.lock_in_spotlight_eyebrow}
+                  headline={settings.site_content.home.lock_in_spotlight_headline}
+                  preview
+                  release={
+                    resolvedSpotlightRelease
+                      ? {
+                          coverArtAltText: `${resolvedSpotlightRelease.title} cover art`,
+                          coverArtPath: resolvedSpotlightRelease.cover_art_path,
+                          id: resolvedSpotlightRelease.id,
+                          slug: resolvedSpotlightRelease.slug,
+                          title: resolvedSpotlightRelease.title
+                        }
+                      : null
+                  }
+                  statement={settings.site_content.home.lock_in_spotlight_statement}
+                />
+              </div>
             </div>
 
             <div className="grid gap-4 rounded-lg border border-edge bg-surface p-4 md:col-span-2 md:grid-cols-2">
@@ -2284,13 +1975,13 @@ export function SiteSettingsEditor({
               <ExternalLink size={13} />
             </Link>
           ))}
-          {selectedFeaturedReleases[0]?.is_published ? (
+          {resolvedSpotlightRelease ? (
             <Link
               className="action-button-secondary !px-3 !py-2 text-xs"
-              href={`/music/${selectedFeaturedReleases[0].slug}`}
+              href={`/music/${resolvedSpotlightRelease.slug}`}
               target="_blank"
             >
-              Current hero <ExternalLink size={13} />
+              Spotlight release <ExternalLink size={13} />
             </Link>
           ) : null}
         </div>
@@ -2318,8 +2009,8 @@ export function SiteSettingsEditor({
               Copy, images, links, and tracking are admin-editable
             </h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Use this page to update the public header, nav labels, homepage hero,
-              featured releases, carousel images, About copy/image, social links,
+              Use this page to update the public header, nav labels, homepage Spotlight,
+              carousel images, About copy/image, social links,
               link-page campaign release, exclusive track offer, CTA labels, SEO text,
               and Meta Pixel setup without changing code.
             </p>

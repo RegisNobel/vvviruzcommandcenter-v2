@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import {BarChart3, Camera, ArrowRight} from "lucide-react";
+import {BarChart3} from "lucide-react";
 
 import {readReleaseSummaries} from "@/lib/server/releases";
 import {prisma} from "@/lib/db/prisma";
@@ -41,6 +41,67 @@ function formatDate(value: string | null) {
     day: "numeric",
     year: "numeric"
   }).format(date);
+}
+
+function TrackingConventionCard({
+  eyebrow,
+  title,
+  destination,
+  campaignPattern,
+  adPattern,
+  exampleCampaign,
+  exampleAd,
+  description
+}: {
+  eyebrow: string;
+  title: string;
+  destination: string;
+  campaignPattern: string;
+  adPattern: string;
+  exampleCampaign: string;
+  exampleAd: string;
+  description: string;
+}) {
+  return (
+    <article className="rounded-lg border border-edge bg-surface-elevated p-5">
+      <p className="table-label text-status-info">{eyebrow}</p>
+      <h3 className="mt-2 text-lg font-semibold text-ink">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div>
+          <span className="table-label block">Destination</span>
+          <div className="mt-1 break-all rounded-md border border-edge bg-input px-3 py-2 font-mono text-xs text-secondary">
+            {destination}
+          </div>
+        </div>
+        <div>
+          <span className="table-label block">Ad Name / utm_content</span>
+          <div className="mt-1 break-all rounded-md border border-[rgba(246,201,69,0.24)] bg-brand-primary-soft px-3 py-2 font-mono text-xs text-brand-primary">
+            {adPattern}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-md border border-edge bg-input px-3 py-3 font-mono text-xs leading-5 text-status-info">
+        <div>utm_source=meta</div>
+        <div>utm_medium=paid_social</div>
+        <div>utm_campaign={campaignPattern}</div>
+        <div>utm_content=exact_ad_name</div>
+        <div>utm_term=audience_optional</div>
+      </div>
+
+      <div className="mt-4 border-t border-edge pt-3 text-[11px] leading-5 text-muted">
+        <strong className="text-secondary">Example</strong>
+        <div className="mt-1">
+          Campaign: <code className="break-all text-status-info">{exampleCampaign}</code>
+        </div>
+        <div>
+          Ad / content: <code className="break-all text-ink">{exampleAd}</code>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export default async function AdminPromoPage({
@@ -113,7 +174,7 @@ export default async function AdminPromoPage({
             <h2 className="mt-2 text-2xl font-semibold text-ink">Intelligence summary</h2>
           </div>
 
-          <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex flex-col justify-between rounded-lg border border-edge bg-surface-elevated p-5">
               <div>
                 <p className="table-label text-brand-primary">
@@ -204,84 +265,55 @@ export default async function AdminPromoPage({
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-lg border border-edge bg-surface-elevated p-5">
-              <div>
-                <p className="table-label text-brand-primary">
-                  Naming + UTM Convention
-                </p>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted block">Ad Name Pattern</span>
-                    <div className="mt-1 break-all rounded-md border border-[rgba(246,201,69,0.24)] bg-brand-primary-soft px-3 py-1.5 font-mono text-xs text-brand-primary">
-                      release_visual_songsection_revision
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted block">UTM Mapping</span>
-                    <div className="mt-1 space-y-1 rounded-md border border-edge bg-input px-3 py-1.5 font-mono text-xs text-status-info">
-                      <div>utm_source=meta</div>
-                      <div>utm_medium=paid_social</div>
-                      <div>utm_campaign=release</div>
-                      <div>utm_content=release_visual_songsection_revision</div>
-                    </div>
-                  </div>
-                  <p className="border-t border-edge pt-2 text-[10px] leading-4 text-muted">
-                    <strong>Example (Mahoraga):</strong>
-                    <br />
-                    Ad: <code className="text-ink font-mono text-[10px]">mahoraga_amv916_chorus_rev1</code>
-                    <br />
-                    UTM content: <code className="font-mono text-[10px] text-status-info">mahoraga_amv916_chorus_rev1</code>
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            {/* Future Tools Section */}
-            <section className="command-surface h-full px-5 py-5 sm:px-6">
-              <div className="flex items-center gap-3">
-                <h2 className="table-label text-brand-primary">
-                  Future Tools
-                </h2>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div className="group rounded-lg border border-edge bg-surface-elevated px-4 py-4 transition hover:border-edge-strong hover:bg-surface-hover">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="rounded-md border border-[rgba(246,201,69,0.24)] bg-brand-primary-soft p-2 text-brand-primary">
-                        <Camera size={18} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-                          Photo Lab
-                          <span className="status-badge-warning px-2 py-0.5 text-[10px]">
-                            Coming Soon
-                          </span>
-                        </h3>
-                        <p className="mt-1 text-xs text-muted">
-                          Create and manage promo visuals, cover assets, and image-based creative.
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      className="rounded-md border border-edge bg-transparent p-1.5 text-muted transition hover:border-[rgba(246,201,69,0.5)] hover:bg-surface-hover hover:text-brand-primary"
-                      href="/admin/photo-lab"
-                      title="Preview Photo Lab"
-                    >
-                      <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
+        <section className="command-surface overflow-hidden px-5 py-5 sm:px-6">
           <div>
-            <ActiveLinkHubs hubs={linkHubs} />
+            <p className="field-label">Campaign Tracking Conventions</p>
+            <h2 className="mt-2 text-2xl font-semibold text-ink">
+              Keep landing experiences distinct
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted">
+              Use the same parser-safe creative name for Ad Lab. Change the campaign
+              value to identify whether traffic lands on the single-release link hub
+              or inside a playlist experience.
+            </p>
           </div>
-        </div>
+
+          <div className="mt-5 grid gap-5 xl:grid-cols-2">
+            <TrackingConventionCard
+              adPattern="release_visual_songsection_revision"
+              campaignPattern="release"
+              description="Use for ads that send listeners to the manually selected single-release /links experience."
+              destination="/links"
+              eyebrow="Single Release"
+              exampleAd="mahoraga_amv916_chorus_rev1"
+              exampleCampaign="mahoraga"
+              title="/links ads"
+            />
+            <TrackingConventionCard
+              adPattern="release_visual_songsection_revision"
+              campaignPattern="release_playlist_slug"
+              description="Use for ads that open a specific release inside a playlist. The playlist slug belongs in the campaign value, not the ad name, so creative parsing stays intact."
+              destination="/listen/playlist_slug/release_slug"
+              eyebrow="Playlist Experience"
+              exampleAd="will_amv_hook_rev1"
+              exampleCampaign="will_nerd2dcore"
+              title="Playlist ads"
+            />
+          </div>
+
+          <p className="mt-4 rounded-md border border-[rgba(96,165,250,0.24)] bg-[rgba(96,165,250,0.05)] px-4 py-3 text-xs leading-5 text-secondary">
+            <strong className="text-status-info">Matching rule:</strong>{" "}
+            <code>Ad Name = utm_content</code>. Playlist campaigns add the playlist
+            slug only to <code>utm_campaign</code>. This keeps Meta CSV creative
+            analysis compatible while Attribution can separate `/links` and playlist
+            arrivals.
+          </p>
+        </section>
+
+        <ActiveLinkHubs hubs={linkHubs} />
       </div>
     </main>
   );

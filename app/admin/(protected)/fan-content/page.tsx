@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {BookOpen, Box, Radio} from "lucide-react";
 
+import {ReleasePicker} from "@/components/release-picker";
 import {listAdminFanContent} from "@/lib/repositories/fan-content";
 import {getLatestIntelTypeLabel} from "@/lib/latest-intel";
 import {
@@ -24,12 +25,14 @@ function ReleaseSelect({
   releases: Array<{id: string; title: string}>;
 }) {
   return (
-    <select className={input} defaultValue={defaultValue} name="releaseId">
-      <option value="">Standalone / none</option>
-      {releases.map((release) => (
-        <option key={release.id} value={release.id}>{release.title}</option>
-      ))}
-    </select>
+    <ReleasePicker
+      ariaLabel="Select related release"
+      className="mt-2"
+      defaultValue={defaultValue}
+      emptyOption={{label: "Standalone / none", value: ""}}
+      name="releaseId"
+      releases={releases}
+    />
   );
 }
 
@@ -119,7 +122,7 @@ function IntelEntry({
         </summary>
         <form action={updateFanUpdateAction} className="mt-4 grid gap-4 sm:grid-cols-2">
           <input name="id" type="hidden" value={item.id}/>
-          <label>Release (optional)<ReleaseSelect defaultValue={item.releaseId || ""} releases={releases}/></label>
+          <div>Release (optional)<ReleaseSelect defaultValue={item.releaseId || ""} releases={releases}/></div>
           <label>Type<IntelTypeSelect defaultValue={item.type}/></label>
           <label>Title<input className={input} defaultValue={item.title} maxLength={140} name="title" required/></label>
           <label>Public link (optional)<input className={input} defaultValue={item.href} name="href"/></label>
@@ -169,7 +172,7 @@ export default async function FanContentPage({searchParams}: {searchParams: Prom
           </div>
           <p className="text-sm leading-6 text-muted">The five newest published updates rotate across editorial public pages. Unpublishing hides an update without changing its original position.</p>
           <form action={createFanUpdateAction} className="grid gap-4 border-t border-edge pt-5 sm:grid-cols-2">
-            <label>Release (optional)<ReleaseSelect releases={releases}/></label>
+            <div>Release (optional)<ReleaseSelect releases={releases}/></div>
             <label>Type<IntelTypeSelect/></label>
             <label>Title<input className={input} maxLength={140} name="title" required/></label>
             <label>Public link (optional)<input className={input} name="href" placeholder="/music/song or https://..."/><span className="mt-1 block text-xs leading-5 text-muted">Leave blank for an upcoming-track update that should not open a public page yet.</span></label>
@@ -193,7 +196,7 @@ export default async function FanContentPage({searchParams}: {searchParams: Prom
 
         <section className={panel}>
           <div className="flex items-center gap-3"><Box className="text-brand-primary"/><div><p className="section-kicker">Direct-to-fan catalog</p><h2 className="text-xl font-semibold text-ink">Vault items</h2></div></div>
-          <form action={createVaultItemAction} className="grid gap-4 sm:grid-cols-2"><label>Release (optional)<ReleaseSelect releases={releases}/></label><label>Item type<select className={input} name="itemType"><option value="track">Track</option><option value="bundle">Bundle</option><option value="extras">Extras</option></select></label><label>Title<input className={input} name="title" required/></label><label>Slug<input className={input} name="slug" placeholder="auto from title"/></label><label className="sm:col-span-2">Description<textarea className={input} name="description" rows={3}/></label><label>Cover art URL<input className={input} name="coverArtUrl"/></label><label>Preview URL<input className={input} name="previewUrl"/></label><label>Price label<input className={input} name="priceLabel" placeholder="$10 or Pay what you want"/></label><label>External checkout URL<input className={input} name="checkoutUrl"/></label><label>Status<select className={input} name="status"><option value="draft">Draft</option><option value="public">Public</option><option value="archived">Archived</option></select></label><button className="btn-primary sm:col-span-2" type="submit">Save Vault item</button></form>
+          <form action={createVaultItemAction} className="grid gap-4 sm:grid-cols-2"><div>Release (optional)<ReleaseSelect releases={releases}/></div><label>Item type<select className={input} name="itemType"><option value="track">Track</option><option value="bundle">Bundle</option><option value="extras">Extras</option></select></label><label>Title<input className={input} name="title" required/></label><label>Slug<input className={input} name="slug" placeholder="auto from title"/></label><label className="sm:col-span-2">Description<textarea className={input} name="description" rows={3}/></label><label>Cover art URL<input className={input} name="coverArtUrl"/></label><label>Preview URL<input className={input} name="previewUrl"/></label><label>Price label<input className={input} name="priceLabel" placeholder="$10 or Pay what you want"/></label><label>External checkout URL<input className={input} name="checkoutUrl"/></label><label>Status<select className={input} name="status"><option value="draft">Draft</option><option value="public">Public</option><option value="archived">Archived</option></select></label><button className="btn-primary sm:col-span-2" type="submit">Save Vault item</button></form>
           <div className="space-y-2 border-t border-edge pt-4">{vaultItems.map((item) => <div className="flex items-center justify-between gap-3 text-sm" key={item.id}><span>{item.title} <span className="text-muted">({item.status})</span></span><DeleteButton id={item.id} kind="vault"/></div>)}</div>
         </section>
       </div>

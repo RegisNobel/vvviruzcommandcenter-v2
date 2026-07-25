@@ -408,6 +408,7 @@ export function ReleaseDetailEditor({
   streamingClicksCount = 0,
   utmCoverageRate = 0,
   reports = [],
+  historicalReports = [],
   initialPlaylists = [],
   initialPlaylistMemberships = [],
   initialAnnotations = []
@@ -424,6 +425,7 @@ export function ReleaseDetailEditor({
   streamingClicksCount?: number;
   utmCoverageRate?: number;
   reports?: any[];
+  historicalReports?: any[];
   initialPlaylists?: any[];
   initialPlaylistMemberships?: any[];
   initialAnnotations?: ReleaseAnnotationRecord[];
@@ -631,9 +633,10 @@ export function ReleaseDetailEditor({
         next_test: latestAdLearning.next_test,
         updated_at: latestAdLearning.updated_at
       } : null,
-      reports: reports ?? []
+      reports: reports ?? [],
+      historicalReports: historicalReports ?? []
     });
-  }, [adMetrics, latestAdLearning, reports]);
+  }, [adMetrics, historicalReports, latestAdLearning, reports]);
   const shortLinkTotalClicks = useMemo(
     () => initialShortLinks.reduce((total, link) => total + link.click_count, 0),
     [initialShortLinks]
@@ -713,9 +716,12 @@ export function ReleaseDetailEditor({
     release.social_share_title.trim() || seoTitlePreview;
   const socialShareDescriptionPreview =
     release.social_share_description.trim() || metaDescriptionPreview;
-  const schemaStatusLabel = release.is_published && isPublishReady
-    ? "Ready"
-    : "Draft";
+  const searchVisibilityLabel = release.is_published
+    ? "Published"
+    : "Hidden draft";
+  const structuredDataLabel = release.is_published
+    ? "Active"
+    : "Prepared";
   const publicUrlPreview = release.slug.trim()
     ? `/music/${release.slug.trim()}`
     : "/music/untitled-release";
@@ -1630,28 +1636,6 @@ export function ReleaseDetailEditor({
                   </div>
                 </div>
 
-                <details className="group md:col-span-2 rounded-xl border border-edge bg-surface-elevated px-4 py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink">
-                    <span>Future discovery fields</span>
-                    <ChevronDown className="transition group-open:rotate-180" size={17} />
-                  </summary>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {[
-                      "FAQ / AI answer blocks",
-                      "Indexing toggle",
-                      "Hide unreleased from search"
-                    ].map((field) => (
-                      <div
-                        className="rounded-lg border border-dashed border-edge-strong bg-surface px-4 py-3 text-sm text-muted"
-                        key={field}
-                      >
-                        <span className={pageLabelClass}>{field}</span>
-                        <p className="mt-2">Planned field. Current release behavior is unchanged.</p>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-
                 <label className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                   <span className="flex items-center gap-3 text-sm font-semibold text-ink">
                     <input
@@ -1669,26 +1653,6 @@ export function ReleaseDetailEditor({
                   </span>
                   <span className="mt-2 block text-xs leading-5 text-muted">
                     Controls whether lyrics are included on the public release page.
-                  </span>
-                </label>
-
-                <label className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
-                  <span className="flex items-center gap-3 text-sm font-semibold text-ink">
-                    <input
-                      checked={release.is_featured}
-                      className={pageCheckboxClass}
-                      onChange={(event) =>
-                        updateRelease((current) => ({
-                          ...current,
-                          is_featured: event.target.checked
-                        }))
-                      }
-                      type="checkbox"
-                    />
-                    Feature this release
-                  </span>
-                  <span className="mt-2 block text-xs leading-5 text-muted">
-                    Featured releases get priority placement on the public site.
                   </span>
                 </label>
 
@@ -1772,24 +1736,50 @@ export function ReleaseDetailEditor({
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:col-span-2 lg:grid-cols-[260px_minmax(0,1fr)]">
-                  <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
-                    <p className={pageLabelClass}>Schema status</p>
-                    <div className="mt-3">
-                      <span
-                        className={
-                          schemaStatusLabel === "Ready"
-                            ? pageAccentPillClass
-                            : pagePillClass
-                        }
-                      >
-                        {schemaStatusLabel}
-                      </span>
+                <div className="grid gap-4 md:col-span-2 lg:grid-cols-[280px_minmax(0,1fr)]">
+                  <div className="grid content-start gap-4">
+                    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                      <p className={pageLabelClass}>Search visibility</p>
+                      <div className="mt-3">
+                        <span
+                          className={
+                            release.is_published
+                              ? pageAccentPillClass
+                              : pagePillClass
+                          }
+                        >
+                          {searchVisibilityLabel}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-muted">
+                        {release.is_published
+                          ? "The public release page is available and included in the generated sitemap."
+                          : "Draft releases have no public detail page and are excluded from the generated sitemap."}
+                      </p>
+                      <p className="mt-3 break-all text-xs leading-5 text-secondary">
+                        {publicUrlPreview}
+                      </p>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-muted">
-                      Preview only. Structured data can use existing release fields
-                      when the public page is visible.
-                    </p>
+
+                    <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                      <p className={pageLabelClass}>Structured data</p>
+                      <div className="mt-3">
+                        <span
+                          className={
+                            release.is_published
+                              ? pageAccentPillClass
+                              : pagePillClass
+                          }
+                        >
+                          {structuredDataLabel}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-muted">
+                        {release.is_published
+                          ? "MusicRecording and breadcrumb structured data are generated automatically on the public page."
+                          : "MusicRecording and breadcrumb structured data will activate automatically when this release is published."}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
@@ -1920,14 +1910,6 @@ export function ReleaseDetailEditor({
               )}
 
               <div className="flex flex-wrap gap-3">
-                <Link
-                  className={pageSecondaryButtonClass}
-                  href={`/admin/photo-lab?releaseId=${release.id}`}
-                >
-                  <Sparkles size={16} />
-                  Photo Lab (Preview)
-                </Link>
-
                 <label className={`${pagePrimaryButtonClass} cursor-pointer`}>
                   <ImagePlus size={16} />
                   {isUploadingCover ? "Uploading cover..." : "Choose Cover Art"}
@@ -2363,6 +2345,7 @@ export function ReleaseDetailEditor({
                   utmCoverageRate={utmCoverageRate}
                   releaseId={release.id}
                   reports={reports}
+                  historicalReports={historicalReports}
                 />
 
                 <details

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {useState, useEffect} from "react";
 
+import {ReleasePicker} from "@/components/release-picker";
 import type {LinkHubRecord, ReleaseSummary} from "@/lib/types";
 
 type LinkHubsSettingsPanelProps = {
@@ -238,27 +239,20 @@ export function LinkHubsSettingsPanel({
                         )}
                       </td>
                       <td className="px-4 py-3 text-left">
-                        <select
-                          className="field-input py-1.5 px-2 text-sm bg-[#121418] text-[#ece6da] border-[#30343b] w-full"
-                          onChange={(e) => handleUpdateField(hub.id, "releaseId", e.target.value || null)}
+                        <ReleasePicker
+                          ariaLabel={`Select release for /${hub.path}`}
+                          emptyOption={
+                            isPrimary
+                              ? {label: "Latest Release (Fallback)", value: ""}
+                              : undefined
+                          }
+                          onValueChange={(releaseId) =>
+                            handleUpdateField(hub.id, "releaseId", releaseId || null)
+                          }
+                          placeholder="Select Release..."
+                          releases={releaseOptions}
                           value={hub.releaseId || ""}
-                        >
-                          {isPrimary && (
-                            <option className="bg-[#121418] text-[#ece6da]" value="">
-                              Latest Release (Fallback)
-                            </option>
-                          )}
-                          {!isPrimary && (
-                            <option className="bg-[#121418] text-muted" disabled value="">
-                              Select Release...
-                            </option>
-                          )}
-                          {releaseOptions.map((r) => (
-                            <option className="bg-[#121418] text-[#ece6da]" key={r.id} value={r.id}>
-                              {r.title} ({r.status})
-                            </option>
-                          ))}
-                        </select>
+                        />
                         {isPrimary && (
                           <p className="mt-1.5 text-[11px] leading-relaxed text-[#8f959d]">
                             If no release is assigned, /links falls back to the legacy/default featured release.

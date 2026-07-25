@@ -2794,20 +2794,70 @@ export async function readCopyPerformanceMemory(
 }
 
 export async function readReleaseAdReports(releaseId: string): Promise<any[]> {
-  const reports = await prisma.adCreativeReport.findMany({
+  const batches = await prisma.adImportBatch.findMany({
+    where: {
+      releaseId
+    },
+    include: {
+      reports: {
+        include: {
+          copyLinks: {
+            include: {
+              copyEntry: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  if (batches.length === 0) {
+    return [];
+  }
+
+  const completeBatch = batches.find(
+    (batch) => batch.batchType === "Release-to-Date" || batch.batchType === "Full Campaign"
+  );
+  let selectedBatches = completeBatch ? [completeBatch] : [batches[0]];
+
+  if (!completeBatch) {
+    const canCombine = canCombineAdBatchTotals(
+      batches.map((batch) => ({
+        batch_type: normalizeAdBatchType(batch.batchType),
+        reporting_start: batch.reportingStart?.toISOString() ?? null,
+        reporting_end: batch.reportingEnd?.toISOString() ?? null
+      }))
+    );
+
+    if (canCombine) {
+      selectedBatches = batches;
+    }
+  }
+
+  const reports = selectedBatches.flatMap((batch) => batch.reports);
+  await resolveEffectiveCopyLinksForRelease(releaseId, reports);
+  return reports;
+}
+
+export async function readReleaseAdTestHistory(releaseId: string): Promise<any[]> {
+  return prisma.adCreativeReport.findMany({
     where: {
       importBatch: {
         releaseId
       }
     },
-    include: {
-      copyLinks: {
-        include: {
-          copyEntry: true
-        }
-      }
+    select: {
+      adName: true,
+      spend: true,
+      impressions: true,
+      results: true,
+      linkClicks: true,
+      threeSecondPlays: true,
+      thruPlays: true,
+      video50: true
     }
   });
-  await resolveEffectiveCopyLinksForRelease(releaseId, reports);
-  return reports;
 }

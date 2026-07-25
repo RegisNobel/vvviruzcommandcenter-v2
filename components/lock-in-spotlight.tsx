@@ -19,7 +19,7 @@ type LockInSpotlightProps = {
   eyebrow: string;
   headline: string;
   preview?: boolean;
-  release: LockInSpotlightRelease;
+  release: LockInSpotlightRelease | null;
   statement: string;
 };
 
@@ -33,13 +33,13 @@ export function LockInSpotlight({
   statement
 }: LockInSpotlightProps) {
   const Heading = asHero ? "h1" : "h2";
-  const destination = `/music/${release.slug}`;
+  const destination = release ? `/music/${release.slug}` : "/music";
   const actionClassName =
     "group/action inline-flex min-h-12 items-center justify-center gap-3 border border-[rgba(246,201,69,0.58)] bg-[#f6c945] px-6 py-3 text-sm font-black uppercase tracking-[0.15em] text-[#090b0e] transition duration-300 hover:border-[#ffe58d] hover:bg-[#ffe078] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f6c945] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090b0e]";
 
   return (
     <section className="relative isolate overflow-clip border-y border-[rgba(246,201,69,0.24)] bg-[#090b0e]">
-      {release.coverArtPath ? (
+      {release?.coverArtPath ? (
         <Image
           alt=""
           aria-hidden="true"
@@ -74,7 +74,7 @@ export function LockInSpotlight({
                 href={destination}
                 linkLabel={ctaLabel}
                 linkType="lock_in_spotlight"
-                releaseId={release.id}
+                releaseId={release?.id || null}
               >
                 {ctaLabel}
                 <ArrowRight
@@ -89,7 +89,7 @@ export function LockInSpotlight({
 
         <div className="relative mx-auto aspect-square w-full max-w-[430px] lg:justify-self-end">
           <div className="pointer-events-none absolute -inset-10 rounded-full bg-[rgba(246,201,69,0.11)] blur-3xl" />
-          {release.coverArtPath ? (
+          {release?.coverArtPath ? (
             <Image
               alt={release.coverArtAltText}
               className="relative object-cover shadow-[0_28px_80px_rgba(0,0,0,0.55)]"
@@ -100,7 +100,7 @@ export function LockInSpotlight({
           ) : (
             <div className="public-art-placeholder relative flex h-full items-end p-7 text-left">
               <span className="text-2xl font-black uppercase tracking-[-0.02em] text-[#fff8ec]">
-                {release.title}
+                LOCK-IN PROTOCOL
               </span>
             </div>
           )}

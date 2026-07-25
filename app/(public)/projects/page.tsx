@@ -36,8 +36,7 @@ export default async function PublicProjectsPage() {
       <ProjectsIndexAnalytics />
       <div className="space-y-10">
         <section className="public-panel overflow-hidden px-5 py-9 sm:px-9 sm:py-11">
-          <p className="public-eyebrow">Recurring worlds</p>
-          <h1 className="public-heading mt-4 max-w-4xl text-4xl font-semibold sm:text-6xl">
+          <h1 className="public-heading max-w-4xl text-4xl font-semibold sm:text-6xl">
             Projects
           </h1>
           <p className="public-copy mt-5 max-w-3xl text-sm leading-7 sm:text-base">
@@ -88,7 +87,6 @@ export default async function PublicProjectsPage() {
                       </div>
                       <div className="flex min-h-full flex-col p-6 sm:p-7">
                         <p className="public-eyebrow">
-                          {project.projectType === "series" ? "series" : project.projectType} /{" "}
                           {project.releaseCount} {project.releaseCount === 1 ? "release" : "releases"}
                         </p>
                         <h2 className="public-heading mt-4 text-3xl font-semibold">

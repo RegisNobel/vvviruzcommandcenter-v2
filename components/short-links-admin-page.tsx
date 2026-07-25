@@ -20,6 +20,7 @@ import {
   updateShortLinkDestinationAction,
   updateShortLinkStatusAction
 } from "@/app/admin/(protected)/short-links/actions";
+import {ReleasePicker} from "@/components/release-picker";
 import {
   buildDestinationUrlWithUtm,
   utmMediumPresets,
@@ -494,21 +495,17 @@ export function ShortLinksAdminPage({
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <label className="block">
+              <div className="block">
                 <span className="field-label">Release</span>
-                <select
-                  className="field-input mt-2"
-                  onChange={(event) => setReleaseId(event.target.value)}
+                <ReleasePicker
+                  ariaLabel="Select release for short link"
+                  className="mt-2"
+                  emptyOption={{label: "Standalone / no release", value: ""}}
+                  onValueChange={setReleaseId}
+                  releases={releaseOptions}
                   value={releaseId}
-                >
-                  <option value="">Standalone / no release</option>
-                  {releaseOptions.map((release) => (
-                    <option key={release.id} value={release.id}>
-                      {release.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                />
+              </div>
 
               <label className="block">
                 <span className="field-label">Copy Angle</span>
@@ -866,27 +863,23 @@ export function ShortLinksAdminPage({
                                 Edit context
                               </summary>
                               <div className="mt-3 grid gap-3">
-                                <label className="block">
+                                <div className="block">
                                   <span className="field-label">Release</span>
-                                  <select
-                                    className="field-input mt-2"
-                                    onChange={(event) =>
+                                  <ReleasePicker
+                                    ariaLabel={`Select release for ${link.slug}`}
+                                    className="mt-2"
+                                    emptyOption={{label: "Standalone / no release", value: ""}}
+                                    onValueChange={(releaseId) =>
                                       updateContextDraft(
                                         link.id,
                                         "releaseId",
-                                        event.target.value
+                                        releaseId
                                       )
                                     }
+                                    releases={releaseOptions}
                                     value={draft.releaseId}
-                                  >
-                                    <option value="">Standalone / no release</option>
-                                    {releaseOptions.map((release) => (
-                                      <option key={release.id} value={release.id}>
-                                        {release.title}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
+                                  />
+                                </div>
                                 <label className="block">
                                   <span className="field-label">Campaign Label</span>
                                   <input

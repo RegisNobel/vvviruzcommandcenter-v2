@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 
+import {ReleasePicker} from "@/components/release-picker";
+
 export function ReleaseFilterSelect({
   releases,
   activeReleaseId
@@ -11,8 +13,7 @@ export function ReleaseFilterSelect({
 }) {
   const router = useRouter();
 
-  function handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const val = event.target.value;
+  function handleChange(val: string) {
     if (val) {
       router.push(`/admin/ad-lab?releaseId=${encodeURIComponent(val)}`);
     } else {
@@ -22,18 +23,13 @@ export function ReleaseFilterSelect({
 
   return (
     <div className="w-full max-w-xs">
-      <select
-        className="field-input w-full"
-        onChange={handleChange}
+      <ReleasePicker
+        ariaLabel="Filter Ad Lab by release"
+        emptyOption={{label: "All Releases", value: ""}}
+        onValueChange={handleChange}
+        releases={releases}
         value={activeReleaseId || ""}
-      >
-        <option value="">All Releases</option>
-        {releases.map((release) => (
-          <option key={release.id} value={release.id}>
-            {release.title}
-          </option>
-        ))}
-      </select>
+      />
     </div>
   );
 }

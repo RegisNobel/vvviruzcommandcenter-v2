@@ -2,21 +2,15 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
-import {ArrowUpRight, Play, Sparkles} from "lucide-react";
+import {ArrowUpRight} from "lucide-react";
 
 import {HomepageTrackedLink} from "@/components/homepage-tracked-link";
 import {LockInSpotlight} from "@/components/lock-in-spotlight";
 import {PublicReleaseCard} from "@/components/public-release-card";
-import {getHomepageStreamingTarget} from "@/lib/homepage-brand";
 import {getPublicProjectPath} from "@/lib/public-projects";
-import {
-  formatCollaboratorsList,
-  getPublicReleaseDiscoveryMetadata,
-  normalizeExternalUrl
-} from "@/lib/public-utils";
+import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
 import {readPublicExclusiveOffer} from "@/lib/repositories/exclusive-offer";
 import {
-  getHomepageFeaturedReleases,
   getHomepageProjects,
   getLockInSpotlightRelease,
   getRandomPublishedReleases,
@@ -25,178 +19,51 @@ import {
 
 export default async function PublicHomePage() {
   const siteSettings = await getSiteSettings();
-  const [
-    featuredReleases,
-    projects,
-    spotlightRelease,
-    randomReleasePool,
-    exclusiveOfferState
-  ] =
+  const [projects, spotlightRelease, randomReleasePool, exclusiveOfferState] =
     await Promise.all([
-      getHomepageFeaturedReleases(siteSettings.site_content.home.featured_release_ids),
       getHomepageProjects(),
-      siteSettings.site_content.home.built_for_motion_enabled
-        ? getLockInSpotlightRelease(
-            siteSettings.site_content.home.lock_in_spotlight_release_id,
-            siteSettings.site_content.home.built_for_motion_release_ids,
-            siteSettings.site_content.home.built_for_motion_release_id
-          )
-        : Promise.resolve(null),
+      getLockInSpotlightRelease(siteSettings.site_content.home.lock_in_spotlight_release_id),
       getRandomPublishedReleases(4),
       readPublicExclusiveOffer()
     ]);
   const content = siteSettings.site_content.home;
-  const heroRelease = featuredReleases[0];
-  const primaryHomepageRelease = spotlightRelease || heroRelease;
   const randomReleases = randomReleasePool
-    .filter((release) => release.id !== primaryHomepageRelease?.id)
+    .filter((release) => release.id !== spotlightRelease?.id)
     .slice(0, 3);
   const platformLabels = {
     spotify: siteSettings.site_content.platforms.spotify_label,
     apple_music: siteSettings.site_content.platforms.apple_music_label,
     youtube: siteSettings.site_content.platforms.youtube_label
   };
-  const heroStreamingTarget = heroRelease ? getHomepageStreamingTarget(heroRelease) : null;
-  const heroWatchUrl = heroRelease
-    ? normalizeExternalUrl(heroRelease.featured_video_url) ||
-      (heroStreamingTarget?.platform !== "youtube"
-        ? normalizeExternalUrl(heroRelease.youtube_url)
-        : "")
-    : "";
   return (
     <main className="public-page-wrap">
       <div className="space-y-16 sm:space-y-20">
-        {spotlightRelease ? (
-          <LockInSpotlight
-            asHero
-            ctaLabel={content.lock_in_spotlight_cta_label || "GO BEAST MODE"}
-            eyebrow={content.lock_in_spotlight_eyebrow || "5:00 AM PROTOCOL"}
-            headline={content.lock_in_spotlight_headline || "SURPASS YOUR LIMITS"}
-            release={{
-              coverArtAltText: getPublicReleaseDiscoveryMetadata(spotlightRelease).coverArtAltText,
-              coverArtPath: spotlightRelease.cover_art_path,
-              id: spotlightRelease.id,
-              slug: spotlightRelease.slug,
-              title: spotlightRelease.title
-            }}
-            statement={content.lock_in_spotlight_statement || "IGNORE THE NOISE. LOCK IN."}
-          />
-        ) : (
-          <section className="public-panel public-hero relative overflow-hidden px-5 py-7 sm:px-8 sm:py-10 lg:px-12">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(246,201,69,0.2),transparent_36%),linear-gradient(135deg,rgba(246,201,69,0.07),transparent_48%)]" />
-          {heroRelease ? (
-            <div className="relative grid gap-8 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-center md:gap-8 lg:gap-12">
-              <Link
-                className="public-art-stage group relative mx-auto block aspect-square w-full max-w-[280px] overflow-hidden sm:max-w-[520px] md:max-w-[360px] lg:max-w-[520px]"
-                href={`/music/${heroRelease.slug}`}
-              >
-                {heroRelease.cover_art_path ? (
-                  <Image
-                    alt={getPublicReleaseDiscoveryMetadata(heroRelease).coverArtAltText}
-                    className="object-cover transition duration-700 group-hover:scale-[1.025]"
-                    fill
-                    priority
-                    sizes="(max-width: 1024px) 92vw, 520px"
-                    src={heroRelease.cover_art_path}
-                  />
-                ) : (
-                  <div className="public-art-placeholder flex-col justify-end px-8 py-8 text-left">
-                    <span className="public-eyebrow">Featured release</span>
-                    <strong className="mt-3 text-3xl text-[#fff5df]">{heroRelease.title}</strong>
-                  </div>
-                )}
-              </Link>
-
-              <div className="max-w-2xl">
-                <div className="public-eyebrow inline-flex items-center gap-2 rounded-full border border-[rgba(246,201,69,0.28)] bg-[var(--brand-primary-soft)] px-3 py-1.5">
-                  <Sparkles size={12} />
-                  {content.hero_badge_text}
-                </div>
-                <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-[#c8b27b]">
-                  {siteSettings.artist_name}
-                </p>
-                <Link href={`/music/${heroRelease.slug}`}>
-                  <h1 className="public-heading mt-3 text-4xl font-semibold transition hover:text-[#f1ca61] sm:text-5xl lg:text-6xl">
-                    {heroRelease.title}
-                  </h1>
-                </Link>
-                {heroRelease.collaborator && heroRelease.collaborator_name.trim() ? (
-                  <p className="mt-3 text-sm font-semibold text-[#e3c16e]">
-                    with {formatCollaboratorsList(heroRelease.collaborator_name)}
-                  </p>
-                ) : null}
-                <p className="mt-5 line-clamp-3 max-w-xl text-base leading-8 text-[#b8c0ca] sm:line-clamp-none sm:text-lg">
-                  {heroRelease.public_description || siteSettings.tagline}
-                </p>
-                {heroRelease.categories.length > 0 ? (
-                  <div className="mt-6 hidden flex-wrap gap-2 sm:flex">
-                    {heroRelease.categories.slice(0, 3).map((category) => (
-                      <Link
-                        className="public-filter-chip text-xs"
-                        href={`/music?category=${encodeURIComponent(category.slug)}`}
-                        key={category.id}
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <HomepageTrackedLink
-                    className="public-action-primary"
-                    eventType="homepage_primary_cta_click"
-                    href={heroStreamingTarget?.href || `/music/${heroRelease.slug}`}
-                    linkLabel={heroStreamingTarget?.label || "Explore release"}
-                    linkType={heroStreamingTarget?.platform || "release_detail"}
-                    releaseId={heroRelease.id}
-                    target={heroStreamingTarget ? "_blank" : undefined}
-                  >
-                    <Play fill="currentColor" size={15} />
-                    {heroStreamingTarget?.label || "Explore release"}
-                  </HomepageTrackedLink>
-                  {heroWatchUrl ? (
-                    <HomepageTrackedLink
-                      className="public-action-secondary"
-                      eventType="homepage_primary_cta_click"
-                      href={heroWatchUrl}
-                      linkLabel="Watch video"
-                      linkType="video"
-                      releaseId={heroRelease.id}
-                      target="_blank"
-                    >
-                      Watch video
-                      <ArrowUpRight size={15} />
-                    </HomepageTrackedLink>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="relative mx-auto max-w-3xl py-12 text-center sm:py-20">
-              <div className="public-eyebrow inline-flex items-center gap-2">
-                <Sparkles size={12} />
-                {content.hero_badge_text}
-              </div>
-              <h1 className="public-heading mt-5 text-5xl font-semibold sm:text-7xl">
-                {siteSettings.artist_name}
-              </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#c4cbd3]">
-                {siteSettings.tagline}
-              </p>
-              <Link className="public-action-primary mt-8" href="/music">
-                Explore music
-              </Link>
-            </div>
-          )}
-          </section>
-        )}
+        <LockInSpotlight
+          asHero
+          ctaLabel={content.lock_in_spotlight_cta_label || "GO BEAST MODE"}
+          eyebrow={content.lock_in_spotlight_eyebrow || "5:00 AM PROTOCOL"}
+          headline={content.lock_in_spotlight_headline || "SURPASS YOUR LIMITS"}
+          release={
+            spotlightRelease
+              ? {
+                  coverArtAltText:
+                    getPublicReleaseDiscoveryMetadata(spotlightRelease).coverArtAltText,
+                  coverArtPath: spotlightRelease.cover_art_path,
+                  id: spotlightRelease.id,
+                  slug: spotlightRelease.slug,
+                  title: spotlightRelease.title
+                }
+              : null
+          }
+          statement={content.lock_in_spotlight_statement || "IGNORE THE NOISE. LOCK IN."}
+        />
 
         {projects.length > 0 ? (
           <section className="space-y-5">
             <div className="max-w-2xl">
               <p className="public-eyebrow">Explore projects</p>
               <h2 className="public-heading mt-3 text-3xl font-semibold sm:text-4xl">
-                Follow the worlds inside the catalog
+                The worlds inside the catalog
               </h2>
               <p className="mt-3 text-sm leading-7 text-[#aeb6c0]">
                 Recurring series and connected releases, organized by the ideas that keep evolving.
@@ -241,7 +108,7 @@ export default async function PublicHomePage() {
                         {project.description}
                       </span>
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-[#e3c16e]">
-                        Enter project <ArrowUpRight size={15} />
+                        View project <ArrowUpRight size={15} />
                       </span>
                     </span>
                   </HomepageTrackedLink>

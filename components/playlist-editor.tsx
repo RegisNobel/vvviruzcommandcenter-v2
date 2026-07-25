@@ -20,6 +20,7 @@ import {
   BarChart3
 } from "lucide-react";
 import {parseSpotifyResourceUrl} from "@/lib/spotify-links";
+import {ReleasePicker} from "@/components/release-picker";
 import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
 import type {PlaylistAnalyticsSummary, PlaylistRecord, PlaylistReleaseRecord, ReleaseSummary} from "@/lib/types";
 import {PlaylistAnalyticsPanel} from "@/components/playlist-analytics-panel";
@@ -643,21 +644,17 @@ export function PlaylistEditor({
               </p>
             </div>
             {/* Add release form */}
-            <div className="flex items-center gap-2">
-              <select
-                className="field-input bg-input px-3 py-1.5 text-sm"
-                onChange={(e) => setSelectedReleaseId(e.target.value)}
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[360px] sm:flex-row sm:items-center">
+              <ReleasePicker
+                ariaLabel="Select release to add to playlist"
+                className="min-w-0 flex-1"
+                emptyOption={{label: "Select Release...", value: ""}}
+                onValueChange={setSelectedReleaseId}
+                releases={releaseOptions}
                 value={selectedReleaseId}
-              >
-                <option value="">Select Release...</option>
-                {releaseOptions.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.title} ({r.type})
-                  </option>
-                ))}
-              </select>
+              />
               <button
-                className="action-button-primary py-1.5 text-sm inline-flex items-center gap-1"
+                className="action-button-primary inline-flex shrink-0 items-center justify-center gap-1 py-1.5 text-sm"
                 onClick={handleAddRelease}
               >
                 <Plus size={14} />

@@ -63,7 +63,10 @@ export function PerformanceMemorySection({
             {icon}
             {title}
           </div>
-          <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink sm:text-base" title={value || "None Isolated"}>
+          <p
+            className="mt-2 break-words text-sm font-semibold leading-5 text-ink [overflow-wrap:anywhere] sm:text-base"
+            title={value || "None Isolated"}
+          >
             {value || "None Isolated"}
           </p>
         </div>

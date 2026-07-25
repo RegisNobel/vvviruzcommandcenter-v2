@@ -4,6 +4,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {ArrowLeft, FolderOpen, Save, Trash2} from "lucide-react";
+import {ReleasePicker} from "@/components/release-picker";
 import {StickyActionDock} from "@/components/sticky-action-dock";
 
 import {
@@ -351,26 +352,21 @@ export function CopyDetailEditor({
                   </select>
                 </label>
 
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="field-label">Attach to Release</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) =>
+                  <ReleasePicker
+                    ariaLabel="Attach copy to release"
+                    emptyOption={{label: "No Release / Standalone", value: ""}}
+                    onValueChange={(releaseId) =>
                       updateCopy((current) => ({
                         ...current,
-                        release_id: event.target.value || null
+                        release_id: releaseId || null
                       }))
                     }
+                    releases={releases}
                     value={copy.release_id ?? ""}
-                  >
-                    <option value="">No Release / Standalone</option>
-                    {releases.map((release) => (
-                      <option key={release.id} value={release.id}>
-                        {release.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  />
+                </div>
               </div>
             </section>
 

@@ -2,6 +2,8 @@
 
 import {useRouter} from "next/navigation";
 
+import {ReleasePicker} from "@/components/release-picker";
+
 export function CopyLabFilters({
   releases,
   activeReleaseId,
@@ -17,8 +19,7 @@ export function CopyLabFilters({
 }) {
   const router = useRouter();
 
-  function handleReleaseChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const val = event.target.value;
+  function handleReleaseChange(val: string) {
     updateFilters(val || null, activeStatusFilter, activeArchiveFilter);
   }
 
@@ -58,18 +59,13 @@ export function CopyLabFilters({
         <span className="text-[10px] font-black uppercase tracking-widest text-muted">
           Release Context
         </span>
-        <select
-          className="field-input w-full"
-          onChange={handleReleaseChange}
+        <ReleasePicker
+          ariaLabel="Filter Copy Lab by release"
+          emptyOption={{label: "All Releases", value: ""}}
+          onValueChange={handleReleaseChange}
+          releases={releases}
           value={activeReleaseId || ""}
-        >
-          <option value="">All Releases</option>
-          {releases.map((release) => (
-            <option key={release.id} value={release.id}>
-              {release.title}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="flex flex-col gap-1.5 min-w-[160px]">

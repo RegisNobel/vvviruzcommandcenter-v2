@@ -90,6 +90,7 @@ export interface UnifiedRecommendationInput {
     updated_at?: string | null;
   } | null;
   reports?: any[] | null;
+  historicalReports?: any[] | null;
   targetCpr?: number | null;
 }
 
@@ -106,7 +107,15 @@ export interface UnifiedRecommendation {
 }
 
 export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInput): UnifiedRecommendation {
-  const { adMetrics, funnel, batchContext, latestLearning, reports, targetCpr } = input;
+  const {
+    adMetrics,
+    funnel,
+    batchContext,
+    latestLearning,
+    reports,
+    historicalReports,
+    targetCpr
+  } = input;
 
   // 1. Identify Data Warnings
   const dataWarnings: string[] = [];
@@ -331,6 +340,10 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     };
 
     const normalizedReports = reports.map(normalizeReport);
+    // Historical rows are used only as non-additive test memory. They must not
+    // contribute spend/results because rolling Meta snapshots can overlap.
+    const normalizedHistoricalReports = (historicalReports?.length ? historicalReports : reports)
+      .map(normalizeReport);
     const totalSpend = normalizedReports.reduce((sum, r) => sum + r.spend, 0);
     const totalResults = normalizedReports.reduce((sum, r) => sum + r.results, 0);
     const totalImpressions = normalizedReports.reduce((sum, r) => sum + r.impressions, 0);
@@ -614,16 +627,71 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     const meaningfulVisuals = Array.from(visualAggs.values()).filter(v => v.spend >= 10);
     const meaningfulSections = Array.from(songSectionAggs.values()).filter(s => s.spend >= 10);
     const meaningfulAngles = Array.from(copyAngleAggs.values()).filter(a => a.spend >= 10);
+    const currentVis = controlVisual || (meaningfulVisuals[0]?.value) || null;
+    const currentSec = controlSongSection || (meaningfulSections[0]?.value) || null;
+    const currentAngle = controlCopyAngle || (meaningfulAngles[0]?.value) || null;
+
+    const hasObservedDelivery = (report: NormalizedReport): boolean =>
+      report.spend > 0 ||
+      report.impressions > 0 ||
+      report.results > 0 ||
+      report.linkClicks > 0 ||
+      report.threeSecondPlays > 0;
+
+    const historicalComponentRows = normalizedHistoricalReports
+      .filter(hasObservedDelivery)
+      .map((report) => {
+        const parsed = parseAdName(report.adName);
+        return {
+          visual:
+            parsed.visual && parsed.visual !== "Unparsed"
+              ? parsed.visual.toLowerCase()
+              : null,
+          songSection:
+            parsed.songSection && parsed.songSection !== "Unparsed"
+              ? formatSongSection(parsed.songSection)
+              : null
+        };
+      });
+
+    const observedVisualsForCurrentSection = new Set(
+      historicalComponentRows
+        .filter((row) => row.visual && row.songSection && (!currentSec || row.songSection === currentSec))
+        .map((row) => row.visual as string)
+    );
+    const observedSectionsForCurrentVisual = new Set(
+      historicalComponentRows
+        .filter((row) => row.visual && row.songSection && (!currentVis || row.visual === currentVis))
+        .map((row) => row.songSection as string)
+    );
+    const visualComparisonWasLaunched = observedVisualsForCurrentSection.size >= 2;
+    const songSectionComparisonWasLaunched = observedSectionsForCurrentVisual.size >= 2;
+    const visualDeliveryWasConcentrated =
+      meaningfulVisuals.length < 2 && visualComparisonWasLaunched;
+    const songSectionDeliveryWasConcentrated =
+      meaningfulSections.length < 2 && songSectionComparisonWasLaunched;
+    const needsNewVisualTest =
+      meaningfulVisuals.length < 2 && !visualComparisonWasLaunched;
+    const needsNewSongSectionTest =
+      meaningfulSections.length < 2 && !songSectionComparisonWasLaunched;
 
     if (meaningfulVisuals.length < 2) {
-      if (meaningfulVisuals[0]?.value) {
+      if (visualDeliveryWasConcentrated) {
+        coverageWarnings.push(
+          `Multiple visual formats were launched for ${currentSec || "the current song section"}, but Meta concentrated delivery on ${currentVis || "one format"}. The comparison is inconclusive, not untested.`
+        );
+      } else if (meaningfulVisuals[0]?.value) {
         coverageWarnings.push(`Visual coverage is narrow: only ${meaningfulVisuals[0].value} has meaningful spend.`);
       } else {
         coverageWarnings.push("Visual coverage is narrow: no visual format has meaningful spend.");
       }
     }
     if (meaningfulSections.length < 2) {
-      if (meaningfulSections[0]?.value) {
+      if (songSectionDeliveryWasConcentrated) {
+        coverageWarnings.push(
+          `Multiple song sections were launched with ${currentVis || "the current visual"}, but Meta concentrated delivery on ${currentSec || "one section"}. The comparison is inconclusive, not untested.`
+        );
+      } else if (meaningfulSections[0]?.value) {
         coverageWarnings.push(`Song section coverage is narrow: only ${meaningfulSections[0].value} has meaningful spend.`);
       } else {
         coverageWarnings.push("Song section coverage is narrow: no song section has meaningful spend.");
@@ -644,7 +712,10 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
     }
 
     let diagnosisRead = "System has isolated a control and calculated component proof. Proceed with controlled tests.";
-    if (coverageWarnings.length > 0) {
+    if (visualDeliveryWasConcentrated || songSectionDeliveryWasConcentrated) {
+      diagnosisRead =
+        "Meta starved one or more launched variants. Those comparisons are inconclusive and will not be recycled automatically as new test ideas.";
+    } else if (coverageWarnings.length > 0) {
       diagnosisRead = "Coverage is narrow, so this is a testing direction, not a final verdict.";
     } else if (totalSpend > 0 && totalSpend < 25) {
       diagnosisRead = "Low sample size or results, treat recommendations as directional.";
@@ -737,14 +808,10 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       if (parsed.release && parsed.release !== "Unparsed") releaseSlug = parsed.release;
     }
 
-    const currentVis = controlVisual || (meaningfulVisuals[0]?.value) || null;
-    const currentSec = controlSongSection || (meaningfulSections[0]?.value) || null;
-    const currentAngle = controlCopyAngle || (meaningfulAngles[0]?.value) || null;
-
     const alternateVisual = currentVis?.startsWith("amv") ? "2screens" : "amv916";
     const alternateSection = currentSec?.toLowerCase() === "chorus" ? "verse1" : "chorus";
 
-    if (meaningfulVisuals.length < 2) {
+    if (needsNewVisualTest) {
       const pattern = getSuggestedPattern(releaseSlug, currentVis ? alternateVisual : null, currentSec);
       addCandidate(
         pattern,
@@ -757,7 +824,7 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
       );
     }
 
-    if (meaningfulSections.length < 2) {
+    if (needsNewSongSectionTest) {
       const pattern = getSuggestedPattern(releaseSlug, currentVis, currentSec ? alternateSection : null);
       addCandidate(
         pattern,
@@ -852,12 +919,12 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         }
       } else {
         if (isCopyLinkageWeak) {
-          if (visualStatus !== "Strong") {
+          if (needsNewVisualTest) {
             whatChanges = `Visual Format: Test alternate format ${alternateVisual} instead of ${controlVisual || "2screens"}`;
             staysSameComponents = ["Song Section"];
             pattern = getSuggestedPattern(releaseSlug, alternateVisual, controlSongSection);
             whyMatters = `Copy diagnosis is unavailable due to weak copy linkage. Test a new Visual Format challenger.`;
-          } else {
+          } else if (needsNewSongSectionTest) {
             whatChanges = `Song Section: Test alternate section ${alternateSection} instead of ${controlSongSection || "chorus"}`;
             staysSameComponents = ["Visual Format"];
             pattern = getSuggestedPattern(releaseSlug, controlVisual, alternateSection);
@@ -871,31 +938,37 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
         }
       }
 
-      addCandidate(
-        pattern,
-        whatChanges,
-        buildStaysSame(staysSameComponents),
-        whyMatters,
-        confidence
-      );
+      if (pattern && whatChanges && whyMatters) {
+        addCandidate(
+          pattern,
+          whatChanges,
+          buildStaysSame(staysSameComponents),
+          whyMatters,
+          confidence
+        );
+      }
     }
 
     if (iterationCandidates.length === 0) {
-      addCandidate(
-        getSuggestedPattern(releaseSlug, null, currentSec),
-        "Visual Format: Test alternate format",
-        buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
-        "No strong control exists and visual coverage is narrow. Run a controlled test with an alternate visual format to establish a baseline.",
-        "Directional"
-      );
+      if (needsNewVisualTest) {
+        addCandidate(
+          getSuggestedPattern(releaseSlug, null, currentSec),
+          "Visual Format: Test alternate format",
+          buildStaysSame(["Song Section", "Copy Angle", "Copy Pair"]),
+          "No strong control exists and only one visual format has been launched. Run a controlled test with a materially different visual format to establish a baseline.",
+          "Directional"
+        );
+      }
 
-      addCandidate(
-        getSuggestedPattern(releaseSlug, currentVis, null),
-        "Song Section: Test alternate section",
-        buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
-        "No strong control exists and song section coverage is narrow. Run a controlled test with an alternate song section to establish a baseline.",
-        "Directional"
-      );
+      if (needsNewSongSectionTest) {
+        addCandidate(
+          getSuggestedPattern(releaseSlug, currentVis, null),
+          "Song Section: Test alternate section",
+          buildStaysSame(["Visual Format", "Copy Angle", "Copy Pair"]),
+          "No strong control exists and only one song section has been launched. Run a controlled test with an alternate song section to establish a baseline.",
+          "Directional"
+        );
+      }
     }
 
     componentDiagnosis = {
@@ -924,14 +997,18 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
 
     if (!latestLearning?.next_test?.trim()) {
       if (isCopyLinkageWeak) {
-        const isVisualNarrowOrChallenger = visualStatus === "Narrow Coverage" ||
-                                           visualStatus === "Needs Challenger" ||
-                                           visualStatus === "Untested" ||
-                                           meaningfulVisuals.length < 2;
-        const isSectionNarrowOrChallenger = songSectionStatus === "Narrow Coverage" ||
-                                            songSectionStatus === "Needs Challenger" ||
-                                            songSectionStatus === "Untested" ||
-                                            meaningfulSections.length < 2;
+        const isVisualNarrowOrChallenger =
+          !visualDeliveryWasConcentrated &&
+          (visualStatus === "Narrow Coverage" ||
+            visualStatus === "Needs Challenger" ||
+            visualStatus === "Untested" ||
+            needsNewVisualTest);
+        const isSectionNarrowOrChallenger =
+          !songSectionDeliveryWasConcentrated &&
+          (songSectionStatus === "Narrow Coverage" ||
+            songSectionStatus === "Needs Challenger" ||
+            songSectionStatus === "Untested" ||
+            needsNewSongSectionTest);
 
         const target = controlAd || "the winning creative";
 
@@ -948,7 +1025,10 @@ export function getUnifiedCampaignRecommendation(input: UnifiedRecommendationInp
             nextTestDirection = "Test a new song section to establish a baseline.";
           }
         } else {
-          nextTestDirection = "Gather more data or link Copy Lab entries before diagnosing copy.";
+          nextTestDirection =
+            visualDeliveryWasConcentrated || songSectionDeliveryWasConcentrated
+              ? "Do not recycle delivery-starved variants automatically. Keep the control and prioritize a materially new creative test; revisit a starved comparison only with isolated budget if that question still matters."
+              : "Gather more data or link Copy Lab entries before diagnosing copy.";
         }
       } else {
         const isStrongDiagnosis = preserveComponents.length > 0 || weakestComponent !== null;

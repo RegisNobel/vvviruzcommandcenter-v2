@@ -1,5 +1,17 @@
 # vvviruz' command center
 
+> **2026-07-25 - Attribution decision-surface cleanup:** Reorganized Attribution around one release-level funnel verdict, five essential KPIs, explicit Meta/first-party/lifetime measurement windows, stricter campaign-plus-content UTM match coverage, and a compact `/links` versus playlist experience split. Daily trends and the Meta match matrix are collapsed by default, Short Links is now a lifecycle summary instead of a second management table, and global raw `/links` diagnostics are queried only when explicitly loaded. Ad Lab remains the owner of creative diagnosis and Release Detail remains the owner of campaign strategy.
+
+> **2026-07-25 - Playlist campaign convention:** Promo Home now documents separate naming and UTM conventions for single-release `/links` ads and playlist `/listen/[playlist]/[release]` ads. Both preserve the parser-safe creative name and `Ad Name = utm_content`; playlist campaigns add the playlist slug to `utm_campaign` so Attribution can distinguish landing experiences without fragmenting Ad Lab creative analysis.
+
+> **2026-07-25 - Searchable release selection:** Replaced long single-release dropdowns across Ad Lab, Attribution, Copy Lab, Short Links, playlists, Fan Content, Link Hubs, and Early Access settings with one dependency-free searchable picker. Operators can search by title, collaborator, slug, UPC, ISRC, date, type, or status; recent selections are promoted locally for faster repeat work while existing release IDs, server actions, routes, and persistence behavior remain unchanged.
+
+> **2026-07-24 - On Repeat navigation:** Renamed the public `/links` navigation label from the recency-dependent `New Release` wording to `On Repeat`. Existing `/links` routing, manually selected release behavior, desktop/mobile navigation, attribution, and campaign analytics remain unchanged; saved legacy built-in labels normalize automatically while custom labels remain supported.
+
+> **2026-07-24 - Spotlight-only homepage cleanup:** Retired the competing Featured homepage workflow from active public and admin surfaces. The homepage now always resolves the explicit Spotlight release, then published Beast Mode, then the branded Lock-In Protocol fallback; Public Site Settings exposes one Spotlight control, Release Detail no longer offers a Featured toggle, stale legacy Featured/rotation values remain accepted for backup compatibility, and long Best Control Ad identifiers now wrap without clipping.
+
+> **2026-07-24 - Delivery-starved test memory guardrail:** Release-level component diagnosis now uses the same effective Meta batch policy as its KPI totals instead of summing overlapping historical snapshots. Historical reports are consulted only as non-additive test memory, allowing the system to distinguish an untested component from variants that were launched but starved by Meta delivery. Previously launched low-delivery song sections or visuals are now labeled inconclusive and are not automatically recycled as iteration candidates.
+
 > **2026-07-22 - Public homepage and release hierarchy polish:** Promoted the configured Lock-In Spotlight into the primary homepage hero with the previous featured-release hero retained as a safe fallback, prevented the hero release from repeating in Pick A Poison, stabilized compact streaming controls into a single-row grid, removed the generic public release fallback CTA, and aligned the lyrics experience with the public console language through an uppercase title, console-style section dividers, integrated Breaking Barz status, and squared annotation markers.
 
 > **2026-07-22 - Lock-In Spotlight:** Replaced the homepage multi-release Lock-In Rotation with a single campaign-style takeover driven by a dedicated JSON-backed release selection and constrained copy fields. Public resolution safely falls back through the untouched legacy rotation and then published Beast Mode, the exact public component is reused in the admin preview, and spotlight CTA clicks now use a dedicated first-party analytics event.
@@ -107,10 +119,6 @@ A library of reusable message/copy pairs containing:
 - Hook Text (rebranded from Hook) and Caption management
 - Optional release linking and creative notes for campaign concept description
 - Collapsed "Legacy / Optional Metadata" (Content Type and Song Section) for backward compatibility
-
-### Photo Lab
-
-Placeholder route for future cover art and visual asset generation workflows.
 
 ### Attribution
 
@@ -2138,3 +2146,14 @@ After applying RLS changes:
 - Added Draft and Published admin groupings with edit, publish, and unpublish controls that preserve the original publication order.
 - Added tagged public-query caching and meaningful per-slide analytics that require 50% visibility for 750 milliseconds and deduplicate by Intel item and page visit.
 - Added a focused route-policy regression script through `npm run test:latest-intel`.
+
+### 2026-07-24 - Discovery workflow cleanup
+
+- Removed speculative FAQ and duplicate indexing-control placeholders from Release Detail.
+- Kept `Publicly Visible` as the single source of truth for public release availability and sitemap inclusion.
+- Replaced the stale structured-data preview copy with computed Search Visibility and Structured Data readouts that reflect the current release state.
+
+### 2026-07-24 - Photo Lab retirement
+
+- Removed the unused Photo Lab preview route and its Promo and Release Detail entry points.
+- Kept external artwork generation as the working creative process while preserving the Command Center's existing cover upload, storage, readiness, and public delivery behavior.

@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import Link from "next/link";
 import {ArrowLeft, UploadCloud} from "lucide-react";
 
+import {ReleasePicker} from "@/components/release-picker";
 import {adBatchTypeOptions, defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
 import type {ReleaseSummary} from "@/lib/types";
 
@@ -93,21 +94,16 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
 
         <form className="panel space-y-6 px-4 py-6 sm:px-8 sm:py-7" onSubmit={handleSubmit}>
           <div className="grid gap-5 md:grid-cols-2">
-            <label className="space-y-2">
+            <div className="space-y-2">
               <span className="field-label">Linked Release</span>
-              <select
-                className="field-input"
-                onChange={(event) => setReleaseId(event.target.value)}
+              <ReleasePicker
+                ariaLabel="Select release for Meta import"
+                emptyOption={{label: "No Release / Batch Only", value: ""}}
+                onValueChange={setReleaseId}
+                releases={releases}
                 value={releaseId}
-              >
-                <option value="">No Release / Batch Only</option>
-                {releases.map((release) => (
-                  <option key={release.id} value={release.id}>
-                    {release.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+            </div>
 
             <label className="space-y-2">
               <span className="field-label">Batch Name</span>

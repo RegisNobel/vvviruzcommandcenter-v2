@@ -3,6 +3,7 @@
 import {Sparkles} from "lucide-react";
 import {useState} from "react";
 
+import {ReleasePicker} from "@/components/release-picker";
 import type {SiteSettingsRecord, ReleaseSummary} from "@/lib/types";
 
 type ExclusiveOfferSettings = SiteSettingsRecord["site_content"]["exclusive"];
@@ -259,28 +260,23 @@ export function ExclusiveOfferSettingsPanel({
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
+          <div className="space-y-2">
             <span className="field-label">Associated Release (Optional)</span>
-            <select
-              className="field-input"
-              value={exclusiveOffer.release_id || ""}
-              onChange={(event) =>
-                updateExclusiveOffer({release_id: event.target.value || null})
+            <ReleasePicker
+              ariaLabel="Select release for early access offer"
+              emptyOption={{label: "No release associated", value: ""}}
+              onValueChange={(releaseId) =>
+                updateExclusiveOffer({release_id: releaseId || null})
               }
-            >
-              <option value="">No release associated</option>
-              {selectableReleases.map((release) => (
-                <option key={release.id} value={release.id}>
-                  {release.title} ({release.status})
-                </option>
-              ))}
-            </select>
+              releases={selectableReleases}
+              value={exclusiveOffer.release_id || ""}
+            />
             {showReleaseWarning && (
               <p className="text-xs text-amber-300 font-semibold mt-1">
                 ⚠️ Warning: This release has already been commercially released. Previews are typically for upcoming or unreleased content.
               </p>
             )}
-          </label>
+          </div>
 
           <label className="space-y-2">
             <span className="field-label">Preview Title Override (Optional)</span>

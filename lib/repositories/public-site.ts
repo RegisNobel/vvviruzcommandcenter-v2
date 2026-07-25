@@ -3,10 +3,7 @@ import {unstable_cache} from "next/cache";
 
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
-import {
-  HOMEPAGE_PROJECT_LIMIT,
-  mergeHomepageFeaturedReleases
-} from "@/lib/homepage-brand";
+import {HOMEPAGE_PROJECT_LIMIT} from "@/lib/homepage-brand";
 import {
   evaluatePublicProjectEligibility,
   normalizeApprovedPublicProjectSlugs,
@@ -224,29 +221,6 @@ const getCachedSiteSettings = unstable_cache(
   }
 );
 
-const getCachedFeaturedRelease = unstable_cache(
-  async () => {
-  const release = await prisma.release.findFirst({
-    where: {
-      isPublished: true
-    },
-    select: publicReleaseSelect,
-    orderBy: [{isFeatured: "desc"}, ...newestPublicReleaseOrder]
-  });
-
-  if (!release) return null;
-  return toPublicRelease(release);
-  },
-  ["public-featured-release"],
-  {
-    tags: [PUBLIC_CACHE_TAGS.releases]
-  }
-);
-
-export async function getFeaturedRelease() {
-  return getCachedFeaturedRelease();
-}
-
 const getCachedLinksPageRelease = unstable_cache(
   async (selectedReleaseId: string) => {
   const normalizedId = selectedReleaseId.trim();
@@ -277,7 +251,7 @@ const getCachedLinksPageRelease = unstable_cache(
     return toPublicRelease(latestRelease);
   }
 
-  return getCachedFeaturedRelease();
+  return null;
   },
   ["public-links-page-release"],
   {
@@ -289,7 +263,7 @@ export async function getLinksPageRelease(selectedReleaseId: string) {
   return getCachedLinksPageRelease(selectedReleaseId.trim());
 }
 
-const getCachedPublishedFeaturedReleasesByIds = unstable_cache(
+const getCachedPublishedReleasesByIds = unstable_cache(
   async (releaseIdsKey: string) => {
   const normalizedIds = releaseIdsKey.split("|").filter(Boolean).slice(0, 6);
 
@@ -314,17 +288,11 @@ const getCachedPublishedFeaturedReleasesByIds = unstable_cache(
     .map((releaseId) => releasesById.get(releaseId))
     .filter((release): release is PublicReleaseRecord => Boolean(release));
   },
-  ["public-featured-releases-by-id"],
+  ["public-releases-by-id"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases]
   }
 );
-
-export async function getPublishedFeaturedReleasesByIds(releaseIds: string[]) {
-  const releaseIdsKey = releaseIds.map((value) => value.trim()).filter(Boolean).slice(0, 3).join("|");
-
-  return getCachedPublishedFeaturedReleasesByIds(releaseIdsKey);
-}
 
 function shuffleItems<T>(items: T[]) {
   const clone = [...items];
@@ -338,50 +306,6 @@ function shuffleItems<T>(items: T[]) {
   }
 
   return clone;
-}
-
-const getCachedHomepageFeaturedReleases = unstable_cache(
-  async (selectedReleaseIdsKey: string) => {
-  const selected = await getCachedPublishedFeaturedReleasesByIds(selectedReleaseIdsKey);
-
-  if (selected.length >= 3) {
-    return selected.slice(0, 3);
-  }
-
-  const selectedIds = new Set(selected.map((release) => release.id));
-  const extraPool = await prisma.release.findMany({
-    where: {
-      isPublished: true,
-      ...(selectedIds.size > 0
-        ? {
-            id: {
-              notIn: Array.from(selectedIds)
-            }
-          }
-        : {})
-    },
-    select: publicReleaseSelect,
-    orderBy: [{isFeatured: "desc"}, ...newestPublicReleaseOrder],
-    take: Math.max(0, 3 - selected.length)
-  });
-  const deterministicExtras = await Promise.all(extraPool.map(toPublicRelease));
-
-  return mergeHomepageFeaturedReleases(selected, deterministicExtras);
-  },
-  ["public-homepage-featured-releases-v2"],
-  {
-    tags: [PUBLIC_CACHE_TAGS.releases]
-  }
-);
-
-export async function getHomepageFeaturedReleases(selectedReleaseIds: string[]) {
-  const selectedReleaseIdsKey = selectedReleaseIds
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .slice(0, 3)
-    .join("|");
-
-  return getCachedHomepageFeaturedReleases(selectedReleaseIdsKey);
 }
 
 type PublicProjectModel = Prisma.ReleaseCategoryGetPayload<{
@@ -428,20 +352,7 @@ function compareProjectAssignments(
 
 function selectRepresentativeAssignment(category: PublicProjectModel) {
   const orderedAssignments = [...category.releases].sort(compareProjectAssignments);
-  const featuredAssignment = orderedAssignments.find(
-    (assignment) => assignment.release.isFeatured
-  );
-
-  if (featuredAssignment) {
-    return featuredAssignment;
-  }
-
-  return [...orderedAssignments].sort((left, right) => {
-    const leftDate = left.release.releaseDate?.getTime() ?? 0;
-    const rightDate = right.release.releaseDate?.getTime() ?? 0;
-
-    return rightDate - leftDate || compareProjectAssignments(left, right);
-  })[0];
+  return orderedAssignments[0];
 }
 
 async function toPublicProject(
@@ -597,62 +508,16 @@ export async function getHomepageProjects() {
   return projects.slice(0, HOMEPAGE_PROJECT_LIMIT);
 }
 
-export async function getBuiltForMotionReleases(releaseIds: string[] = [], legacyReleaseId = "") {
-  const normalizedIds = releaseIds
-    .map((releaseId) => releaseId.trim())
-    .filter(Boolean)
-    .filter((releaseId, index, values) => values.indexOf(releaseId) === index)
-    .slice(0, 6);
-
-  if (normalizedIds.length === 0) {
-    const normalizedLegacyId = legacyReleaseId.trim();
-
-    if (normalizedLegacyId) {
-      return getCachedPublishedFeaturedReleasesByIds(normalizedLegacyId);
-    }
-
-    const fallback = await getCachedPublishedReleaseBySlug("beast-mode");
-    return fallback ? [fallback] : [];
-  }
-
-  return getCachedPublishedFeaturedReleasesByIds(normalizedIds.join("|"));
-}
-
-export async function getLockInSpotlightRelease(
-  spotlightReleaseId = "",
-  legacyReleaseIds: string[] = [],
-  legacyReleaseId = ""
-) {
+export async function getLockInSpotlightRelease(spotlightReleaseId = "") {
   const normalizedSpotlightId = spotlightReleaseId.trim();
 
   if (normalizedSpotlightId) {
-    const [selectedRelease] = await getCachedPublishedFeaturedReleasesByIds(
+    const [selectedRelease] = await getCachedPublishedReleasesByIds(
       normalizedSpotlightId
     );
 
     if (selectedRelease) {
       return selectedRelease;
-    }
-  }
-
-  const normalizedLegacyIds = legacyReleaseIds
-    .map((releaseId) => releaseId.trim())
-    .filter(Boolean)
-    .filter((releaseId, index, values) => values.indexOf(releaseId) === index);
-  const normalizedLegacyId = legacyReleaseId.trim();
-  const legacyCandidates = normalizedLegacyIds.length > 0
-    ? normalizedLegacyIds
-    : normalizedLegacyId
-      ? [normalizedLegacyId]
-      : [];
-
-  if (legacyCandidates.length > 0) {
-    const [legacyRelease] = await getCachedPublishedFeaturedReleasesByIds(
-      legacyCandidates.join("|")
-    );
-
-    if (legacyRelease) {
-      return legacyRelease;
     }
   }
 

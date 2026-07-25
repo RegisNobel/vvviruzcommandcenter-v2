@@ -153,7 +153,7 @@ const siteSettingsSchema = z.object({
         .min(1)
         .max(360)
         .default(
-          "Join Insider Access for unreleased previews, early updates, and the private vvviruz community."
+          "Get Insider Access for unreleased previews, early updates, and the private vvviruz community."
         ),
       featured_releases_eyebrow: z.string().default(""),
       featured_releases_empty_text: z.string().default(""),
@@ -371,18 +371,13 @@ export async function PUT(request: Request) {
     );
   }
 
-  const featuredReleaseIds = parsed.data.site_content.home.featured_release_ids;
   const builtForMotionReleaseIds =
     parsed.data.site_content.home.built_for_motion_release_ids.length > 0
       ? parsed.data.site_content.home.built_for_motion_release_ids
       : [parsed.data.site_content.home.built_for_motion_release_id].filter(Boolean);
-  const referencedReleaseIds = Array.from(
-    new Set([
-      ...featuredReleaseIds,
-      ...builtForMotionReleaseIds,
-      parsed.data.site_content.home.lock_in_spotlight_release_id
-    ].filter(Boolean))
-  );
+  const referencedReleaseIds = [
+    parsed.data.site_content.home.lock_in_spotlight_release_id
+  ].filter(Boolean);
 
   if (referencedReleaseIds.length > 0) {
     const releases = await prisma.release.findMany({

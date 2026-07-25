@@ -1,9 +1,8 @@
 import {normalizeMetaAdName} from "@/lib/ads/meta-csv";
 import {prisma} from "@/lib/db/prisma";
 import {toDateInputValue} from "@/lib/db/serialization";
-import {readReleaseAdMetrics, readLatestAdCampaignLearningForRelease, resolveEffectiveCopyLinksForRelease} from "@/lib/repositories/ads";
+import {readReleaseAdMetrics, resolveEffectiveCopyLinksForRelease} from "@/lib/repositories/ads";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
-import {getUnifiedCampaignRecommendation} from "@/lib/ads/recommendations";
 
 const streamingLinkTypes = new Set([
   "apple-music",
@@ -200,7 +199,7 @@ function createProblemSignals(input: {
   if (input.metaClicks > 0 && input.linksViews === 0) {
     signals.push({
       severity: "warning",
-      text: "Meta has link clicks, but the link hub has no matching page views."
+      text: "Meta has link clicks, but no matching destination arrivals were measured."
     });
   }
 
@@ -211,14 +210,14 @@ function createProblemSignals(input: {
   ) {
     signals.push({
       severity: "risk",
-      text: "Meta landing page views are materially higher than first-party /links views. Expect some privacy loss, but check URL consistency, page load, and tracker firing."
+      text: "Meta landing page views are materially higher than first-party destination arrivals. Expect some privacy loss, but check URL consistency, page load, and tracker firing."
     });
   }
 
   if (input.linksViews >= 20 && (input.utmCoverageRate ?? 0) < 80) {
     signals.push({
       severity: "risk",
-      text: "A meaningful share of /links views are not carrying campaign/content UTM data, so ad-level attribution is more directional."
+      text: "A meaningful share of destination arrivals are not carrying both campaign and content UTM values, so ad-level attribution is more directional."
     });
   }
 
@@ -232,7 +231,7 @@ function createProblemSignals(input: {
   if (input.linksViews >= 20 && (input.viewToStreamRate ?? 0) < 15) {
     signals.push({
       severity: "risk",
-      text: "Link-page visitors are not clicking through to streaming platforms at a strong rate."
+      text: "Destination visitors are not clicking through to streaming platforms at a strong rate."
     });
   }
 
@@ -251,6 +250,81 @@ function createProblemSignals(input: {
   }
 
   return signals;
+}
+
+function createFunnelStatus(input: {
+  hasAdsData: boolean;
+  linksViews: number;
+  metaClicks: number;
+  metaLandingPageViews: number;
+  streamingClicks: number;
+  trackedViewCoverageRate: number | null;
+  viewToStreamRate: number | null;
+}) {
+  if (!input.hasAdsData) {
+    return {
+      detail: "Import a Meta CSV before comparing paid delivery with first-party stream intent.",
+      label: "Waiting for Meta data",
+      tone: "context" as const
+    };
+  }
+
+  if (input.metaClicks > 0 && input.linksViews === 0) {
+    return {
+      detail: "Meta reports clicks, but no tracked destination arrivals are tied to this release. Verify the campaign URL and release context before judging performance.",
+      label: "Landing signal missing",
+      tone: "warning" as const
+    };
+  }
+
+  if (
+    input.metaLandingPageViews >= 20 &&
+    (input.trackedViewCoverageRate ?? 0) < 50
+  ) {
+    return {
+      detail: "Meta landing views materially exceed tracked arrivals. Treat stream-intent conclusions as directional until the tracking gap is understood.",
+      label: "Tracking gap",
+      tone: "warning" as const
+    };
+  }
+
+  if (input.linksViews < 10) {
+    return {
+      detail: "There are not enough tracked destination arrivals yet to make a reliable stream-intent judgment.",
+      label: "Insufficient signal",
+      tone: "context" as const
+    };
+  }
+
+  if (input.streamingClicks === 0) {
+    return {
+      detail: "Traffic is reaching the destination, but no outbound streaming intent is recorded yet.",
+      label: "No stream intent yet",
+      tone: "warning" as const
+    };
+  }
+
+  if ((input.viewToStreamRate ?? 0) >= 25) {
+    return {
+      detail: "Tracked destination traffic is converting to streaming clicks at a strong rate.",
+      label: "Strong stream intent",
+      tone: "healthy" as const
+    };
+  }
+
+  if ((input.viewToStreamRate ?? 0) >= 15) {
+    return {
+      detail: "Tracked traffic is producing usable streaming intent. Keep monitoring as more arrivals accumulate.",
+      label: "Healthy follow-through",
+      tone: "healthy" as const
+    };
+  }
+
+  return {
+    detail: "Tracked arrivals are not converting to streaming clicks at a strong rate. Review destination clarity and platform CTA placement.",
+    label: "Weak stream follow-through",
+    tone: "warning" as const
+  };
 }
 
 
@@ -356,7 +430,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
     };
   }
 
-  const [adMetrics, analyticsEvents, shortLinks, latestLearning] = await Promise.all([
+  const [adMetrics, analyticsEvents, shortLinks] = await Promise.all([
     readReleaseAdMetrics(selectedRelease.id),
     prisma.analyticsEvent.findMany({
       orderBy: {
@@ -393,8 +467,7 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
         deletedAt: null,
         releaseId: selectedRelease.id
       }
-    }),
-    readLatestAdCampaignLearningForRelease(selectedRelease.id)
+    })
   ]);
   const views = analyticsEvents.filter(isExperienceView);
   const allClicks = analyticsEvents.filter((event) =>
@@ -408,7 +481,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
   const utmCounts = new Map<string, number>();
   const linkCounts = new Map<string, number>();
   const attributionEventCounts = new Map<string, AttributionEventCounts>();
-  const viewsWithUtm = views.filter((event) => event.utmCampaign || event.utmContent).length;
+  const viewsWithAnyUtm = views.filter((event) => event.utmCampaign || event.utmContent).length;
+  const viewsWithMatchableUtm = views.filter((event) => event.utmCampaign && event.utmContent).length;
 
   for (const event of analyticsEvents) {
     const key = toDateKey(event.createdAt);
@@ -424,8 +498,10 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       }
     }
 
-    increment(sourceCounts, getSourceLabel(event));
-    increment(utmCounts, getUtmLabel(event));
+    if (isExperienceView(event)) {
+      increment(sourceCounts, getSourceLabel(event));
+      increment(utmCounts, getUtmLabel(event));
+    }
 
     if (event.utmCampaign || event.utmContent) {
       const attributionKey = createAttributionKey(event.utmCampaign, event.utmContent);
@@ -476,7 +552,8 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
   const lpvToStreamRate = ratio(streamingClickCount, metaLandingPageViews);
   const viewToStreamRate = ratio(streamingClickCount, linksViews);
   const clickToStreamRate = ratio(streamingClickCount, metaClicks);
-  const utmCoverageRate = ratio(viewsWithUtm, linksViews);
+  const utmCoverageRate = ratio(viewsWithAnyUtm, linksViews);
+  const adMatchCoverageRate = ratio(viewsWithMatchableUtm, linksViews);
   const costPerStreamingClick = cost(spend, streamingClickCount);
   const topPlatforms = toTopCounters(platformCounts);
   const topSources = toTopCounters(sourceCounts);
@@ -734,64 +811,18 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       spend,
       streamingClicks: streamingClickCount,
       trackedViewCoverageRate,
-      utmCoverageRate,
+      utmCoverageRate: adMatchCoverageRate,
       viewToStreamRate
     }),
-    recommended_next_move: getUnifiedCampaignRecommendation({
-      adMetrics: {
-        totalSpend: adMetrics.total_spend,
-        totalResults: adMetrics.total_results,
-        totalImpressions: adMetrics.total_impressions,
-        totalLinkClicks: adMetrics.total_link_clicks,
-        totalLandingPageViews: adMetrics.total_landing_page_views,
-        clickToLandingRate: adMetrics.click_to_landing_rate,
-        cpr: adMetrics.cpr,
-        bestAd: adMetrics.best_ad ? {
-          ad_name: adMetrics.best_ad.ad_name,
-          spend: adMetrics.best_ad.spend,
-          results: adMetrics.best_ad.results,
-          cpr: adMetrics.best_ad.cpr,
-          ctr: adMetrics.best_ad.ctr,
-          signals: adMetrics.best_ad.signals
-        } : null,
-        bestHook: adMetrics.best_hook ? {
-          label: adMetrics.best_hook.label,
-          spend: adMetrics.best_hook.spend,
-          results: adMetrics.best_hook.results,
-          cpr: adMetrics.best_hook.cpr,
-          ctr: adMetrics.best_hook.ctr
-        } : null,
-        worstAd: adMetrics.worst_ad ? {
-          ad_name: adMetrics.worst_ad.ad_name,
-          spend: adMetrics.worst_ad.spend,
-          results: adMetrics.worst_ad.results,
-          cpr: adMetrics.worst_ad.cpr
-        } : null,
-        worstHook: adMetrics.worst_hook ? {
-          label: adMetrics.worst_hook.label,
-          spend: adMetrics.worst_hook.spend,
-          results: adMetrics.worst_hook.results,
-          cpr: adMetrics.worst_hook.cpr
-        } : null,
-        batchCount: adMetrics.batch_count
-      },
-      funnel: {
-        linksViews,
-        streamingClicks: streamingClickCount,
-        viewToStreamRate,
-        trackedViewCoverageRate
-      },
-      batchContext: {
-        isWeakUtmCoverage: (ratio(viewsWithUtm, linksViews) ?? 0) < 50,
-        unlinkedSpendPercentage: 0
-      },
-      latestLearning: latestLearning ? {
-        decision: latestLearning.decision,
-        next_test: latestLearning.next_test,
-        updated_at: latestLearning.updated_at
-      } : null,
-      reports: preferredAttributionBatch?.reports
-    }).funnelVerdict,
+    funnel_status: createFunnelStatus({
+      hasAdsData: adMetrics.has_data,
+      linksViews,
+      metaClicks,
+      metaLandingPageViews,
+      streamingClicks: streamingClickCount,
+      trackedViewCoverageRate,
+      viewToStreamRate
+    }),
     daily_trend: Array.from(dailyBuckets.values()).reverse(),
     tracking_health: {
       meta_landing_page_views: metaLandingPageViews,
@@ -799,8 +830,11 @@ export async function readCampaignCommandDashboard(input: CampaignDashboardInput
       tracked_view_coverage_rate: trackedViewCoverageRate,
       estimated_untracked_views: Math.max(metaLandingPageViews - linksViews, 0),
       utm_coverage_rate: utmCoverageRate,
-      views_with_utm: viewsWithUtm,
-      views_without_utm: Math.max(linksViews - viewsWithUtm, 0)
+      ad_match_coverage_rate: adMatchCoverageRate,
+      views_with_utm: viewsWithAnyUtm,
+      views_with_matchable_utm: viewsWithMatchableUtm,
+      views_with_partial_utm: Math.max(viewsWithAnyUtm - viewsWithMatchableUtm, 0),
+      views_without_utm: Math.max(linksViews - viewsWithAnyUtm, 0)
     },
     short_links: {
       active_count: activeShortLinkRows.length,
