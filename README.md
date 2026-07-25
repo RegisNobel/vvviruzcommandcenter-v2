@@ -1,6 +1,6 @@
 # vvviruz' command center
 
-> **2026-07-25 - Sticky Public Site section rail:** Public Site Management now keeps its complete section navigation in a viewport-bounded sticky rail on wide desktop screens. Mobile and narrower laptop layouts retain the existing wrapped navigation above the editor, preserving every anchor while making long desktop editing sessions faster.
+> **2026-07-25 - Persistent Public Site section rail:** Public Site Management now keeps its complete section navigation in a fixed, viewport-bounded rail across every settings panel, including Link Hubs, Playlists, Project Content, and Appears On. Mobile and narrower laptop layouts retain a sticky wrapped navigation above the editor, preserving every anchor while making long editing sessions faster.
 
 > **2026-07-25 - Operator Queue public release export:** Added an admin-only CSV export to the Releases Operator Queue. The download includes every publicly visible release with its title, UPC, and ISRC, retaining blank code cells so catalog metadata gaps remain visible.
 

@@ -33,6 +33,7 @@ import {LockInSpotlight} from "@/components/lock-in-spotlight";
 import {StickyActionDock} from "@/components/sticky-action-dock";
 import {VaultSettingsPanel} from "@/components/vault-settings-panel";
 import {CommissionsSettingsPanel} from "@/components/commissions-settings-panel";
+import {SiteSettingsSectionNavigation} from "@/components/site-settings-section-navigation";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -45,29 +46,6 @@ type SiteSettingsEditorProps = {
   siteIconOptions: string[];
   vaultReleaseIds?: string[];
 };
-
-const siteSettingsSectionLinks = [
-  {href: "#core-profile", label: "Core"},
-  {href: "#metadata-seo", label: "Metadata"},
-  {href: "#site-chrome", label: "Chrome"},
-  {href: "#home-page", label: "Home"},
-  {href: "#public-projects", label: "Project Approval"},
-  {href: "#music-categories", label: "Project Content"},
-  {href: "#music-page", label: "Music"},
-  {href: "#about-page", label: "About"},
-  {href: "#platform-labels", label: "Platforms"},
-  {href: "#links-page", label: "Link Hub Defaults"},
-  {href: "#link-hubs", label: "Link Hubs"},
-  {href: "#playlists", label: "Playlists"},
-  {href: "#exclusives-settings", label: "Exclusives"},
-  {href: "#tracking-settings", label: "Tracking"},
-  {href: "#release-page", label: "Release"},
-  {href: "#social-links", label: "Social"},
-  {href: "#vault-settings", label: "Vault"},
-  {href: "#commissions-settings", label: "Commissions"},
-  {href: "#public-readiness", label: "Readiness"},
-  {href: "#appears-on", label: "Appears On"}
-] as const;
 
 function serializeLinkRows(items: Array<{label: string; url: string}>) {
   return items.map((item) => `${item.label} | ${item.url}`).join("\n");
@@ -458,22 +436,8 @@ export function SiteSettingsEditor({
         }
       />
 
-      <nav
-        aria-label="Public site settings sections"
-        className="command-surface mb-6 flex flex-wrap gap-2 px-4 py-3 xl:hidden"
-      >
-        {siteSettingsSectionLinks.map((item) => (
-          <a
-            className="rounded-md border border-edge-strong bg-surface-elevated px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-secondary transition hover:border-[rgba(246,201,69,0.45)] hover:bg-surface-hover hover:text-primary"
-            href={item.href}
-            key={item.href}
-          >
-            {item.label}
-          </a>
-        ))}
-      </nav>
+      <SiteSettingsSectionNavigation variant="inline" />
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_220px]">
       <section className="command-surface min-w-0 space-y-6 px-5 py-6 pb-36 sm:px-6 sm:py-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -2019,31 +1983,6 @@ export function SiteSettingsEditor({
         </div>
       ) : null}
       </section>
-      <aside className="sticky top-[96px] hidden max-h-[calc(100vh-190px)] overflow-y-auto xl:block">
-        <nav
-          aria-label="Public site settings sections"
-          className="command-surface p-3"
-        >
-          <div className="border-b border-edge px-2 pb-3">
-            <p className="table-label">Jump to section</p>
-            <p className="mt-1 text-xs leading-5 text-muted">
-              Public site controls
-            </p>
-          </div>
-          <div className="mt-2 grid gap-1">
-            {siteSettingsSectionLinks.map((item) => (
-              <a
-                className="rounded-md border border-transparent px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-secondary transition hover:border-[rgba(246,201,69,0.35)] hover:bg-surface-hover hover:text-primary"
-                href={item.href}
-                key={item.href}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </nav>
-      </aside>
-      </div>
     </>
   );
 }

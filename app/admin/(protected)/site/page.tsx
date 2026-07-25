@@ -1,6 +1,7 @@
 
 import {ReleaseCategorySettingsPanel} from "@/components/release-category-settings-panel";
 import {SiteSettingsEditor} from "@/components/site-settings-editor";
+import {SiteSettingsSectionNavigation} from "@/components/site-settings-section-navigation";
 import {prisma} from "@/lib/db/prisma";
 import {AppearsOnSettingsPanel} from "@/components/appears-on-settings-panel";
 import {LinkHubsSettingsPanel} from "@/components/link-hubs-settings-panel";
@@ -48,7 +49,8 @@ export default async function AdminSitePage() {
 
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px] space-y-6">
+      <div className="mx-auto grid max-w-[1600px] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="min-w-0 space-y-6">
         <SiteSettingsEditor
           exclusiveTrackArtOptions={exclusiveTrackArtOptions}
           exclusiveTrackFileOptions={exclusiveTrackFileOptions}
@@ -75,6 +77,8 @@ export default async function AdminSitePage() {
         />
 
         <AppearsOnSettingsPanel records={appearsOnRecords} />
+        </div>
+        <SiteSettingsSectionNavigation variant="rail" />
       </div>
     </main>
   );
