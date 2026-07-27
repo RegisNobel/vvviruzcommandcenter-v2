@@ -8,9 +8,11 @@ import {z} from "zod";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {touchCopy} from "@/lib/copy";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
+import {isPlainPublicMetadata} from "@/lib/release-metadata";
 import {normalizeLyrics} from "@/lib/lyrics";
 import {readCopy, readCopiesByReleaseId, saveCopy} from "@/lib/server/copies";
 import {deleteRelease, readRelease, saveRelease} from "@/lib/server/releases";
+import {submitIndexNowUrls} from "@/lib/server/indexnow";
 import {
   getReleasePublishBlockers,
   hydrateRelease,
@@ -22,6 +24,24 @@ import type {ReleaseRecord} from "@/lib/types";
 const patchReleaseSchema = z.object({
   pinned: z.boolean().optional()
 });
+
+const discoveryMetadataFields: Array<{
+  key: keyof Pick<
+    ReleaseRecord,
+    | "seo_title"
+    | "meta_description"
+    | "cover_art_alt_text"
+    | "social_share_title"
+    | "social_share_description"
+  >;
+  label: string;
+}> = [
+  {key: "seo_title", label: "SEO Title"},
+  {key: "meta_description", label: "Meta Description"},
+  {key: "cover_art_alt_text", label: "Cover Art Alt Text"},
+  {key: "social_share_title", label: "Social Share Title"},
+  {key: "social_share_description", label: "Social Share Description"}
+];
 
 export async function GET(
   request: Request,
@@ -66,6 +86,19 @@ export async function PUT(
       lyrics: normalizeLyrics(hydratedRelease.lyrics)
     };
 
+    const malformedDiscoveryField = discoveryMetadataFields.find(
+      ({key}) => !isPlainPublicMetadata(release[key])
+    );
+
+    if (malformedDiscoveryField) {
+      return NextResponse.json(
+        {
+          message: `${malformedDiscoveryField.label} must be plain text. Remove HTML tags before saving.`
+        },
+        {status: 400}
+      );
+    }
+
     if (release.id !== id) {
       return NextResponse.json({message: "Release id mismatch."}, {status: 400});
     }
@@ -88,6 +121,14 @@ export async function PUT(
 
     revalidateTag(PUBLIC_CACHE_TAGS.releases);
     revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
+
+    if (normalized.is_published) {
+      await submitIndexNowUrls([
+        `/music/${encodeURIComponent(normalized.slug)}`,
+        "/music",
+        "/sitemap.xml"
+      ]);
+    }
 
     return NextResponse.json({
       release: normalized,

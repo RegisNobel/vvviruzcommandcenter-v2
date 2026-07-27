@@ -4,6 +4,8 @@ import type {Metadata} from "next";
 
 import {getSiteSettings} from "@/lib/repositories/public-site";
 import {listPublicFanUpdates} from "@/lib/repositories/fan-content";
+import {stringifyJsonLd} from "@/lib/json-ld";
+import {buildPublicSiteJsonLd} from "@/lib/public-site-schema";
 
 import {PublicSiteChrome} from "@/components/public-site-chrome";
 
@@ -34,6 +36,16 @@ export default async function PublicLayout({
   ]);
 
   return (
-    <PublicSiteChrome latestIntel={latestIntel} siteSettings={siteSettings}>{children}</PublicSiteChrome>
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: stringifyJsonLd(buildPublicSiteJsonLd(siteSettings))
+        }}
+        type="application/ld+json"
+      />
+      <PublicSiteChrome latestIntel={latestIntel} siteSettings={siteSettings}>
+        {children}
+      </PublicSiteChrome>
+    </>
   );
 }

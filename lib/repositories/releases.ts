@@ -4,6 +4,10 @@ import {prisma} from "@/lib/db/prisma";
 import {toDate, toDateInputValue, toOptionalDate} from "@/lib/db/serialization";
 import {hasReleaseCoverArt, hydrateRelease, summarizeRelease} from "@/lib/releases";
 import {getReleasePlanningSnapshot} from "@/lib/release-planning";
+import {
+  parseStoredReleaseContext,
+  serializeReleaseContext
+} from "@/lib/release-context";
 import {revalidateReleaseAnnotationsInTransaction} from "@/lib/repositories/fan-content";
 import type {
   ReleaseRecord,
@@ -145,6 +149,12 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
     concept_details: release.conceptDetails,
     public_description: release.publicDescription || release.conceptDetails,
     public_long_description: release.publicLongDescription,
+    languages: parseStoredReleaseContext(release.languages),
+    genres: parseStoredReleaseContext(release.genres),
+    moods: parseStoredReleaseContext(release.moods),
+    inspiration_context: release.inspirationContext,
+    themes: parseStoredReleaseContext(release.themes),
+    listener_contexts: parseStoredReleaseContext(release.listenerContexts),
     seo_title: release.seoTitle,
     meta_description: release.metaDescription,
     cover_art_alt_text: release.coverArtAltText,
@@ -395,6 +405,12 @@ export async function saveRelease(release: ReleaseRecord) {
         conceptDetails: normalizedRelease.concept_details,
         publicDescription: normalizedRelease.public_description,
         publicLongDescription: normalizedRelease.public_long_description,
+        languages: serializeReleaseContext(normalizedRelease.languages),
+        genres: serializeReleaseContext(normalizedRelease.genres),
+        moods: serializeReleaseContext(normalizedRelease.moods),
+        inspirationContext: normalizedRelease.inspiration_context,
+        themes: serializeReleaseContext(normalizedRelease.themes),
+        listenerContexts: serializeReleaseContext(normalizedRelease.listener_contexts),
         seoTitle: normalizedRelease.seo_title,
         metaDescription: normalizedRelease.meta_description,
         coverArtAltText: normalizedRelease.cover_art_alt_text,
@@ -437,6 +453,12 @@ export async function saveRelease(release: ReleaseRecord) {
         conceptDetails: normalizedRelease.concept_details,
         publicDescription: normalizedRelease.public_description,
         publicLongDescription: normalizedRelease.public_long_description,
+        languages: serializeReleaseContext(normalizedRelease.languages),
+        genres: serializeReleaseContext(normalizedRelease.genres),
+        moods: serializeReleaseContext(normalizedRelease.moods),
+        inspirationContext: normalizedRelease.inspiration_context,
+        themes: serializeReleaseContext(normalizedRelease.themes),
+        listenerContexts: serializeReleaseContext(normalizedRelease.listener_contexts),
         seoTitle: normalizedRelease.seo_title,
         metaDescription: normalizedRelease.meta_description,
         coverArtAltText: normalizedRelease.cover_art_alt_text,

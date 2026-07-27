@@ -11,7 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "Unsubscribe",
-    description: "Manage your vvviruz email subscription preferences."
+    description: "Manage your vvviruz email subscription preferences.",
+    robots: {index: false, follow: false}
   };
 }
 

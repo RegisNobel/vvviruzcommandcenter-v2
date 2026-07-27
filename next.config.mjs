@@ -41,6 +41,17 @@ const nextConfig = {
   ],
   redirects: async () => [
     {
+      source: "/:path*",
+      has: [
+        {
+          type: "host",
+          value: "vvviruzcommandcenter-v2.vercel.app"
+        }
+      ],
+      destination: "https://vvviruz.com/:path*",
+      permanent: true
+    },
+    {
       source: "/admin/analytics",
       destination: "/admin/attribution",
       permanent: true

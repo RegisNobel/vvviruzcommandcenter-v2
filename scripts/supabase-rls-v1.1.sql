@@ -12,3 +12,4 @@ alter table if exists public."ReleaseAnnotation" enable row level security;
 alter table if exists public."ReleaseAnnotationSource" enable row level security;
 alter table if exists public."FanUpdate" enable row level security;
 alter table if exists public."VaultItem" enable row level security;
+alter table if exists public."PlaylistRelease" enable row level security;

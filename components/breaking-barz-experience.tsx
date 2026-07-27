@@ -187,6 +187,24 @@ export function BreakingBarzExperience({
       </article>
       {hasRail?<aside aria-label={`${releaseTitle} media, annotations, and related releases`} className="space-y-10"><div className="hidden lg:block">{selected?<AnnotationPanel annotation={selected} headingRef={headingRef} index={selectedIndex} onClose={close} onNavigate={navigate} releaseId={releaseId} total={ordered.length}/>:null}</div>{rail}</aside>:null}
     </section>
+    {annotations.length ? (
+      <details className="mt-10 rounded-lg border border-[#c9a347]/20 bg-[#c9a347]/[0.04] px-5 py-4">
+        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.18em] text-[#e3c16e]">
+          Annotated moments in this track
+        </summary>
+        <div className="mt-5 space-y-5">
+          {ordered.map((annotation) => (
+            <article key={annotation.id}>
+              <p className="text-sm font-semibold text-[#fff8ec]">{annotation.title}</p>
+              <blockquote className="mt-2 border-l border-[#c9a347]/45 pl-3 text-sm italic leading-6 text-[#d7dde3]">
+                {annotation.lyric_excerpt}
+              </blockquote>
+              <p className="mt-2 text-sm leading-6 text-[#aeb6c0]">{annotation.summary}</p>
+            </article>
+          ))}
+        </div>
+      </details>
+    ) : null}
     {selected?<div className="fixed inset-0 z-50 flex items-end bg-black/70 lg:hidden" onMouseDown={(event)=>{if(event.currentTarget===event.target)close();}}><div aria-modal="true" className="max-h-[88vh] w-full overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0d1014] p-3 pb-[max(1rem,env(safe-area-inset-bottom))]" role="dialog"><AnnotationPanel annotation={selected} headingRef={headingRef} index={selectedIndex} onClose={close} onNavigate={navigate} releaseId={releaseId} total={ordered.length}/></div></div>:null}
   </>;
 }

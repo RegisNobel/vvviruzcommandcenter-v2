@@ -14,15 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPublishedReleaseSlugs(),
     getSiteSettings()
   ]);
-  const stablePaths = new Set(["/", "/music", "/projects", "/about", "/links", "/exclusives"]);
-
-  for (const hub of siteSettings.nav_hubs ?? []) {
-    const path = hub.path.trim().replace(/^\/+|\/+$/g, "");
-
-    if (path) {
-      stablePaths.add(`/${path}`);
-    }
-  }
+  const stablePaths = new Set(["/", "/music", "/projects", "/about", "/exclusives"]);
 
   if (siteSettings.site_content.commissions?.is_enabled) {
     stablePaths.add("/commissions");

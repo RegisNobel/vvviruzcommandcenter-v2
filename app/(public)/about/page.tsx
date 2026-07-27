@@ -18,10 +18,29 @@ const ABOUT_SECTION_SURFACES = [
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteSettings = await getSiteSettings();
+  const title = siteSettings.site_content.metadata.about_page_title;
+  const description = siteSettings.site_content.metadata.about_page_description;
+  const image = getSiteIconUrl(
+    siteSettings.site_content.about.artist_image_file || DEFAULT_SITE_ARTIST_IMAGE_FILE
+  );
 
   return {
-    title: siteSettings.site_content.metadata.about_page_title,
-    description: siteSettings.site_content.metadata.about_page_description
+    title,
+    description,
+    alternates: {canonical: "/about"},
+    openGraph: {
+      type: "profile",
+      title,
+      description,
+      url: "/about",
+      images: [{url: image, alt: `${siteSettings.artist_name} portrait`}]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image]
+    }
   };
 }
 

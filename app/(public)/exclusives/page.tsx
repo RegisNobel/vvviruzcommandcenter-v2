@@ -31,7 +31,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "Insider Access",
-    description: "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community."
+    description: "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community.",
+    alternates: {canonical: "/exclusives"},
+    openGraph: {
+      type: "website",
+      title: "vvviruz Insider Access",
+      description:
+        "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community.",
+      url: "/exclusives"
+    }
   };
 }
 

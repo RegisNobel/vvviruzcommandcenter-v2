@@ -12,6 +12,8 @@ import {
   getPublicReleaseDiscoveryMetadata,
   parseCollaborators
 } from "@/lib/public-utils";
+import {stringifyJsonLd} from "@/lib/json-ld";
+import {PUBLIC_ARTIST_ID} from "@/lib/public-site-schema";
 
 type JsonObject = Record<string, unknown>;
 
@@ -37,12 +39,7 @@ function compactObject<T extends JsonObject>(value: T): T {
   ) as T;
 }
 
-export function stringifyJsonLd(value: JsonObject) {
-  return JSON.stringify(value)
-    .replace(/</g, "\\u003c")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
-}
+export {stringifyJsonLd};
 
 export function buildPublicReleaseJsonLd({
   artistName,
@@ -100,7 +97,8 @@ export function buildPublicReleaseJsonLd({
         })
       : undefined,
     byArtist: compactObject({
-      "@type": "MusicGroup",
+      "@type": "Person",
+      "@id": PUBLIC_ARTIST_ID,
       name: artistName,
       url: baseUrl
     }),
@@ -113,9 +111,21 @@ export function buildPublicReleaseJsonLd({
             })
           )
         : undefined,
-    genre: release.type === "nerdcore" ? ["Nerdcore"] : undefined,
+    genre:
+      release.genres.length > 0
+        ? release.genres
+        : release.type === "nerdcore"
+          ? ["Nerdcore"]
+          : ["Hip-Hop/Rap"],
+    inLanguage: release.languages,
     isPartOf: categoryWorks,
-    keywords: [release.type, ...release.categories.map((category) => category.name)],
+    keywords: [
+      release.type,
+      ...release.categories.map((category) => category.name),
+      ...release.moods,
+      ...release.themes,
+      ...release.listener_contexts
+    ],
     sameAs,
     recordingOf: hasPublicLyrics
       ? compactObject({

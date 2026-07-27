@@ -30,6 +30,9 @@ export async function generateMetadata({
   const releaseMetadata = selectedRelease
     ? getPublicReleaseDiscoveryMetadata(selectedRelease)
     : null;
+  const canonical = selectedRelease
+    ? `/music/${encodeURIComponent(selectedRelease.slug)}`
+    : "/links";
 
   return {
     title: selectedRelease
@@ -38,10 +41,13 @@ export async function generateMetadata({
     description:
       releaseMetadata?.metaDescription ||
       siteSettings.site_content.metadata.links_page_description,
+    alternates: {canonical},
+    robots: {index: false, follow: true},
     openGraph: selectedRelease
       ? {
           title: releaseMetadata?.socialShareTitle,
           description: releaseMetadata?.socialShareDescription,
+          url: canonical,
           images: selectedRelease.cover_art_path
             ? [
                 {

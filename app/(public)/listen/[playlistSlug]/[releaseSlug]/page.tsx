@@ -32,14 +32,20 @@ export async function generateMetadata({
     social_share_description: focusedMembership.release_public_description,
     cover_art_alt_text: `${focusedMembership.release_title} Cover Art`
   });
+  const canonical = `/music/${encodeURIComponent(
+    focusedMembership.release_slug || releaseSlug
+  )}`;
 
   return {
     title: `${focusedMembership.release_title} | ${playlist.name}`,
     description: releaseMeta.metaDescription || playlist.description,
+    alternates: {canonical},
+    robots: {index: false, follow: true},
     openGraph: focusedMembership.release_cover_art_path
       ? {
           title: releaseMeta.socialShareTitle,
           description: releaseMeta.socialShareDescription,
+          url: canonical,
           images: [
             {
               url: focusedMembership.release_cover_art_path,

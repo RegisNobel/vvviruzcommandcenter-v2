@@ -7,8 +7,15 @@ import {readSiteSettings} from "@/lib/repositories/site-settings";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Commissions & Features | vvviruz",
-  description: "Request custom hooks, verses, full custom songs, or collab features from vvviruz."
+  title: "Commissions & Features",
+  description: "Request custom hooks, verses, full custom songs, or collab features from vvviruz.",
+  alternates: {canonical: "/commissions"},
+  openGraph: {
+    type: "website",
+    title: "Commissions & Features | vvviruz",
+    description: "Request custom hooks, verses, full custom songs, or collab features from vvviruz.",
+    url: "/commissions"
+  }
 };
 
 export default async function CommissionsPage() {

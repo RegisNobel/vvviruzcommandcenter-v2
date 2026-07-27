@@ -15,6 +15,8 @@ import {
   releaseChecklistKeys,
   type ReleaseChecklistKey
 } from "@/lib/release-planning";
+import {containsHtmlMarkup} from "@/lib/release-metadata";
+import {normalizeReleaseContextValues} from "@/lib/release-context";
 import {createId, slugify} from "@/lib/utils";
 
 export {
@@ -94,6 +96,14 @@ type LegacyReleaseShape = Partial<ReleaseRecord> & {
   cover_art_path?: string;
   public_description?: string;
   public_long_description?: string;
+  languages?: string[] | string;
+  genres?: string[] | string;
+  moods?: string[] | string;
+  inspiration_context?: string;
+  inspirationContext?: string;
+  themes?: string[] | string;
+  listener_contexts?: string[] | string;
+  listenerContexts?: string[] | string;
   seoTitle?: string;
   seo_title?: string;
   metaDescription?: string;
@@ -206,6 +216,12 @@ export function createEmptyRelease(
       | "streaming_links"
       | "public_description"
       | "public_long_description"
+      | "languages"
+      | "genres"
+      | "moods"
+      | "inspiration_context"
+      | "themes"
+      | "listener_contexts"
       | "seo_title"
       | "meta_description"
       | "cover_art_alt_text"
@@ -246,6 +262,12 @@ export function createEmptyRelease(
     concept_details: "",
     public_description: values?.public_description?.trim() || "",
     public_long_description: values?.public_long_description?.trim() || "",
+    languages: normalizeReleaseContextValues(values?.languages),
+    genres: normalizeReleaseContextValues(values?.genres),
+    moods: normalizeReleaseContextValues(values?.moods),
+    inspiration_context: values?.inspiration_context?.trim() || "",
+    themes: normalizeReleaseContextValues(values?.themes),
+    listener_contexts: normalizeReleaseContextValues(values?.listener_contexts),
     seo_title: values?.seo_title?.trim() || "",
     meta_description: values?.meta_description?.trim() || "",
     cover_art_alt_text: values?.cover_art_alt_text?.trim() || "",
@@ -346,6 +368,15 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
       input.concept?.trim() ||
       "",
     public_long_description: input.public_long_description?.trim() || "",
+    languages: normalizeReleaseContextValues(input.languages),
+    genres: normalizeReleaseContextValues(input.genres),
+    moods: normalizeReleaseContextValues(input.moods),
+    inspiration_context:
+      input.inspiration_context?.trim() || input.inspirationContext?.trim() || "",
+    themes: normalizeReleaseContextValues(input.themes),
+    listener_contexts: normalizeReleaseContextValues(
+      input.listener_contexts ?? input.listenerContexts
+    ),
     seo_title: input.seo_title?.trim() || input.seoTitle?.trim() || "",
     meta_description:
       input.meta_description?.trim() || input.metaDescription?.trim() || "",
@@ -469,8 +500,30 @@ export function getDiscoveryChecklist(release: ReleaseRecord): DiscoveryChecklis
   const hasSocialShareDescription = Boolean(release.social_share_description.trim());
   const hasCoverArtAltText = Boolean(release.cover_art_alt_text.trim());
   const hasLyrics = Boolean(release.lyrics.trim());
+  const metadataValues = [
+    release.seo_title,
+    release.meta_description,
+    release.cover_art_alt_text,
+    release.social_share_title,
+    release.social_share_description
+  ];
+  const hasMalformedMetadata = metadataValues.some(containsHtmlMarkup);
+  const resolvedMetaDescription =
+    release.meta_description.trim() || release.public_description.trim();
+  const descriptionLength = resolvedMetaDescription.length;
+  const hasDedicatedMetaDescription = Boolean(release.meta_description.trim());
+  const hasUsefulDescriptionLength =
+    descriptionLength >= 80 && descriptionLength <= 180;
 
   return [
+    {
+      detail: hasMalformedMetadata
+        ? "Remove HTML tags from Discovery fields. Public metadata must be plain text."
+        : "Discovery fields use clean plain text.",
+      label: "Metadata Format",
+      priority: "essential",
+      status: hasMalformedMetadata ? "missing" : "passed"
+    },
     createDiscoveryChecklistItem({
       detail: hasSeoTitle
         ? "Dedicated SEO title is saved."
@@ -489,6 +542,22 @@ export function getDiscoveryChecklist(release: ReleaseRecord): DiscoveryChecklis
       label: "Meta Description",
       priority: "essential"
     }),
+    {
+      detail: !resolvedMetaDescription
+        ? "Add a public summary or meta description for search result context."
+        : hasUsefulDescriptionLength
+          ? "Search description has a useful, readable length."
+          : descriptionLength < 80
+            ? "The search description is short. Add enough context to explain the track clearly."
+            : "The search description is long. Tighten it so search previews stay focused.",
+      label: "Description Depth",
+      priority: "polish",
+      status: !resolvedMetaDescription
+        ? "missing"
+        : hasUsefulDescriptionLength && hasDedicatedMetaDescription
+          ? "passed"
+          : "warning"
+    },
     createDiscoveryChecklistItem({
       detail: hasCoverArtAltText
         ? "Cover art has a custom image description."

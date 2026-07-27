@@ -7,6 +7,7 @@ import {
   getPublicSiteBaseUrl,
   getPublicSiteUrl
 } from "@/lib/public-site-url";
+import {PUBLIC_ARTIST_ID} from "@/lib/public-site-schema";
 
 type JsonObject = Record<string, unknown>;
 
@@ -69,7 +70,8 @@ export function buildPublicProjectJsonLd({
         description: project.description,
         image,
         creator: {
-          "@type": "MusicGroup",
+          "@type": "Person",
+          "@id": PUBLIC_ARTIST_ID,
           name: artistName,
           url: baseUrl
         },

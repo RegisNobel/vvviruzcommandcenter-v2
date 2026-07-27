@@ -3,11 +3,17 @@ export const dynamic = "force-dynamic";
 
 import {NextResponse} from "next/server";
 import {getPublicSiteBaseUrl} from "@/lib/public-site-url";
-import {getEligiblePublicProjects} from "@/lib/repositories/public-site";
+import {
+  getEligiblePublicProjects,
+  getPublishedReleases
+} from "@/lib/repositories/public-site";
 
 export async function GET() {
   const baseUrl = getPublicSiteBaseUrl();
-  const projects = await getEligiblePublicProjects();
+  const [projects, releases] = await Promise.all([
+    getEligiblePublicProjects(),
+    getPublishedReleases()
+  ]);
   const projectSection = projects.length
     ? projects
         .map(
@@ -16,6 +22,20 @@ export async function GET() {
         )
         .join("\n\n")
     : "No public project hubs are currently eligible.";
+  const releaseSection = releases.length
+    ? releases
+        .map((release) => {
+          const collaborators = release.collaborator_name.trim()
+            ? `\n- Collaborator(s): ${release.collaborator_name.trim()}`
+            : "";
+          const projectsText = release.categories.length
+            ? `\n- Project(s): ${release.categories.map((category) => category.name).join(", ")}`
+            : "";
+
+          return `### ${release.title}\n\n- URL: ${baseUrl}/music/${encodeURIComponent(release.slug)}\n- Release date: ${release.release_date || "Not listed"}${collaborators}${projectsText}\n\n${release.public_description}`;
+        })
+        .join("\n\n")
+    : "No published releases are currently available.";
 
   const content = `# vvviruz
 
@@ -39,6 +59,10 @@ vvviruz.com is the official public artist hub for music releases, lyrics when pu
 ## Music Catalog
 
 The /music page is the canonical public catalog for vvviruz releases. Public release pages may include release dates, descriptions, project/category context, collaborator credits, streaming links, video links, public lyrics, and related releases.
+
+## Published Releases
+
+${releaseSection}
 
 ## Major Projects and Series
 

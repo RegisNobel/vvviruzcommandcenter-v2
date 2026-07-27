@@ -7,8 +7,15 @@ import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
+import {isPlainPublicMetadata} from "@/lib/release-metadata";
 import {createEmptyRelease, summarizeRelease, touchRelease} from "@/lib/releases";
 import {readReleaseSummaries, saveRelease} from "@/lib/server/releases";
+import {submitIndexNowUrls} from "@/lib/server/indexnow";
+
+const plainMetadataField = z
+  .string()
+  .default("")
+  .refine(isPlainPublicMetadata, "Use plain text only. HTML tags are not supported.");
 
 const createReleaseSchema = z.object({
   title: z.string().trim().min(1),
@@ -18,11 +25,11 @@ const createReleaseSchema = z.object({
   collaborator_name: z.string().default(""),
   upc: z.string().default(""),
   isrc: z.string().default(""),
-  seo_title: z.string().default(""),
-  meta_description: z.string().default(""),
-  cover_art_alt_text: z.string().default(""),
-  social_share_title: z.string().default(""),
-  social_share_description: z.string().default(""),
+  seo_title: plainMetadataField,
+  meta_description: plainMetadataField,
+  cover_art_alt_text: plainMetadataField,
+  social_share_title: plainMetadataField,
+  social_share_description: plainMetadataField,
   contextual_cta_label: z.string().default(""),
   contextual_cta_url: z.string().default(""),
   streaming_links: z
@@ -73,6 +80,14 @@ export async function POST(request: Request) {
 
   revalidateTag(PUBLIC_CACHE_TAGS.releases);
   revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
+
+  if (release.is_published) {
+    await submitIndexNowUrls([
+      `/music/${encodeURIComponent(release.slug)}`,
+      "/music",
+      "/sitemap.xml"
+    ]);
+  }
 
   return NextResponse.json({
     release,

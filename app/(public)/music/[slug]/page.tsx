@@ -67,6 +67,7 @@ export async function generateMetadata({
     openGraph: {
       title: socialShareTitle,
       description: socialShareDescription,
+      url: `/music/${encodeURIComponent(release.slug)}`,
       images: release.cover_art_path
         ? [
             {
@@ -114,6 +115,19 @@ export default async function PublicReleaseDetailPage({
   );
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const aboutText = (release.public_long_description || release.public_description || "").trim();
+  const profileRows = [
+    {label: "Language", values: release.languages},
+    {
+      label: "Genre",
+      values:
+        release.genres.length > 0
+          ? release.genres
+          : [release.type === "nerdcore" ? "Nerdcore" : "Hip-Hop/Rap"]
+    },
+    {label: "Mood", values: release.moods},
+    {label: "Themes", values: release.themes},
+    {label: "Best for", values: release.listener_contexts}
+  ].filter((row) => row.values.length > 0);
   const hasPublicLyrics = release.public_lyrics_enabled && Boolean(release.lyrics.trim());
   const hasRelatedReleases = relatedReleases.length > 0;
   const hasRightRail = Boolean(youtubeEmbedUrl) || hasRelatedReleases;
@@ -271,6 +285,31 @@ export default async function PublicReleaseDetailPage({
                   <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
                     {aboutText}
                   </p>
+                </div>
+              ) : null}
+
+              {release.inspiration_context.trim() || profileRows.length > 0 ? (
+                <div className="mt-8 max-w-2xl border-t border-white/10 pt-6 text-left">
+                  <h2 className="public-eyebrow">Track profile</h2>
+                  {release.inspiration_context.trim() ? (
+                    <p className="mt-4 text-sm leading-7 text-[#c8d0d9]">
+                      {release.inspiration_context.trim()}
+                    </p>
+                  ) : null}
+                  {profileRows.length > 0 ? (
+                    <dl className="mt-5 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                      {profileRows.map((row) => (
+                        <div className="grid grid-cols-[82px_1fr] gap-3" key={row.label}>
+                          <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d2af5a]">
+                            {row.label}
+                          </dt>
+                          <dd className="text-sm leading-6 text-[#d7dde3]">
+                            {row.values.join(", ")}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
                 </div>
               ) : null}
             </div>

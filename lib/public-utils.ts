@@ -1,4 +1,8 @@
 import type {PublicReleaseRecord} from "@/lib/types";
+import {
+  cleanPublicMetadataText,
+  cleanPublicSeoTitle
+} from "@/lib/release-metadata";
 
 type PublicReleaseDiscoveryMetadataInput = Pick<
   Partial<PublicReleaseRecord>,
@@ -152,16 +156,19 @@ export function getReleaseListenHref(release: PublicReleaseRecord) {
 export function getPublicReleaseDiscoveryMetadata(
   release: PublicReleaseDiscoveryMetadataInput
 ) {
-  const title = safeText(release.title) || "Untitled release";
-  const publicDescription = safeText(release.public_description);
-  const seoTitle = safeText(release.seo_title) || title;
-  const metaDescription = safeText(release.meta_description) || publicDescription;
+  const title = cleanPublicMetadataText(release.title) || "Untitled release";
+  const publicDescription = cleanPublicMetadataText(release.public_description);
+  const seoTitle = cleanPublicSeoTitle(release.seo_title) || title;
+  const metaDescription =
+    cleanPublicMetadataText(release.meta_description) || publicDescription;
   const coverArtAltText =
-    safeText(release.cover_art_alt_text) || `${title} cover art`;
+    cleanPublicMetadataText(release.cover_art_alt_text) || `${title} cover art`;
   const socialShareTitle =
-    safeText(release.social_share_title) || seoTitle || title;
+    cleanPublicMetadataText(release.social_share_title) || seoTitle || title;
   const socialShareDescription =
-    safeText(release.social_share_description) || metaDescription || publicDescription;
+    cleanPublicMetadataText(release.social_share_description) ||
+    metaDescription ||
+    publicDescription;
 
   return {
     coverArtAltText,

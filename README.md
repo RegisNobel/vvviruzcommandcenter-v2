@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-27 - Public discovery readiness:** Standardized the canonical public origin on `https://vvviruz.com`, redirected the stable Vercel alias, removed campaign/link-hub duplicates from the sitemap, and marked campaign-focused copies as `noindex, follow` with release canonicals. Added site-wide Person/WebSite identity schema, expanded `llms.txt` with the published catalog, added optional IndexNow submission, made Breaking Barz summaries crawlable in initial HTML, and introduced optional release languages, genres, moods, inspiration, themes, and listener-context fields that feed both public track profiles and `MusicRecording` JSON-LD. Discovery metadata now rejects HTML on save and safely cleans malformed legacy values at render time.
+
 > **2026-07-25 - Persistent Public Site section rail:** Public Site Management now keeps its complete section navigation in a fixed, viewport-bounded rail across every settings panel, including Link Hubs, Playlists, Project Content, and Appears On. Mobile and narrower laptop layouts retain a sticky wrapped navigation above the editor, preserving every anchor while making long editing sessions faster.
 
 > **2026-07-25 - Operator Queue public release export:** Added an admin-only CSV export to the Releases Operator Queue. The download includes every publicly visible release with its title, UPC, and ISRC, retaining blank code cells so catalog metadata gaps remain visible.
@@ -354,6 +356,7 @@ Required Vercel environment variables match `.env.example`:
 - `POSTGRES_URL_NON_POOLING` or equivalent direct/non-pooling URL for trusted schema/data operations (auto-mapped to `DIRECT_URL` by the Prisma helper)
 - `NEXT_PUBLIC_SITE_URL`
 - `PUBLIC_SITE_URL`
+- `INDEXNOW_KEY` (optional; enables Bing/IndexNow submission when published releases are saved)
 - `ASSET_STORAGE_DRIVER`
 - `BLOB_READ_WRITE_TOKEN`
 - `BLOB_PREFIX`
@@ -386,6 +389,17 @@ Required Vercel environment variables match `.env.example`:
 - `GOOGLE_DRIVE_BACKUP_FOLDER_ID`
 
 Local development still defaults to SQLite and local disk storage. Vercel should use Postgres and Vercel Blob so public-site changes, admin edits, uploads, and analytics persist across deployments.
+
+### Search discovery setup
+
+After a production deployment:
+
+1. Confirm `PUBLIC_SITE_URL` and `NEXT_PUBLIC_SITE_URL` are both `https://vvviruz.com`.
+2. Add a sensitive production `INDEXNOW_KEY` containing 8-128 letters, numbers, or hyphens.
+3. Verify `https://vvviruz.com/indexnow-key.txt` returns that key and `https://vvviruz.com/sitemap.xml` uses the custom domain.
+4. Verify the `vvviruz.com` domain property in Google Search Console, submit `https://vvviruz.com/sitemap.xml`, and request indexing for the homepage, `/music`, `/projects`, and priority release/project pages.
+5. Import the verified Google property into Bing Webmaster Tools (or verify it separately) and submit the same sitemap.
+6. Complete factual Track Context fields in Release Detail before publishing: languages, genres, mood/energy, inspiration, themes, and listener contexts.
 
 ### Automated Backups
 

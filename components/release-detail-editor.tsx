@@ -1528,6 +1528,74 @@ export function ReleaseDetailEditor({
                   />
                 </label>
 
+                <div className="grid gap-4 rounded-xl border border-edge bg-surface-elevated p-4 md:col-span-2 xl:grid-cols-2">
+                  <div className="xl:col-span-2">
+                    <p className={pageLabelClass}>Track Context</p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                      Optional factual context used on the public release page and in
+                      structured search data. Separate multiple values with commas.
+                    </p>
+                  </div>
+
+                  {[
+                    {
+                      key: "languages" as const,
+                      label: "Languages",
+                      placeholder: "English, French, Spanish"
+                    },
+                    {
+                      key: "genres" as const,
+                      label: "Genres",
+                      placeholder: "Nerdcore, Hip-Hop/Rap"
+                    },
+                    {
+                      key: "moods" as const,
+                      label: "Mood / Energy",
+                      placeholder: "Aggressive, cinematic, motivational"
+                    },
+                    {
+                      key: "themes" as const,
+                      label: "Themes",
+                      placeholder: "Discipline, rivalry, transformation"
+                    },
+                    {
+                      key: "listener_contexts" as const,
+                      label: "Best For",
+                      placeholder: "Gym playlists, lock-in sessions, anime fans"
+                    }
+                  ].map((field) => (
+                    <label className="space-y-2" key={field.key}>
+                      <span className={pageLabelClass}>{field.label}</span>
+                      <input
+                        className={pageInputClass}
+                        onChange={(event) =>
+                          updateRelease((current) => ({
+                            ...current,
+                            [field.key]: [event.target.value]
+                          }))
+                        }
+                        placeholder={field.placeholder}
+                        value={release[field.key].join(", ")}
+                      />
+                    </label>
+                  ))}
+
+                  <label className="space-y-2 xl:col-span-2">
+                    <span className={pageLabelClass}>Inspiration / Source Context</span>
+                    <textarea
+                      className={`${pageInputClass} min-h-[105px]`}
+                      onChange={(event) =>
+                        updateRelease((current) => ({
+                          ...current,
+                          inspiration_context: event.target.value
+                        }))
+                      }
+                      placeholder="Factual source material, character, record, or concept that shaped this release."
+                      value={release.inspiration_context}
+                    />
+                  </label>
+                </div>
+
                 <div className="grid gap-4 md:col-span-2 xl:grid-cols-2">
                   <label className="space-y-2">
                     <span className={pageLabelClass}>SEO Title</span>

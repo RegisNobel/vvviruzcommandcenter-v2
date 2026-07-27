@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {ArrowUpRight} from "lucide-react";
+import type {Metadata} from "next";
 
 import {HomepageTrackedLink} from "@/components/homepage-tracked-link";
 import {LockInSpotlight} from "@/components/lock-in-spotlight";
@@ -16,6 +17,29 @@ import {
   getRandomPublishedReleases,
   getSiteSettings
 } from "@/lib/repositories/public-site";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await getSiteSettings();
+  const metadata = siteSettings.site_content.metadata;
+  const title = metadata.site_title || siteSettings.artist_name;
+
+  return {
+    title: "Home",
+    description: metadata.site_description,
+    alternates: {canonical: "/"},
+    openGraph: {
+      type: "website",
+      title,
+      description: metadata.site_description,
+      url: "/"
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description: metadata.site_description
+    }
+  };
+}
 
 export default async function PublicHomePage() {
   const siteSettings = await getSiteSettings();

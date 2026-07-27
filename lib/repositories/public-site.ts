@@ -11,6 +11,7 @@ import {
 } from "@/lib/public-projects";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import type {PublicReleaseRecord, ReleaseType, SiteSettingsRecord} from "@/lib/types";
+import {parseStoredReleaseContext} from "@/lib/release-context";
 
 import {listPublicReleaseCategories} from "@/lib/repositories/release-categories";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
@@ -30,6 +31,12 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
     lyrics: true;
     publicDescription: true;
     publicLongDescription: true;
+    languages: true;
+    genres: true;
+    moods: true;
+    inspirationContext: true;
+    themes: true;
+    listenerContexts: true;
     seoTitle: true;
     metaDescription: true;
     coverArtAltText: true;
@@ -84,6 +91,12 @@ const publicReleaseSelect = {
   lyrics: true,
   publicDescription: true,
   publicLongDescription: true,
+  languages: true,
+  genres: true,
+  moods: true,
+  inspirationContext: true,
+  themes: true,
+  listenerContexts: true,
   seoTitle: true,
   metaDescription: true,
   coverArtAltText: true,
@@ -140,6 +153,12 @@ async function toPublicRelease(release: PublicReleaseModel): Promise<PublicRelea
     cover_art_path: rewriteAssetUrlToBlob(release.coverArtPath || release.coverArtUrl || "", blobOrigin),
     public_description: release.publicDescription || release.title,
     public_long_description: release.publicLongDescription || "",
+    languages: parseStoredReleaseContext(release.languages),
+    genres: parseStoredReleaseContext(release.genres),
+    moods: parseStoredReleaseContext(release.moods),
+    inspiration_context: release.inspirationContext || "",
+    themes: parseStoredReleaseContext(release.themes),
+    listener_contexts: parseStoredReleaseContext(release.listenerContexts),
     seo_title: release.seoTitle || "",
     meta_description: release.metaDescription || "",
     cover_art_alt_text: release.coverArtAltText || "",

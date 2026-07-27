@@ -18,7 +18,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: settings.site_content.vault.title || "The Vault EP",
-    description: settings.site_content.vault.subtitle || "Premium digital-only bundle"
+    description: settings.site_content.vault.subtitle || "Premium digital-only bundle",
+    alternates: {canonical: "/vault"},
+    openGraph: {
+      type: "website",
+      title: settings.site_content.vault.title || "The Vault EP",
+      description: settings.site_content.vault.subtitle || "Premium digital-only bundle",
+      url: "/vault"
+    }
   };
 }
 
