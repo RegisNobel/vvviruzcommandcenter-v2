@@ -55,13 +55,13 @@ export async function PublicSiteChrome({
                     siteSettings.site_content.chrome.brand_mark_text ||
                     `${siteSettings.artist_name} mark`
                   }
-                  className="object-cover"
-                  fill
-                  sizes="44px"
+                  className="h-full w-full object-cover"
+                  height={44}
                   src={getSiteIconUrl(
                     siteSettings.site_content.chrome.brand_mark_file || "logo_header.png"
                   )}
                   unoptimized={!siteSettings.site_content.chrome.brand_mark_file}
+                  width={44}
                 />
               </span>
               <div className="min-w-0">
@@ -85,13 +85,13 @@ export async function PublicSiteChrome({
                     siteSettings.site_content.chrome.brand_mark_text ||
                     `${siteSettings.artist_name} mark`
                   }
-                  className="object-cover"
-                  fill
-                  sizes="44px"
+                  className="h-full w-full object-cover"
+                  height={44}
                   src={getSiteIconUrl(
                     siteSettings.site_content.chrome.brand_mark_file || "logo_header.png"
                   )}
                   unoptimized={!siteSettings.site_content.chrome.brand_mark_file}
+                  width={44}
                 />
               </span>
               <div className="min-w-0">

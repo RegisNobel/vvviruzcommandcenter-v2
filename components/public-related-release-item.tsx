@@ -42,10 +42,10 @@ export function PublicRelatedReleaseItem({
           {release.cover_art_path ? (
             <Image
               alt={coverArtAltText}
-              className="object-cover transition duration-500 hover:scale-[1.04]"
-              fill
-              sizes="88px"
+              className="h-full w-full object-cover transition duration-500 hover:scale-[1.04]"
+              height={88}
               src={release.cover_art_path}
+              width={88}
             />
           ) : (
             <div className="public-art-placeholder flex-col justify-end px-3 py-3 text-left">

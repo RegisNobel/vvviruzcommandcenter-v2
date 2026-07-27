@@ -3,30 +3,23 @@ const nextConfig = {
   images: {
     imageSizes: [48, 96, 160, 400],
     deviceSizes: [800, 1200],
+    qualities: [75],
+    localPatterns: [
+      {
+        pathname: "/api/assets/**",
+        search: ""
+      }
+    ],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**.blob.vercel-storage.com"
-      },
-      {
-        protocol: "https",
-        hostname: "**.public.blob.vercel-storage.com"
-      },
-      {
-        protocol: "https",
-        hostname: "i.scdn.co"
-      },
-      {
-        protocol: "https",
-        hostname: "is*-ssl.mzstatic.com"
-      },
-      {
-        protocol: "https",
-        hostname: "i.ytimg.com"
+        hostname: "der42gjtvxvutavf.public.blob.vercel-storage.com",
+        pathname: "/vvviruz/**",
+        search: ""
       }
     ],
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 86400
+    formats: ["image/webp"],
+    minimumCacheTTL: 2678400
   },
   headers: async () => [
     {
