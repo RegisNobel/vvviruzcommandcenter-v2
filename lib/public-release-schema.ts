@@ -46,6 +46,12 @@ export function buildPublicReleaseJsonLd({
   projectCategories = [],
   release
 }: PublicReleaseJsonLdInput) {
+  const categories = release.categories ?? [];
+  const genres = release.genres ?? [];
+  const languages = release.languages ?? [];
+  const moods = release.moods ?? [];
+  const themes = release.themes ?? [];
+  const listenerContexts = release.listener_contexts ?? [];
   const baseUrl = getPublicSiteBaseUrl();
   const canonicalUrl = getPublicSiteUrl(`/music/${encodeURIComponent(release.slug)}`);
   const categoryWorks = projectCategories.map((category) =>
@@ -62,10 +68,10 @@ export function buildPublicReleaseJsonLd({
     socialShareDescription
   } = getPublicReleaseDiscoveryMetadata(release);
   const description =
-    release.public_long_description.trim() ||
+    release.public_long_description?.trim() ||
     socialShareDescription ||
     metaDescription ||
-    release.public_description.trim();
+    release.public_description?.trim();
   const sameAs = Array.from(
     new Set(
       [
@@ -79,7 +85,7 @@ export function buildPublicReleaseJsonLd({
   const image = getPublicHttpUrl(release.cover_art_path);
   const collaborators = parseCollaborators(release.collaborator_name);
   const hasPublicLyrics =
-    release.public_lyrics_enabled && release.lyrics.trim().length > 0;
+    release.public_lyrics_enabled && Boolean(release.lyrics?.trim());
 
   const musicRecording = compactObject({
     "@type": "MusicRecording",
@@ -112,19 +118,19 @@ export function buildPublicReleaseJsonLd({
           )
         : undefined,
     genre:
-      release.genres.length > 0
-        ? release.genres
+      genres.length > 0
+        ? genres
         : release.type === "nerdcore"
           ? ["Nerdcore"]
           : ["Hip-Hop/Rap"],
-    inLanguage: release.languages,
+    inLanguage: languages,
     isPartOf: categoryWorks,
     keywords: [
       release.type,
-      ...release.categories.map((category) => category.name),
-      ...release.moods,
-      ...release.themes,
-      ...release.listener_contexts
+      ...categories.map((category) => category.name),
+      ...moods,
+      ...themes,
+      ...listenerContexts
     ],
     sameAs,
     recordingOf: hasPublicLyrics
@@ -133,7 +139,7 @@ export function buildPublicReleaseJsonLd({
           name: release.title,
           lyrics: compactObject({
             "@type": "CreativeWork",
-            text: release.lyrics.trim()
+            text: release.lyrics?.trim()
           })
         })
       : undefined

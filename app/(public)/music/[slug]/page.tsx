@@ -115,18 +115,24 @@ export default async function PublicReleaseDetailPage({
   );
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const aboutText = (release.public_long_description || release.public_description || "").trim();
+  const languages = release.languages ?? [];
+  const genres = release.genres ?? [];
+  const moods = release.moods ?? [];
+  const themes = release.themes ?? [];
+  const listenerContexts = release.listener_contexts ?? [];
+  const inspirationContext = release.inspiration_context?.trim() || "";
   const profileRows = [
-    {label: "Language", values: release.languages},
+    {label: "Language", values: languages},
     {
       label: "Genre",
       values:
-        release.genres.length > 0
-          ? release.genres
+        genres.length > 0
+          ? genres
           : [release.type === "nerdcore" ? "Nerdcore" : "Hip-Hop/Rap"]
     },
-    {label: "Mood", values: release.moods},
-    {label: "Themes", values: release.themes},
-    {label: "Best for", values: release.listener_contexts}
+    {label: "Mood", values: moods},
+    {label: "Themes", values: themes},
+    {label: "Best for", values: listenerContexts}
   ].filter((row) => row.values.length > 0);
   const hasPublicLyrics = release.public_lyrics_enabled && Boolean(release.lyrics.trim());
   const hasRelatedReleases = relatedReleases.length > 0;
@@ -288,12 +294,12 @@ export default async function PublicReleaseDetailPage({
                 </div>
               ) : null}
 
-              {release.inspiration_context.trim() || profileRows.length > 0 ? (
+              {inspirationContext || profileRows.length > 0 ? (
                 <div className="mt-8 max-w-2xl border-t border-white/10 pt-6 text-left">
                   <h2 className="public-eyebrow">Track profile</h2>
-                  {release.inspiration_context.trim() ? (
+                  {inspirationContext ? (
                     <p className="mt-4 text-sm leading-7 text-[#c8d0d9]">
-                      {release.inspiration_context.trim()}
+                      {inspirationContext}
                     </p>
                   ) : null}
                   {profileRows.length > 0 ? (

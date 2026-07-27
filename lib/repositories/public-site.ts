@@ -573,7 +573,7 @@ const getCachedPublishedReleases = unstable_cache(
 
   return Promise.all(releases.map(toPublicRelease));
   },
-  ["public-published-releases"],
+  ["public-published-releases-v2"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
   }
@@ -627,7 +627,7 @@ const getCachedPublishedReleaseBySlug = unstable_cache(
   if (!release) return null;
   return toPublicRelease(release);
   },
-  ["public-release-by-slug"],
+  ["public-release-by-slug-v2"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases]
   }
@@ -715,7 +715,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
 
   return Promise.all([...relatedReleases, ...recentFallback].map(toPublicRelease));
   },
-  ["public-related-releases"],
+  ["public-related-releases-v2"],
   {
     tags: [PUBLIC_CACHE_TAGS.releases, PUBLIC_CACHE_TAGS.releaseCategories]
   }
