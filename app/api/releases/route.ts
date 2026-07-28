@@ -11,6 +11,7 @@ import {isPlainPublicMetadata} from "@/lib/release-metadata";
 import {createEmptyRelease, summarizeRelease, touchRelease} from "@/lib/releases";
 import {readReleaseSummaries, saveRelease} from "@/lib/server/releases";
 import {submitIndexNowUrls} from "@/lib/server/indexnow";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const plainMetadataField = z
   .string()
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
   return NextResponse.json({releases});
 }
 
-export async function POST(request: Request) {
+async function createRelease(request: Request) {
   const auth = await requireAuthenticatedApiRequest(request);
 
   if (auth instanceof Response) {
@@ -93,4 +94,15 @@ export async function POST(request: Request) {
     release,
     summary: summarizeRelease(release)
   });
+}
+
+export async function POST(request: Request) {
+  try {
+    return await createRelease(request);
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "release.create",
+      fallbackMessage: "The release could not be created."
+    });
+  }
 }

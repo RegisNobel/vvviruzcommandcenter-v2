@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 import {z} from "zod";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {getCommissionRequest, updateCommissionRequest} from "@/lib/repositories/commissions";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const updateSchema = z.object({
   status: z.string().optional(),
@@ -34,11 +35,10 @@ export async function GET(
 
     return NextResponse.json({commission});
   } catch (error) {
-    console.error("Failed to fetch commission request:", error);
-    return NextResponse.json(
-      {message: "Failed to fetch commission request."},
-      {status: 500}
-    );
+    return adminErrorResponse(error, {
+      context: "commission.read",
+      fallbackMessage: "The commission request could not be loaded."
+    });
   }
 }
 
@@ -61,17 +61,9 @@ export async function PUT(
 
     return NextResponse.json({commission});
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid update data."},
-        {status: 400}
-      );
-    }
-
-    console.error("Failed to update commission request:", error);
-    return NextResponse.json(
-      {message: "Failed to update commission request."},
-      {status: 500}
-    );
+    return adminErrorResponse(error, {
+      context: "commission.update",
+      fallbackMessage: "The commission request could not be updated."
+    });
   }
 }

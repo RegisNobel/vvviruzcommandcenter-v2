@@ -49,12 +49,14 @@ type ErrorStateProps = {
   title?: string;
   message: string;
   action?: StateAction;
+  requestId?: string;
 };
 
 export function ErrorState({
   title = "Something needs attention",
   message,
-  action
+  action,
+  requestId
 }: ErrorStateProps) {
   return (
     <div className="state-panel-danger" role="alert">
@@ -62,6 +64,11 @@ export function ErrorState({
       <div className="min-w-0 flex-1">
         <p className="font-semibold">{title}</p>
         <p className="mt-1">{message}</p>
+        {requestId ? (
+          <p className="mt-2 font-mono text-[11px] opacity-70">
+            Reference: {requestId}
+          </p>
+        ) : null}
         {action?.href ? (
           <a className="action-button-secondary mt-3 text-xs" href={action.href}>
             {action.label}

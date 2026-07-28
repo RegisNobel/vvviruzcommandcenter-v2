@@ -4,9 +4,11 @@ import {useDeferredValue, useEffect, useMemo, useRef, useState} from "react";
 import Link from "next/link";
 import {StickyContextBar} from "@/components/sticky-context-bar";
 import {AdminOperatorQueue} from "@/components/admin-operator-queue";
+import {ErrorState} from "@/components/ui-state";
 import {CalendarClock, Pin, PinOff, PlusCircle, Search} from "lucide-react";
 import {useRouter} from "next/navigation";
 
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import {getReleaseProgressTone} from "@/lib/releases";
 import type {AdminOperatorQueueRecord, ReleaseSummary} from "@/lib/types";
 
@@ -126,6 +128,7 @@ export function ReleasesPageContent({
   const [catalogView, setCatalogView] = useState<ReleaseCatalogView>("all");
   const [releaseItems, setReleaseItems] = useState(releases);
   const [busyReleaseId, setBusyReleaseId] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState("");
   const deferredSearchValue = useDeferredValue(searchValue);
   const [isCommandDockVisible, setIsCommandDockVisible] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -192,9 +195,13 @@ export function ReleasesPageContent({
     event.stopPropagation();
     event.preventDefault();
     setBusyReleaseId(release.id);
+    setOperationError("");
 
     try {
-      const response = await fetch(`/api/releases/${release.id}`, {
+      const payload = await adminFetch<{
+        summary?: ReleaseSummary;
+        message?: string;
+      }>(`/api/releases/${release.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
@@ -202,13 +209,9 @@ export function ReleasesPageContent({
         body: JSON.stringify({
           pinned: !release.pinned
         })
-      });
-      const payload = (await response.json()) as {
-        summary?: ReleaseSummary;
-        message?: string;
-      };
+      }, "The release pin could not be updated.");
 
-      if (!response.ok || !payload.summary) {
+      if (!payload.summary) {
         throw new Error(payload.message ?? "Pin update failed.");
       }
 
@@ -226,7 +229,9 @@ export function ReleasesPageContent({
           })
       );
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Pin update failed.");
+      setOperationError(
+        getAdminErrorMessage(error, "The release pin could not be updated.")
+      );
     } finally {
       setBusyReleaseId(null);
     }
@@ -328,6 +333,12 @@ export function ReleasesPageContent({
             </p>
           </div>
         </section>
+        {operationError ? (
+          <ErrorState
+            message={operationError}
+            title="Release list was not changed"
+          />
+        ) : null}
 
         <AdminOperatorQueue
           queue={operatorQueue}

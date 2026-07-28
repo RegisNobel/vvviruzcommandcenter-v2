@@ -15,6 +15,7 @@ import {
   writeExclusiveOfferSettings
 } from "@/lib/repositories/exclusive-offer";
 import {readAssetBuffer} from "@/lib/server/asset-storage";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const exclusiveCommunityBenefitSchema = z.object({
   id: z.string().default(""),
@@ -125,16 +126,10 @@ export async function PUT(request: Request) {
       message: "Exclusive offer updated."
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid exclusive offer settings."},
-        {status: 400}
-      );
-    }
-
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to update the offer."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "exclusive-offer.update",
+      fallbackMessage: "The Insider Access offer could not be saved.",
+      exposeMessage: true
+    });
   }
 }

@@ -44,6 +44,21 @@ const ANNOTATION_CONFIDENCE = new Set([
 ]);
 const ANNOTATION_ACTIONS = new Set(["draft", "publish", "archive"]);
 export const PUBLIC_LATEST_INTEL_CACHE_TAG = "latest-intel-public";
+const VAULT_ITEM_STATUSES = new Set(["draft", "public", "archived"]);
+
+type VaultItemInput = {
+  releaseId?: string;
+  title: string;
+  slug?: string;
+  itemType: string;
+  description: string;
+  coverArtUrl: string;
+  previewUrl: string;
+  priceLabel: string;
+  checkoutUrl: string;
+  status: string;
+  sortOrder?: number;
+};
 
 function requirePublicUrl(value: string, field: string) {
   const normalized = value.trim();
@@ -67,6 +82,39 @@ function requireExternalSourceUrl(value: string, field: string) {
     throw new Error(`${field} must be a safe http or https URL without credentials.`);
   }
   return parsed.toString();
+}
+
+function normalizeVaultItemInput(input: VaultItemInput) {
+  const title = input.title.trim();
+  if (!title) throw new Error("Vault item title is required.");
+
+  const slug = slugify(input.slug || title);
+  if (!slug) throw new Error("Vault item slug is required.");
+
+  const previewUrl = input.previewUrl.trim()
+    ? requirePublicUrl(input.previewUrl, "Preview URL")
+    : "";
+  const checkoutUrl = input.checkoutUrl.trim()
+    ? requirePublicUrl(input.checkoutUrl, "Checkout URL")
+    : "";
+  const status = VAULT_ITEM_STATUSES.has(input.status) ? input.status : "draft";
+  if (status === "public" && !checkoutUrl) {
+    throw new Error("Public Vault items need an external checkout URL.");
+  }
+
+  return {
+    releaseId: input.releaseId || null,
+    title,
+    slug,
+    itemType: input.itemType.trim() || "track",
+    description: input.description.trim(),
+    coverArtUrl: input.coverArtUrl.trim(),
+    previewUrl,
+    priceLabel: input.priceLabel.trim(),
+    checkoutUrl,
+    status,
+    sortOrder: Number.isFinite(input.sortOrder) ? Math.trunc(input.sortOrder || 0) : 0
+  };
 }
 
 const annotationInclude = {
@@ -346,24 +394,61 @@ export async function setFanUpdatePublished(id: string, isPublished: boolean) {
   });
 }
 
-export async function createVaultItem(input: {
-  releaseId?: string; title: string; slug?: string; itemType: string; description: string;
-  coverArtUrl: string; previewUrl: string; priceLabel: string; checkoutUrl: string; status: string;
-}) {
-  if (!input.title.trim()) throw new Error("Vault item title is required.");
-  const slug = slugify(input.slug || input.title);
-  if (!slug) throw new Error("Vault item slug is required.");
-  const previewUrl = input.previewUrl.trim() ? requirePublicUrl(input.previewUrl, "Preview URL") : "";
-  const checkoutUrl = input.checkoutUrl.trim() ? requirePublicUrl(input.checkoutUrl, "Checkout URL") : "";
-  const status = input.status === "public" ? "public" : input.status === "archived" ? "archived" : "draft";
-  if (status === "public" && !checkoutUrl) throw new Error("Public Vault items need an external checkout URL.");
+export async function createVaultItem(input: VaultItemInput) {
+  const normalized = normalizeVaultItemInput(input);
   const now = new Date();
   return prisma.vaultItem.create({data: {
-    id: createId(), releaseId: input.releaseId || null, title: input.title.trim(), slug,
-    itemType: input.itemType.trim() || "track", description: input.description.trim(), coverArtUrl: input.coverArtUrl.trim(),
-    previewUrl, priceLabel: input.priceLabel.trim(), checkoutUrl, status, publishedAt: status === "public" ? now : null,
+    id: createId(),
+    ...normalized,
+    publishedAt: normalized.status === "public" ? now : null,
     createdAt: now, updatedAt: now
   }});
+}
+
+export async function updateVaultItem(id: string, input: VaultItemInput) {
+  const existing = await prisma.vaultItem.findUnique({
+    where: {id},
+    select: {publishedAt: true}
+  });
+  if (!existing) throw new Error("Vault item not found.");
+
+  const normalized = normalizeVaultItemInput(input);
+  return prisma.vaultItem.update({
+    where: {id},
+    data: {
+      ...normalized,
+      publishedAt:
+        normalized.status === "public"
+          ? existing.publishedAt || new Date()
+          : existing.publishedAt,
+      updatedAt: new Date()
+    }
+  });
+}
+
+export async function setVaultItemStatus(id: string, status: string) {
+  if (!VAULT_ITEM_STATUSES.has(status)) {
+    throw new Error("Unsupported Vault item status.");
+  }
+
+  const existing = await prisma.vaultItem.findUnique({
+    where: {id},
+    select: {checkoutUrl: true, publishedAt: true}
+  });
+  if (!existing) throw new Error("Vault item not found.");
+  if (status === "public" && !existing.checkoutUrl.trim()) {
+    throw new Error("Add a checkout URL before publishing this Vault item.");
+  }
+
+  return prisma.vaultItem.update({
+    where: {id},
+    data: {
+      status,
+      publishedAt:
+        status === "public" ? existing.publishedAt || new Date() : existing.publishedAt,
+      updatedAt: new Date()
+    }
+  });
 }
 
 export async function deleteFanContent(kind: string, id: string) {

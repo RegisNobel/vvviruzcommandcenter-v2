@@ -5,6 +5,7 @@ import {Archive, BookOpen, Plus, Save, Send, X} from "lucide-react";
 
 import {parseCanonicalLyrics} from "@/lib/lyrics";
 import type {ReleaseAnnotationRecord} from "@/lib/types";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 
 const inputClass = "field-input mt-2";
 
@@ -93,16 +94,23 @@ export function ReleaseAnnotationsEditor({
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`/api/releases/${releaseId}/annotations`)
-      .then(async (response) => {
-        const payload = (await response.json()) as {
-          annotations?: ReleaseAnnotationRecord[];
-        };
-        if (!cancelled && response.ok && payload.annotations) {
+    void adminFetch<{
+      annotations?: ReleaseAnnotationRecord[];
+    }>(
+      `/api/releases/${releaseId}/annotations`,
+      undefined,
+      "Breaking Barz annotations could not be loaded."
+    )
+      .then((payload) => {
+        if (!cancelled && payload.annotations) {
           setAnnotations(payload.annotations);
         }
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        if (!cancelled) {
+          setMessage(getAdminErrorMessage(error, "Breaking Barz annotations could not be loaded."));
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -146,7 +154,10 @@ export function ReleaseAnnotationsEditor({
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/releases/${releaseId}/annotations`, {
+      const payload = await adminFetch<{
+        annotations?: ReleaseAnnotationRecord[];
+        message?: string;
+      }>(`/api/releases/${releaseId}/annotations`, {
         method: "POST",
         headers: {"content-type": "application/json"},
         body: JSON.stringify({
@@ -163,12 +174,8 @@ export function ReleaseAnnotationsEditor({
           action,
           sources: form.sources
         })
-      });
-      const payload = (await response.json()) as {
-        annotations?: ReleaseAnnotationRecord[];
-        message?: string;
-      };
-      if (!response.ok || !payload.annotations) throw new Error(payload.message || "Annotation could not be saved.");
+      }, "The annotation could not be saved.");
+      if (!payload.annotations) throw new Error(payload.message || "The annotation could not be saved.");
       setAnnotations(payload.annotations);
       reset();
       setMessage(
@@ -179,7 +186,7 @@ export function ReleaseAnnotationsEditor({
             : "Annotation saved privately."
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Annotation could not be saved.");
+      setMessage(getAdminErrorMessage(error, "The annotation could not be saved."));
     } finally {
       setSaving(false);
     }

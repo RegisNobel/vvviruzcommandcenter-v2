@@ -14,6 +14,7 @@ import {
   touchCopy
 } from "@/lib/copy";
 import {readCopySummaries, saveCopy} from "@/lib/server/copies";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const createCopySchema = z.object({
   hook: z.string().trim().min(1, "Hook is required."),
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
   return NextResponse.json({copies});
 }
 
-export async function POST(request: Request) {
+async function createCopy(request: Request) {
   const auth = await requireAuthenticatedApiRequest(request);
 
   if (auth instanceof Response) {
@@ -65,4 +66,15 @@ export async function POST(request: Request) {
     copy,
     summary: summarizeCopy(copy)
   });
+}
+
+export async function POST(request: Request) {
+  try {
+    return await createCopy(request);
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "copy.create",
+      fallbackMessage: "The Copy Lab entry could not be created."
+    });
+  }
 }

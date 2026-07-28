@@ -17,6 +17,7 @@ import {
   Users
 } from "lucide-react";
 
+import {adminFetch} from "@/lib/admin-errors";
 import type {
   AudienceFilter,
   AudienceOverview,
@@ -195,17 +196,7 @@ function getStatusPillClass(status: EmailCampaignStatus | SubscriberStatus) {
 }
 
 async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
-  const response = await fetch(input, init);
-  const payload = (await response.json().catch(() => null)) as
-    | (T & {message?: string})
-    | {message?: string}
-    | null;
-
-  if (!response.ok) {
-    throw new Error(payload?.message ?? "Request failed.");
-  }
-
-  return payload as T & {message?: string};
+  return adminFetch<T & {message?: string}>(input, init, "Audience request failed.");
 }
 
 export function AudienceAdminPage({

@@ -7,6 +7,7 @@ import {ArrowLeft, FolderOpen, Save, Trash2} from "lucide-react";
 import {ReleasePicker} from "@/components/release-picker";
 import {StickyActionDock} from "@/components/sticky-action-dock";
 
+import {getAdminErrorMessage, readAdminApiResponse} from "@/lib/admin-errors";
 import {
   contentTypeOptions,
   formatContentType,
@@ -120,9 +121,12 @@ export function CopyDetailEditor({
         },
         body: snapshot
       });
-      const payload = (await response.json()) as CopySaveResponse;
+      const payload = await readAdminApiResponse<CopySaveResponse>(
+        response,
+        "Copy changes could not be saved."
+      );
 
-      if (!response.ok || !payload.copy) {
+      if (!payload.copy) {
         throw new Error(payload.message ?? "Save failed.");
       }
 
@@ -138,7 +142,7 @@ export function CopyDetailEditor({
       lastSavedSnapshotRef.current = previousSnapshot;
       setSaveState("error");
       setHasPendingChanges(true);
-      setMessage(error instanceof Error ? error.message : "Save failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Save failed unexpectedly."));
     }
   }, []);
 
@@ -193,19 +197,16 @@ export function CopyDetailEditor({
       const response = await fetch(`/api/copies/${copy.id}`, {
         method: "DELETE"
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Delete failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "The Copy Lab entry could not be deleted."
+      );
 
       router.push("/admin/copy-lab");
       router.refresh();
     } catch (error) {
       setIsDeleting(false);
-      setMessage(error instanceof Error ? error.message : "Delete failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Delete failed unexpectedly."));
     }
   }
 

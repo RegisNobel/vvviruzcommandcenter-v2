@@ -30,6 +30,7 @@ type Snapshot = {
   releaseAnnotationSources?: SnapshotRecord[];
   fanUpdates?: SnapshotRecord[];
   vaultItems?: SnapshotRecord[];
+  appearsOn?: SnapshotRecord[];
   copyEntries?: SnapshotRecord[];
   siteSettings?: SnapshotRecord[];
   subscribers?: SnapshotRecord[];
@@ -57,6 +58,7 @@ const dateFieldsByModel: Record<string, string[]> = {
   releaseAnnotationSource: ["createdAt", "updatedAt"],
   fanUpdate: ["publishedAt", "createdAt", "updatedAt"],
   vaultItem: ["publishedAt", "createdAt", "updatedAt"],
+  appearsOn: ["releaseDate", "archivedAt", "createdAt", "updatedAt"],
   copyEntry: ["createdOn", "updatedOn"],
   siteSettings: ["createdOn", "updatedOn"],
   subscriber: ["createdAt", "updatedAt", "unsubscribedAt"],
@@ -263,6 +265,7 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.releaseAnnotationsNeedingReanchoring = annotationValidation.needsReanchoring;
   counts.fanUpdates = await upsertMany("fanUpdate", snapshot.fanUpdates);
   counts.vaultItems = await upsertMany("vaultItem", snapshot.vaultItems);
+  counts.appearsOn = await upsertMany("appearsOn", snapshot.appearsOn);
   counts.copyEntries = await upsertMany("copyEntry", snapshot.copyEntries);
   counts.siteSettings = await upsertMany("siteSettings", snapshot.siteSettings);
   counts.subscribers = await upsertMany("subscriber", snapshot.subscribers);

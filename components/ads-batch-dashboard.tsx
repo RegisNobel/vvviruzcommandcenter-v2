@@ -6,6 +6,7 @@ import Link from "next/link";
 import {ArrowLeft, AlertTriangle, Edit, ExternalLink, Lock, Save, X} from "lucide-react";
 
 import {AdsDeleteBatchButton} from "@/components/ads-delete-batch-button";
+import {getAdminErrorMessage, readAdminApiResponse} from "@/lib/admin-errors";
 import {defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
 import {parseAdName} from "@/lib/ads/naming-parser";
 import {calculateConfidenceSignal} from "@/lib/ads/stats";
@@ -877,19 +878,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         },
         body: JSON.stringify({name: newName})
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Batch renaming failed.");
-      }
+      const payload = await readAdminApiResponse<{message?: string}>(
+        response,
+        "Batch renaming failed."
+      );
 
       setMessage(payload?.message ?? "Batch renamed successfully.");
       setShowRenameDialog(false);
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Batch renaming failed.");
+      setMessage(getAdminErrorMessage(error, "Batch renaming failed."));
     } finally {
       setIsRenaming(false);
     }
@@ -958,18 +956,15 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
         },
         body: JSON.stringify({copy_entry_id: copyEntryId})
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Copy link update failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "Copy link update failed."
+      );
 
       setMessage("Copy link updated.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Copy link update failed.");
+      setMessage(getAdminErrorMessage(error, "Copy link update failed."));
     } finally {
       setPendingReportId(null);
     }
@@ -991,18 +986,15 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           release_id: detail.release_id
         })
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Learning save failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "Campaign learning could not be saved."
+      );
 
       setMessage("Campaign learning saved.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Learning save failed.");
+      setMessage(getAdminErrorMessage(error, "Learning save failed."));
     } finally {
       setIsSavingLearning(false);
     }
@@ -1025,19 +1017,16 @@ export function AdsBatchDashboard({detail}: {detail: AdImportBatchDetail}) {
           human_override_notes: archiveForm.human_override_notes
         })
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Archive failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "The test cycle could not be archived."
+      );
 
       setMessage("Test cycle archived.");
       setShowArchiveDialog(false);
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Archive failed.");
+      setMessage(getAdminErrorMessage(error, "Archive failed."));
     } finally {
       setIsArchiving(false);
     }

@@ -6,6 +6,7 @@ import {useRouter} from "next/navigation";
 import {ArrowLeft, PlusCircle} from "lucide-react";
 
 import {ReleasePicker} from "@/components/release-picker";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import {
   contentTypeOptions,
   formatContentType,
@@ -61,19 +62,18 @@ export function CopyCreateForm({
     setMessage(null);
 
     try {
-      const response = await fetch("/api/copies", {
+      const payload = await adminFetch<{
+        copy?: {id: string};
+        message?: string;
+      }>("/api/copies", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(form)
-      });
-      const payload = (await response.json()) as {
-        copy?: {id: string};
-        message?: string;
-      };
+      }, "Copy creation failed.");
 
-      if (!response.ok || !payload.copy) {
+      if (!payload.copy) {
         throw new Error(payload.message ?? "Copy creation failed.");
       }
 
@@ -81,7 +81,7 @@ export function CopyCreateForm({
       router.refresh();
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Copy creation failed unexpectedly."
+        getAdminErrorMessage(error, "Copy creation failed unexpectedly.")
       );
       setIsSubmitting(false);
     }

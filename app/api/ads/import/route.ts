@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {importMetaAdReports} from "@/lib/repositories/ads";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 function isCsvFile(file: File) {
   return (
@@ -54,14 +55,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Meta CSV import failed unexpectedly."
-      },
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "ad-lab.csv-import",
+      fallbackMessage: "The Meta CSV import could not be completed.",
+      exposeMessage: true
+    });
   }
 }

@@ -12,6 +12,7 @@ import {
   readAudienceOverview
 } from "@/lib/repositories/audience";
 import type {SubscriberSource, SubscriberStatus} from "@/lib/types";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const subscriberCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -60,16 +61,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({subscriber, message: "Subscriber added."});
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid subscriber data."},
-        {status: 400}
-      );
-    }
-
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to add subscriber."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.subscriber.create",
+      fallbackMessage: "The subscriber could not be added."
+    });
   }
 }

@@ -12,6 +12,7 @@ import {
 import {useState, useEffect} from "react";
 
 import {ReleasePicker} from "@/components/release-picker";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {LinkHubRecord, ReleaseSummary} from "@/lib/types";
 
 type LinkHubsSettingsPanelProps = {
@@ -92,28 +93,26 @@ export function LinkHubsSettingsPanel({
         id: isNew ? undefined : id // API will generate new ID if undefined
       };
 
-      const response = await fetch("/api/link-hubs", {
+      const payload = await adminFetch<{
+        message?: string;
+        record?: LinkHubRecord;
+      }>("/api/link-hubs", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(cleanHub)
-      });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.message || "Failed to save link hub.");
-      }
+      }, "The link hub could not be saved.");
 
       setSaveState((prev) => ({...prev, [id]: "saved"}));
       
       // Update hubs list with the saved record (specifically to get actual DB ID if it was new)
-      if (isNew && payload.record) {
+      const savedRecord = payload.record;
+      if (isNew && savedRecord) {
         setHubs((current) =>
           current.map((h) => (h.id === id ? {
-            ...payload.record,
-            release_title: releaseOptions.find((r) => r.id === payload.record.releaseId)?.title
+            ...savedRecord,
+            release_title: releaseOptions.find((r) => r.id === savedRecord.releaseId)?.title
           } : h))
         );
       } else {
@@ -128,9 +127,12 @@ export function LinkHubsSettingsPanel({
       setTimeout(() => {
         setSaveState((prev) => ({...prev, [id]: "idle"}));
       }, 3000);
-    } catch (err: any) {
+    } catch (err) {
       setSaveState((prev) => ({...prev, [id]: "error"}));
-      setErrorMessages((prev) => ({...prev, [id]: err.message || "Error saving."}));
+      setErrorMessages((prev) => ({
+        ...prev,
+        [id]: getAdminErrorMessage(err, "Error saving.")
+      }));
     }
   }
 
@@ -146,18 +148,16 @@ export function LinkHubsSettingsPanel({
     if (!shouldDelete) return;
 
     try {
-      const response = await fetch(`/api/link-hubs?id=${id}`, {
+      await adminFetch<{message?: string}>(`/api/link-hubs?id=${id}`, {
         method: "DELETE"
-      });
-
-      if (!response.ok) {
-        const payload = await response.json();
-        throw new Error(payload.message || "Failed to delete link hub.");
-      }
+      }, "The link hub could not be deleted.");
 
       setHubs((current) => current.filter((h) => h.id !== id));
-    } catch (err: any) {
-      alert(err.message || "Failed to delete link hub.");
+    } catch (err) {
+      setErrorMessages((prev) => ({
+        ...prev,
+        [id]: getAdminErrorMessage(err, "Failed to delete link hub.")
+      }));
     }
   }
 

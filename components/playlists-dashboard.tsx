@@ -19,6 +19,7 @@ import {
 import type {PlaylistRecord} from "@/lib/types";
 import {slugify} from "@/lib/utils";
 import {EmptyState} from "@/components/ui-state";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 
 export function PlaylistsDashboard({
   initialPlaylists,
@@ -78,26 +79,21 @@ export function PlaylistsDashboard({
 
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/playlists/${playlist.id}`, {
+        await adminFetch(`/api/playlists/${playlist.id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             ...playlist,
             isPublic: newPublic
           })
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.message || "Failed to update visibility.");
-        }
+        }, "Playlist visibility could not be updated.");
         router.refresh();
       } catch (err) {
         // Revert
         setPlaylists((current) =>
           current.map((p) => (p.id === playlist.id ? {...p, isPublic: playlist.isPublic} : p))
         );
-        setMessage(err instanceof Error ? err.message : "Failed to toggle visibility.");
+        setMessage(getAdminErrorMessage(err, "Playlist visibility could not be updated."));
       }
     });
   };
@@ -107,17 +103,12 @@ export function PlaylistsDashboard({
 
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/playlists/${id}`, {
+        await adminFetch(`/api/playlists/${id}`, {
           method: "DELETE"
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.message || "Failed to archive playlist.");
-        }
+        }, "The playlist could not be archived.");
         router.refresh();
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Failed to archive playlist.");
+        setMessage(getAdminErrorMessage(err, "The playlist could not be archived."));
       }
     });
   };
@@ -125,22 +116,17 @@ export function PlaylistsDashboard({
   const handleRestore = (playlist: PlaylistRecord) => {
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/playlists/${playlist.id}`, {
+        await adminFetch(`/api/playlists/${playlist.id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             ...playlist,
             isArchived: false
           })
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.message || "Failed to restore playlist.");
-        }
+        }, "The playlist could not be restored.");
         router.refresh();
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Failed to restore playlist.");
+        setMessage(getAdminErrorMessage(err, "The playlist could not be restored."));
       }
     });
   };
@@ -158,7 +144,10 @@ export function PlaylistsDashboard({
 
     startTransition(async () => {
       try {
-        const response = await fetch("/api/playlists", {
+        const data = await adminFetch<{
+          playlist?: PlaylistRecord;
+          message?: string;
+        }>("/api/playlists", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -169,12 +158,10 @@ export function PlaylistsDashboard({
             primaryPlatform,
             isPublic
           })
-        });
+        }, "The playlist could not be created.");
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to create playlist.");
+        if (!data.playlist) {
+          throw new Error(data.message || "The playlist could not be created.");
         }
 
         // Reset state
@@ -188,7 +175,7 @@ export function PlaylistsDashboard({
 
         router.push(`/admin/promo/playlists/${data.playlist.id}`);
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "Failed to create playlist.");
+        setMessage(getAdminErrorMessage(err, "The playlist could not be created."));
       }
     });
   };

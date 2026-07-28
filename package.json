@@ -41,7 +41,8 @@
     "test:latest-intel": "tsx scripts/test-latest-intel-policy.ts",
     "analytics:backfill-playlists": "tsx scripts/backfill-playlist-analytics.ts",
     "content:seed-massive-imitation": "tsx scripts/seed-massive-imitation-project.ts",
-    "test:breaking-barz": "tsx scripts/test-breaking-barz-anchors.ts"
+    "test:breaking-barz": "tsx scripts/test-breaking-barz-anchors.ts",
+    "test:admin-errors": "tsx scripts/test-admin-errors.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0",

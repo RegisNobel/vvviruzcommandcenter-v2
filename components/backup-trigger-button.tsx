@@ -7,7 +7,11 @@ import {triggerManualBackupAction} from "@/lib/actions/backups";
 
 export function BackupTriggerButton() {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<{success: boolean; message: string} | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+    requestId?: string;
+  } | null>(null);
 
   const handleTrigger = () => {
     setResult(null);
@@ -43,9 +47,14 @@ export function BackupTriggerButton() {
       </button>
 
       {result && (
-        <p className={result.success ? "state-message-success" : "state-message-danger"}>
-          {result.message}
-        </p>
+        <div className={result.success ? "state-message-success" : "state-message-danger"}>
+          <p>{result.message}</p>
+          {!result.success && result.requestId ? (
+            <p className="mt-1 text-[10px] opacity-70">
+              Reference: {result.requestId}
+            </p>
+          ) : null}
+        </div>
       )}
     </div>
   );

@@ -9,6 +9,8 @@ import {
 } from "@/lib/repositories/short-links";
 import {buildDestinationUrlWithUtm, type UtmFields} from "@/lib/short-link-url";
 import type {ShortLinkStatus} from "@/lib/types";
+import {requireAuthenticatedAdminSession} from "@/lib/auth/server";
+import {adminActionError} from "@/lib/server/admin-error-response";
 
 export async function createShortLinkAction(input: {
   customSlug?: string;
@@ -19,6 +21,7 @@ export async function createShortLinkAction(input: {
   utmFields?: UtmFields;
 }) {
   try {
+    await requireAuthenticatedAdminSession();
     const destinationUrl = buildDestinationUrlWithUtm(input.destinationUrl, input.utmFields);
     const link = await createShortLink({
       campaignLabel: input.campaignLabel,
@@ -35,9 +38,12 @@ export async function createShortLinkAction(input: {
     };
   } catch (error) {
     return {
-      link: null,
-      message: error instanceof Error ? error.message : "Short link creation failed.",
-      ok: false
+      ...adminActionError(error, {
+        context: "short-link.create",
+        fallbackMessage: "The short link could not be created.",
+        exposeMessage: true
+      }),
+      link: null
     };
   }
 }
@@ -49,6 +55,7 @@ export async function updateShortLinkContextAction(input: {
   contentLabel?: string | null;
 }) {
   try {
+    await requireAuthenticatedAdminSession();
     const link = await updateShortLinkContext(input);
 
     return {
@@ -58,9 +65,12 @@ export async function updateShortLinkContextAction(input: {
     };
   } catch (error) {
     return {
-      link: null,
-      message: error instanceof Error ? error.message : "Short link context save failed.",
-      ok: false
+      ...adminActionError(error, {
+        context: "short-link.context",
+        fallbackMessage: "The short link campaign context could not be saved.",
+        exposeMessage: true
+      }),
+      link: null
     };
   }
 }
@@ -70,6 +80,7 @@ export async function updateShortLinkDestinationAction(input: {
   destinationUrl: string;
 }) {
   try {
+    await requireAuthenticatedAdminSession();
     const link = await updateShortLinkDestination(input);
 
     return {
@@ -79,9 +90,12 @@ export async function updateShortLinkDestinationAction(input: {
     };
   } catch (error) {
     return {
-      link: null,
-      message: error instanceof Error ? error.message : "Short link destination update failed.",
-      ok: false
+      ...adminActionError(error, {
+        context: "short-link.destination",
+        fallbackMessage: "The short link destination could not be updated.",
+        exposeMessage: true
+      }),
+      link: null
     };
   }
 }
@@ -91,6 +105,7 @@ export async function updateShortLinkStatusAction(input: {
   status: ShortLinkStatus;
 }) {
   try {
+    await requireAuthenticatedAdminSession();
     const link = await updateShortLinkStatus(input);
 
     return {
@@ -100,25 +115,29 @@ export async function updateShortLinkStatusAction(input: {
     };
   } catch (error) {
     return {
-      link: null,
-      message: error instanceof Error ? error.message : "Short link status update failed.",
-      ok: false
+      ...adminActionError(error, {
+        context: "short-link.status",
+        fallbackMessage: "The short link status could not be updated.",
+        exposeMessage: true
+      }),
+      link: null
     };
   }
 }
 
 export async function deleteShortLinkAction(id: string) {
   try {
+    await requireAuthenticatedAdminSession();
     await softDeleteShortLink(id);
 
     return {
       message: "Short link deleted.",
       ok: true
     };
-  } catch {
-    return {
-      message: "Short link deletion failed.",
-      ok: false
-    };
+  } catch (error) {
+    return adminActionError(error, {
+      context: "short-link.delete",
+      fallbackMessage: "The short link could not be deleted."
+    });
   }
 }

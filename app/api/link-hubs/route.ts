@@ -5,6 +5,7 @@ import {prisma} from "@/lib/db/prisma";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {deleteLinkHub, readLinkHubs} from "@/lib/repositories/link-hubs";
 import {createId} from "@/lib/utils";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,10 @@ export async function GET() {
     const hubs = await readLinkHubs();
     return NextResponse.json(hubs);
   } catch (error) {
-    console.error("Failed to read link hubs:", error);
-    return NextResponse.json({message: "Failed to read link hubs."}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "link-hub.list",
+      fallbackMessage: "Link hubs could not be loaded."
+    });
   }
 }
 
@@ -106,8 +109,10 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ok: true, record});
   } catch (error) {
-    console.error("Failed to upsert link hub:", error);
-    return NextResponse.json({message: "Failed to save link hub."}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "link-hub.save",
+      fallbackMessage: "The link hub could not be saved."
+    });
   }
 }
 
@@ -125,8 +130,10 @@ export async function DELETE(request: Request) {
     revalidateTag(PUBLIC_CACHE_TAGS.siteSettings);
 
     return NextResponse.json({ok: true});
-  } catch (error: any) {
-    console.error("Failed to delete link hub:", error);
-    return NextResponse.json({message: error.message || "Failed to delete link hub."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "link-hub.delete",
+      fallbackMessage: "The link hub could not be deleted."
+    });
   }
 }

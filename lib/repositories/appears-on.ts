@@ -7,6 +7,33 @@ import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {getBlobOrigin, rewriteAssetUrlToBlob} from "@/lib/server/blob-origin";
 
 type AppearsOnModel = Prisma.AppearsOnGetPayload<{}>;
+const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
+
+function safeHttpUrl(value: string, field: string) {
+  const normalized = value.trim();
+  if (!normalized) return "";
+
+  let parsed: URL;
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw new Error(`${field} must be a valid web address.`);
+  }
+
+  if (!HTTP_PROTOCOLS.has(parsed.protocol) || parsed.username || parsed.password) {
+    throw new Error(`${field} must be a safe http or https URL without credentials.`);
+  }
+  return parsed.toString();
+}
+
+function optionalDate(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(`${value.slice(0, 10)}T12:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("Release date is invalid.");
+  }
+  return parsed;
+}
 
 async function toAppearsOnRecord(record: AppearsOnModel): Promise<AppearsOnRecord> {
   const blobOrigin = await getBlobOrigin();
@@ -19,7 +46,9 @@ async function toAppearsOnRecord(record: AppearsOnModel): Promise<AppearsOnRecor
     apple_music_url: record.appleMusicUrl,
     youtube_music_url: record.youtubeMusicUrl,
     youtube_url: record.youtubeUrl,
+    release_date: record.releaseDate?.toISOString().slice(0, 10) || null,
     is_published: record.isPublished,
+    archived_at: record.archivedAt?.toISOString() || null,
     sort_order: record.sortOrder,
     created_at: record.createdAt.toISOString(),
     updated_at: record.updatedAt.toISOString()
@@ -29,7 +58,9 @@ async function toAppearsOnRecord(record: AppearsOnModel): Promise<AppearsOnRecor
 export async function readAllAppearsOn(): Promise<AppearsOnRecord[]> {
   const records = await prisma.appearsOn.findMany({
     orderBy: [
+      {archivedAt: "asc"},
       {sortOrder: "asc"},
+      {releaseDate: "desc"},
       {createdAt: "desc"}
     ]
   });
@@ -48,38 +79,69 @@ export async function readAppearsOn(id: string): Promise<AppearsOnRecord | null>
 export async function saveAppearsOn(record: Omit<AppearsOnRecord, "created_at" | "updated_at"> & {id?: string}) {
   const id = record.id || createId();
   const now = new Date();
+  const title = record.title.trim();
+  const artists = record.artists.trim();
+  const coverArtUrl = safeHttpUrl(record.cover_art_url, "Cover art URL");
+  const spotifyUrl = safeHttpUrl(record.spotify_url, "Spotify URL");
+  const appleMusicUrl = safeHttpUrl(record.apple_music_url, "Apple Music URL");
+  const youtubeMusicUrl = safeHttpUrl(record.youtube_music_url, "YouTube Music URL");
+  const youtubeUrl = safeHttpUrl(record.youtube_url, "YouTube URL");
+  const releaseDate = optionalDate(record.release_date);
+  const isPublished = Boolean(record.is_published) && !record.archived_at;
+
+  if (!title) throw new Error("Track title is required.");
+  if (!artists) throw new Error("Artist credit is required.");
+  if (isPublished && (!coverArtUrl || !spotifyUrl)) {
+    throw new Error(
+      "Published Appears On entries need resolved cover art and a Spotify URL."
+    );
+  }
 
   await prisma.appearsOn.upsert({
     where: {id},
     create: {
       id,
-      title: record.title,
-      artists: record.artists,
-      coverArtUrl: record.cover_art_url,
-      spotifyUrl: record.spotify_url,
-      appleMusicUrl: record.apple_music_url,
-      youtubeMusicUrl: record.youtube_music_url,
-      youtubeUrl: record.youtube_url,
-      isPublished: record.is_published,
+      title,
+      artists,
+      coverArtUrl,
+      spotifyUrl,
+      appleMusicUrl,
+      youtubeMusicUrl,
+      youtubeUrl,
+      releaseDate,
+      isPublished,
+      archivedAt: null,
       sortOrder: record.sort_order,
       createdAt: now,
       updatedAt: now
     },
     update: {
-      title: record.title,
-      artists: record.artists,
-      coverArtUrl: record.cover_art_url,
-      spotifyUrl: record.spotify_url,
-      appleMusicUrl: record.apple_music_url,
-      youtubeMusicUrl: record.youtube_music_url,
-      youtubeUrl: record.youtube_url,
-      isPublished: record.is_published,
+      title,
+      artists,
+      coverArtUrl,
+      spotifyUrl,
+      appleMusicUrl,
+      youtubeMusicUrl,
+      youtubeUrl,
+      releaseDate,
+      isPublished,
       sortOrder: record.sort_order,
       updatedAt: now
     }
   });
 
   return id;
+}
+
+export async function setAppearsOnArchived(id: string, archived: boolean) {
+  return prisma.appearsOn.update({
+    where: {id},
+    data: {
+      archivedAt: archived ? new Date() : null,
+      isPublished: false,
+      updatedAt: new Date()
+    }
+  });
 }
 
 export async function deleteAppearsOn(id: string) {
@@ -91,9 +153,10 @@ export async function deleteAppearsOn(id: string) {
 const getCachedPublicAppearsOn = unstable_cache(
   async () => {
     const records = await prisma.appearsOn.findMany({
-      where: {isPublished: true},
+      where: {isPublished: true, archivedAt: null},
       orderBy: [
         {sortOrder: "asc"},
+        {releaseDate: "desc"},
         {createdAt: "desc"}
       ]
     });

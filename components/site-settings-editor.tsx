@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import {useEffect, useMemo, useRef, useState} from "react";
 
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {
   ReleaseCategoryRecord,
   ReleaseSummary,
@@ -357,19 +358,18 @@ export function SiteSettingsEditor({
     };
 
     try {
-      const response = await fetch("/api/site-settings", {
+      const data = await adminFetch<{
+        message?: string;
+        siteSettings?: SiteSettingsRecord;
+      }>("/api/site-settings", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
-      });
-      const data = (await response.json()) as {
-        message?: string;
-        siteSettings?: SiteSettingsRecord;
-      };
+      }, "Public Site settings could not be saved.");
 
-      if (!response.ok || !data.siteSettings) {
+      if (!data.siteSettings) {
         throw new Error(data.message ?? "Save failed.");
       }
 
@@ -379,7 +379,7 @@ export function SiteSettingsEditor({
       setMessage("Public site settings saved.");
     } catch (error) {
       setSaveState("error");
-      setMessage(error instanceof Error ? error.message : "Save failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Save failed unexpectedly."));
     }
   }
 

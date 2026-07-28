@@ -4,6 +4,8 @@ import {useState, useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {Trash2, X} from "lucide-react";
 
+import {getAdminErrorMessage, readAdminApiResponse} from "@/lib/admin-errors";
+
 export function AdsDeleteBatchButton({
   afterDeleteHref = "/admin/ad-lab?deleted=1",
   batchId,
@@ -53,18 +55,15 @@ export function AdsDeleteBatchButton({
         },
         body: JSON.stringify({confirmation})
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Batch deletion failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "The import batch could not be deleted."
+      );
 
       router.push(afterDeleteHref);
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Batch deletion failed.");
+      setMessage(getAdminErrorMessage(error, "Batch deletion failed."));
       setIsDeleting(false);
     }
   }

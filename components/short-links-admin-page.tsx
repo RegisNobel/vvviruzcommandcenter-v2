@@ -268,7 +268,7 @@ export function ShortLinksAdminPage({
         utmFields
       });
 
-      setMessage(result.message);
+      setMessage(result.message ?? (result.ok ? "Short link created." : "The short link could not be created."));
 
       if (result.ok && result.link) {
         setDestinationUrl("");
@@ -327,7 +327,7 @@ export function ShortLinksAdminPage({
         releaseId: draft.releaseId
       });
 
-      setMessage(result.message);
+      setMessage(result.message ?? (result.ok ? "Short link context saved." : "The short link context could not be saved."));
 
       if (result.ok) {
         router.refresh();
@@ -352,7 +352,7 @@ export function ShortLinksAdminPage({
         id: link.id
       });
 
-      setMessage(result.message);
+      setMessage(result.message ?? (result.ok ? "Short link destination updated." : "The short link destination could not be updated."));
 
       if (result.ok) {
         router.refresh();
@@ -386,7 +386,7 @@ export function ShortLinksAdminPage({
         status
       });
 
-      setMessage(result.message);
+      setMessage(result.message ?? (result.ok ? "Short link status updated." : "The short link status could not be updated."));
 
       if (result.ok) {
         router.refresh();
@@ -407,7 +407,7 @@ export function ShortLinksAdminPage({
     startTransition(async () => {
       const result = await deleteShortLinkAction(link.id);
 
-      setMessage(result.message);
+      setMessage(result.message ?? (result.ok ? "Short link deleted." : "The short link could not be deleted."));
 
       if (result.ok) {
         router.refresh();

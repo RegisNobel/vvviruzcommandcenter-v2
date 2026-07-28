@@ -13,6 +13,7 @@ import {
   updatePlaylist
 } from "@/lib/repositories/playlists";
 import {validatePrimaryPlatform} from "@/lib/validation";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const updatePlaylistSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -136,8 +137,10 @@ export async function PUT(
 
     return NextResponse.json({playlist: updated, summary});
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to update playlist.";
-    return NextResponse.json({message: msg}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "playlist.update",
+      fallbackMessage: "The playlist could not be saved. Its previous settings are still intact."
+    });
   }
 }
 
@@ -170,7 +173,9 @@ export async function DELETE(
 
     return NextResponse.json({playlist});
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to archive playlist.";
-    return NextResponse.json({message: msg}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "playlist.archive",
+      fallbackMessage: "The playlist could not be archived."
+    });
   }
 }

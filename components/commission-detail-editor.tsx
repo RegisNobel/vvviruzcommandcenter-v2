@@ -2,6 +2,7 @@
 
 import {useState} from "react";
 import {Save, ExternalLink} from "lucide-react";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {CommissionRequestRecord} from "@/lib/types";
 
 type Props = {
@@ -20,7 +21,10 @@ export function CommissionDetailEditor({initialRequest}: Props) {
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/commissions/${request.id}`, {
+      const data = await adminFetch<{
+        commission: CommissionRequestRecord;
+        message?: string;
+      }>(`/api/admin/commissions/${request.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -32,13 +36,7 @@ export function CommissionDetailEditor({initialRequest}: Props) {
           adminNotes: request.adminNotes,
           deliveryLink: request.deliveryLink
         })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to save.");
-      }
+      }, "Commission request could not be saved.");
 
       setRequest(data.commission);
       setSaveState("saved");
@@ -47,7 +45,7 @@ export function CommissionDetailEditor({initialRequest}: Props) {
       setTimeout(() => setSaveState("idle"), 3000);
     } catch (error) {
       setSaveState("error");
-      setMessage(error instanceof Error ? error.message : "Save failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Save failed unexpectedly."));
     }
   }
 

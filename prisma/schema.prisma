@@ -525,12 +525,15 @@ model AppearsOn {
   appleMusicUrl   String   @default("")
   youtubeMusicUrl String   @default("")
   youtubeUrl      String   @default("")
+  releaseDate     DateTime?
   isPublished     Boolean  @default(false)
+  archivedAt      DateTime?
   sortOrder       Int      @default(0)
   createdAt       DateTime
   updatedAt       DateTime
 
   @@index([isPublished, sortOrder])
+  @@index([archivedAt, releaseDate])
 }
 
 model CommissionRequest {

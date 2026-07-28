@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {ExternalLink, Play} from "lucide-react";
 
-import {normalizeExternalUrl} from "@/lib/public-utils";
+import {formatPublicReleaseDate, normalizeExternalUrl} from "@/lib/public-utils";
 import type {AppearsOnRecord} from "@/lib/types";
 
 const platformButtonStyles = {
@@ -118,6 +118,11 @@ export function PublicAppearsOnLibrary({
               <p className="truncate text-sm text-[#8d949d] mt-0.5">
                 {record.artists}
               </p>
+              {record.release_date ? (
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f7882]">
+                  {formatPublicReleaseDate(record.release_date)}
+                </p>
+              ) : null}
             </div>
           </article>
         );

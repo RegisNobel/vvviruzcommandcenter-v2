@@ -9,6 +9,7 @@ import {NextResponse} from "next/server";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {IMAGE_EXTENSIONS} from "@/lib/constants";
 import {storeAsset, deleteAsset} from "@/lib/server/asset-storage";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const mimeToExtension: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -17,7 +18,7 @@ const mimeToExtension: Record<string, string> = {
   "image/webp": ".webp"
 };
 
-export async function POST(request: Request) {
+async function uploadExclusiveArtwork(request: Request) {
   const auth = await requireAuthenticatedApiRequest(request);
 
   if (auth instanceof Response) {
@@ -105,4 +106,15 @@ export async function POST(request: Request) {
       mimeType: file.type || "image/*"
     }
   });
+}
+
+export async function POST(request: Request) {
+  try {
+    return await uploadExclusiveArtwork(request);
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "exclusive-offer.art-upload",
+      fallbackMessage: "The Insider Access artwork could not be uploaded. The existing artwork was not changed."
+    });
+  }
 }

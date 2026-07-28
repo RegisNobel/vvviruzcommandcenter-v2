@@ -12,6 +12,7 @@ import {
   saveCampaign
 } from "@/lib/repositories/audience";
 import type {AudienceFilter} from "@/lib/types";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const campaignSchema = z.object({
   subject: z.string().trim().min(1, "Subject is required."),
@@ -79,17 +80,10 @@ export async function PUT(
 
     return NextResponse.json({campaign, message: "Campaign updated."});
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid campaign data."},
-        {status: 400}
-      );
-    }
-
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to update campaign."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.campaign.update",
+      fallbackMessage: "The email campaign could not be updated."
+    });
   }
 }
 
@@ -110,10 +104,9 @@ export async function DELETE(
 
     return NextResponse.json({message: "Campaign deleted."});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to delete campaign."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.campaign.delete",
+      fallbackMessage: "The email campaign could not be deleted."
+    });
   }
 }
-

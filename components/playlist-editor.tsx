@@ -24,6 +24,7 @@ import {ReleasePicker} from "@/components/release-picker";
 import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
 import type {PlaylistAnalyticsSummary, PlaylistRecord, PlaylistReleaseRecord, ReleaseSummary} from "@/lib/types";
 import {PlaylistAnalyticsPanel} from "@/components/playlist-analytics-panel";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 
 export function PlaylistEditor({
   playlist: initialPlaylist,
@@ -91,7 +92,7 @@ export function PlaylistEditor({
 
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/playlists/${initialPlaylist.id}`, {
+        await adminFetch(`/api/playlists/${initialPlaylist.id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -108,17 +109,12 @@ export function PlaylistEditor({
             applePlaylistUrl,
             youtubePlaylistUrl
           })
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to save details.");
-        }
+        }, "Playlist details could not be saved.");
 
         setMessage("Playlist details saved successfully!");
         router.refresh();
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : "Failed to save details.");
+        setErrorMsg(getAdminErrorMessage(err, "Playlist details could not be saved."));
       }
     });
   };
@@ -254,7 +250,9 @@ export function PlaylistEditor({
     startTransition(async () => {
       try {
         // Sync memberships API
-        const response = await fetch(`/api/playlists/${initialPlaylist.id}/memberships`, {
+        const data = await adminFetch<{
+          memberships?: PlaylistReleaseRecord[];
+        }>(`/api/playlists/${initialPlaylist.id}/memberships`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -269,19 +267,14 @@ export function PlaylistEditor({
               isActive: m.isActive
             }))
           })
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to sync memberships.");
-        }
+        }, "Playlist memberships could not be saved.");
 
         if (data.memberships) {
           setMemberships(data.memberships);
         }
 
         // Save general details (including featuredReleaseId in case it was cleared)
-        const responseGen = await fetch(`/api/playlists/${initialPlaylist.id}`, {
+        await adminFetch(`/api/playlists/${initialPlaylist.id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -298,17 +291,12 @@ export function PlaylistEditor({
             applePlaylistUrl,
             youtubePlaylistUrl
           })
-        });
-
-        if (!responseGen.ok) {
-          const genErr = await responseGen.json();
-          throw new Error(genErr.message || "Failed to update featured release reference.");
-        }
+        }, "The featured release could not be updated.");
 
         setMessage("Memberships synced successfully!");
         router.refresh();
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : "Failed to sync memberships.");
+        setErrorMsg(getAdminErrorMessage(err, "Playlist memberships could not be saved."));
       }
     });
   };

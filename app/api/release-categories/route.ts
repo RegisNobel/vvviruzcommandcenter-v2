@@ -11,6 +11,7 @@ import {
   listReleaseCategories,
   replaceReleaseCategories
 } from "@/lib/repositories/release-categories";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const categorySchema = z.object({
   id: z.string().trim().optional(),
@@ -71,9 +72,9 @@ export async function PUT(request: Request) {
       message: "Music categories saved."
     });
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to save categories."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "release-categories.replace",
+      fallbackMessage: "Projects could not be saved."
+    });
   }
 }

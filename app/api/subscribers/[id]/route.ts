@@ -12,6 +12,7 @@ import {
   updateSubscriber
 } from "@/lib/repositories/audience";
 import type {SubscriberSource} from "@/lib/types";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const subscriberUpdateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -53,17 +54,10 @@ export async function PATCH(
 
     return NextResponse.json({subscriber, message: "Subscriber updated."});
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid subscriber data."},
-        {status: 400}
-      );
-    }
-
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to update subscriber."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.subscriber.update",
+      fallbackMessage: "The subscriber could not be updated."
+    });
   }
 }
 
@@ -84,9 +78,9 @@ export async function DELETE(
 
     return NextResponse.json({message: "Subscriber deleted."});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to delete subscriber."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.subscriber.delete",
+      fallbackMessage: "The subscriber could not be deleted."
+    });
   }
 }

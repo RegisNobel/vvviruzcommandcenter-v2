@@ -8,6 +8,7 @@ import {z} from "zod";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {createPlaylist, readPlaylists} from "@/lib/repositories/playlists";
 import {validatePrimaryPlatform} from "@/lib/validation";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const createPlaylistSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -37,8 +38,10 @@ export async function GET(request: Request) {
     const playlists = await readPlaylists({ archiveStatus: "active" });
     return NextResponse.json({playlists});
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to load playlists.";
-    return NextResponse.json({message: msg}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "playlist.list",
+      fallbackMessage: "Playlists could not be loaded. Refresh the page and try again."
+    });
   }
 }
 
@@ -77,7 +80,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({playlist});
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to create playlist.";
-    return NextResponse.json({message: msg}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "playlist.create",
+      fallbackMessage: "The playlist could not be created."
+    });
   }
 }

@@ -11,6 +11,7 @@ import {normalizeExclusiveDeliverySettings} from "@/lib/exclusive-offer-safety";
 import {PUBLIC_PROJECT_SLUGS} from "@/lib/public-projects";
 import {PUBLIC_CACHE_TAGS} from "@/lib/public-cache-tags";
 import {readSiteSettings, writeSiteSettings} from "@/lib/repositories/site-settings";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 import {createId} from "@/lib/utils";
 
 const looseLinkItemSchema = z.object({
@@ -459,9 +460,9 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({siteSettings});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to update site settings."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "site-settings.update",
+      fallbackMessage: "Public Site settings could not be saved."
+    });
   }
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import {Layers3, Plus, Save, Trash2, UploadCloud} from "lucide-react";
 import {useMemo, useState} from "react";
 
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {
   ReleaseCategoryRecord,
   ReleaseCoverUploadResponse,
@@ -52,17 +53,11 @@ function createDraftCategory(index: number): ReleaseCategoryRecord {
 }
 
 async function readJson<T>(input: RequestInfo | URL, init?: RequestInit) {
-  const response = await fetch(input, init);
-  const payload = (await response.json().catch(() => null)) as
-    | (T & {message?: string})
-    | {message?: string}
-    | null;
-
-  if (!response.ok) {
-    throw new Error(payload?.message ?? "Request failed.");
-  }
-
-  return payload as T & {message?: string};
+  return adminFetch<T & {message?: string}>(
+    input,
+    init,
+    "Project settings request failed."
+  );
 }
 
 export function ReleaseCategorySettingsPanel({
@@ -134,22 +129,21 @@ export function ReleaseCategorySettingsPanel({
       const formData = new FormData();
       formData.set("file", file);
       formData.set("previousPath", category.artwork_path);
-      const response = await fetch("/api/releases/cover-upload", {
+      const payload = await adminFetch<
+        ReleaseCoverUploadResponse & {message?: string}
+      >("/api/releases/cover-upload", {
         method: "POST",
         body: formData
-      });
-      const payload = (await response.json().catch(() => null)) as
-        | (ReleaseCoverUploadResponse & {message?: string})
-        | null;
+      }, "Project artwork could not be uploaded.");
 
-      if (!response.ok || !payload?.asset?.url) {
-        throw new Error(payload?.message || "Unable to upload project artwork.");
+      if (!payload.asset?.url) {
+        throw new Error(payload.message || "Project artwork could not be uploaded.");
       }
 
       updateCategory(category.id, {artwork_path: payload.asset.url});
       setMessage("Project artwork uploaded. Save Projects to keep the change.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to upload project artwork.");
+      setMessage(getAdminErrorMessage(error, "Project artwork could not be uploaded."));
     } finally {
       setUploadingArtworkId(null);
     }

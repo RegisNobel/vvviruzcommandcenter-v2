@@ -47,6 +47,7 @@ import {
   Unlock
 } from "lucide-react";
 
+import {getAdminErrorMessage, readAdminApiResponse} from "@/lib/admin-errors";
 import {AUTOSAVE_INTERVAL_MS} from "@/lib/constants";
 import {normalizeLyrics} from "@/lib/lyrics";
 import {parseCollaborators, formatCollaboratorsList} from "@/lib/public-utils";
@@ -558,10 +559,10 @@ export function ReleaseDetailEditor({
         })
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to save playlist memberships.");
-      }
+      const data = await readAdminApiResponse<{
+        memberships?: typeof playlistMemberships;
+        message?: string;
+      }>(response, "Playlist memberships could not be saved.");
 
       if (data.memberships) {
         setPlaylistMemberships(data.memberships);
@@ -570,7 +571,9 @@ export function ReleaseDetailEditor({
       setPlaylistMessage("Playlist memberships updated successfully!");
       router.refresh();
     } catch (err) {
-      setPlaylistError(err instanceof Error ? err.message : "Failed to save playlist memberships.");
+      setPlaylistError(
+        getAdminErrorMessage(err, "Failed to save playlist memberships.")
+      );
     } finally {
       setIsSavingPlaylists(false);
     }
@@ -817,9 +820,12 @@ export function ReleaseDetailEditor({
         },
         body: snapshot
       });
-      const payload = (await response.json()) as ReleaseSaveResponse;
+      const payload = await readAdminApiResponse<ReleaseSaveResponse>(
+        response,
+        "Release changes could not be saved."
+      );
 
-      if (!response.ok || !payload.release) {
+      if (!payload.release) {
         throw new Error(payload.message ?? "Save failed.");
       }
 
@@ -848,7 +854,7 @@ export function ReleaseDetailEditor({
       lastSavedSnapshotRef.current = previousSnapshot;
       setSaveState("error");
       setHasPendingChanges(true);
-      setMessage(error instanceof Error ? error.message : "Save failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Save failed unexpectedly."));
     }
   }, []);
 
@@ -939,18 +945,15 @@ export function ReleaseDetailEditor({
           release_id: null
         })
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Unlink failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "The Copy Lab entry could not be unlinked."
+      );
 
       setLinkedCopies((currentCopies) => currentCopies.filter((copy) => copy.id !== copyId));
       setMessage("Copy unlinked from this release.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unlink failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Unlink failed unexpectedly."));
     }
   }
 
@@ -969,12 +972,12 @@ export function ReleaseDetailEditor({
         method: "POST",
         body: formData
       });
-      const payload = (await response.json().catch(() => ({}))) as {
+      const payload = await readAdminApiResponse<{
         asset?: ReleaseCoverUploadResponse["asset"];
         message?: string;
-      };
+      }>(response, "Cover art upload failed.");
 
-      if (!response.ok || !payload.asset) {
+      if (!payload.asset) {
         throw new Error(payload.message ?? "Cover art upload failed.");
       }
 
@@ -988,9 +991,7 @@ export function ReleaseDetailEditor({
       setMessage("Cover art uploaded.");
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Cover art upload failed unexpectedly."
+        getAdminErrorMessage(error, "Cover art upload failed unexpectedly.")
       );
     } finally {
       setIsUploadingCover(false);
@@ -1039,19 +1040,16 @@ export function ReleaseDetailEditor({
       const response = await fetch(`/api/releases/${release.id}`, {
         method: "DELETE"
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Delete failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "The release could not be deleted."
+      );
 
       router.push("/admin/releases");
       router.refresh();
     } catch (error) {
       setIsDeleting(false);
-      setMessage(error instanceof Error ? error.message : "Delete failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Delete failed unexpectedly."));
     }
   }
 
@@ -1167,18 +1165,15 @@ export function ReleaseDetailEditor({
           release_id: release.id
         })
       });
-      const payload = (await response.json().catch(() => null)) as
-        | {message?: string}
-        | null;
-
-      if (!response.ok) {
-        throw new Error(payload?.message ?? "Learning save failed.");
-      }
+      await readAdminApiResponse<{message?: string}>(
+        response,
+        "Campaign learning could not be saved."
+      );
 
       setMessage("Campaign learning saved.");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Learning save failed.");
+      setMessage(getAdminErrorMessage(error, "Learning save failed."));
     } finally {
       setIsSavingLearning(false);
     }

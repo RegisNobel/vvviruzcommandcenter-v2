@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import {NextResponse} from "next/server";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {listCommissionRequests} from "@/lib/repositories/commissions";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedApiRequest(request);
@@ -16,10 +17,9 @@ export async function GET(request: Request) {
     const requests = await listCommissionRequests();
     return NextResponse.json({requests});
   } catch (error) {
-    console.error("Failed to list commission requests:", error);
-    return NextResponse.json(
-      {message: "Failed to load commission requests."},
-      {status: 500}
-    );
+    return adminErrorResponse(error, {
+      context: "commission.list",
+      fallbackMessage: "Commission requests could not be loaded."
+    });
   }
 }

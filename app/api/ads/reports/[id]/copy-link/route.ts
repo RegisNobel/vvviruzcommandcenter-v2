@@ -6,6 +6,7 @@ import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {setAdCreativeCopyLink} from "@/lib/repositories/ads";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const copyLinkSchema = z.object({
   copy_entry_id: z.string().trim().min(1).nullable()
@@ -36,9 +37,9 @@ export async function PUT(
 
     return NextResponse.json({success: true});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Copy link update failed."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "ad-lab.copy-link.update",
+      fallbackMessage: "The Copy Lab link could not be updated."
+    });
   }
 }

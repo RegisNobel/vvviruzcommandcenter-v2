@@ -7,6 +7,7 @@ import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {sendCampaignTest} from "@/lib/email/delivery";
 import {getAdminTestEmail} from "@/lib/email/campaigns";
 import {readCampaign} from "@/lib/repositories/audience";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 export async function POST(
   request: Request,
@@ -30,10 +31,9 @@ export async function POST(
 
     return NextResponse.json({message: "Test email sent."});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to send test email."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.campaign.test-send",
+      fallbackMessage: "The test email could not be sent. Check the email settings and try again."
+    });
   }
 }
-

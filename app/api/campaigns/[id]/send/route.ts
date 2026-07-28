@@ -12,8 +12,9 @@ import {
   readCampaign,
   updateCampaignStatus
 } from "@/lib/repositories/audience";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
-export async function POST(
+async function sendCampaign(
   request: Request,
   {params}: {params: Promise<{id: string}>}
 ) {
@@ -124,4 +125,18 @@ export async function POST(
         ? "Campaign finished with some delivery failures."
         : "Campaign sent successfully."
   });
+}
+
+export async function POST(
+  request: Request,
+  context: {params: Promise<{id: string}>}
+) {
+  try {
+    return await sendCampaign(request, context);
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "audience.campaign.send",
+      fallbackMessage: "The campaign send could not be completed. Review the delivery log before trying again."
+    });
+  }
 }

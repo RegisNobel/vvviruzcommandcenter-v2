@@ -8,6 +8,7 @@ import {z} from "zod";
 import {prisma} from "@/lib/db/prisma";
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {syncReleasePlaylistMemberships} from "@/lib/repositories/playlists";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const syncReleasePlaylistsSchema = z.object({
   memberships: z.array(
@@ -106,7 +107,9 @@ export async function PUT(
 
     return NextResponse.json({ok: true, memberships: records});
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to sync release memberships.";
-    return NextResponse.json({message: msg}, {status: 500});
+    return adminErrorResponse(error, {
+      context: "release.playlist-memberships.sync",
+      fallbackMessage: "The release playlist assignments could not be saved."
+    });
   }
 }

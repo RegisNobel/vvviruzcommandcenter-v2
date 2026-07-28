@@ -10,6 +10,7 @@ import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {IMAGE_EXTENSIONS} from "@/lib/constants";
 import {storeAsset, deleteAsset} from "@/lib/server/asset-storage";
 import {ensureStorageDirs} from "@/lib/server/storage";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 import type {ReleaseCoverUploadResponse} from "@/lib/types";
 
 const mimeToExtension: Record<string, string> = {
@@ -19,7 +20,7 @@ const mimeToExtension: Record<string, string> = {
   "image/webp": ".webp"
 };
 
-export async function POST(request: Request) {
+async function uploadCover(request: Request) {
   const auth = await requireAuthenticatedApiRequest(request);
 
   if (auth instanceof Response) {
@@ -105,4 +106,15 @@ export async function POST(request: Request) {
   };
 
   return NextResponse.json(payload);
+}
+
+export async function POST(request: Request) {
+  try {
+    return await uploadCover(request);
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "release.cover-upload",
+      fallbackMessage: "The cover art could not be uploaded. The existing artwork was not changed."
+    });
+  }
 }

@@ -1,5 +1,9 @@
 # vvviruz' command center
 
+> **2026-07-28 - Appears On lifecycle and readiness:** Appears On remains Spotify/Odesli-first while adding server-side publish readiness validation, optional manual release dates, chronological context, archive/restore controls, and snapshot backup coverage. Archived appearances restore as Drafts and stay out of the public music library; permanent deletion remains available only for mistakes.
+
+> **2026-07-28 - Vault item lifecycle controls:** Fan Content now supports in-place Vault item editing, non-destructive archiving, Draft restoration, safe republishing, and display-order management while preserving first-publish history. Archived bundles remain in the database and backups but leave the public Vault; permanent deletion is reserved for mistakes and requires confirmation. Appears On admin actions now also enforce authenticated admin sessions server-side.
+
 > **2026-07-27 - Public discovery readiness:** Standardized the canonical public origin on `https://vvviruz.com`, redirected the stable Vercel alias, removed campaign/link-hub duplicates from the sitemap, and marked campaign-focused copies as `noindex, follow` with release canonicals. Added site-wide Person/WebSite identity schema, expanded `llms.txt` with the published catalog, added optional IndexNow submission, made Breaking Barz summaries crawlable in initial HTML, and introduced optional release languages, genres, moods, inspiration, themes, and listener-context fields that feed both public track profiles and `MusicRecording` JSON-LD. Discovery metadata now rejects HTML on save and safely cleans malformed legacy values at render time.
 
 > **2026-07-25 - Persistent Public Site section rail:** Public Site Management now keeps its complete section navigation in a fixed, viewport-bounded rail across every settings panel, including Link Hubs, Playlists, Project Content, and Appears On. Mobile and narrower laptop layouts retain a sticky wrapped navigation above the editor, preserving every anchor while making long editing sessions faster.
@@ -2204,3 +2208,9 @@ After applying RLS changes:
 - Consolidated public release storytelling around the Track Profile Summary and structured context fields while retaining legacy long descriptions as read-only fallbacks.
 - Added Metaphor / Wordplay to Breaking Barz annotations and expanded catalog search to include public track context.
 - Isolated Vault waitlist capture from exclusive-preview delivery settings and removed the obsolete Vault notification URL control.
+
+### 2026-07-28 - Admin error handling foundation
+
+- Added one backward-compatible admin error contract for API routes and Server Actions, including safe operator messages, stable error codes, optional field errors, retry guidance, and request IDs for matching a visible failure to server logs.
+- Replaced unsafe direct JSON parsing across admin create, save, upload, delete, import, Audience, Ad Lab, Playlist, Project, Breaking Barz, Link Hub, Appears On, and Fan Content workflows so empty or non-JSON deployment responses no longer surface browser parsing errors.
+- Added shared admin loading and recovery boundaries, reusable error presentation, guarded asset-upload responses, and regression coverage for structured, legacy, empty, and unreadable responses.

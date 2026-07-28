@@ -5,6 +5,7 @@ import {NextResponse} from "next/server";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {deleteAdImportBatch, renameAdImportBatch} from "@/lib/repositories/ads";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 export async function PATCH(
   request: Request,
@@ -49,15 +50,10 @@ export async function PATCH(
 
     return NextResponse.json({ok: true, message: "Batch renamed successfully."});
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Ad import batch renaming failed unexpectedly."
-      },
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "ad-lab.batch.rename",
+      fallbackMessage: "The import batch could not be renamed."
+    });
   }
 }
 
@@ -88,14 +84,9 @@ export async function DELETE(
 
     return NextResponse.json({ok: true});
   } catch (error) {
-    return NextResponse.json(
-      {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Ad import batch deletion failed unexpectedly."
-      },
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "ad-lab.batch.delete",
+      fallbackMessage: "The import batch could not be deleted. No campaign data was removed."
+    });
   }
 }

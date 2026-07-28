@@ -6,6 +6,7 @@ import Link from "next/link";
 import {ArrowLeft, UploadCloud} from "lucide-react";
 
 import {ReleasePicker} from "@/components/release-picker";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import {adBatchTypeOptions, defaultAdAttributionSetting} from "@/lib/ads/batch-metadata";
 import type {ReleaseSummary} from "@/lib/types";
 
@@ -47,23 +48,22 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
     files.forEach((file) => formData.append("files", file));
 
     try {
-      const response = await fetch("/api/ads/import", {
-        method: "POST",
-        body: formData
-      });
-      const payload = (await response.json()) as {
+      const payload = await adminFetch<{
         batchId?: string;
         message?: string;
-      };
+      }>("/api/ads/import", {
+        method: "POST",
+        body: formData
+      }, "Meta CSV import failed.");
 
-      if (!response.ok || !payload.batchId) {
+      if (!payload.batchId) {
         throw new Error(payload.message ?? "Import failed.");
       }
 
       router.push(`/admin/ad-lab/${payload.batchId}`);
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Import failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Import failed unexpectedly."));
       setIsSubmitting(false);
     }
   }

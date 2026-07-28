@@ -11,6 +11,7 @@ import {
   listReleaseAnnotations,
   saveReleaseAnnotation
 } from "@/lib/repositories/fan-content";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const annotationSchema = z.object({
   id: z.string().optional(),
@@ -37,10 +38,11 @@ export async function GET(
     const {id} = await params;
     return NextResponse.json({annotations: await listReleaseAnnotations(id)});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Annotations could not be loaded."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "release.annotations.list",
+      fallbackMessage: "Breaking Barz annotations could not be loaded.",
+      exposeMessage: true
+    });
   }
 }
 
@@ -63,9 +65,10 @@ export async function POST(
     revalidateTag(PUBLIC_CACHE_TAGS.releases);
     return NextResponse.json({annotations: await listReleaseAnnotations(id)});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Annotation could not be saved."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "release.annotations.save",
+      fallbackMessage: "The annotation could not be saved.",
+      exposeMessage: true
+    });
   }
 }

@@ -4,6 +4,7 @@ import {Sparkles} from "lucide-react";
 import {useState} from "react";
 
 import {ReleasePicker} from "@/components/release-picker";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {SiteSettingsRecord, ReleaseSummary} from "@/lib/types";
 
 type ExclusiveOfferSettings = SiteSettingsRecord["site_content"]["exclusive"];
@@ -89,16 +90,15 @@ export function ExclusiveOfferSettingsPanel({
         formData.append("previousPath", exclusiveOffer.exclusive_track_art_path);
       }
 
-      const response = await fetch("/api/exclusive/art-upload", {
+      const payload = await adminFetch<{
+        asset?: {url: string};
+        message?: string;
+      }>("/api/exclusive/art-upload", {
         method: "POST",
         body: formData
-      });
-      const payload = (await response.json().catch(() => ({}))) as {
-        asset?: { url: string };
-        message?: string;
-      };
+      }, "Artwork upload failed.");
 
-      if (!response.ok || !payload.asset) {
+      if (!payload.asset) {
         throw new Error(payload.message ?? "Artwork upload failed.");
       }
 
@@ -107,7 +107,7 @@ export function ExclusiveOfferSettingsPanel({
       });
       setMessage("Artwork image uploaded.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Upload failed unexpectedly.");
+      setMessage(getAdminErrorMessage(error, "Upload failed unexpectedly."));
     } finally {
       setIsUploadingArt(false);
     }

@@ -70,6 +70,7 @@ export async function createDatabaseSnapshotArtifact() {
     releaseAnnotationSources: await prisma.releaseAnnotationSource.findMany(),
     fanUpdates: await prisma.fanUpdate.findMany(),
     vaultItems: await prisma.vaultItem.findMany(),
+    appearsOn: await prisma.appearsOn.findMany(),
     copyEntries: await prisma.copyEntry.findMany(),
     siteSettings: await prisma.siteSettings.findMany(),
     subscribers: await prisma.subscriber.findMany(),

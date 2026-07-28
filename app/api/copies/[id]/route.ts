@@ -15,6 +15,7 @@ import {
 } from "@/lib/copy";
 import {deleteCopy, readCopy, saveCopy} from "@/lib/server/copies";
 import type {CopyRecord} from "@/lib/types";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const patchCopySchema = z.object({
   release_id: z.string().trim().min(1).nullable()
@@ -94,8 +95,11 @@ export async function PUT(
       copy: normalized,
       summary: summarizeCopy(normalized)
     });
-  } catch {
-    return NextResponse.json({message: "Copy update failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "copy.update",
+      fallbackMessage: "The Copy Lab entry could not be saved."
+    });
   }
 }
 
@@ -134,8 +138,11 @@ export async function PATCH(
       copy: normalized,
       summary: summarizeCopy(normalized)
     });
-  } catch {
-    return NextResponse.json({message: "Copy update failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "copy.patch",
+      fallbackMessage: "The Copy Lab link could not be updated."
+    });
   }
 }
 
@@ -155,7 +162,10 @@ export async function DELETE(
     await deleteCopy(id);
 
     return NextResponse.json({success: true});
-  } catch {
-    return NextResponse.json({message: "Copy delete failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "copy.delete",
+      fallbackMessage: "The Copy Lab entry could not be deleted."
+    });
   }
 }

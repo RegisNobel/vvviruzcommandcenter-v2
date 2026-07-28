@@ -6,6 +6,23 @@ import {getAdminAccessState} from "@/lib/auth/server";
 import {runAllBackups} from "@/lib/backups/runner";
 import {listDriveBackupSnapshots, restoreFromGoogleDrive} from "@/lib/backups/restorer";
 import {prisma} from "@/lib/db/prisma";
+import {normalizeAdminError} from "@/lib/server/admin-error-response";
+
+function backupActionFailure(
+  error: unknown,
+  options: {
+    context: string;
+    fallbackMessage: string;
+  }
+) {
+  const {payload} = normalizeAdminError(error, options);
+
+  return {
+    success: false as const,
+    message: payload.message,
+    requestId: payload.requestId
+  };
+}
 
 export async function triggerManualBackupAction() {
   const {stage} = await getAdminAccessState();
@@ -37,10 +54,11 @@ export async function triggerManualBackupAction() {
 
     return {success: true, message: "Backup completed successfully."};
   } catch (error) {
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Backup failed."
-    };
+    return backupActionFailure(error, {
+      context: "Manual backup",
+      fallbackMessage:
+        "The backup could not be completed. Your existing data was not changed."
+    });
   }
 }
 
@@ -56,8 +74,11 @@ export async function listAvailableBackupsAction() {
     return {success: true as const, backups};
   } catch (error) {
     return {
-      success: false as const,
-      message: error instanceof Error ? error.message : "Failed to list backups.",
+      ...backupActionFailure(error, {
+        context: "List Google Drive backups",
+        fallbackMessage:
+          "Backup history could not be loaded from Google Drive. Try again."
+      }),
       backups: []
     };
   }
@@ -95,10 +116,10 @@ export async function triggerRestoreAction(fileId: string) {
       counts: result.counts
     };
   } catch (error) {
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Restore failed."
-    };
+    return backupActionFailure(error, {
+      context: "Restore Google Drive backup",
+      fallbackMessage:
+        "The restore could not be completed. Review the backup logs before trying again."
+    });
   }
 }
-

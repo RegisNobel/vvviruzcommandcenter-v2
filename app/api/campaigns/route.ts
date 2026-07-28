@@ -13,6 +13,7 @@ import {
 } from "@/lib/repositories/audience";
 import type {AudienceFilter, EmailCampaignRecord} from "@/lib/types";
 import {createId} from "@/lib/utils";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const campaignSchema = z.object({
   subject: z.string().trim().min(1, "Subject is required."),
@@ -66,17 +67,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({campaign: savedCampaign, message: "Campaign saved."});
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {message: error.issues[0]?.message || "Invalid campaign data."},
-        {status: 400}
-      );
-    }
-
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Unable to save campaign."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "audience.campaign.create",
+      fallbackMessage: "The email campaign could not be saved."
+    });
   }
 }
-

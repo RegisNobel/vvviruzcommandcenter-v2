@@ -6,6 +6,7 @@ import {z} from "zod";
 
 import {requireAuthenticatedApiRequest} from "@/lib/auth/server";
 import {archiveAdCampaignLearning, saveAdCampaignLearning} from "@/lib/repositories/ads";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 
 const learningSchema = z.object({
   release_id: z.string().trim().min(1).nullable().default(null),
@@ -65,9 +66,10 @@ export async function PUT(
 
     return NextResponse.json({learning});
   } catch (error) {
-    return NextResponse.json(
-      {message: error instanceof Error ? error.message : "Learning save failed."},
-      {status: 400}
-    );
+    return adminErrorResponse(error, {
+      context: "ad-lab.learning.save",
+      fallbackMessage: "The campaign learning could not be saved.",
+      exposeMessage: true
+    });
   }
 }

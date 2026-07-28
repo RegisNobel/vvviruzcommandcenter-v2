@@ -13,6 +13,7 @@ import {normalizeLyrics} from "@/lib/lyrics";
 import {readCopy, readCopiesByReleaseId, saveCopy} from "@/lib/server/copies";
 import {deleteRelease, readRelease, saveRelease} from "@/lib/server/releases";
 import {submitIndexNowUrls} from "@/lib/server/indexnow";
+import {adminErrorResponse} from "@/lib/server/admin-error-response";
 import {
   getReleasePublishBlockers,
   hydrateRelease,
@@ -135,8 +136,11 @@ export async function PUT(
       summary: summarizeRelease(normalized),
       annotationRevalidation: saveResult.annotationRevalidation
     });
-  } catch {
-    return NextResponse.json({message: "Release update failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "release.update",
+      fallbackMessage: "The release could not be saved. Your previous changes are still intact."
+    });
   }
 }
 
@@ -176,8 +180,11 @@ export async function PATCH(
       release: normalized,
       summary: summarizeRelease(normalized)
     });
-  } catch {
-    return NextResponse.json({message: "Release update failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "release.patch",
+      fallbackMessage: "The release setting could not be updated."
+    });
   }
 }
 
@@ -214,7 +221,10 @@ export async function DELETE(
     revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
 
     return NextResponse.json({success: true});
-  } catch {
-    return NextResponse.json({message: "Release delete failed."}, {status: 500});
+  } catch (error) {
+    return adminErrorResponse(error, {
+      context: "release.delete",
+      fallbackMessage: "The release could not be deleted. No release data was removed."
+    });
   }
 }

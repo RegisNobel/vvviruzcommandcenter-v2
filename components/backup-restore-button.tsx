@@ -13,7 +13,11 @@ type DriveFile = {
 
 export function BackupRestoreButton() {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<{success: boolean; message: string} | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+    requestId?: string;
+  } | null>(null);
   const [backups, setBackups] = useState<DriveFile[]>([]);
   const [selectedBackup, setSelectedBackup] = useState<DriveFile | null>(null);
   const [showPanel, setShowPanel] = useState(false);
@@ -179,9 +183,14 @@ export function BackupRestoreButton() {
       )}
 
       {result && (
-        <p className={result.success ? "state-message-success" : "state-message-danger"}>
-          {result.message}
-        </p>
+        <div className={result.success ? "state-message-success" : "state-message-danger"}>
+          <p>{result.message}</p>
+          {!result.success && result.requestId ? (
+            <p className="mt-1 text-[10px] opacity-70">
+              Reference: {result.requestId}
+            </p>
+          ) : null}
+        </div>
       )}
     </div>
   );

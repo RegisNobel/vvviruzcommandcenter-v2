@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import {ArrowLeft, PlusCircle} from "lucide-react";
 import Link from "next/link";
 
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {ReleaseType} from "@/lib/types";
 import {parseCollaborators} from "@/lib/public-utils";
 
@@ -45,19 +46,18 @@ export function ReleaseCreateForm() {
     };
 
     try {
-      const response = await fetch("/api/releases", {
+      const payload = await adminFetch<{
+        release?: {id: string};
+        message?: string;
+      }>("/api/releases", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(sanitizedForm)
-      });
-      const payload = (await response.json()) as {
-        release?: {id: string};
-        message?: string;
-      };
+      }, "Release creation failed.");
 
-      if (!response.ok || !payload.release) {
+      if (!payload.release) {
         throw new Error(payload.message ?? "Release creation failed.");
       }
 
@@ -65,7 +65,7 @@ export function ReleaseCreateForm() {
       router.refresh();
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Release creation failed unexpectedly."
+        getAdminErrorMessage(error, "Release creation failed unexpectedly.")
       );
       setIsSubmitting(false);
     }

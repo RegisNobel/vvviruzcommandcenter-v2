@@ -3,6 +3,7 @@
 import {useState, useTransition} from "react";
 import Link from "next/link";
 import {Music, ExternalLink} from "lucide-react";
+import {adminFetch, getAdminErrorMessage} from "@/lib/admin-errors";
 import type {PlaylistRecord} from "@/lib/types";
 
 export function PlaylistsSettingsPanel({
@@ -25,7 +26,10 @@ export function PlaylistsSettingsPanel({
 
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/playlists/${id}`, {
+        const data = await adminFetch<{
+          playlist: PlaylistRecord;
+          message?: string;
+        }>(`/api/playlists/${id}`, {
           method: "PUT",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
@@ -33,14 +37,7 @@ export function PlaylistsSettingsPanel({
             ...playlists.find((p) => p.id === id),
             isPublic: newPublic
           })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.message || "Failed to update visibility.");
-        }
-
-        const data = await response.json();
+        }, "Playlist visibility could not be updated.");
         // Update with actual DB response
         setPlaylists((current) =>
           current.map((p) => (p.id === id ? data.playlist : p))
@@ -50,7 +47,7 @@ export function PlaylistsSettingsPanel({
         setPlaylists((current) =>
           current.map((p) => (p.id === id ? {...p, isPublic: currentPublic} : p))
         );
-        setErrorMsg(err instanceof Error ? err.message : "Failed to toggle visibility.");
+        setErrorMsg(getAdminErrorMessage(err, "Failed to toggle visibility."));
       }
     });
   };
