@@ -4,6 +4,7 @@ import {useState} from "react";
 import {CheckCircle2, Loader2, Mail} from "lucide-react";
 
 type UnlockExperience = "instant_unlock" | "email_only" | "signup_notify";
+type SignupContext = "exclusives" | "vault_waitlist";
 
 type ExclusiveSignupFormProps = {
   consentLabel: string;
@@ -14,6 +15,9 @@ type ExclusiveSignupFormProps = {
   successHeading: string;
   trackTitle?: string;
   unlockExperience?: UnlockExperience;
+  signupContext?: SignupContext;
+  requireConsent?: boolean;
+  showNameField?: boolean;
 };
 
 type SaveState = "idle" | "submitting" | "success" | "error";
@@ -38,7 +42,10 @@ export function ExclusiveSignupForm({
   nameLabel,
   successHeading,
   trackTitle,
-  unlockExperience: initialUnlockExperience = "instant_unlock"
+  unlockExperience: initialUnlockExperience = "instant_unlock",
+  signupContext = "exclusives",
+  requireConsent = false,
+  showNameField = true
 }: ExclusiveSignupFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -71,7 +78,8 @@ export function ExclusiveSignupForm({
           source_utm_content: new URLSearchParams(window.location.search).get("utm_content") || "",
           source_utm_term: new URLSearchParams(window.location.search).get("utm_term") || "",
           source_referrer: document.referrer || "",
-          source_landing_page: window.location.pathname || ""
+          source_landing_page: window.location.pathname || "",
+          signup_context: signupContext
         })
       });
       const payload = (await response.json()) as {
@@ -89,7 +97,12 @@ export function ExclusiveSignupForm({
         return;
       }
 
-      setMessage(payload.message ?? getSuccessFallbackMessage(initialUnlockExperience));
+      setMessage(
+        payload.message ??
+          (signupContext === "vault_waitlist"
+            ? "You're on the Vault list. I'll send an update when the next drop opens."
+            : getSuccessFallbackMessage(initialUnlockExperience))
+      );
       setSaveState("success");
     } catch (error) {
       setSaveState("error");
@@ -129,15 +142,17 @@ export function ExclusiveSignupForm({
         </label>
       </div>
 
-      <label className="block space-y-2">
-        <span className="field-label">{nameLabel}</span>
-        <input
-          className="field-input"
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Your name"
-          value={name}
-        />
-      </label>
+      {showNameField ? (
+        <label className="block space-y-2">
+          <span className="field-label">{nameLabel}</span>
+          <input
+            className="field-input"
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Your name"
+            value={name}
+          />
+        </label>
+      ) : null}
 
       <label className="block space-y-2">
         <span className="field-label">{emailLabel}</span>
@@ -162,13 +177,17 @@ export function ExclusiveSignupForm({
           checked={consentGiven}
           className="mt-1 h-4 w-4 rounded border-white/20 bg-[#12161b] text-[#c9a347] focus:ring-[#c9a347]"
           onChange={(event) => setConsentGiven(event.target.checked)}
+          required={requireConsent}
           type="checkbox"
         />
         <span>{consentLabel}</span>
       </label>
 
-        <button
-          className="public-action-primary w-full disabled:cursor-not-allowed disabled:opacity-70"
+      <button
+        className="public-action-primary w-full disabled:cursor-not-allowed disabled:opacity-70"
+        data-analytics-event={
+          signupContext === "vault_waitlist" ? "vault_cta_click" : undefined
+        }
         disabled={saveState === "submitting"}
         type="submit"
       >

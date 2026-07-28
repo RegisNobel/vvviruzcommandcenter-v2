@@ -36,11 +36,12 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
           <p className="field-label">Section 14</p>
           <h3 className="mt-3 flex items-center gap-2 text-2xl font-semibold text-ink">
             <Lock size={20} />
-            The Vault Page Settings
+            The Vault Page
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Control the public `/vault` teaser page. The Vault is a future paid digital bundle
-            distinct from the Early Access Preview list.
+            Control the public `/vault` Coming Soon experience. Keep it distinct from the free
+            Early Access Preview list; Gumroad checkout can be attached to a public Vault bundle
+            when the five-track drop is ready.
           </p>
         </div>
         <span className="pill">Saved with Site Settings</span>
@@ -60,7 +61,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
           >
             <span>
               {vaultSettings.is_enabled
-                ? "The Vault page is public and accessible."
+                ? "The Vault Coming Soon page is public and appears in navigation."
                 : "The Vault page is disabled (redirects to /exclusives)."}
             </span>
             <span className="pill">
@@ -70,7 +71,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
         </label>
 
         <label className="space-y-2">
-          <span className="field-label">Badge Text</span>
+          <span className="field-label">Drop Label</span>
           <input
             className="field-input"
             onChange={(event) => updateVault({badge_text: event.target.value})}
@@ -79,7 +80,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
         </label>
 
         <label className="space-y-2">
-          <span className="field-label">Title</span>
+          <span className="field-label">Drop Title</span>
           <input
             className="field-input"
             onChange={(event) => updateVault({title: event.target.value})}
@@ -106,7 +107,7 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
         </label>
 
         <label className="space-y-2">
-          <span className="field-label">CTA Label</span>
+          <span className="field-label">Notification CTA Label</span>
           <input
             className="field-input"
             onChange={(event) => updateVault({cta_label: event.target.value})}
@@ -114,18 +115,14 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
           />
         </label>
 
-        <label className="space-y-2">
-          <span className="field-label">CTA URL</span>
-          <input
-            className="field-input"
-            onChange={(event) => updateVault({cta_url: event.target.value})}
-            value={vaultSettings.cta_url}
-          />
-        </label>
       </div>
 
       <div className="mt-8">
-        <p className="field-label mb-4">Vault Benefits</p>
+        <p className="field-label mb-2">What Buyers Receive</p>
+        <p className="mb-4 text-sm leading-6 text-muted">
+          The public page shows the first three populated entries as a compact purchase checklist.
+          Keep every promise specific and deliverable.
+        </p>
         <div className="grid gap-4 lg:grid-cols-2">
           {vaultSettings.benefits.map((benefit, index) => (
             <div

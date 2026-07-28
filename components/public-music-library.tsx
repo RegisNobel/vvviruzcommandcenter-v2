@@ -27,6 +27,7 @@ function matchesSearch(release: PublicReleaseRecord, query: string) {
     release.title,
     release.type,
     release.public_description,
+    release.inspiration_context,
     release.public_long_description,
     release.collaborator_name,
     ...release.categories.map((category) => category.name),

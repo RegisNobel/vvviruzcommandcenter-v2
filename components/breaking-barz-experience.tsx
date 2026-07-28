@@ -20,6 +20,7 @@ function annotationTypeLabel(value: string) {
   const labels: Record<string, string> = {
     punchline: "Punchline",
     double_meaning: "Double Meaning",
+    metaphor_wordplay: "Metaphor / Wordplay",
     anime_reference: "Anime Reference",
     game_reference: "Game Reference",
     character_lore: "Character Lore",

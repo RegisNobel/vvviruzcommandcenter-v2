@@ -6,17 +6,25 @@ import {Sparkles, Mic, Music, Users} from "lucide-react";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Commissions & Features",
-  description: "Request custom hooks, verses, full custom songs, or collab features from vvviruz.",
-  alternates: {canonical: "/commissions"},
-  openGraph: {
-    type: "website",
-    title: "Commissions & Features | vvviruz",
-    description: "Request custom hooks, verses, full custom songs, or collab features from vvviruz.",
-    url: "/commissions"
-  }
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await readSiteSettings();
+  const isOpen = siteSettings.site_content.commissions.is_enabled;
+  const description = isOpen
+    ? "Request custom hooks, verses, full custom songs, or collab features from vvviruz."
+    : "Commission requests from vvviruz are currently closed. Check the page for availability updates.";
+
+  return {
+    title: "Commissions",
+    description,
+    alternates: {canonical: "/commissions"},
+    openGraph: {
+      type: "website",
+      title: "Commissions | vvviruz",
+      description,
+      url: "/commissions"
+    }
+  };
+}
 
 export default async function CommissionsPage() {
   const siteSettings = await readSiteSettings();
@@ -24,21 +32,24 @@ export default async function CommissionsPage() {
 
   if (!commissions.is_enabled) {
     return (
-      <main className="min-h-[70vh] flex flex-col items-center justify-center bg-[#050609] px-5 py-20">
+      <main className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden bg-[#050609] px-5 py-20">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.08),transparent_40%),linear-gradient(180deg,rgba(5,6,9,0.96),rgba(7,9,13,1))]" />
-        <div className="relative text-center">
+        <div className="relative max-w-xl text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/[0.03] border border-white/5 text-[#c9a347]/40 mb-8">
             <Mic size={32} />
           </div>
-          <h1 className="text-3xl font-semibold text-[#f7f1e6] sm:text-4xl">Commissions are Closed</h1>
+          <p className="public-eyebrow text-[#d7b663]">Commissions</p>
+          <h1 className="mt-4 text-3xl font-semibold text-[#f7f1e6] sm:text-4xl">
+            Requests are currently closed
+          </h1>
           <p className="mt-4 text-lg text-[#b6bec7] max-w-md mx-auto">
             {commissions.closed_message}
           </p>
           <Link 
-            href="/" 
-            className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#c9a347] px-8 py-3.5 text-sm font-semibold text-black transition hover:bg-[#d7b663]"
+            href="/music"
+            className="mt-10 inline-flex items-center gap-2 rounded-md bg-[#c9a347] px-8 py-3.5 text-sm font-semibold text-black transition hover:bg-[#d7b663]"
           >
-            Back to Home
+            Explore the catalog
           </Link>
         </div>
       </main>
@@ -49,19 +60,16 @@ export default async function CommissionsPage() {
     {
       icon: <Mic size={24} className="text-[#d7b663]" />,
       title: commissions.card_title,
-      price: commissions.card_price,
       description: commissions.card_description
     },
     {
       icon: <Music size={24} className="text-[#d7b663]" />,
       title: "Full Custom Song",
-      price: "Starting at $100",
       description: "A custom song built around your topic, character, story, brand, or concept. Final quote depends on length, deadline, and usage."
     },
     {
       icon: <Users size={24} className="text-[#d7b663]" />,
       title: "Collab / Feature Inquiry",
-      price: "Starting at $100 + splits",
       description: "For artists looking to collaborate, co-release, or get a vvviruz feature. Splits, credits, and release terms must be agreed before delivery."
     }
   ];
@@ -73,11 +81,14 @@ export default async function CommissionsPage() {
       <div className="relative mx-auto max-w-5xl py-8 sm:py-12">
         {/* Hero Section */}
         <div className="public-hero public-panel text-center">
-          <h1 className="public-eyebrow inline-flex items-center gap-2 rounded-full border border-[#c9a347]/20 bg-[#c9a347]/10 px-4 py-1.5 text-[#d7b663]">
+          <p className="public-eyebrow inline-flex items-center gap-2 text-[#d7b663]">
             <Sparkles size={14} />
             {commissions.page_eyebrow}
+          </p>
+          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.03em] text-[#f7f1e6] sm:text-5xl">
+            {commissions.page_title || "Request custom work from vvviruz."}
           </h1>
-          <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-[#b6bec7]">
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#b6bec7]">
             {commissions.page_subtitle}
           </p>
         </div>
@@ -90,9 +101,6 @@ export default async function CommissionsPage() {
                 {service.icon}
               </div>
               <h3 className="mt-6 text-xl font-semibold text-white">{service.title}</h3>
-              <div className="mt-2 inline-block self-start rounded-md bg-[#1a1710] px-2.5 py-1 text-sm font-semibold text-[#d7b45e] border border-[#5b4920]/40">
-                {service.price}
-              </div>
               <p className="mt-4 text-[15px] leading-relaxed text-[#a0aab5] flex-grow">
                 {service.description}
               </p>
@@ -102,8 +110,11 @@ export default async function CommissionsPage() {
 
         {/* Guardrail Note */}
         <div className="public-quiet-card mt-4 p-5">
-          <p className="text-sm leading-relaxed text-[#8a949f] text-center">
-            Prices are starter rates for standard requests. Every commission is reviewed before approval. Rush deadlines, complex concepts, commercial usage, extra revisions, or expanded delivery needs may require a custom quote.
+          <p className="text-center text-sm font-semibold uppercase tracking-[0.16em] text-[#d7b663]">
+            Custom quote
+          </p>
+          <p className="mx-auto mt-2 max-w-3xl text-center text-sm leading-relaxed text-[#8a949f]">
+            Pricing depends on the request type, scope, deadline, usage, revisions, and required deliverables. Submit your brief and you will receive a quote before work begins.
           </p>
         </div>
 

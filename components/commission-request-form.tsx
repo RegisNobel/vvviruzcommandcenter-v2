@@ -119,10 +119,10 @@ export function CommissionRequestForm() {
           <span className="field-label text-white/80">Budget Range</span>
           <select className="field-input bg-black/40 text-white" name="budgetRange" required defaultValue="">
             <option disabled value="">Select a range...</option>
-            <option value="$50">$50</option>
-            <option value="$100">$100</option>
+            <option value="Under $100">Under $100</option>
             <option value="$100 - $250">$100 - $250</option>
-            <option value="$250+">$250+</option>
+            <option value="$250 - $500">$250 - $500</option>
+            <option value="$500+">$500+</option>
             <option value="Not sure yet">Not sure yet</option>
           </select>
         </label>

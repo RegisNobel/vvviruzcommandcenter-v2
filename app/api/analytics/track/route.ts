@@ -17,6 +17,7 @@ const analyticsEventSchema = z.object({
     "links_link_click",
     "vault_page_view",
     "vault_cta_click",
+    "vault_waitlist_signup",
     "playlist_page_view",
     "playlist_track_click",
     "playlist_follow_click",
@@ -96,7 +97,14 @@ const analyticsEventSchema = z.object({
     (event.eventType === "links_page_view" || event.eventType === "links_link_click");
   const isVaultEvent =
     event.page === "vault" &&
-    ["vault_page_view", "vault_cta_click", "vault_item_view", "vault_preview_click", "vault_checkout_click"].includes(event.eventType);
+    [
+      "vault_page_view",
+      "vault_cta_click",
+      "vault_waitlist_signup",
+      "vault_item_view",
+      "vault_preview_click",
+      "vault_checkout_click"
+    ].includes(event.eventType);
   const isPlaylistEvent =
     event.page === "playlist" &&
     (event.eventType === "playlist_page_view" ||

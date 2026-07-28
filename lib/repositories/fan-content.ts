@@ -22,6 +22,7 @@ const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
 const ANNOTATION_TYPES = new Set([
   "punchline",
   "double_meaning",
+  "metaphor_wordplay",
   "anime_reference",
   "game_reference",
   "character_lore",

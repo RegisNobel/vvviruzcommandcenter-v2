@@ -343,7 +343,7 @@ model Subscriber {
   createdAt           DateTime
   updatedAt           DateTime
   unsubscribedAt      DateTime?
-  // Source attribution (V1 — first-source preserved on upsert)
+  // Source attribution (first source preserved unless explicit Vault re-consent updates context)
   sourceUtmSource     String         @default("")
   sourceUtmMedium     String         @default("")
   sourceUtmCampaign   String         @default("")

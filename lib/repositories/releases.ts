@@ -147,7 +147,7 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
     type: release.type as ReleaseRecord["type"],
     release_date: toDateInputValue(release.releaseDate),
     concept_details: release.conceptDetails,
-    public_description: release.publicDescription || release.conceptDetails,
+    public_description: release.publicDescription,
     public_long_description: release.publicLongDescription,
     languages: parseStoredReleaseContext(release.languages),
     genres: parseStoredReleaseContext(release.genres),

@@ -16,7 +16,7 @@ import type {SubscriberSource, SubscriberStatus} from "@/lib/types";
 const subscriberCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   email: emailField("Enter a valid email."),
-  source: z.enum(["exclusive", "manual"]).default("manual"),
+  source: z.enum(["exclusive", "vault", "manual"]).default("manual"),
   status: z.enum(["active", "unsubscribed"]).default("active"),
   consent_given: z.boolean().default(false)
 });

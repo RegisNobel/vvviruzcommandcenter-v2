@@ -1,17 +1,15 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import Image from "next/image";
 import {redirect} from "next/navigation";
 import type {Metadata} from "next";
-import {Box, Disc, FileAudio, Star} from "lucide-react";
+import {Check, LockKeyhole, Music2} from "lucide-react";
 
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {VaultPageAnalytics} from "@/components/vault-page-analytics";
 import {FanTrackedLink, VaultItemImpressions} from "@/components/public-fan-content-analytics";
 import {listPublicVaultItems} from "@/lib/repositories/fan-content";
-
-const BENEFIT_MARKERS = [Disc, FileAudio, Box, Star];
+import {ExclusiveSignupForm} from "@/components/exclusive-signup-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await readSiteSettings();
@@ -41,76 +39,281 @@ export default async function PublicVaultPage() {
     (b) => b.title.trim() || b.description.trim()
   );
   const items = await listPublicVaultItems();
+  const featuredBundle =
+    items.find((item) => item.item_type.toLowerCase() === "bundle") ?? null;
+  const additionalItems = featuredBundle
+    ? items.filter((item) => item.id !== featuredBundle.id)
+    : items;
+  const artworkUrl = featuredBundle?.cover_art_url || "";
+  const checkoutUrl = featuredBundle?.checkout_url || "";
+  const isAvailable = Boolean(checkoutUrl);
+  const offerTitle = featuredBundle?.title || vault.title;
+  const offerDescription = featuredBundle?.description || vault.body;
 
   return (
-    <main className="public-conversion-shell">
+    <main className="public-conversion-shell overflow-hidden pb-20">
       <VaultPageAnalytics />
       <VaultItemImpressions ids={items.map((item) => item.id)} />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(201,163,71,0.18),transparent_33%),linear-gradient(180deg,rgba(5,6,9,0.96),rgba(7,9,13,1))]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.024)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[length:52px_52px] opacity-30" />
-      <div className="pointer-events-none absolute left-1/2 top-24 h-64 w-64 -translate-x-1/2 rounded-full bg-[#c9a347]/10 blur-[90px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(201,163,71,0.2),transparent_28%),radial-gradient(circle_at_82%_28%,rgba(95,109,130,0.12),transparent_25%),linear-gradient(180deg,rgba(5,6,9,0.97),rgba(7,9,13,1))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.024)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[length:52px_52px] opacity-25" />
 
-      <div className="relative mx-auto max-w-[1160px]">
-        <section className="public-panel relative mx-auto max-w-[1120px] overflow-hidden px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
+      <div className="relative mx-auto max-w-[1180px]">
+        <section className="public-panel relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(201,163,71,0.72),transparent)]" />
-          
-          <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
-            {vault.badge_text}
-          </div>
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
+            <div className="relative mx-auto aspect-square w-full max-w-[430px] overflow-hidden rounded-xl border border-white/10 bg-[#090b0f]">
+              {artworkUrl ? (
+                <Image
+                  alt={`${offerTitle} artwork`}
+                  className="object-cover"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 90vw, 430px"
+                  src={artworkUrl}
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,rgba(201,163,71,0.17),transparent_46%),linear-gradient(145deg,#151921,#080a0e)] px-8 text-center">
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:28px_28px] opacity-40" />
+                  <LockKeyhole className="relative text-[#d7b663]" size={34} />
+                  <p className="relative mt-6 font-mono text-xs uppercase tracking-[0.34em] text-[#8f98a5]">
+                    Vault transmission
+                  </p>
+                  <p className="relative mt-3 text-5xl font-semibold tracking-[-0.06em] text-[#f7f1e6] sm:text-6xl">
+                    V//DROP
+                  </p>
+                  <p className="relative mt-4 text-xs uppercase tracking-[0.24em] text-[#d7b663]">
+                    Artwork incoming
+                  </p>
+                </div>
+              )}
+            </div>
 
-          <h1 className="mx-auto mt-8 max-w-3xl text-4xl font-bold tracking-tight text-[#f7f1e6] sm:text-6xl">
-            {vault.title}
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg font-medium leading-8 text-[#e8dcc3] sm:text-xl">
-            {vault.subtitle}
-          </p>
-          <p className="mx-auto mt-4 max-w-3xl text-base leading-8 text-[#a7b0ba] sm:text-lg">
-            {vault.body}
-          </p>
+            <div>
+              <div className="public-eyebrow inline-flex rounded-full border border-[#c9a347]/28 bg-[#c9a347]/10 px-4 py-1 text-[#d7b663]">
+                {vault.badge_text}
+              </div>
 
-          <div className="mt-10 flex justify-center">
-            <Link
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c9a347]/36 bg-[#c9a347] px-8 py-4 text-sm font-semibold text-[#13161a] transition hover:scale-[1.01] hover:bg-[#d8b761] sm:w-auto"
-              data-analytics-event="vault_cta_click"
-              href={vault.cta_url || "/exclusives"}
-            >
-              {vault.cta_label}
-            </Link>
+              <h1 className="mt-7 max-w-3xl text-4xl font-bold tracking-tight text-[#f7f1e6] sm:text-6xl">
+                {offerTitle}
+              </h1>
+              <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-[#e8dcc3] sm:text-xl">
+                {vault.subtitle}
+              </p>
+              <p className="mt-4 max-w-3xl text-base leading-8 text-[#a7b0ba]">
+                {offerDescription}
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 border-y border-white/10 py-4 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-[#a7b0ba]">
+                <span className="text-[#f7f1e6]">5 tracks</span>
+                <span>Digital only</span>
+                <span>Never on streaming</span>
+              </div>
+            </div>
           </div>
         </section>
 
-        {benefits.length > 0 ? (
-          <section className="relative mx-auto mt-12 max-w-[1120px]">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {benefits.map((benefit, index) => {
-                const Marker = BENEFIT_MARKERS[index % BENEFIT_MARKERS.length];
-
-                return (
-                  <article
-                    className="group public-quiet-card relative overflow-hidden p-6 transition duration-300 hover:-translate-y-1 hover:border-[#c9a347]/45 hover:shadow-[0_20px_60px_rgba(201,163,71,0.12)]"
-                    key={benefit.id || index}
-                  >
-                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[#c9a347]/0 blur-2xl transition group-hover:bg-[#c9a347]/12" />
-                    <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-[#d7b663] transition group-hover:border-[#c9a347]/35 group-hover:bg-[#c9a347]/10">
-                      <Marker size={20} />
-                    </div>
-                    <h3 className="relative text-lg font-semibold leading-7 text-[#f7f1e6]">
-                      {benefit.title}
-                    </h3>
-                    <p className="relative mt-3 text-sm leading-7 text-[#a7b0ba]">
-                      {benefit.description}
-                    </p>
-                  </article>
-                );
-              })}
+        <section className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0">
+            <div className="mb-5">
+              <p className="public-eyebrow">Inside the drop</p>
+              <h2 className="public-heading mt-3 text-3xl font-semibold">
+                Five tracks. Held outside the algorithm.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[#a7b0ba]">
+                Titles and previews will be revealed as the bundle takes shape. The complete
+                drop will be delivered as digital files and will not be released to DSPs.
+              </p>
             </div>
-          </section>
-        ) : null}
 
-        {items.length > 0 ? (
-          <section className="relative mx-auto mt-12 max-w-[1120px]">
-            <div className="mb-6"><p className="public-eyebrow">Available from the Vault</p><h2 className="public-heading mt-3 text-3xl font-semibold">Direct-to-fan drops</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-[#a7b0ba]">Preview here, then complete checkout with the configured external storefront.</p></div>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <article className="public-panel overflow-hidden p-5" key={item.id}>{item.cover_art_url ? <div className="relative aspect-square overflow-hidden rounded-lg"><Image alt={`${item.title} artwork`} className="object-cover" fill sizes="(max-width:768px) 100vw, 33vw" src={item.cover_art_url}/></div> : null}<p className="public-eyebrow mt-5">{item.item_type}</p><h3 className="public-heading mt-2 text-2xl font-semibold">{item.title}</h3><p className="mt-3 text-sm leading-7 text-[#a7b0ba]">{item.description}</p>{item.price_label ? <p className="mt-4 font-semibold text-[#e3c16e]">{item.price_label}</p> : null}<div className="mt-5 flex flex-wrap gap-3">{item.preview_url ? <FanTrackedLink className="public-action-secondary" eventKey={item.id} eventType="vault_preview_click" href={item.preview_url} page="vault" target="_blank">Preview</FanTrackedLink> : null}{item.checkout_url ? <FanTrackedLink className="public-action-primary" eventKey={item.id} eventType="vault_checkout_click" href={item.checkout_url} page="vault" target="_blank">Get it</FanTrackedLink> : null}</div></article>)}</div>
+            <div className="border-y border-white/10">
+              {Array.from({length: 5}, (_, index) => (
+                <div
+                  className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/10 px-1 py-5 last:border-b-0 sm:grid-cols-[3rem_minmax(0,1fr)_auto]"
+                  key={index}
+                >
+                  <span className="font-mono text-xs text-[#59616d]">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-[#e8dcc3]">
+                      Vault track {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <p className="mt-1 text-xs text-[#8f98a5]">Title held until reveal</p>
+                  </div>
+                  <LockKeyhole className="text-[#59616d]" size={16} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="public-panel overflow-hidden p-5 sm:p-6 lg:sticky lg:top-28">
+            <p className="public-eyebrow">{isAvailable ? "Available now" : "Coming soon"}</p>
+            <h2 className="mt-4 text-2xl font-semibold text-[#f7f1e6]">
+              Pay what you want
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#a7b0ba]">
+              Every buyer receives the same five-track digital bundle.
+            </p>
+
+            <div className="mt-6 rounded-lg border border-white/10 bg-black/20 p-4">
+              <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[#8f98a5]">
+                Minimum
+              </p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <p className="text-4xl font-semibold tracking-tight text-[#f7f1e6]">$9.99</p>
+                <span className="pb-1 font-mono text-xs uppercase text-[#59616d]">USD</span>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-[#8f98a5]">
+                Enter any amount of $9.99 or more at Gumroad checkout.
+              </p>
+            </div>
+
+            {benefits.length > 0 ? (
+              <div className="mt-6 space-y-4">
+                {benefits.slice(0, 3).map((benefit, index) => (
+                  <div className="flex gap-3" key={benefit.id || index}>
+                    <Check className="mt-0.5 shrink-0 text-[#31d98b]" size={16} />
+                    <div>
+                      <p className="text-sm font-semibold text-[#e8dcc3]">{benefit.title}</p>
+                      {benefit.description ? (
+                        <p className="mt-1 text-xs leading-5 text-[#8f98a5]">
+                          {benefit.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mt-7">
+              {isAvailable && featuredBundle ? (
+                <FanTrackedLink
+                  className="public-action-primary flex w-full justify-center"
+                  eventKey={featuredBundle.id}
+                  eventType="vault_checkout_click"
+                  href={checkoutUrl}
+                  page="vault"
+                  target="_blank"
+                >
+                  Unlock the Vault
+                </FanTrackedLink>
+              ) : (
+                <ExclusiveSignupForm
+                  consentLabel="Send me this Vault drop notice and future vvviruz updates. I can unsubscribe anytime."
+                  ctaLabel={vault.cta_label || "Get the Drop Notice"}
+                  emailLabel="Email"
+                  nameLabel="Name"
+                  requireConsent
+                  showNameField={false}
+                  signupContext="vault_waitlist"
+                  successHeading="Signal received"
+                  unlockExperience="signup_notify"
+                />
+              )}
+            </div>
+
+            <p className="mt-4 text-center text-xs leading-5 text-[#59616d]">
+              {isAvailable
+                ? "Secure checkout and digital delivery are handled by Gumroad."
+                : "No payment is being collected yet. This only adds you to the Vault update list."}
+            </p>
+
+            {isAvailable ? (
+              <div className="mt-7 border-t border-white/10 pt-6">
+                <details className="group">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-[#d7b663] marker:hidden">
+                    Get notified about future Vault drops
+                    <span
+                      aria-hidden="true"
+                      className="ml-2 inline-block transition group-open:rotate-45"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-[#a7b0ba]">
+                    Optional. Gumroad checkout stays separate and direct.
+                  </p>
+                  <div className="mt-4">
+                    <ExclusiveSignupForm
+                      consentLabel="Send me future vvviruz Vault drops and updates. I can unsubscribe anytime."
+                      ctaLabel="Notify Me About the Next Drop"
+                      emailLabel="Email"
+                      nameLabel="Name"
+                      requireConsent
+                      showNameField={false}
+                      signupContext="vault_waitlist"
+                      successHeading="Signal received"
+                      unlockExperience="signup_notify"
+                    />
+                  </div>
+                </details>
+              </div>
+            ) : null}
+          </aside>
+        </section>
+
+        {additionalItems.length > 0 ? (
+          <section className="relative mt-16">
+            <div className="mb-6">
+              <p className="public-eyebrow">More from the Vault</p>
+              <h2 className="public-heading mt-3 text-3xl font-semibold">
+                Other direct-to-fan drops
+              </h2>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {additionalItems.map((item) => (
+                <article className="public-panel overflow-hidden p-5" key={item.id}>
+                  {item.cover_art_url ? (
+                    <div className="relative aspect-square overflow-hidden rounded-lg">
+                      <Image
+                        alt={`${item.title} artwork`}
+                        className="object-cover"
+                        fill
+                        sizes="(max-width:768px) 100vw, 33vw"
+                        src={item.cover_art_url}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center rounded-lg border border-white/10 bg-black/20">
+                      <Music2 className="text-[#59616d]" size={30} />
+                    </div>
+                  )}
+                  <p className="public-eyebrow mt-5">{item.item_type}</p>
+                  <h3 className="public-heading mt-2 text-2xl font-semibold">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-[#a7b0ba]">{item.description}</p>
+                  {item.price_label ? (
+                    <p className="mt-4 font-semibold text-[#e3c16e]">{item.price_label}</p>
+                  ) : null}
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {item.preview_url ? (
+                      <FanTrackedLink
+                        className="public-action-secondary"
+                        eventKey={item.id}
+                        eventType="vault_preview_click"
+                        href={item.preview_url}
+                        page="vault"
+                        target="_blank"
+                      >
+                        Preview
+                      </FanTrackedLink>
+                    ) : null}
+                    {item.checkout_url ? (
+                      <FanTrackedLink
+                        className="public-action-primary"
+                        eventKey={item.id}
+                        eventType="vault_checkout_click"
+                        href={item.checkout_url}
+                        page="vault"
+                        target="_blank"
+                      >
+                        Get it
+                      </FanTrackedLink>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         ) : null}
       </div>

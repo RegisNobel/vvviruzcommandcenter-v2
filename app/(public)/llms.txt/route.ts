@@ -31,8 +31,12 @@ export async function GET() {
           const projectsText = release.categories.length
             ? `\n- Project(s): ${release.categories.map((category) => category.name).join(", ")}`
             : "";
+          const trackProfileSummary =
+            release.inspiration_context.trim() ||
+            release.public_long_description.trim() ||
+            release.public_description;
 
-          return `### ${release.title}\n\n- URL: ${baseUrl}/music/${encodeURIComponent(release.slug)}\n- Release date: ${release.release_date || "Not listed"}${collaborators}${projectsText}\n\n${release.public_description}`;
+          return `### ${release.title}\n\n- URL: ${baseUrl}/music/${encodeURIComponent(release.slug)}\n- Release date: ${release.release_date || "Not listed"}${collaborators}${projectsText}\n\n${trackProfileSummary}`;
         })
         .join("\n\n")
     : "No published releases are currently available.";

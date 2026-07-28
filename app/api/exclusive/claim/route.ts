@@ -47,7 +47,8 @@ const claimSchema = z.object({
   source_utm_content: z.string().optional().default(""),
   source_utm_term: z.string().optional().default(""),
   source_referrer: z.string().optional().default(""),
-  source_landing_page: z.string().optional().default("")
+  source_landing_page: z.string().optional().default(""),
+  signup_context: z.enum(["exclusives", "vault_waitlist"]).default("exclusives")
 });
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
@@ -119,10 +120,25 @@ function getBotTestFieldValue(payload: unknown) {
   return typeof value === "string" ? value.trim() : String(value ?? "").trim();
 }
 
-function createFakeClaimSuccess(): ExclusiveClaimResponse {
+function getSignupContext(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("signup_context" in payload)) {
+    return "exclusives";
+  }
+
+  return (payload as {signup_context?: unknown}).signup_context === "vault_waitlist"
+    ? "vault_waitlist"
+    : "exclusives";
+}
+
+function createFakeClaimSuccess(
+  signupContext: "exclusives" | "vault_waitlist"
+): ExclusiveClaimResponse {
   return {
     success: true,
-    message: CLAIM_SUCCESS_MESSAGES.signup_notify
+    message:
+      signupContext === "vault_waitlist"
+        ? "You're on the Vault list. I'll send an update when the next drop opens."
+        : CLAIM_SUCCESS_MESSAGES.signup_notify
   };
 }
 
@@ -131,7 +147,7 @@ export async function POST(request: Request) {
     const rawPayload = await request.json();
 
     if (getBotTestFieldValue(rawPayload)) {
-      return NextResponse.json(createFakeClaimSuccess());
+      return NextResponse.json(createFakeClaimSuccess(getSignupContext(rawPayload)));
     }
 
     const clientIp = getClientIpAddress(request);
@@ -148,8 +164,16 @@ export async function POST(request: Request) {
     }
 
     const payload = claimSchema.parse(rawPayload);
+    const isVaultWaitlist = payload.signup_context === "vault_waitlist";
+
+    if (isVaultWaitlist && !payload.consent_given) {
+      return NextResponse.json(
+        {message: "Confirm email updates to join the Vault list."},
+        {status: 400}
+      );
+    }
     const emailThrottleState = await consumeRateLimit({
-      bucket: "exclusive-claim-email",
+      bucket: isVaultWaitlist ? "vault-waitlist-email" : "exclusive-claim-email",
       key: payload.email,
       maxAttempts: 3,
       windowMs: TEN_MINUTES_MS,
@@ -160,10 +184,10 @@ export async function POST(request: Request) {
       return rateLimitResponse(emailThrottleState);
     }
 
-    const {offer} = await readPublicExclusiveOffer();
+    const {offer, siteSettings} = await readPublicExclusiveOffer();
 
     let privateExternalUrl = "";
-    if (offer.private_external_url?.trim()) {
+    if (!isVaultWaitlist && offer.private_external_url?.trim()) {
       try {
         privateExternalUrl = validateAndNormalizePrivateExternalUrl(offer.private_external_url);
       } catch (err) {
@@ -173,17 +197,21 @@ export async function POST(request: Request) {
     const publicSiteBaseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
 
     let emailSettingsValid = true;
-    try {
-      validateExclusiveEmailDeliverySettings(offer);
-    } catch (err) {
-      emailSettingsValid = false;
-      console.warn("Invalid exclusives email delivery settings on signup:", err);
+    if (!isVaultWaitlist) {
+      try {
+        validateExclusiveEmailDeliverySettings(offer);
+      } catch (err) {
+        emailSettingsValid = false;
+        console.warn("Invalid exclusives email delivery settings on signup:", err);
+      }
     }
 
     const {subscriber, isDuplicate} = await upsertExclusiveSubscriber({
       name: payload.name,
       email: payload.email,
       consentGiven: payload.consent_given,
+      source: isVaultWaitlist ? "vault" : "exclusive",
+      replaceAttribution: isVaultWaitlist,
       sourceAttribution: {
         sourceUtmSource: payload.source_utm_source,
         sourceUtmMedium: payload.source_utm_medium,
@@ -192,19 +220,24 @@ export async function POST(request: Request) {
         sourceUtmTerm: payload.source_utm_term,
         sourceReferrer: payload.source_referrer || request.headers.get("referer") || "",
         sourceLandingPage: payload.source_landing_page,
-        sourceOfferMode:
-          offer.unlock_experience === "signup_notify"
+        sourceOfferMode: isVaultWaitlist
+          ? "vault_waitlist"
+          : offer.unlock_experience === "signup_notify"
             ? "signup_notify_me"
             : offer.unlock_experience,
-        sourceOfferName: offer.exclusive_track_title || "Early Access Preview List",
-        sourceSignupContext:
-          offer.unlock_experience === "signup_notify"
+        sourceOfferName: isVaultWaitlist
+          ? siteSettings.site_content.vault.title || "Vault Drop 001"
+          : offer.exclusive_track_title || "Early Access Preview List",
+        sourceSignupContext: isVaultWaitlist
+          ? "vault_waitlist"
+          : offer.unlock_experience === "signup_notify"
             ? "early_access_preview_list"
             : "exclusives_page"
       }
     });
 
     const shouldSendEmail =
+      !isVaultWaitlist &&
       emailSettingsValid &&
       (offer.unlock_experience === "email_only" ||
        (offer.unlock_experience === "instant_unlock" && offer.also_email_link));
@@ -234,8 +267,8 @@ export async function POST(request: Request) {
 
     const cleanReferrer = sanitizeReferrer(payload.source_referrer || request.headers.get("referer") || "");
     await recordPublicAnalyticsEvent({
-      eventType: "exclusive_claim_success",
-      page: "preview",
+      eventType: isVaultWaitlist ? "vault_waitlist_signup" : "exclusive_claim_success",
+      page: isVaultWaitlist ? "vault" : "preview",
       referrer: cleanReferrer,
       utmSource: payload.source_utm_source,
       utmMedium: payload.source_utm_medium,
@@ -244,23 +277,30 @@ export async function POST(request: Request) {
       utmTerm: payload.source_utm_term
     });
 
+    const vaultMessage = isDuplicate
+      ? "You're already on the Vault list. I'll send an update when the next drop opens."
+      : "You're on the Vault list. I'll send an update when the next drop opens.";
     const nextResponse = NextResponse.json({
       success: true,
-      accessUrl: "/exclusives",
-      message: getClaimMessage(
-        offer.unlock_experience,
-        isDuplicate ? offer.duplicate_message : offer.success_message,
-        isDuplicate
-      )
+      ...(!isVaultWaitlist ? {accessUrl: "/exclusives"} : {}),
+      message: isVaultWaitlist
+        ? vaultMessage
+        : getClaimMessage(
+            offer.unlock_experience,
+            isDuplicate ? offer.duplicate_message : offer.success_message,
+            isDuplicate
+          )
     });
 
-    nextResponse.cookies.set("vcc_exclusive_access", subscriber.download_token, {
-      path: "/",
-      maxAge: 365 * 24 * 60 * 60, // 1 year
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production"
-    });
+    if (!isVaultWaitlist) {
+      nextResponse.cookies.set("vcc_exclusive_access", subscriber.download_token, {
+        path: "/",
+        maxAge: 365 * 24 * 60 * 60, // 1 year
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production"
+      });
+    }
 
     return nextResponse;
   } catch (error) {

@@ -121,6 +121,7 @@ export default async function PublicReleaseDetailPage({
   const themes = release.themes ?? [];
   const listenerContexts = release.listener_contexts ?? [];
   const inspirationContext = release.inspiration_context?.trim() || "";
+  const trackProfileSummary = inspirationContext || aboutText;
   const profileRows = [
     {label: "Language", values: languages},
     {
@@ -285,31 +286,25 @@ export default async function PublicReleaseDetailPage({
                 />
               </div>
 
-              {aboutText ? (
-                <div className="mt-8 max-w-2xl text-left">
-                  <h2 className="public-eyebrow">About this track</h2>
-                  <p className="mt-5 whitespace-pre-wrap text-[15px] leading-8 text-[#d7dde3] sm:text-base">
-                    {aboutText}
-                  </p>
-                </div>
-              ) : null}
-
-              {inspirationContext || profileRows.length > 0 ? (
+              {trackProfileSummary || profileRows.length > 0 ? (
                 <div className="mt-8 max-w-2xl border-t border-white/10 pt-6 text-left">
                   <h2 className="public-eyebrow">Track profile</h2>
-                  {inspirationContext ? (
-                    <p className="mt-4 text-sm leading-7 text-[#c8d0d9]">
-                      {inspirationContext}
+                  {trackProfileSummary ? (
+                    <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[#c8d0d9]">
+                      {trackProfileSummary}
                     </p>
                   ) : null}
                   {profileRows.length > 0 ? (
-                    <dl className="mt-5 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                    <dl className="mt-5 grid gap-x-10 gap-y-5 sm:grid-cols-2">
                       {profileRows.map((row) => (
-                        <div className="grid grid-cols-[82px_1fr] gap-3" key={row.label}>
+                        <div
+                          className={row.label === "Best for" ? "sm:col-span-2" : ""}
+                          key={row.label}
+                        >
                           <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d2af5a]">
                             {row.label}
                           </dt>
-                          <dd className="text-sm leading-6 text-[#d7dde3]">
+                          <dd className="mt-2 text-sm leading-6 text-[#d7dde3]">
                             {row.values.join(", ")}
                           </dd>
                         </div>

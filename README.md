@@ -2177,3 +2177,30 @@ After applying RLS changes:
 
 - Removed the unused Photo Lab preview route and its Promo and Release Detail entry points.
 - Kept external artwork generation as the working creative process while preserving the Command Center's existing cover upload, storage, readiness, and public delivery behavior.
+
+### 2026-07-27 - Vault Coming Soon experience
+
+- Reworked `/vault` into a focused five-track digital-drop experience while preserving the existing Public Site enable toggle, editable copy, Vault item records, analytics, and backups.
+- Replaced the generic benefit-card grid with a cinematic product hero, five-track locked readout, compact buyer checklist, and a single notification or purchase action.
+- Clarified the planned pricing as pay what you want with a `$9.99` minimum and prepared the existing external checkout field for Gumroad without adding unfinished payment or entitlement infrastructure.
+- Kept `/exclusives` as the free notification/early-access destination until a public Vault bundle with a Gumroad checkout URL is ready.
+
+### 2026-07-27 - Vault waitlist capture
+
+- Added inline Vault email capture through the existing validated, throttled, honeypot-protected subscriber pipeline.
+- Vault signups require explicit consent, preserve UTM/referrer context, appear as a dedicated `vault` source in Audience, and never expose exclusive-preview access.
+- Gumroad remains the primary action when checkout is available; the future-drop signup becomes a secondary, optional action.
+
+### 2026-07-27 - Commission availability and quote flow
+
+- Kept Commissions discoverable in public navigation while using the existing setting as an accepting-requests switch.
+- Added a deliberate closed-state experience and a matching server-side guard so disabled commissions cannot receive direct API submissions.
+- Replaced misleading fixed public prices with per-project quote guidance while preserving budget qualification, request records, and admin quote handling.
+- Wired the configurable commissions page title and added an admin availability readout clarifying what visitors can currently access.
+
+### 2026-07-28 - Public catalog and track-context cleanup
+
+- Added Public Catalog, Needs Attention, and Hidden/Draft release views so fan-accessible records and their immediate metadata gaps are easier to review.
+- Consolidated public release storytelling around the Track Profile Summary and structured context fields while retaining legacy long descriptions as read-only fallbacks.
+- Added Metaphor / Wordplay to Breaking Barz annotations and expanded catalog search to include public track context.
+- Isolated Vault waitlist capture from exclusive-preview delivery settings and removed the obsolete Vault notification URL control.

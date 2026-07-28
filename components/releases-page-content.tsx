@@ -10,6 +10,15 @@ import {useRouter} from "next/navigation";
 import {getReleaseProgressTone} from "@/lib/releases";
 import type {AdminOperatorQueueRecord, ReleaseSummary} from "@/lib/types";
 
+type ReleaseCatalogView = "all" | "public" | "attention" | "hidden";
+
+const releaseCatalogViewLabels: Record<ReleaseCatalogView, string> = {
+  all: "All",
+  public: "Public Catalog",
+  attention: "Needs Attention",
+  hidden: "Hidden / Draft"
+};
+
 function formatReleaseType(value: "nerdcore" | "mainstream") {
   return value === "mainstream" ? "Mainstream" : "Nerdcore";
 }
@@ -65,6 +74,44 @@ function getDiscoveryStatusClass(status: ReleaseSummary["discovery_status"]) {
   return "status-badge-danger";
 }
 
+function matchesCatalogView(release: ReleaseSummary, view: ReleaseCatalogView) {
+  if (view === "public") {
+    return release.is_published;
+  }
+
+  if (view === "attention") {
+    return release.is_published && release.public_attention_level !== "clear";
+  }
+
+  if (view === "hidden") {
+    return !release.is_published;
+  }
+
+  return true;
+}
+
+function sortAttentionFirst(left: ReleaseSummary, right: ReleaseSummary) {
+  const severity = {
+    critical: 2,
+    review: 1,
+    clear: 0
+  } as const;
+  const severityDifference =
+    severity[right.public_attention_level] - severity[left.public_attention_level];
+
+  if (severityDifference !== 0) {
+    return severityDifference;
+  }
+
+  if (left.public_attention_reasons.length !== right.public_attention_reasons.length) {
+    return (
+      right.public_attention_reasons.length - left.public_attention_reasons.length
+    );
+  }
+
+  return right.release_date.localeCompare(left.release_date);
+}
+
 export function ReleasesPageContent({
   operatorQueue,
   refreshOperationalHealthAction,
@@ -76,6 +123,7 @@ export function ReleasesPageContent({
 }) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
+  const [catalogView, setCatalogView] = useState<ReleaseCatalogView>("all");
   const [releaseItems, setReleaseItems] = useState(releases);
   const [busyReleaseId, setBusyReleaseId] = useState<string | null>(null);
   const deferredSearchValue = useDeferredValue(searchValue);
@@ -104,13 +152,38 @@ export function ReleasesPageContent({
   }, []);
 
   const normalizedSearchValue = deferredSearchValue.trim().toLowerCase();
-  const filteredReleases = useMemo(
-    () =>
-      releaseItems.filter((release) =>
-        matchesReleaseSearch(release, normalizedSearchValue)
-      ),
-    [normalizedSearchValue, releaseItems]
+  const catalogCounts = useMemo(
+    () => ({
+      all: releaseItems.length,
+      public: releaseItems.filter((release) => release.is_published).length,
+      attention: releaseItems.filter(
+        (release) =>
+          release.is_published && release.public_attention_level !== "clear"
+      ).length,
+      hidden: releaseItems.filter((release) => !release.is_published).length
+    }),
+    [releaseItems]
   );
+  const filteredReleases = useMemo(() => {
+    const matchingReleases = releaseItems.filter(
+      (release) =>
+        matchesCatalogView(release, catalogView) &&
+        matchesReleaseSearch(release, normalizedSearchValue)
+    );
+
+    return catalogView === "attention"
+      ? [...matchingReleases].sort(sortAttentionFirst)
+      : matchingReleases;
+  }, [catalogView, normalizedSearchValue, releaseItems]);
+  const resultDescription = normalizedSearchValue
+    ? "matching releases"
+    : catalogView === "public"
+      ? "public releases"
+      : catalogView === "attention"
+        ? "public releases needing attention"
+        : catalogView === "hidden"
+          ? "hidden or draft releases"
+          : "total releases";
 
   async function togglePinnedState(
     event: React.MouseEvent<HTMLButtonElement>,
@@ -210,9 +283,49 @@ export function ReleasesPageContent({
                 {filteredReleases.length}
               </p>
               <p className="mt-1 text-sm text-muted">
-                {normalizedSearchValue ? "matching releases" : "total releases"}
+                {resultDescription}
               </p>
             </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <p className="field-label">Catalog View</p>
+            <div
+              aria-label="Filter releases by public visibility and attention"
+              className="flex flex-wrap gap-2"
+              role="group"
+            >
+              {(Object.keys(releaseCatalogViewLabels) as ReleaseCatalogView[]).map(
+                (view) => (
+                  <button
+                    aria-pressed={catalogView === view}
+                    className={
+                      catalogView === view
+                        ? "action-button-primary"
+                        : "action-button-secondary"
+                    }
+                    key={view}
+                    onClick={() => setCatalogView(view)}
+                    type="button"
+                  >
+                    {releaseCatalogViewLabels[view]}
+                    <span
+                      className={
+                        catalogView === view
+                          ? "rounded-full bg-black/15 px-2 py-0.5 text-[11px]"
+                          : "rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] text-muted"
+                      }
+                    >
+                      {catalogCounts[view]}
+                    </span>
+                  </button>
+                )
+              )}
+            </div>
+            <p className="text-xs leading-5 text-muted">
+              Public Catalog matches the releases fans can access now. Needs Attention
+              ranks public-page blockers before discovery and identifier cleanup.
+            </p>
           </div>
         </section>
 
@@ -241,6 +354,22 @@ export function ReleasesPageContent({
           }
           rightSlot={
             <>
+              <select
+                aria-label="Catalog view"
+                className="field-input h-10 min-w-[176px] py-2 text-sm"
+                onChange={(event) =>
+                  setCatalogView(event.target.value as ReleaseCatalogView)
+                }
+                value={catalogView}
+              >
+                {(Object.keys(releaseCatalogViewLabels) as ReleaseCatalogView[]).map(
+                  (view) => (
+                    <option key={view} value={view}>
+                      {releaseCatalogViewLabels[view]} ({catalogCounts[view]})
+                    </option>
+                  )
+                )}
+              </select>
               <span className="pill hidden sm:inline-flex">{filteredReleases.length} results</span>
               <Link className="action-button-secondary" href="/admin/releases/roadmap">
                 <CalendarClock size={16} />
@@ -284,6 +413,23 @@ export function ReleasesPageContent({
                       <p className="truncate text-lg font-semibold text-ink">
                         {release.title}
                       </p>
+                      <span
+                        className={
+                          release.is_published
+                            ? "status-badge-ready"
+                            : "status-badge-info"
+                        }
+                      >
+                        {release.is_published ? "Public" : "Hidden"}
+                      </span>
+                      {release.is_published &&
+                      release.public_attention_level === "critical" ? (
+                        <span className="status-badge-danger">Needs fix</span>
+                      ) : null}
+                      {release.is_published &&
+                      release.public_attention_level === "review" ? (
+                        <span className="status-badge-warning">Review</span>
+                      ) : null}
                       {release.pinned ? <span className="status-badge-info">Pinned</span> : null}
                     </div>
                     <p className="mt-1 truncate text-sm text-muted">
@@ -332,6 +478,15 @@ export function ReleasesPageContent({
                     <p className="mt-1 text-xs text-muted">
                       {release.discovery_passed} passed / {release.discovery_warning} warning / {release.discovery_missing} missing
                     </p>
+                    {release.is_published &&
+                    release.public_attention_reasons.length > 0 ? (
+                      <p className="mt-2 text-xs leading-5 text-secondary">
+                        {release.public_attention_reasons.slice(0, 2).join(" · ")}
+                        {release.public_attention_reasons.length > 2
+                          ? ` · +${release.public_attention_reasons.length - 2} more`
+                          : ""}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center justify-start gap-3 lg:justify-end">
@@ -366,9 +521,17 @@ export function ReleasesPageContent({
 
           {releaseItems.length > 0 && filteredReleases.length === 0 ? (
             <div className="px-4 py-7 sm:px-6 sm:py-8">
-              <p className="text-lg font-semibold text-ink">No matching releases</p>
+              <p className="text-lg font-semibold text-ink">
+                {normalizedSearchValue
+                  ? "No matching releases"
+                  : `No ${releaseCatalogViewLabels[catalogView].toLowerCase()} releases`}
+              </p>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Try a different title, collaborator, slug, UPC, or ISRC.
+                {normalizedSearchValue
+                  ? "Try a different title, collaborator, slug, UPC, or ISRC."
+                  : catalogView === "attention"
+                    ? "Every public release currently clears the attention checks."
+                    : "Choose another catalog view to see the rest of the release library."}
               </p>
             </div>
           ) : null}

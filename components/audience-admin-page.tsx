@@ -154,7 +154,9 @@ function formatShortDate(value: string) {
 }
 
 function formatSourceLabel(source: SubscriberSource) {
-  return source === "exclusive" ? "Exclusive" : "Manual";
+  if (source === "exclusive") return "Exclusive";
+  if (source === "vault") return "Vault";
+  return "Manual";
 }
 
 function formatAudienceFilter(value: AudienceFilter) {
@@ -607,7 +609,7 @@ export function AudienceAdminPage({
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7">
         <div className="command-surface px-5 py-5">
           <p className="field-label">Total</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.total_subscribers}</p>
@@ -627,6 +629,11 @@ export function AudienceAdminPage({
           <p className="field-label">Exclusive</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{overview.exclusive_subscribers}</p>
           <p className="mt-2 text-sm text-muted">Captured through the public exclusive page.</p>
+        </div>
+        <div className="command-surface px-5 py-5">
+          <p className="field-label">Vault</p>
+          <p className="mt-3 text-3xl font-semibold text-ink">{overview.vault_subscribers}</p>
+          <p className="mt-2 text-sm text-muted">Joined the direct-to-fan Vault waitlist.</p>
         </div>
         <div className="command-surface px-5 py-5">
           <p className="field-label">Manual</p>
@@ -765,6 +772,7 @@ export function AudienceAdminPage({
                 >
                   <option value="manual">Manual</option>
                   <option value="exclusive">Exclusive</option>
+                  <option value="vault">Vault</option>
                 </select>
               </label>
 

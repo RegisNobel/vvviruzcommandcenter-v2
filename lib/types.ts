@@ -49,7 +49,7 @@ export type LinkHubItem = {
   url: string;
 };
 
-export type SubscriberSource = "exclusive" | "manual";
+export type SubscriberSource = "exclusive" | "vault" | "manual";
 
 export type SubscriberStatus = "active" | "unsubscribed";
 
@@ -323,6 +323,8 @@ export type ReleaseSummary = {
   slug: string;
   cover_art_path: string;
   is_published: boolean;
+  public_attention_level: "clear" | "review" | "critical";
+  public_attention_reasons: string[];
   pinned: boolean;
   type: ReleaseType;
   status: ReleaseStageLabel;
@@ -584,6 +586,7 @@ export type AudienceOverview = {
   unsubscribed_subscribers: number;
   consented_subscribers: number;
   exclusive_subscribers: number;
+  vault_subscribers: number;
   manual_subscribers: number;
 };
 

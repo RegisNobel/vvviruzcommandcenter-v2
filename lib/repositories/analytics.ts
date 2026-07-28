@@ -9,6 +9,7 @@ export type PublicAnalyticsEventInput = {
     | "links_link_click"
     | "vault_page_view"
     | "vault_cta_click"
+    | "vault_waitlist_signup"
     | "playlist_page_view"
     | "playlist_track_click"
     | "playlist_follow_click"

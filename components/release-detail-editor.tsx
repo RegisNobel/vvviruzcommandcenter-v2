@@ -256,8 +256,6 @@ function getReleaseCoverAltText(release: ReleaseRecord) {
 function getFallbackMetaDescription(release: ReleaseRecord) {
   return (
     release.public_description.trim() ||
-    release.public_long_description.trim() ||
-    release.concept_details.trim() ||
     "No public summary written yet."
   );
 }
@@ -1513,27 +1511,13 @@ export function ReleaseDetailEditor({
                   />
                 </label>
 
-                <label className="space-y-2 md:col-span-2">
-                  <span className={pageLabelClass}>Release Story / Extended Description</span>
-                  <textarea
-                    className={`${pageInputClass} min-h-[160px]`}
-                    onChange={(event) =>
-                      updateRelease((current) => ({
-                        ...current,
-                        public_long_description: event.target.value
-                      }))
-                    }
-                    placeholder="Longer public context for the release page and AI-search style answers."
-                    value={release.public_long_description}
-                  />
-                </label>
-
                 <div className="grid gap-4 rounded-xl border border-edge bg-surface-elevated p-4 md:col-span-2 xl:grid-cols-2">
                   <div className="xl:col-span-2">
                     <p className={pageLabelClass}>Track Context</p>
                     <p className="mt-2 text-sm leading-6 text-muted">
-                      Optional factual context used on the public release page and in
-                      structured search data. Separate multiple values with commas.
+                      Public context used on the release page, in structured search
+                      data, and for AI-readable catalog details. Separate multiple
+                      values with commas.
                     </p>
                   </div>
 
@@ -1581,7 +1565,7 @@ export function ReleaseDetailEditor({
                   ))}
 
                   <label className="space-y-2 xl:col-span-2">
-                    <span className={pageLabelClass}>Inspiration / Source Context</span>
+                    <span className={pageLabelClass}>Track Profile Summary</span>
                     <textarea
                       className={`${pageInputClass} min-h-[105px]`}
                       onChange={(event) =>
@@ -1590,7 +1574,7 @@ export function ReleaseDetailEditor({
                           inspiration_context: event.target.value
                         }))
                       }
-                      placeholder="Factual source material, character, record, or concept that shaped this release."
+                      placeholder="Explain what shaped the track, what it is about, and the context a listener or search system should understand."
                       value={release.inspiration_context}
                     />
                   </label>

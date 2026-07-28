@@ -68,6 +68,7 @@ export function buildPublicReleaseJsonLd({
     socialShareDescription
   } = getPublicReleaseDiscoveryMetadata(release);
   const description =
+    release.inspiration_context?.trim() ||
     release.public_long_description?.trim() ||
     socialShareDescription ||
     metaDescription ||

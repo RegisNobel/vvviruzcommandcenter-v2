@@ -72,6 +72,14 @@ export async function POST(request: Request) {
       return NextResponse.json({message: "Request received."});
     }
 
+    const siteSettings = await readSiteSettings();
+    if (!siteSettings.site_content.commissions.is_enabled) {
+      return NextResponse.json(
+        {message: "Commission requests are not currently open."},
+        {status: 409}
+      );
+    }
+
     const clientIp = getClientIpAddress(request);
     const ipThrottleState = await consumeRateLimit({
       bucket: "commission-request-ip",
@@ -125,7 +133,6 @@ export async function POST(request: Request) {
     });
 
     // Fire off admin notification email
-    const siteSettings = await readSiteSettings();
     const adminEmail = siteSettings.contact_email;
     const baseUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/+$/, "");
 

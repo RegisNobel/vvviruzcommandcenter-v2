@@ -11,6 +11,7 @@ const inputClass = "field-input mt-2";
 const TYPE_OPTIONS = [
   ["punchline", "Punchline"],
   ["double_meaning", "Double Meaning"],
+  ["metaphor_wordplay", "Metaphor / Wordplay"],
   ["anime_reference", "Anime Reference"],
   ["game_reference", "Game Reference"],
   ["character_lore", "Character Lore"],

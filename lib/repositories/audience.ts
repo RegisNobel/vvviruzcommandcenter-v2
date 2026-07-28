@@ -331,6 +331,8 @@ export async function upsertExclusiveSubscriber(values: {
   name: string;
   email: string;
   consentGiven: boolean;
+  source?: SubscriberSource;
+  replaceAttribution?: boolean;
   sourceAttribution?: {
     sourceUtmSource?: string;
     sourceUtmMedium?: string;
@@ -346,6 +348,7 @@ export async function upsertExclusiveSubscriber(values: {
 }) {
   const now = new Date();
   const normalizedEmail = normalizeEmail(values.email);
+  const source = values.source ?? "exclusive";
   const existing = await prisma.subscriber.findUnique({
     where: {
       email: normalizedEmail
@@ -353,27 +356,66 @@ export async function upsertExclusiveSubscriber(values: {
   });
 
   if (existing) {
+    const chooseAttribution = (current: string, next?: string) => {
+      const normalizedNext = next?.trim() || "";
+
+      if (values.replaceAttribution && normalizedNext) {
+        return normalizedNext;
+      }
+
+      return current || normalizedNext;
+    };
     const updated = await prisma.subscriber.update({
       where: {
         id: existing.id
       },
       data: {
         name: values.name.trim() || existing.name,
-        source: existing.source || "exclusive",
+        source: values.replaceAttribution ? source : existing.source || source,
         status: "active",
         consentGiven: values.consentGiven,
         updatedAt: now,
         unsubscribedAt: null,
-        sourceUtmSource: existing.sourceUtmSource || values.sourceAttribution?.sourceUtmSource,
-        sourceUtmMedium: existing.sourceUtmMedium || values.sourceAttribution?.sourceUtmMedium,
-        sourceUtmCampaign: existing.sourceUtmCampaign || values.sourceAttribution?.sourceUtmCampaign,
-        sourceUtmContent: existing.sourceUtmContent || values.sourceAttribution?.sourceUtmContent,
-        sourceUtmTerm: existing.sourceUtmTerm || values.sourceAttribution?.sourceUtmTerm,
-        sourceReferrer: existing.sourceReferrer || values.sourceAttribution?.sourceReferrer,
-        sourceLandingPage: existing.sourceLandingPage || values.sourceAttribution?.sourceLandingPage,
-        sourceOfferMode: existing.sourceOfferMode || values.sourceAttribution?.sourceOfferMode,
-        sourceOfferName: existing.sourceOfferName || values.sourceAttribution?.sourceOfferName,
-        sourceSignupContext: existing.sourceSignupContext || values.sourceAttribution?.sourceSignupContext
+        sourceUtmSource: chooseAttribution(
+          existing.sourceUtmSource,
+          values.sourceAttribution?.sourceUtmSource
+        ),
+        sourceUtmMedium: chooseAttribution(
+          existing.sourceUtmMedium,
+          values.sourceAttribution?.sourceUtmMedium
+        ),
+        sourceUtmCampaign: chooseAttribution(
+          existing.sourceUtmCampaign,
+          values.sourceAttribution?.sourceUtmCampaign
+        ),
+        sourceUtmContent: chooseAttribution(
+          existing.sourceUtmContent,
+          values.sourceAttribution?.sourceUtmContent
+        ),
+        sourceUtmTerm: chooseAttribution(
+          existing.sourceUtmTerm,
+          values.sourceAttribution?.sourceUtmTerm
+        ),
+        sourceReferrer: chooseAttribution(
+          existing.sourceReferrer,
+          values.sourceAttribution?.sourceReferrer
+        ),
+        sourceLandingPage: chooseAttribution(
+          existing.sourceLandingPage,
+          values.sourceAttribution?.sourceLandingPage
+        ),
+        sourceOfferMode: chooseAttribution(
+          existing.sourceOfferMode,
+          values.sourceAttribution?.sourceOfferMode
+        ),
+        sourceOfferName: chooseAttribution(
+          existing.sourceOfferName,
+          values.sourceAttribution?.sourceOfferName
+        ),
+        sourceSignupContext: chooseAttribution(
+          existing.sourceSignupContext,
+          values.sourceAttribution?.sourceSignupContext
+        )
       }
     });
 
@@ -388,7 +430,7 @@ export async function upsertExclusiveSubscriber(values: {
       id: createId(),
       name: values.name.trim(),
       email: normalizedEmail,
-      source: "exclusive",
+      source,
       status: "active",
       consentGiven: values.consentGiven,
       downloadToken: createToken(),
@@ -415,12 +457,13 @@ export async function upsertExclusiveSubscriber(values: {
 }
 
 export async function readAudienceOverview(): Promise<AudienceOverview> {
-  const [total, active, unsubscribed, consented, exclusive, manual] = await Promise.all([
+  const [total, active, unsubscribed, consented, exclusive, vault, manual] = await Promise.all([
     prisma.subscriber.count(),
     prisma.subscriber.count({where: {status: "active"}}),
     prisma.subscriber.count({where: {status: "unsubscribed"}}),
     prisma.subscriber.count({where: {status: "active", consentGiven: true}}),
     prisma.subscriber.count({where: {source: "exclusive"}}),
+    prisma.subscriber.count({where: {source: "vault"}}),
     prisma.subscriber.count({where: {source: "manual"}})
   ]);
 
@@ -430,6 +473,7 @@ export async function readAudienceOverview(): Promise<AudienceOverview> {
     unsubscribed_subscribers: unsubscribed,
     consented_subscribers: consented,
     exclusive_subscribers: exclusive,
+    vault_subscribers: vault,
     manual_subscribers: manual
   };
 }

@@ -362,11 +362,7 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
     type: normalizeReleaseType(input.type),
     release_date: input.release_date ?? "",
     concept_details: input.concept_details ?? input.concept ?? "",
-    public_description:
-      input.public_description?.trim() ||
-      input.concept_details?.trim() ||
-      input.concept?.trim() ||
-      "",
+    public_description: input.public_description?.trim() || "",
     public_long_description: input.public_long_description?.trim() || "",
     languages: normalizeReleaseContextValues(input.languages),
     genres: normalizeReleaseContextValues(input.genres),
@@ -433,6 +429,35 @@ export function summarizeRelease(release: ReleaseRecord): ReleaseSummary {
   const warning = discoveryChecklist.filter((item) => item.status === "warning").length;
   const missing = discoveryChecklist.filter((item) => item.status === "missing").length;
   const label = getDiscoveryReadinessLabel(discoveryChecklist);
+  const publishBlockers = getReleasePublishBlockers(release);
+  const publicAttentionReasons = [...publishBlockers];
+
+  if (publishBlockers.length === 0 && missing > 0) {
+    publicAttentionReasons.push(
+      `${missing} discovery ${missing === 1 ? "essential is" : "essentials are"} missing`
+    );
+  }
+
+  if (warning > 0) {
+    publicAttentionReasons.push(
+      `${warning} discovery ${warning === 1 ? "item needs" : "items need"} polish`
+    );
+  }
+
+  if (!release.upc.trim()) {
+    publicAttentionReasons.push("Missing UPC");
+  }
+
+  if (!release.isrc.trim()) {
+    publicAttentionReasons.push("Missing ISRC");
+  }
+
+  const publicAttentionLevel =
+    publishBlockers.length > 0
+      ? "critical"
+      : publicAttentionReasons.length > 0
+        ? "review"
+        : "clear";
 
   return {
     id: release.id,
@@ -440,6 +465,8 @@ export function summarizeRelease(release: ReleaseRecord): ReleaseSummary {
     slug: release.slug,
     cover_art_path: release.cover_art_path,
     is_published: release.is_published,
+    public_attention_level: publicAttentionLevel,
+    public_attention_reasons: publicAttentionReasons,
     pinned: release.pinned,
     type: release.type,
     status: getReleaseStageLabel(release),
@@ -600,14 +627,6 @@ export function getDiscoveryChecklist(release: ReleaseRecord): DiscoveryChecklis
       label: "Public Summary",
       priority: "essential",
       status: hasPublicSummary ? "passed" : "missing"
-    },
-    {
-      detail: release.public_long_description.trim()
-        ? "Extended story is ready for the release page."
-        : "Add a deeper release story when this page needs more context.",
-      label: "Release Story",
-      priority: "polish",
-      status: release.public_long_description.trim() ? "passed" : "warning"
     },
     {
       detail: hasReleaseCoverArt(release)

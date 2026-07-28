@@ -34,10 +34,7 @@ export async function PublicSiteChrome({
 
   navItems.push({href: "/exclusives", label: "Exclusives"});
   navItems.push({href: "/about", label: siteSettings.site_content.chrome.nav_about_label});
-
-  if (siteSettings.site_content.commissions?.is_enabled) {
-    navItems.push({href: "/commissions", label: "Commissions"});
-  }
+  navItems.push({href: "/commissions", label: "Commissions"});
 
   if (siteSettings.site_content.vault?.is_enabled) {
     navItems.push({href: "/vault", label: "Vault"});

@@ -295,32 +295,32 @@ function createDefaultSiteContent(): SiteContentSettings {
   },
   vault: {
     is_enabled: false,
-    badge_text: "DIRECT-TO-FAN DROP",
-    title: "The Vault EP",
-    subtitle: "Five off-platform tracks. No DSP release. Just the files.",
-    body: "The Vault will be a premium digital-only bundle featuring tracks that won't be released on Spotify, Apple Music, or YouTube Music. Join the early access list for preview drops, launch updates, and first access when the bundle opens.",
-    cta_label: "Join the Vault List",
+    badge_text: "DIGITAL-ONLY VAULT DROP",
+    title: "THE VAULT: DROP 001",
+    subtitle: "Five tracks that will never hit streaming.",
+    body: "A direct-to-fan bundle built outside the release calendar. The songs stay in the Vault and arrive as digital files when the drop opens.",
+    cta_label: "Get the Drop Notice",
     cta_url: "/exclusives",
     benefits: [
       {
         id: "vault-benefit-1",
-        title: "Off-Platform",
-        description: "Vault tracks are built for direct fans, not the algorithm."
+        title: "Five Vault Tracks",
+        description: "One complete digital bundle made for direct listeners."
       },
       {
         id: "vault-benefit-2",
-        title: "High Quality",
-        description: "The full bundle will include high-quality WAV files."
+        title: "Never on Streaming",
+        description: "These songs will not be released to Spotify, Apple Music, or YouTube Music."
       },
       {
         id: "vault-benefit-3",
-        title: "Digital Extras",
-        description: "Lyric booklets and cyberpunk/glitch covers are planned for the final drop."
+        title: "Digital Delivery",
+        description: "Gumroad will handle secure checkout and access to the finished files."
       },
       {
         id: "vault-benefit-4",
-        title: "First Access",
-        description: "Join the list to get preview drops and launch updates before the public announcement."
+        title: "",
+        description: ""
       }
     ]
   },
@@ -330,7 +330,7 @@ function createDefaultSiteContent(): SiteContentSettings {
     page_title: "Custom hooks, verses, and songs from vvviruz.",
     page_subtitle: "Need bilingual bars, anime-level energy, or a custom track built around your idea? Submit a request and I’ll review the fit.",
     card_title: "Custom Hook / Verse",
-    card_price: "$50",
+    card_price: "Custom quote",
     card_description: "Need a catchy hook, a custom verse, or both for your track? Send the beat, topic, and direction. I’ll review the fit, then write and record a part tailored to your song.",
     card_button_text: "Request Hook / Verse",
     closed_message: "Commissions are currently closed. Check back soon."

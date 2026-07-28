@@ -36,8 +36,28 @@ export function CommissionsSettingsPanel({
             onChange={(e) => updateField("is_enabled", e.target.checked)}
             type="checkbox"
           />
-          <span className="text-sm font-medium text-ink">Commissions Page Enabled</span>
+          <span className="text-sm font-medium text-ink">Accepting Commission Requests</span>
         </label>
+
+        <div
+          className={
+            commissionsSettings.is_enabled
+              ? "state-panel-success"
+              : "state-panel-warning"
+          }
+        >
+          <p className="font-semibold">
+            {commissionsSettings.is_enabled
+              ? "Requests open"
+              : "Coming-soon page active"}
+          </p>
+          <p className="mt-1 text-sm">
+            Commissions remains visible in public navigation.{" "}
+            {commissionsSettings.is_enabled
+              ? "Visitors can view services and submit the request form."
+              : "Visitors see the closed message, and the server rejects direct submissions."}
+          </p>
+        </div>
 
         <div className="grid gap-5 md:grid-cols-2">
           <label className="space-y-2">
@@ -46,6 +66,15 @@ export function CommissionsSettingsPanel({
               className="field-input"
               onChange={(e) => updateField("page_eyebrow", e.target.value)}
               value={commissionsSettings.page_eyebrow}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="field-label">Page Title</span>
+            <input
+              className="field-input"
+              onChange={(e) => updateField("page_title", e.target.value)}
+              value={commissionsSettings.page_title}
             />
           </label>
 
@@ -59,7 +88,7 @@ export function CommissionsSettingsPanel({
           </label>
 
           <div className="rounded-lg border border-edge bg-input p-4 md:col-span-2">
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Unified Service Card</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Primary Service Card</h4>
             <div className="mt-4 grid gap-5 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="field-label">Card Title</span>
@@ -67,15 +96,6 @@ export function CommissionsSettingsPanel({
                   className="field-input"
                   onChange={(e) => updateField("card_title", e.target.value)}
                   value={commissionsSettings.card_title}
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="field-label">Card Price</span>
-                <input
-                  className="field-input"
-                  onChange={(e) => updateField("card_price", e.target.value)}
-                  value={commissionsSettings.card_price}
                 />
               </label>
 
@@ -88,19 +108,11 @@ export function CommissionsSettingsPanel({
                 />
               </label>
 
-              <label className="space-y-2">
-                <span className="field-label">Card Button Text</span>
-                <input
-                  className="field-input"
-                  onChange={(e) => updateField("card_button_text", e.target.value)}
-                  value={commissionsSettings.card_button_text}
-                />
-              </label>
             </div>
           </div>
 
           <label className="space-y-2 md:col-span-2">
-            <span className="field-label">Commissions Closed Message</span>
+            <span className="field-label">Closed / Coming Soon Message</span>
             <input
               className="field-input"
               onChange={(e) => updateField("closed_message", e.target.value)}
