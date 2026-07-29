@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-28 - README current-state alignment:** Reconciled the current-state overview with the live product. The README now reflects the dual local/production architecture, complete public route surface, current Appears On lifecycle, playlists and link hubs, Fan Content, Vault, commissions, operational health, backups, and the corrected local-development sequence.
+
 > **2026-07-28 - Appears On lifecycle and readiness:** Appears On remains Spotify/Odesli-first while adding server-side publish readiness validation, optional manual release dates, chronological context, archive/restore controls, and snapshot backup coverage. Archived appearances restore as Drafts and stay out of the public music library; permanent deletion remains available only for mistakes.
 
 > **2026-07-28 - Vault item lifecycle controls:** Fan Content now supports in-place Vault item editing, non-destructive archiving, Draft restoration, safe republishing, and display-order management while preserving first-publish history. Archived bundles remain in the database and backups but leave the public Vault; permanent deletion is reserved for mistakes and requires confirmation. Appears On admin actions now also enforce authenticated admin sessions server-side.
@@ -40,28 +42,34 @@
 
 > **2026-07-13 - Public Site Settings Phase 3:** `/admin/site` now manages the ordered homepage hero/supporting releases, approved public-project order and eligibility diagnostics, Built for Motion source, and homepage Exclusives CTA copy. Existing categories remain the source of truth for project names, descriptions, and release assignments; technical SEO, eligibility thresholds, analytics events, and structured-data policy remain code-controlled.
 
-`vvviruz' command center` is a local-first creative operating system for managing music releases, tracking collaborations and features, organizing promotional copy, growing an owned audience, tracking analytics, and powering the public vvviruz artist website from the same database-backed source of truth.
+`vvviruz' command center` is a single-owner creative operating system for managing music releases, collaborations, promotional copy, direct-to-fan products, audience growth, campaign analytics, and the public vvviruz artist website from one Prisma-backed source of truth.
 
-It is intentionally built as a single-owner internal tool rather than a SaaS product. The app prioritizes fast iteration, clean UX, and production-minded admin security over multi-user complexity.
+It is intentionally an internal product rather than a SaaS platform. The app prioritizes fast iteration, clean operator UX, production-minded admin security, and a public music experience without introducing multi-user complexity.
 
 ## Project Summary
 
-This project combines a public-facing music website, a release tracker, an audience workspace, an analytics surface, and a copywriting workspace into one Next.js app with a secure admin boundary under `/admin`.
+This project combines a public-facing artist website, release operations, audience and email tools, direct-to-fan content, campaign analytics, and copywriting workflows in one Next.js app with a secure admin boundary under `/admin`.
 
-The core idea is simple: keep the full creative workflow local, fast, and organized.
+The architecture supports two deliberate operating modes:
 
-- plan and track releases
-- publish a lean public artist site from structured release data
-- connect copy directly to releases
-- capture audience emails and gate exclusive downloads
-- run everything from local storage with no cloud dependency
+- local development with SQLite and filesystem-backed assets under `storage/`
+- production deployment with Postgres, Vercel Blob, Resend, encrypted backups, and optional Google Drive redundancy
+
+The system is used to:
+
+- plan, publish, and operate releases and public projects
+- manage collaborations, playlists, campaign link hubs, Breaking Barz annotations, Latest Intel, Vault items, and commission requests
+- connect promotional copy and Meta performance data directly to releases
+- capture and contact an owned audience with consent-aware delivery and unsubscribe handling
+- monitor catalog readiness, durable assets, email delivery, and backup health from the admin workspace
 
 ## Why This Project Is Interesting
 
 - It is a full-stack internal product, not a static portfolio shell.
 - It includes a real admin/auth boundary with server-enforced sessions and TOTP-based 2FA.
-- It mixes product thinking, workflow design, audience capture, analytics, and local-first architecture.
-- It is designed to support an artist workflow end to end instead of solving one isolated UI problem.
+- It joins product thinking, music operations, direct-to-fan commerce preparation, audience capture, attribution, and operational health in one system.
+- It supports a fast local workflow and a cloud-backed production deployment without splitting the product into separate codebases.
+- It is designed around one artist's end-to-end workflow instead of solving one isolated UI problem.
 
 ## Core Modules
 
@@ -80,7 +88,11 @@ Public-facing artist hub with these routes:
 - `/projects/[slug]`
 - `/about`
 - `/links`
+- `/listen/[playlistSlug]`
+- `/listen/[playlistSlug]/[releaseSlug]`
 - `/exclusives`
+- `/vault`
+- `/commissions`
 - `/unsubscribe`
 
 The public site reads only published release/site-settings data and does not expose admin-only workflow state.
@@ -102,12 +114,42 @@ Release planning and execution workspace with:
 Collaboration and feature tracking with:
 
 - admin paste-and-resolve workflow from a Spotify URL via the Odesli API
-- auto-filled title, artists, and cover art
-- manual Apple Music, YouTube, and YouTube Music URL inputs
-- publish toggle and sort order
-- managed from the Public Site admin page alongside release categories
+- auto-filled title, artists, and cover art with manual platform URL overrides
+- optional manual release dates and chronological public context
+- server-enforced publish-readiness validation
+- Draft, Published, and Archived lifecycle behavior with non-destructive restore
+- permanent deletion reserved for mistaken records
 - public toggle pill on `/music` to switch between Releases and Appears On views
 - pinning and search
+
+### Playlists and Link Hubs
+
+Campaign-focused landing experiences with:
+
+- public playlist hubs under `/listen/[playlistSlug]`
+- release-specific playlist routes under `/listen/[playlistSlug]/[releaseSlug]`
+- platform-specific follow and streaming targets
+- playlist membership ordering, active-state controls, and Spotify playlist-context link generation
+- UTM-aware first-party analytics for playlist and release entry paths
+- configurable root-level release link hubs for campaign traffic
+
+### Fan Content and Direct-to-Fan
+
+Content and offer management with:
+
+- Breaking Barz lyric annotations with public summaries, source links, and resilient lyric anchors
+- Latest Intel updates rendered through the shared public return rail
+- Vault item Draft, Published, and Archived lifecycles with external checkout URLs
+- public `/vault` availability controlled from Public Site settings
+- dedicated Vault waitlist attribution kept separate from the general Exclusives offer
+
+### Commissions
+
+Quote-based service requests with:
+
+- public `/commissions` discovery and request intake
+- independent controls for page visibility and request availability
+- protected admin review, quoting, status tracking, payment links, and delivery links
 
 ### Audience
 
@@ -172,7 +214,9 @@ Performance workspace with:
 - Spotify URL paste-and-resolve via the Odesli (Songlink) API
 - auto-populated metadata: title, artists, and cover art URL
 - manual override fields for Apple Music, YouTube Music, and YouTube URLs
-- publish toggle and sort ordering
+- optional release dates with chronological public presentation
+- server-enforced publish-readiness checks
+- archive and Draft restore behavior, with permanent deletion reserved for mistakes
 - centralized management under the Public Site admin page
 
 ### Copy Workflow
@@ -204,6 +248,9 @@ Performance workspace with:
 - Prisma
 - local filesystem storage for media assets in local mode
 - Vercel Blob for durable production media assets
+- Resend for transactional and campaign email delivery
+- encrypted Vercel Blob snapshots with optional Google Drive backup redundancy
+- Vercel Cron for scheduled backup execution
 
 ## Persistence Model
 
@@ -227,6 +274,11 @@ Database-backed data:
 - admin sessions
 - analytics events and backup run records
 - playlists and playlist-release campaign memberships
+- link hubs and short links
+- Breaking Barz annotations and sources
+- Latest Intel updates and Vault items
+- commission requests
+- operational health issues
 
 Asset-backed data:
 
@@ -240,18 +292,17 @@ Legacy JSON files under `storage/releases`, `storage/copies`, and `storage/auth`
 
 ## Architecture Notes
 
-- Local-first storage under `storage/`
-- SQLite database file at `storage/vvviruz-command-center.db`
-- Prisma as the relational data layer and migration system
-- Thin repository layer under `lib/repositories/*`
-- File system remains the home for large media assets locally
-- Vercel Blob stores media assets for production deployments
-- Single server process
-- No background worker layer
-- No Stripe, auth SaaS, or multi-user system
-- Public website now lives on `/`, `/music`, `/music/[slug]`, `/about`, `/links`, `/exclusives`, and `/unsubscribe`
-- Public `/music` page supports a toggle between Releases and Appears On views
-- Private command center lives under `/admin`
+- Local mode uses `storage/` for the SQLite database, media assets, and legacy import material.
+- Production mode uses Postgres for structured data and Vercel Blob for durable media and encrypted backup snapshots.
+- Prisma provides the relational data layer with separate SQLite and Postgres schemas.
+- Thin repository modules under `lib/repositories/*` keep persistence logic out of route components.
+- Resend handles transactional and campaign email delivery when configured.
+- A Vercel Cron endpoint runs scheduled backups; there is no general-purpose background worker layer.
+- Optional Google Drive redundancy can mirror encrypted database backups.
+- The system does not depend on Stripe, an external auth SaaS, or multi-user tenancy.
+- Public routes include `/`, `/music`, `/music/[slug]`, `/projects`, `/projects/[slug]`, `/about`, `/links`, playlist campaign routes under `/listen`, `/exclusives`, `/vault`, `/commissions`, and `/unsubscribe`.
+- Public `/music` supports Releases and Appears On views.
+- The private command center lives under `/admin`.
 
 ## Local Development
 
@@ -303,41 +354,15 @@ npm run db:import
 npm run dev
 ```
 
-7. Open:
+6. Open:
 
 - [http://localhost:3000](http://localhost:3000)
 - [http://localhost:3000/music](http://localhost:3000/music)
+- [http://localhost:3000/projects](http://localhost:3000/projects)
 - [http://localhost:3000/exclusives](http://localhost:3000/exclusives)
+- [http://localhost:3000/vault](http://localhost:3000/vault)
+- [http://localhost:3000/commissions](http://localhost:3000/commissions)
 - [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Vercel Deployment Prep
 
