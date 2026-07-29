@@ -13,25 +13,26 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "der42gjtvxvutavf.public.blob.vercel-storage.com",
-        pathname: "/vvviruz/**",
-        search: ""
+        hostname: "**"
       }
     ],
     formats: ["image/webp"],
     minimumCacheTTL: 2678400
   },
-  headers: async () => [
-    {
-      source: "/_next/static/:path*",
-      headers: [
-        {
-          key: "Cache-Control",
-          value: "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
+  headers: async () =>
+    process.env.NODE_ENV === "production"
+      ? [
+          {
+            source: "/_next/static/:path*",
+            headers: [
+              {
+                key: "Cache-Control",
+                value: "public, max-age=31536000, immutable"
+              }
+            ]
+          }
+        ]
+      : [],
   redirects: async () => [
     {
       source: "/:path*",

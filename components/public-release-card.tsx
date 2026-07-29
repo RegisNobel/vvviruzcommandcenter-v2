@@ -4,13 +4,13 @@ import Link from "next/link";
 import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
-  getPublicCardTitleSize,
-  formatCollaboratorsList
+  getPublicCardTitleSize
 } from "@/lib/public-utils";
 import type {PublicReleaseRecord} from "@/lib/types";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {ProjectTrackedLink} from "@/components/public-project-analytics";
+import {PublicCollaboratorCredits} from "@/components/public-collaborator-credits";
 
 type ProjectTrackingContext = {
   categorySlug: string;
@@ -35,7 +35,6 @@ export function PublicReleaseCard({
   projectTracking?: ProjectTrackingContext;
   release: PublicReleaseRecord;
 }) {
-  const collaboratorName = release.collaborator ? formatCollaboratorsList(release.collaborator_name) : "";
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const titleSizeClass = getPublicCardTitleSize(release.title);
   const releaseHref = `/music/${release.slug}`;
@@ -141,12 +140,15 @@ export function PublicReleaseCard({
             </Link>
           )}
           <div className="min-h-5 overflow-hidden">
-            {collaboratorName ? (
+            {release.collaborator && release.collaborator_name.trim() ? (
               <p
                 className="truncate text-xs font-semibold leading-5 text-[#e3c16e]"
-                title={`with ${collaboratorName}`}
+                title={`with ${release.collaborator_name}`}
               >
-                with {collaboratorName}
+                <PublicCollaboratorCredits
+                  collaboratorName={release.collaborator_name}
+                  profiles={release.collaborator_profiles}
+                />
               </p>
             ) : null}
           </div>

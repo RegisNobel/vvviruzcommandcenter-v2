@@ -106,7 +106,11 @@ export async function PUT(
 
     const publishBlockers = getReleasePublishBlockers(release);
 
-    if (release.is_published && publishBlockers.length > 0) {
+    if (
+      release.catalog_scope !== "ARTIST" &&
+      release.is_published &&
+      publishBlockers.length > 0
+    ) {
       return NextResponse.json(
         {
           message: `Release is not ready to publish publicly. ${publishBlockers.join(", ")}.`,
@@ -122,10 +126,17 @@ export async function PUT(
 
     revalidateTag(PUBLIC_CACHE_TAGS.releases);
     revalidateTag(PUBLIC_CACHE_TAGS.releaseCategories);
+    if (normalized.catalog_scope === "ARTIST") {
+      revalidateTag(PUBLIC_CACHE_TAGS.artists);
+    }
 
     if (normalized.is_published) {
+      const releasePath =
+        normalized.catalog_scope === "ARTIST" && normalized.primary_artist_slug
+          ? `/artists/${encodeURIComponent(normalized.primary_artist_slug)}/music/${encodeURIComponent(normalized.slug)}`
+          : `/music/${encodeURIComponent(normalized.slug)}`;
       await submitIndexNowUrls([
-        `/music/${encodeURIComponent(normalized.slug)}`,
+        releasePath,
         "/music",
         "/sitemap.xml"
       ]);

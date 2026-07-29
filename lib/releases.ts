@@ -120,6 +120,16 @@ type LegacyReleaseShape = Partial<ReleaseRecord> & {
   contextual_cta_url?: string;
   featured_video_url?: string;
   public_lyrics_enabled?: boolean;
+  catalog_scope?: "VVVIRUZ" | "ARTIST";
+  catalogScope?: "VVVIRUZ" | "ARTIST";
+  primary_artist_profile_id?: string;
+  primaryArtistProfileId?: string;
+  primary_artist_slug?: string;
+  primaryArtistSlug?: string;
+  primary_artist_name?: string;
+  primaryArtistName?: string;
+  lyrics_rights_confirmed_at?: string;
+  lyricsRightsConfirmedAt?: string;
   is_published?: boolean;
   is_featured?: boolean;
 };
@@ -186,6 +196,15 @@ export function getReleasePublishBlockers(release: ReleaseRecord) {
     blockers.push(releasePublishRequirementLabels.streaming_link);
   }
 
+  if (
+    release.catalog_scope === "ARTIST" &&
+    release.public_lyrics_enabled &&
+    release.lyrics.trim() &&
+    !release.lyrics_rights_confirmed_at
+  ) {
+    blockers.push("Confirm lyrics publication permission");
+  }
+
   return blockers;
 }
 
@@ -207,6 +226,8 @@ export function createEmptyRelease(
       ReleaseRecord,
       | "title"
       | "slug"
+      | "catalog_scope"
+      | "primary_artist_profile_id"
       | "type"
       | "release_date"
       | "collaborator"
@@ -231,6 +252,7 @@ export function createEmptyRelease(
       | "contextual_cta_url"
       | "featured_video_url"
       | "public_lyrics_enabled"
+      | "lyrics_rights_confirmed_at"
       | "is_published"
       | "is_featured"
     >
@@ -244,6 +266,10 @@ export function createEmptyRelease(
     id: createId(),
     title,
     slug: values?.slug?.trim() || getSuggestedReleaseSlug(title),
+    catalog_scope: values?.catalog_scope === "ARTIST" ? "ARTIST" : "VVVIRUZ",
+    primary_artist_profile_id: values?.primary_artist_profile_id?.trim() || "",
+    primary_artist_slug: "",
+    primary_artist_name: "",
     pinned: false,
     collaborator,
     collaborator_name: collaborator ? values?.collaborator_name?.trim() || "" : "",
@@ -277,6 +303,7 @@ export function createEmptyRelease(
     contextual_cta_url: values?.contextual_cta_url?.trim() || "",
     featured_video_url: values?.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(values?.public_lyrics_enabled),
+    lyrics_rights_confirmed_at: values?.lyrics_rights_confirmed_at?.trim() || "",
     is_published: Boolean(values?.is_published),
     is_featured: Boolean(values?.is_featured),
     concept_complete: false,
@@ -338,6 +365,18 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
     slug:
       input.slug?.trim() ||
       getSuggestedReleaseSlug(input.title?.trim() || fallback.title),
+    catalog_scope:
+      input.catalog_scope === "ARTIST" || input.catalogScope === "ARTIST"
+        ? "ARTIST"
+        : "VVVIRUZ",
+    primary_artist_profile_id:
+      input.primary_artist_profile_id?.trim() ||
+      input.primaryArtistProfileId?.trim() ||
+      "",
+    primary_artist_slug:
+      input.primary_artist_slug?.trim() || input.primaryArtistSlug?.trim() || "",
+    primary_artist_name:
+      input.primary_artist_name?.trim() || input.primaryArtistName?.trim() || "",
     pinned: Boolean(input.pinned),
     collaborator,
     collaborator_name: collaborator ? input.collaborator_name?.trim() || "" : "",
@@ -390,6 +429,10 @@ export function hydrateRelease(input: LegacyReleaseShape): ReleaseRecord {
       input.contextual_cta_url?.trim() || input.contextualCtaUrl?.trim() || "",
     featured_video_url: input.featured_video_url?.trim() || "",
     public_lyrics_enabled: Boolean(input.public_lyrics_enabled),
+    lyrics_rights_confirmed_at:
+      input.lyrics_rights_confirmed_at?.trim() ||
+      input.lyricsRightsConfirmedAt?.trim() ||
+      "",
     is_published: Boolean(input.is_published),
     is_featured: Boolean(input.is_featured),
     concept_complete: Boolean(input.concept_complete ?? derivedLegacyStages.concept_complete),

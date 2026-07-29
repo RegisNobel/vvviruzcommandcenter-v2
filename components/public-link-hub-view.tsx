@@ -5,9 +5,9 @@ import {ArrowUpRight, Disc3, Music2, PlaySquare} from "lucide-react";
 import {LinkPageAnalytics} from "@/components/link-page-analytics";
 import {
   getPublicReleaseDiscoveryMetadata,
-  normalizeExternalUrl,
-  formatCollaboratorsList
+  normalizeExternalUrl
 } from "@/lib/public-utils";
+import {PublicCollaboratorCredits} from "@/components/public-collaborator-credits";
 import type {PublicReleaseRecord, SiteSettingsRecord} from "@/lib/types";
 
 const platformAccentStyles = {
@@ -159,7 +159,10 @@ export function PublicLinkHubView({
             </h1>
             {selectedRelease.collaborator && selectedRelease.collaborator_name.trim() ? (
               <p className="mt-2 text-sm font-semibold text-[#d7b45e]">
-                with {formatCollaboratorsList(selectedRelease.collaborator_name)}
+                <PublicCollaboratorCredits
+                  collaboratorName={selectedRelease.collaborator_name}
+                  profiles={selectedRelease.collaborator_profiles}
+                />
               </p>
             ) : null}
 

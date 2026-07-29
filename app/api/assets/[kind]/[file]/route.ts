@@ -124,6 +124,7 @@ export async function GET(
 
     if (
       kind !== "cover" &&
+      kind !== "artist-intake-image" &&
       kind !== "site-icon" &&
       kind !== "exclusive-art"
     ) {
@@ -132,6 +133,7 @@ export async function GET(
 
     const isPublicAsset =
       kind === "site-icon" ||
+      kind === "artist-intake-image" ||
       (kind === "cover" && (await canPubliclyReadCoverAsset(file))) ||
       (kind === "exclusive-art" && (await canPubliclyReadExclusiveArtAsset(file)));
     if (!isPublicAsset) {

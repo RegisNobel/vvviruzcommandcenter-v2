@@ -37,89 +37,97 @@ model AuthSession {
 }
 
 model Release {
-  id                    String                      @id
-  title                 String
-  slug                  String                      @unique
-  pinned                Boolean                     @default(false)
-  collaborator          Boolean                     @default(false)
-  collaboratorName      String                      @default("")
-  upc                   String                      @default("")
-  isrc                  String                      @default("")
-  coverArtId            String?
-  coverArtFileName      String?
-  coverArtUrl           String?
-  coverArtPath          String                      @default("")
-  coverArtMimeType      String?
-  lyrics                String                      @default("")
-  type                  String                      @default("nerdcore")
-  releaseDate           DateTime?
-  conceptDetails        String                      @default("")
-  publicDescription     String                      @default("")
-  publicLongDescription String                      @default("")
-  languages             String                      @default("[]")
-  genres                String                      @default("[]")
-  moods                 String                      @default("[]")
-  inspirationContext    String                      @default("")
-  themes                String                      @default("[]")
-  listenerContexts      String                      @default("[]")
-  seoTitle              String                      @default("")
-  metaDescription       String                      @default("")
-  coverArtAltText       String                      @default("")
-  socialShareTitle      String                      @default("")
-  socialShareDescription String                     @default("")
-  contextualCtaLabel    String                      @default("")
-  contextualCtaUrl      String                      @default("")
-  spotifyUrl            String                      @default("")
-  appleMusicUrl         String                      @default("")
-  youtubeUrl            String                      @default("")
-  isPublished           Boolean                     @default(false)
-  isFeatured            Boolean                     @default(false)
-  featuredVideoUrl      String                      @default("")
-  publicLyricsEnabled   Boolean                     @default(false)
-  conceptComplete       Boolean                     @default(false)
-  beatMade              Boolean                     @default(false)
-  lyricsFinished        Boolean                     @default(false)
-  recorded              Boolean                     @default(false)
-  mixMastered           Boolean                     @default(false)
-  published             Boolean                     @default(false)
-  createdOn             DateTime
-  updatedOn             DateTime
-  tasks                 ReleaseTask[]
-  streamingLinks        ReleaseStreamingLink[]
-  copies                CopyEntry[]
-  categories            ReleaseCategoryAssignment[]
-  adImportBatches       AdImportBatch[]
-  adCreativeReports     AdCreativeReport[]
-  adCampaignLearnings   AdCampaignLearning[]
-  shortLinks            ShortLink[]
-  linkHubs              LinkHub[]
-  featuredPlaylists     Playlist[]                  @relation("PlaylistFeaturedRelease")
-  playlists             PlaylistRelease[]
-  annotations           ReleaseAnnotation[]
-  fanUpdates            FanUpdate[]
-  vaultItems            VaultItem[]
+  id                      String                      @id
+  title                   String
+  slug                    String                      @unique
+  catalogScope            String                      @default("VVVIRUZ")
+  primaryArtistProfileId  String?
+  pinned                  Boolean                     @default(false)
+  collaborator            Boolean                     @default(false)
+  collaboratorName        String                      @default("")
+  upc                     String                      @default("")
+  isrc                    String                      @default("")
+  coverArtId              String?
+  coverArtFileName        String?
+  coverArtUrl             String?
+  coverArtPath            String                      @default("")
+  coverArtMimeType        String?
+  lyrics                  String                      @default("")
+  type                    String                      @default("nerdcore")
+  releaseDate             DateTime?
+  conceptDetails          String                      @default("")
+  publicDescription       String                      @default("")
+  publicLongDescription   String                      @default("")
+  languages               String                      @default("[]")
+  genres                  String                      @default("[]")
+  moods                   String                      @default("[]")
+  inspirationContext      String                      @default("")
+  themes                  String                      @default("[]")
+  listenerContexts        String                      @default("[]")
+  seoTitle                String                      @default("")
+  metaDescription         String                      @default("")
+  coverArtAltText         String                      @default("")
+  socialShareTitle        String                      @default("")
+  socialShareDescription  String                      @default("")
+  contextualCtaLabel      String                      @default("")
+  contextualCtaUrl        String                      @default("")
+  spotifyUrl              String                      @default("")
+  appleMusicUrl           String                      @default("")
+  youtubeUrl              String                      @default("")
+  isPublished             Boolean                     @default(false)
+  isFeatured              Boolean                     @default(false)
+  featuredVideoUrl        String                      @default("")
+  publicLyricsEnabled     Boolean                     @default(false)
+  lyricsRightsConfirmedAt DateTime?
+  conceptComplete         Boolean                     @default(false)
+  beatMade                Boolean                     @default(false)
+  lyricsFinished          Boolean                     @default(false)
+  recorded                Boolean                     @default(false)
+  mixMastered             Boolean                     @default(false)
+  published               Boolean                     @default(false)
+  createdOn               DateTime
+  updatedOn               DateTime
+  tasks                   ReleaseTask[]
+  streamingLinks          ReleaseStreamingLink[]
+  copies                  CopyEntry[]
+  categories              ReleaseCategoryAssignment[]
+  adImportBatches         AdImportBatch[]
+  adCreativeReports       AdCreativeReport[]
+  adCampaignLearnings     AdCampaignLearning[]
+  shortLinks              ShortLink[]
+  linkHubs                LinkHub[]
+  featuredPlaylists       Playlist[]                  @relation("PlaylistFeaturedRelease")
+  playlists               PlaylistRelease[]
+  annotations             ReleaseAnnotation[]
+  fanUpdates              FanUpdate[]
+  vaultItems              VaultItem[]
+  artistCredits           ReleaseArtistCredit[]
+  primaryArtistProfile    ArtistProfile?              @relation("PrimaryArtistReleases", fields: [primaryArtistProfileId], references: [id], onDelete: SetNull)
+  artistPlacements        ArtistFeaturedItem[]        @relation("ArtistFeaturedRelease")
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
   @@index([isFeatured, releaseDate])
+  @@index([catalogScope, isPublished, releaseDate])
+  @@index([primaryArtistProfileId, updatedOn])
 }
 
 model ReleaseCategory {
-  id                String                      @id
-  name              String
-  slug              String                      @unique
-  description       String                      @default("")
-  projectType       String                      @default("series")
-  artworkPath       String                      @default("")
-  artworkAltText    String                      @default("")
+  id                 String                      @id
+  name               String
+  slug               String                      @unique
+  description        String                      @default("")
+  projectType        String                      @default("series")
+  artworkPath        String                      @default("")
+  artworkAltText     String                      @default("")
   projectReleaseDate DateTime?
-  spotifyUrl        String                      @default("")
-  appleMusicUrl     String                      @default("")
-  youtubeUrl        String                      @default("")
-  sortOrder         Int                         @default(0)
-  createdAt         DateTime
-  updatedAt         DateTime
-  releases          ReleaseCategoryAssignment[]
+  spotifyUrl         String                      @default("")
+  appleMusicUrl      String                      @default("")
+  youtubeUrl         String                      @default("")
+  sortOrder          Int                         @default(0)
+  createdAt          DateTime
+  updatedAt          DateTime
+  releases           ReleaseCategoryAssignment[]
 
   @@index([sortOrder, name])
 }
@@ -399,42 +407,45 @@ model EmailSendLog {
 }
 
 model AnalyticsEvent {
-  id          String   @id
-  eventId     String?
-  eventType   String
-  page        String
-  path        String   @default("")
-  hubPath     String   @default("")
-  playlistId  String?
-  playlistSlug String  @default("")
-  shortLinkId String?
-  releaseId   String?
-  platform    String   @default("")
-  entryType   String   @default("")
-  linkType    String   @default("")
-  linkLabel   String   @default("")
-  contentType String   @default("")
-  contentId   String   @default("")
-  interactionSource String @default("")
-  targetUrl   String   @default("")
-  referrer    String   @default("")
-  originalReferrer String @default("")
-  userAgent   String   @default("")
-  visitorId   String   @default("")
-  sessionId   String   @default("")
-  utmSource   String   @default("")
-  utmMedium   String   @default("")
-  utmCampaign String   @default("")
-  utmContent  String   @default("")
-  utmTerm     String   @default("")
-  fbclid      String   @default("")
-  country     String   @default("")
-  createdAt   DateTime
+  id                String         @id
+  eventId           String?
+  eventType         String
+  page              String
+  path              String         @default("")
+  hubPath           String         @default("")
+  playlistId        String?
+  playlistSlug      String         @default("")
+  shortLinkId       String?
+  releaseId         String?
+  artistProfileId   String?
+  platform          String         @default("")
+  entryType         String         @default("")
+  linkType          String         @default("")
+  linkLabel         String         @default("")
+  contentType       String         @default("")
+  contentId         String         @default("")
+  interactionSource String         @default("")
+  targetUrl         String         @default("")
+  referrer          String         @default("")
+  originalReferrer  String         @default("")
+  userAgent         String         @default("")
+  visitorId         String         @default("")
+  sessionId         String         @default("")
+  utmSource         String         @default("")
+  utmMedium         String         @default("")
+  utmCampaign       String         @default("")
+  utmContent        String         @default("")
+  utmTerm           String         @default("")
+  fbclid            String         @default("")
+  country           String         @default("")
+  createdAt         DateTime
+  artistProfile     ArtistProfile? @relation(fields: [artistProfileId], references: [id], onDelete: SetNull)
 
   @@unique([eventId, eventType])
   @@index([page, createdAt])
   @@index([eventType, createdAt])
   @@index([releaseId, createdAt])
+  @@index([artistProfileId, createdAt])
   @@index([visitorId, createdAt])
   @@index([playlistId, eventType, createdAt])
   @@index([playlistId, releaseId, createdAt])
@@ -493,21 +504,21 @@ model OperationalHealthIssue {
 }
 
 model ShortLink {
-  id             String    @id
-  slug           String    @unique
-  destinationUrl String    @map("destination_url")
-  releaseId      String?   @map("release_id")
-  campaignLabel  String    @default("") @map("campaign_label")
-  contentLabel   String    @default("") @map("content_label")
-  status         String    @default("ACTIVE")
-  clickCount     Int       @default(0) @map("click_count")
-  createdAt      DateTime  @map("created_at")
-  updatedAt      DateTime  @map("updated_at")
-  archivedAt     DateTime? @map("archived_at")
-  pausedAt       DateTime? @map("paused_at")
+  id                   String    @id
+  slug                 String    @unique
+  destinationUrl       String    @map("destination_url")
+  releaseId            String?   @map("release_id")
+  campaignLabel        String    @default("") @map("campaign_label")
+  contentLabel         String    @default("") @map("content_label")
+  status               String    @default("ACTIVE")
+  clickCount           Int       @default(0) @map("click_count")
+  createdAt            DateTime  @map("created_at")
+  updatedAt            DateTime  @map("updated_at")
+  archivedAt           DateTime? @map("archived_at")
+  pausedAt             DateTime? @map("paused_at")
   destinationUpdatedAt DateTime? @map("destination_updated_at")
-  deletedAt      DateTime? @map("deleted_at")
-  release        Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  deletedAt            DateTime? @map("deleted_at")
+  release              Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([releaseId])
   @@index([status])
@@ -517,23 +528,236 @@ model ShortLink {
 }
 
 model AppearsOn {
-  id              String   @id
+  id              String                  @id
   title           String
   artists         String
   coverArtUrl     String
   spotifyUrl      String
-  appleMusicUrl   String   @default("")
-  youtubeMusicUrl String   @default("")
-  youtubeUrl      String   @default("")
+  appleMusicUrl   String                  @default("")
+  youtubeMusicUrl String                  @default("")
+  youtubeUrl      String                  @default("")
   releaseDate     DateTime?
-  isPublished     Boolean  @default(false)
+  isPublished     Boolean                 @default(false)
   archivedAt      DateTime?
-  sortOrder       Int      @default(0)
+  sortOrder       Int                     @default(0)
   createdAt       DateTime
   updatedAt       DateTime
+  artistCredits   AppearsOnArtistCredit[]
 
   @@index([isPublished, sortOrder])
   @@index([archivedAt, releaseDate])
+}
+
+model ArtistProfile {
+  id                     String                  @id
+  slug                   String                  @unique
+  displayName            String
+  privateContactEmail    String                  @default("")
+  location               String                  @default("")
+  locationCountryCode    String                  @default("")
+  workflowStatus         String                  @default("DRAFT")
+  themeFamily            String                  @default("signal-noir")
+  tagline                String                  @default("")
+  shortBio               String                  @default("")
+  longBio                String                  @default("")
+  differentiator         String                  @default("")
+  genres                 String                  @default("[]")
+  primaryCtaLabel        String                  @default("")
+  primaryCtaUrl          String                  @default("")
+  secondaryCtaLabel      String                  @default("")
+  secondaryCtaUrl        String                  @default("")
+  profileImagePath       String                  @default("")
+  profileImageAlt        String                  @default("")
+  presentationCopy       String                  @default("{}")
+  catalogEnabled         Boolean                 @default(false)
+  catalogTitle           String                  @default("Releases")
+  catalogIntro           String                  @default("")
+  catalogCtaLabel        String                  @default("View all releases")
+  catalogReleaseIds      String                  @default("[]")
+  editorialReleaseIds    String                  @default("[]")
+  featuredStoriesEnabled Boolean                 @default(false)
+  featuredStoriesLabel   String                  @default("Featured stories")
+  featuredStoriesHeading String                  @default("Go deeper")
+  seoTitle               String                  @default("")
+  seoDescription         String                  @default("")
+  socialImageUrl         String                  @default("")
+  publishedVersionId     String?                 @unique
+  publishedSlug          String                  @default("")
+  draftUpdatedAt         DateTime
+  publishedAt            DateTime?
+  pausedAt               DateTime?
+  archivedAt             DateTime?
+  createdAt              DateTime
+  updatedAt              DateTime
+  versions               ArtistProfileVersion[]  @relation("ArtistProfileVersions")
+  publishedVersion       ArtistProfileVersion?   @relation("PublishedArtistProfileVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  approvals              ArtistProfileApproval[]
+  intakes                ArtistIntake[]
+  links                  ArtistLink[]
+  media                  ArtistProfileMedia[]
+  featuredItems          ArtistFeaturedItem[]
+  releaseCredits         ReleaseArtistCredit[]
+  appearsOnCredits       AppearsOnArtistCredit[]
+  primaryReleases        Release[]               @relation("PrimaryArtistReleases")
+  analyticsEvents        AnalyticsEvent[]
+
+  @@index([workflowStatus, updatedAt])
+  @@index([publishedAt])
+  @@index([publishedSlug])
+}
+
+model ArtistIntake {
+  id                            String         @id
+  artistName                    String         @default("")
+  inviteeEmail                  String         @default("")
+  tokenHash                     String         @unique
+  tokenHint                     String         @default("")
+  status                        String         @default("DRAFT")
+  content                       String         @default("{}")
+  uploadedAssetPaths            String         @default("[]")
+  expiresAt                     DateTime
+  submittedAt                   DateTime?
+  lastOpenedAt                  DateTime?
+  reviewedAt                    DateTime?
+  convertedAt                   DateTime?
+  archivedAt                    DateTime?
+  submissionNotificationStatus  String         @default("NOT_SENT")
+  submissionNotificationError   String         @default("")
+  submissionNotificationAttemptedAt DateTime?
+  linkedArtistProfileId         String?
+  createdAt                     DateTime
+  updatedAt                     DateTime
+  linkedArtistProfile           ArtistProfile? @relation(fields: [linkedArtistProfileId], references: [id], onDelete: SetNull)
+
+  @@index([status, updatedAt])
+  @@index([expiresAt])
+  @@index([linkedArtistProfileId])
+}
+
+model ArtistProfileVersion {
+  id               String                  @id
+  artistProfileId  String
+  version          Int
+  content          String
+  approvalStatus   String                  @default("DRAFT")
+  previewTokenHash String?                 @unique
+  previewExpiresAt DateTime?
+  previewRevokedAt DateTime?
+  previewSupersededAt DateTime?
+  createdAt        DateTime
+  approvedAt       DateTime?
+  publishedAt      DateTime?
+  artistProfile    ArtistProfile           @relation("ArtistProfileVersions", fields: [artistProfileId], references: [id], onDelete: Cascade)
+  publishedFor     ArtistProfile?          @relation("PublishedArtistProfileVersion")
+  approvals        ArtistProfileApproval[]
+
+  @@unique([artistProfileId, version])
+  @@index([artistProfileId, createdAt])
+  @@index([approvalStatus, createdAt])
+}
+
+model ArtistProfileApproval {
+  id              String               @id
+  artistProfileId String
+  versionId       String
+  decision        String
+  decidedByEmail  String               @default("")
+  notes           String               @default("")
+  decidedAt       DateTime
+  createdAt       DateTime
+  artistProfile   ArtistProfile        @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  version         ArtistProfileVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([artistProfileId, decidedAt])
+  @@index([versionId, decidedAt])
+}
+
+model ArtistLink {
+  id              String        @id
+  artistProfileId String
+  platform        String
+  label           String
+  url             String
+  sortOrder       Int           @default(0)
+  isPrimary       Boolean       @default(false)
+  createdAt       DateTime
+  updatedAt       DateTime
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([artistProfileId, platform])
+  @@index([artistProfileId, sortOrder])
+}
+
+model ArtistProfileMedia {
+  id                String        @id
+  artistProfileId   String
+  kind              String
+  url               String
+  altText           String        @default("")
+  sortOrder         Int           @default(0)
+  rightsConfirmedAt DateTime?
+  createdAt         DateTime
+  updatedAt         DateTime
+  artistProfile     ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@index([artistProfileId, kind, sortOrder])
+}
+
+model ArtistFeaturedItem {
+  id              String        @id
+  artistProfileId String
+  releaseId       String?
+  itemType        String
+  eyebrow         String        @default("")
+  title           String
+  subtitle        String        @default("")
+  description     String        @default("")
+  url             String
+  coverArtUrl     String        @default("")
+  coverArtAlt     String        @default("")
+  placement       String        @default("HOME")
+  isStartHere     Boolean       @default(false)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  release         Release?      @relation("ArtistFeaturedRelease", fields: [releaseId], references: [id], onDelete: SetNull)
+
+  @@index([artistProfileId, sortOrder])
+  @@index([artistProfileId, placement, sortOrder])
+  @@index([releaseId])
+}
+
+model ReleaseArtistCredit {
+  id              String        @id
+  releaseId       String
+  artistProfileId String
+  role            String        @default("COLLABORATOR")
+  displayOrder    Int           @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  release         Release       @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([releaseId, artistProfileId, role])
+  @@index([releaseId, displayOrder])
+  @@index([artistProfileId, displayOrder])
+}
+
+model AppearsOnArtistCredit {
+  id              String        @id
+  appearsOnId     String
+  artistProfileId String
+  role            String        @default("FEATURED")
+  displayOrder    Int           @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  appearsOn       AppearsOn     @relation(fields: [appearsOnId], references: [id], onDelete: Cascade)
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([appearsOnId, artistProfileId, role])
+  @@index([appearsOnId, displayOrder])
+  @@index([artistProfileId, displayOrder])
 }
 
 model CommissionRequest {
@@ -586,24 +810,24 @@ model LinkHub {
 }
 
 model Playlist {
-  id                 String            @id
+  id                 String   @id
   name               String
-  slug               String            @unique
-  description        String            @default("")
-  coverImageUrl      String            @default("")
-  spotifyPlaylistUrl String            @default("")
-  applePlaylistUrl   String            @default("")
-  youtubePlaylistUrl   String            @default("")
-  primaryPlatform    String            @default("spotify")
+  slug               String   @unique
+  description        String   @default("")
+  coverImageUrl      String   @default("")
+  spotifyPlaylistUrl String   @default("")
+  applePlaylistUrl   String   @default("")
+  youtubePlaylistUrl String   @default("")
+  primaryPlatform    String   @default("spotify")
   featuredReleaseId  String?
-  isPublic           Boolean           @default(false)
-  isArchived         Boolean           @default(false)
-  sortOrder          Int               @default(0)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  isPublic           Boolean  @default(false)
+  isArchived         Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  featuredRelease    Release?          @relation("PlaylistFeaturedRelease", fields: [featuredReleaseId], references: [id], onDelete: SetNull)
-  releases           PlaylistRelease[]
+  featuredRelease Release?          @relation("PlaylistFeaturedRelease", fields: [featuredReleaseId], references: [id], onDelete: SetNull)
+  releases        PlaylistRelease[]
 
   @@index([featuredReleaseId])
   @@index([isPublic, isArchived])
@@ -611,17 +835,17 @@ model Playlist {
 }
 
 model PlaylistRelease {
-  playlistId       String
-  releaseId        String
-  position         Int      @default(0)
+  playlistId        String
+  releaseId         String
+  position          Int      @default(0)
   spotifyTargetUrl  String   @default("")
   spotifyTrackUrl   String   @default("")
   spotifyTargetMode String   @default("manual")
   appleTargetUrl    String   @default("")
   youtubeTargetUrl  String   @default("")
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   release  Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
@@ -632,32 +856,32 @@ model PlaylistRelease {
 }
 
 model ReleaseAnnotation {
-  id             String                    @id
-  releaseId      String
-  type           String                    @default("lyric_note")
-  lyricExcerpt   String                    @default("")
-  lineStart      Int?
-  lineEnd        Int?
-  anchorVersion  Int?
-  sectionKey     String?
+  id                String                    @id
+  releaseId         String
+  type              String                    @default("lyric_note")
+  lyricExcerpt      String                    @default("")
+  lineStart         Int?
+  lineEnd           Int?
+  anchorVersion     Int?
+  sectionKey        String?
   sectionOccurrence Int?
-  startLineIndex Int?
-  endLineIndex   Int?
-  excerptSnapshot String                   @default("")
-  excerptHash    String                    @default("")
-  lyricDocumentHash String                 @default("")
-  title          String
-  summary        String                    @default("")
-  explanation    String
-  status         String                    @default("draft")
-  confidence     String                    @default("official_context")
-  isPublic       Boolean                   @default(false)
-  sortOrder      Int                       @default(0)
-  lastReviewedAt DateTime?
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  release        Release                   @relation(fields: [releaseId], references: [id], onDelete: Cascade)
-  sources        ReleaseAnnotationSource[]
+  startLineIndex    Int?
+  endLineIndex      Int?
+  excerptSnapshot   String                    @default("")
+  excerptHash       String                    @default("")
+  lyricDocumentHash String                    @default("")
+  title             String
+  summary           String                    @default("")
+  explanation       String
+  status            String                    @default("draft")
+  confidence        String                    @default("official_context")
+  isPublic          Boolean                   @default(false)
+  sortOrder         Int                       @default(0)
+  lastReviewedAt    DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  release           Release                   @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  sources           ReleaseAnnotationSource[]
 
   @@index([releaseId, status, isPublic, sortOrder])
   @@index([updatedAt])
@@ -677,39 +901,39 @@ model ReleaseAnnotationSource {
 }
 
 model FanUpdate {
-  id          String   @id
+  id          String    @id
   releaseId   String?
-  type        String   @default("release")
+  type        String    @default("release")
   title       String
-  summary     String   @default("")
+  summary     String    @default("")
   href        String
-  isPublished Boolean  @default(false)
+  isPublished Boolean   @default(false)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  release     Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  release     Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([isPublished, publishedAt])
   @@index([releaseId])
 }
 
 model VaultItem {
-  id          String   @id
+  id          String    @id
   releaseId   String?
   title       String
-  slug        String   @unique
-  itemType    String   @default("track")
-  description String   @default("")
-  coverArtUrl String   @default("")
-  previewUrl  String   @default("")
-  priceLabel  String   @default("")
-  checkoutUrl String   @default("")
-  status      String   @default("draft")
-  sortOrder   Int      @default(0)
+  slug        String    @unique
+  itemType    String    @default("track")
+  description String    @default("")
+  coverArtUrl String    @default("")
+  previewUrl  String    @default("")
+  priceLabel  String    @default("")
+  checkoutUrl String    @default("")
+  status      String    @default("draft")
+  sortOrder   Int       @default(0)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  release     Release? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  release     Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([status, sortOrder])
   @@index([releaseId])

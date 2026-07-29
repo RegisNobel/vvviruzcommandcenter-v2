@@ -111,12 +111,18 @@ export function buildPublicReleaseJsonLd({
     }),
     contributor:
       release.collaborator && collaborators.length > 0
-        ? collaborators.map((name) =>
-            compactObject({
+        ? collaborators.map((name) => {
+            const linkedProfile = release.collaborator_profiles.find(
+              (profile) => profile.name.trim().toLowerCase() === name.trim().toLowerCase()
+            );
+            return compactObject({
               "@type": "Person",
-              name
-            })
-          )
+              name,
+              url: linkedProfile
+                ? getPublicSiteUrl(`/artists/${encodeURIComponent(linkedProfile.slug)}`)
+                : undefined
+            });
+          })
         : undefined,
     genre:
       genres.length > 0

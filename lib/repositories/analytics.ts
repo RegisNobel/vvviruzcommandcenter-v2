@@ -55,8 +55,13 @@ export type PublicAnalyticsEventInput = {
     | "breaking_barz_open"
     | "breaking_barz_next"
     | "breaking_barz_previous"
-    | "breaking_barz_reference_click";
-  page: "home" | "links" | "projects" | "public" | "release" | "vault" | "playlist" | "preview";
+    | "breaking_barz_reference_click"
+    | "artist_profile_view"
+    | "artist_release_view"
+    | "artist_feature_open"
+    | "artist_streaming_click"
+    | "artist_platform_click";
+  page: "home" | "links" | "projects" | "public" | "release" | "vault" | "playlist" | "preview" | "artist";
   eventId?: string | null;
   path?: string;
   hubPath?: string;
@@ -64,6 +69,7 @@ export type PublicAnalyticsEventInput = {
   playlistSlug?: string;
   shortLinkId?: string | null;
   releaseId?: string | null;
+  artistProfileId?: string | null;
   platform?: string;
   entryType?: string;
   linkType?: string;
@@ -129,6 +135,7 @@ export async function recordPublicAnalyticsEvent(input: PublicAnalyticsEventInpu
       playlistSlug: normalize(input.playlistSlug),
       shortLinkId: normalize(input.shortLinkId) || null,
       releaseId: normalize(input.releaseId) || null,
+      artistProfileId: normalize(input.artistProfileId) || null,
       platform: normalize(input.platform),
       entryType: normalize(input.entryType),
       linkType: normalize(input.linkType),

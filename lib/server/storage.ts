@@ -5,6 +5,7 @@ import {fileNameFromPath} from "@/lib/utils";
 
 export const storageRoot = path.join(process.cwd(), "storage");
 export const releaseCoversDir = path.join(storageRoot, "release-covers");
+export const artistIntakeImagesDir = path.join(storageRoot, "artist-intake-images");
 export const siteIconsDir = path.join(storageRoot, "site_icons");
 export const exclusiveTracksDir = path.join(storageRoot, "exclusive-tracks");
 export const exclusiveArtDir = path.join(storageRoot, "exclusive-art");
@@ -78,6 +79,7 @@ export async function ensureStorageDirs() {
 
   await Promise.all([
     fs.mkdir(releaseCoversDir, {recursive: true}),
+    fs.mkdir(artistIntakeImagesDir, {recursive: true}),
     fs.mkdir(siteIconsDir, {recursive: true}),
     fs.mkdir(exclusiveTracksDir, {recursive: true}),
     fs.mkdir(exclusiveArtDir, {recursive: true}),

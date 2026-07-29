@@ -24,7 +24,13 @@ const releaseInclude = {
       sortOrder: "asc"
     }
   },
-  streamingLinks: true
+  streamingLinks: true,
+  primaryArtistProfile: {
+    select: {
+      displayName: true,
+      slug: true
+    }
+  }
 } satisfies Prisma.ReleaseInclude;
 
 type ReleaseWithRelations = Prisma.ReleaseGetPayload<{
@@ -38,6 +44,12 @@ const releasePlanningInclude = {
     }
   },
   streamingLinks: true,
+  primaryArtistProfile: {
+    select: {
+      displayName: true,
+      slug: true
+    }
+  },
   _count: {
     select: {
       copies: true
@@ -127,6 +139,10 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
   return hydrateRelease({
     id: release.id,
     title: release.title,
+    catalog_scope: release.catalogScope === "ARTIST" ? "ARTIST" : "VVVIRUZ",
+    primary_artist_profile_id: release.primaryArtistProfileId || "",
+    primary_artist_slug: release.primaryArtistProfile?.slug || "",
+    primary_artist_name: release.primaryArtistProfile?.displayName || "",
     pinned: release.pinned,
     collaborator: release.collaborator,
     collaborator_name: release.collaboratorName,
@@ -164,6 +180,7 @@ function toReleaseRecord(release: ReleaseWithRelations): ReleaseRecord {
     contextual_cta_url: release.contextualCtaUrl,
     featured_video_url: release.featuredVideoUrl,
     public_lyrics_enabled: release.publicLyricsEnabled,
+    lyrics_rights_confirmed_at: toDateInputValue(release.lyricsRightsConfirmedAt),
     is_published: release.isPublished,
     is_featured: release.isFeatured,
     concept_complete: release.conceptComplete,
@@ -244,6 +261,7 @@ export async function releaseExists(releaseId: string) {
 
 export async function readReleaseSummaries(): Promise<ReleaseSummary[]> {
   const releases = await prisma.release.findMany({
+    where: {catalogScope: "VVVIRUZ"},
     include: releaseInclude,
     orderBy: [
       {
@@ -293,6 +311,7 @@ function toRoadmapPlanItem(release: ReleasePlanningWithRelations): ReleasePlanIt
 export async function readReleaseYearRoadmap(year = new Date().getFullYear()): Promise<ReleasePlanItem[]> {
   const releases = await prisma.release.findMany({
     where: {
+      catalogScope: "VVVIRUZ",
       releaseDate: {
         not: null
       }
@@ -315,6 +334,7 @@ export async function readReleaseYearRoadmap(year = new Date().getFullYear()): P
 export async function readNextReleasePlans(limit = 12): Promise<ReleasePlanItem[]> {
   const releases = await prisma.release.findMany({
     where: {
+      catalogScope: "VVVIRUZ",
       published: false
     },
     include: releasePlanningInclude
@@ -389,6 +409,11 @@ export async function saveRelease(release: ReleaseRecord) {
         id: normalizedRelease.id,
         title: normalizedRelease.title,
         slug,
+        catalogScope: normalizedRelease.catalog_scope,
+        primaryArtistProfileId:
+          normalizedRelease.catalog_scope === "ARTIST"
+            ? normalizedRelease.primary_artist_profile_id || null
+            : null,
         pinned: normalizedRelease.pinned,
         collaborator: normalizedRelease.collaborator,
         collaboratorName: normalizedRelease.collaborator_name,
@@ -425,6 +450,7 @@ export async function saveRelease(release: ReleaseRecord) {
         isFeatured: normalizedRelease.is_featured,
         featuredVideoUrl: normalizedRelease.featured_video_url,
         publicLyricsEnabled: normalizedRelease.public_lyrics_enabled,
+        lyricsRightsConfirmedAt: toOptionalDate(normalizedRelease.lyrics_rights_confirmed_at),
         conceptComplete: normalizedRelease.concept_complete,
         beatMade: normalizedRelease.beat_made,
         lyricsFinished: normalizedRelease.lyrics_finished,
@@ -437,6 +463,11 @@ export async function saveRelease(release: ReleaseRecord) {
       update: {
         title: normalizedRelease.title,
         slug,
+        catalogScope: normalizedRelease.catalog_scope,
+        primaryArtistProfileId:
+          normalizedRelease.catalog_scope === "ARTIST"
+            ? normalizedRelease.primary_artist_profile_id || null
+            : null,
         pinned: normalizedRelease.pinned,
         collaborator: normalizedRelease.collaborator,
         collaboratorName: normalizedRelease.collaborator_name,
@@ -473,6 +504,7 @@ export async function saveRelease(release: ReleaseRecord) {
         isFeatured: normalizedRelease.is_featured,
         featuredVideoUrl: normalizedRelease.featured_video_url,
         publicLyricsEnabled: normalizedRelease.public_lyrics_enabled,
+        lyricsRightsConfirmedAt: toOptionalDate(normalizedRelease.lyrics_rights_confirmed_at),
         conceptComplete: normalizedRelease.concept_complete,
         beatMade: normalizedRelease.beat_made,
         lyricsFinished: normalizedRelease.lyrics_finished,
