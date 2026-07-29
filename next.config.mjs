@@ -39,6 +39,41 @@ const nextConfig = {
       has: [
         {
           type: "host",
+          value: "(?:www|admin|api|app|mail)\\.vvviruz\\.com"
+        }
+      ],
+      destination: "https://vvviruz.com/:path*",
+      permanent: true
+    },
+    {
+      source: "/",
+      has: [
+        {
+          type: "host",
+          value:
+            "(?<artist>[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\\.vvviruz\\.com"
+        }
+      ],
+      destination: "https://vvviruz.com/artists/:artist",
+      permanent: true
+    },
+    {
+      source: "/:path*",
+      has: [
+        {
+          type: "host",
+          value:
+            "(?<artist>[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)\\.vvviruz\\.com"
+        }
+      ],
+      destination: "https://vvviruz.com/artists/:artist/:path*",
+      permanent: true
+    },
+    {
+      source: "/:path*",
+      has: [
+        {
+          type: "host",
           value: "vvviruzcommandcenter-v2.vercel.app"
         }
       ],
