@@ -19,9 +19,9 @@ import {
 import {
   formatPublicReleaseDate,
   getPublicReleaseDiscoveryMetadata,
-  getYouTubeEmbedUrl,
-  formatCollaboratorsList
+  getYouTubeEmbedUrl
 } from "@/lib/public-utils";
+import {PublicCollaboratorCredits} from "@/components/public-collaborator-credits";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {BreakingBarzExperience} from "@/components/breaking-barz-experience";
@@ -239,7 +239,10 @@ export default async function PublicReleaseDetailPage({
 
               {release.collaborator && release.collaborator_name.trim() ? (
                 <p className="mt-4 text-sm font-semibold text-[#e3c16e]">
-                  with {formatCollaboratorsList(release.collaborator_name)}
+                  <PublicCollaboratorCredits
+                    collaboratorName={release.collaborator_name}
+                    profiles={release.collaborator_profiles}
+                  />
                 </p>
               ) : null}
 

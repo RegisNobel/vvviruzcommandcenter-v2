@@ -5,6 +5,7 @@ import path from "node:path";
 import {fileNameFromPath} from "@/lib/utils";
 
 import {
+  artistIntakeImagesDir,
   ensureStorageDirs,
   exclusiveArtDir,
   exclusiveTracksDir,
@@ -14,6 +15,7 @@ import {
 
 export type StoredAssetKind =
   | "cover"
+  | "artist-intake-image"
   | "site-icon"
   | "exclusive-art"
   | "exclusive-track";
@@ -43,6 +45,8 @@ function getAssetDirectory(kind: StoredAssetKind) {
   switch (kind) {
     case "cover":
       return releaseCoversDir;
+    case "artist-intake-image":
+      return artistIntakeImagesDir;
     case "site-icon":
       return siteIconsDir;
     case "exclusive-art":

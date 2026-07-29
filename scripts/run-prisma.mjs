@@ -3,7 +3,10 @@ import path from "node:path";
 import {spawnSync} from "node:child_process";
 
 const cwd = process.cwd();
-const envFiles = [".env", ".env.local"];
+const explicitEnvFile = process.env.PRISMA_ENV_FILE?.trim();
+const envFiles = explicitEnvFile
+  ? [explicitEnvFile]
+  : [".env", ".env.local"];
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -26,7 +29,13 @@ function loadEnvFile(filePath) {
     }
 
     const key = trimmed.slice(0, separatorIndex).trim();
-    const value = trimmed.slice(separatorIndex + 1).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    const hasMatchingQuotes =
+      (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"));
+    const value = hasMatchingQuotes
+      ? rawValue.slice(1, -1)
+      : rawValue;
 
     if (key && process.env[key] === undefined) {
       process.env[key] = value;

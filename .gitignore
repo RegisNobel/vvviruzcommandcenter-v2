@@ -25,6 +25,7 @@ storage/backgrounds/*
 storage/copies/*
 storage/exports/*
 storage/projects/*
+storage/production-backups/*
 storage/release-covers/*
 storage/releases/*
 storage/uploads/*
@@ -34,6 +35,7 @@ storage/uploads/*
 !storage/copies/.gitkeep
 !storage/exports/.gitkeep
 !storage/projects/.gitkeep
+!storage/production-backups/.gitkeep
 !storage/release-covers/.gitkeep
 !storage/releases/.gitkeep
 !storage/uploads/.gitkeep

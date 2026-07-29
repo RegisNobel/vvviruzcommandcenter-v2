@@ -20,6 +20,15 @@ type Snapshot = {
   exportedAt?: string;
   adminUsers?: SnapshotRecord[];
   releases?: SnapshotRecord[];
+  artistProfiles?: SnapshotRecord[];
+  artistIntakes?: SnapshotRecord[];
+  artistProfileVersions?: SnapshotRecord[];
+  artistProfileApprovals?: SnapshotRecord[];
+  artistLinks?: SnapshotRecord[];
+  artistProfileMedia?: SnapshotRecord[];
+  artistFeaturedItems?: SnapshotRecord[];
+  releaseArtistCredits?: SnapshotRecord[];
+  appearsOnArtistCredits?: SnapshotRecord[];
   releaseCategories?: SnapshotRecord[];
   releaseCategoryAssignments?: SnapshotRecord[];
   releaseTasks?: SnapshotRecord[];
@@ -48,6 +57,32 @@ type Snapshot = {
 const dateFieldsByModel: Record<string, string[]> = {
   adminUser: ["totpEnrolledAt", "createdAt", "updatedAt"],
   release: ["releaseDate", "createdOn", "updatedOn"],
+  artistProfile: ["draftUpdatedAt", "publishedAt", "pausedAt", "archivedAt", "createdAt", "updatedAt"],
+  artistIntake: [
+    "expiresAt",
+    "submittedAt",
+    "lastOpenedAt",
+    "reviewedAt",
+    "convertedAt",
+    "archivedAt",
+    "submissionNotificationAttemptedAt",
+    "createdAt",
+    "updatedAt"
+  ],
+  artistProfileVersion: [
+    "createdAt",
+    "approvedAt",
+    "publishedAt",
+    "previewExpiresAt",
+    "previewRevokedAt",
+    "previewSupersededAt"
+  ],
+  artistProfileApproval: ["decidedAt", "createdAt"],
+  artistLink: ["createdAt", "updatedAt"],
+  artistProfileMedia: ["rightsConfirmedAt", "createdAt", "updatedAt"],
+  artistFeaturedItem: ["createdAt", "updatedAt"],
+  releaseArtistCredit: ["createdAt", "updatedAt"],
+  appearsOnArtistCredit: ["createdAt", "updatedAt"],
   releaseCategory: ["projectReleaseDate", "createdAt", "updatedAt"],
   releaseCategoryAssignment: ["createdAt", "updatedAt"],
   releaseTask: ["createdAt", "updatedAt"],
@@ -77,7 +112,9 @@ const compositeUniqueKeys: Record<string, string[]> = {
   releaseCategoryAssignment: ["categoryId", "releaseId"],
   releaseStreamingLink: ["releaseId", "platform"],
   playlistRelease: ["playlistId", "releaseId"],
-  adCreativeCopyLink: ["adCreativeReportId", "copyEntryId"]
+  adCreativeCopyLink: ["adCreativeReportId", "copyEntryId"],
+  releaseArtistCredit: ["releaseId", "artistProfileId", "role"],
+  appearsOnArtistCredit: ["appearsOnId", "artistProfileId", "role"]
 };
 
 function hydrateDates(modelName: string, record: SnapshotRecord) {
@@ -246,6 +283,28 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.adminUsers = "skipped (security)";
 
   counts.releases = await upsertMany("release", snapshot.releases);
+  const publishedArtistVersions = (snapshot.artistProfiles ?? []).map((record) => ({
+    id: record.id,
+    publishedVersionId: record.publishedVersionId
+  }));
+  counts.artistProfiles = await upsertMany(
+    "artistProfile",
+    (snapshot.artistProfiles ?? []).map((record) => ({...record, publishedVersionId: null}))
+  );
+  counts.artistIntakes = await upsertMany("artistIntake", snapshot.artistIntakes);
+  counts.artistProfileVersions = await upsertMany("artistProfileVersion", snapshot.artistProfileVersions);
+  counts.artistProfileApprovals = await upsertMany("artistProfileApproval", snapshot.artistProfileApprovals);
+  counts.artistLinks = await upsertMany("artistLink", snapshot.artistLinks);
+  counts.artistProfileMedia = await upsertMany("artistProfileMedia", snapshot.artistProfileMedia);
+  counts.artistFeaturedItems = await upsertMany("artistFeaturedItem", snapshot.artistFeaturedItems);
+  for (const record of publishedArtistVersions) {
+    if (typeof record.id === "string" && typeof record.publishedVersionId === "string") {
+      await prisma.artistProfile.update({
+        where: {id: record.id},
+        data: {publishedVersionId: record.publishedVersionId}
+      });
+    }
+  }
   counts.releaseCategories = await upsertMany("releaseCategory", snapshot.releaseCategories);
   counts.releaseCategoryAssignments = await upsertMany(
     "releaseCategoryAssignment",
@@ -266,6 +325,8 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.fanUpdates = await upsertMany("fanUpdate", snapshot.fanUpdates);
   counts.vaultItems = await upsertMany("vaultItem", snapshot.vaultItems);
   counts.appearsOn = await upsertMany("appearsOn", snapshot.appearsOn);
+  counts.releaseArtistCredits = await upsertMany("releaseArtistCredit", snapshot.releaseArtistCredits);
+  counts.appearsOnArtistCredits = await upsertMany("appearsOnArtistCredit", snapshot.appearsOnArtistCredits);
   counts.copyEntries = await upsertMany("copyEntry", snapshot.copyEntries);
   counts.siteSettings = await upsertMany("siteSettings", snapshot.siteSettings);
   counts.subscribers = await upsertMany("subscriber", snapshot.subscribers);

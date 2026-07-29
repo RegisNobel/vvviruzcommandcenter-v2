@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-29 - Managed artist approval and intake hardening:** Kept published artist snapshots live while newer drafts move through review, isolated published slugs from draft edits, added expiring/superseding/revocable preview links, made off-platform approval language explicit, and added confirmation plus audit details around approval and publishing. Artist intake now supports reviewed/converted/archived lifecycle states, reopen and invitation rotation, notification-failure visibility, cover-art permissions, cleanup of abandoned uploads, and reviewed import into unpublished artist/release/annotation drafts. Vercel builds no longer mutate the production schema automatically; schema deployment is a separate explicit pre-deploy step.
+
 > **2026-07-28 - Appears On lifecycle and readiness:** Appears On remains Spotify/Odesli-first while adding server-side publish readiness validation, optional manual release dates, chronological context, archive/restore controls, and snapshot backup coverage. Archived appearances restore as Drafts and stay out of the public music library; permanent deletion remains available only for mistakes.
 
 > **2026-07-28 - Vault item lifecycle controls:** Fan Content now supports in-place Vault item editing, non-destructive archiving, Draft restoration, safe republishing, and display-order management while preserving first-publish history. Archived bundles remain in the database and backups but leave the public Vault; permanent deletion is reserved for mistakes and requires confirmation. Appears On admin actions now also enforce authenticated admin sessions server-side.
@@ -349,10 +351,10 @@ Vercel deployment path:
 2. Set `DATABASE_URL` to the Postgres connection string. If `DATABASE_URL` is not set, the Prisma helper script will automatically fall back to `POSTGRES_PRISMA_URL` or `POSTGRES_URL`.
 3. Provision Vercel Blob and set `ASSET_STORAGE_DRIVER=vercel-blob` plus `BLOB_READ_WRITE_TOKEN`.
 4. Export the current local SQLite data with `npm run db:export:snapshot`.
-5. Push the Postgres schema with `DATABASE_URL` pointed at a non-pooling Postgres connection when available.
+5. Apply the Postgres schema explicitly with `npm run db:deploy:postgres` while `DATABASE_URL` points at a non-pooling Postgres connection when available. Review Prisma's output before accepting any destructive change.
 6. Import the snapshot with `npm run db:import:snapshot`.
 7. Upload local media assets with `npm run assets:upload:blob`.
-8. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel`. This command pushes the Postgres schema with `db:push:postgres`, generates Prisma from `prisma/schema.postgres.prisma`, and then runs `next build`.
+8. Deploy with the Vercel build command in `vercel.json`, which runs `npm run build:vercel`. The build generates Prisma from `prisma/schema.postgres.prisma` and runs `next build`; it does not mutate the database.
 
 Required Vercel environment variables match `.env.example`:
 

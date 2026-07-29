@@ -18,6 +18,7 @@ storage/exclusive-tracks/**
 storage/exports/**
 storage/logs/**
 storage/projects/**
+storage/production-backups/**
 storage/release-covers/**
 storage/releases/**
 storage/uploads/**

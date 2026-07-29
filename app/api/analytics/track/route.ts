@@ -63,9 +63,14 @@ const analyticsEventSchema = z.object({
     "breaking_barz_open",
     "breaking_barz_next",
     "breaking_barz_previous",
-    "breaking_barz_reference_click"
+    "breaking_barz_reference_click",
+    "artist_profile_view",
+    "artist_release_view",
+    "artist_feature_open",
+    "artist_streaming_click",
+    "artist_platform_click"
   ]),
-  page: z.enum(["home", "links", "projects", "public", "release", "vault", "playlist", "preview"]),
+  page: z.enum(["home", "links", "projects", "public", "release", "vault", "playlist", "preview", "artist"]),
   eventId: z.string().max(200).optional(),
   path: z.string().max(1000).default(""),
   hubPath: z.string().max(500).default(""),
@@ -73,6 +78,7 @@ const analyticsEventSchema = z.object({
   playlistSlug: z.string().max(200).default(""),
   shortLinkContext: z.string().max(1000).default(""),
   releaseId: z.string().nullish(),
+  artistProfileId: z.string().nullish(),
   platform: z.enum(["spotify", "apple_music", "youtube_music", "youtube", "other"]).optional(),
   entryType: z.enum(["external", "short_link", "internal_navigation", "direct"]).optional(),
   originalReferrer: z.string().max(1000).default(""),
@@ -171,6 +177,16 @@ const analyticsEventSchema = z.object({
     ["latest_intel_view", "latest_intel_click"].includes(event.eventType) &&
     event.contentType === "latest_intel" &&
     Boolean(event.contentId);
+  const isArtistEvent =
+    event.page === "artist" &&
+    [
+      "artist_profile_view",
+      "artist_release_view",
+      "artist_feature_open",
+      "artist_streaming_click",
+      "artist_platform_click"
+    ].includes(event.eventType) &&
+    Boolean(event.artistProfileId);
 
   if (
     !isLinksEvent &&
@@ -181,7 +197,8 @@ const analyticsEventSchema = z.object({
     !isProjectsEvent &&
     !isReleaseProjectEvent &&
     !isBreakingBarzEvent &&
-    !isLatestIntelEvent
+    !isLatestIntelEvent &&
+    !isArtistEvent
   ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -316,6 +333,7 @@ export async function POST(request: Request) {
       shortLinkId,
       entryType,
       releaseId: parsed.releaseId ?? null,
+      artistProfileId: parsed.artistProfileId ?? null,
       referrer: request.headers.get("referer") || "",
       userAgent: request.headers.get("user-agent") || "",
       visitorId,

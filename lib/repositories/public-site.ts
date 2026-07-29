@@ -22,8 +22,23 @@ type PublicReleaseModel = Prisma.ReleaseGetPayload<{
     id: true;
     slug: true;
     title: true;
+    catalogScope: true;
+    primaryArtistProfileId: true;
     collaborator: true;
     collaboratorName: true;
+    artistCredits: {
+      select: {
+        artistProfile: {
+          select: {
+            displayName: true;
+            slug: true;
+            workflowStatus: true;
+            publishedVersionId: true;
+          };
+        };
+      };
+      orderBy: [{displayOrder: "asc"}];
+    };
     releaseDate: true;
     type: true;
     coverArtPath: true;
@@ -82,8 +97,23 @@ const publicReleaseSelect = {
   id: true,
   slug: true,
   title: true,
+  catalogScope: true,
+  primaryArtistProfileId: true,
   collaborator: true,
   collaboratorName: true,
+  artistCredits: {
+    select: {
+      artistProfile: {
+        select: {
+          displayName: true,
+          slug: true,
+          workflowStatus: true,
+          publishedVersionId: true
+        }
+      }
+    },
+    orderBy: [{displayOrder: "asc"}]
+  },
   releaseDate: true,
   type: true,
   coverArtPath: true,
@@ -146,8 +176,20 @@ async function toPublicRelease(release: PublicReleaseModel): Promise<PublicRelea
     id: release.id,
     slug: release.slug,
     title: release.title,
+    catalog_scope: release.catalogScope === "ARTIST" ? "ARTIST" : "VVVIRUZ",
+    primary_artist_profile_id: release.primaryArtistProfileId || "",
     collaborator: release.collaborator,
     collaborator_name: release.collaboratorName,
+    collaborator_profiles: release.artistCredits
+      .filter(
+        (credit) =>
+          credit.artistProfile.workflowStatus === "PUBLISHED" &&
+          Boolean(credit.artistProfile.publishedVersionId)
+      )
+      .map((credit) => ({
+        name: credit.artistProfile.displayName,
+        slug: credit.artistProfile.slug
+      })),
     release_date: toDateInputValue(release.releaseDate),
     type: release.type as ReleaseType,
     cover_art_path: rewriteAssetUrlToBlob(release.coverArtPath || release.coverArtUrl || "", blobOrigin),
@@ -248,6 +290,7 @@ const getCachedLinksPageRelease = unstable_cache(
     const selectedRelease = await prisma.release.findFirst({
       where: {
         id: normalizedId,
+        catalogScope: "VVVIRUZ",
         isPublished: true
       },
       select: publicReleaseSelect
@@ -260,6 +303,7 @@ const getCachedLinksPageRelease = unstable_cache(
 
   const latestRelease = await prisma.release.findFirst({
     where: {
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: publicReleaseSelect,
@@ -295,6 +339,7 @@ const getCachedPublishedReleasesByIds = unstable_cache(
       id: {
         in: normalizedIds
       },
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: publicReleaseSelect
@@ -459,6 +504,7 @@ const getCachedEligiblePublicProjects = unstable_cache(
         releases: {
           where: {
             release: {
+              catalogScope: "VVVIRUZ",
               isPublished: true
             }
           },
@@ -551,6 +597,7 @@ const getCachedPublishedReleases = unstable_cache(
   ) => {
   const releases = await prisma.release.findMany({
     where: {
+      catalogScope: "VVVIRUZ",
       isPublished: true,
       ...(normalizedCategorySlug
         ? {
@@ -594,6 +641,7 @@ export async function getPublishedReleases(options?: {
 export async function getRandomPublishedReleases(limit: number = 3): Promise<PublicReleaseRecord[]> {
   const releases = await prisma.release.findMany({
     where: {
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: publicReleaseSelect
@@ -619,6 +667,7 @@ const getCachedPublishedReleaseBySlug = unstable_cache(
   const release = await prisma.release.findFirst({
     where: {
       slug,
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: publicReleaseSelect
@@ -657,6 +706,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
         id: {
           not: releaseId
         },
+        catalogScope: "VVVIRUZ",
         isPublished: true,
         categories: {
           some: {
@@ -683,6 +733,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
         id: {
           notIn: Array.from(relatedReleaseIds)
         },
+        catalogScope: "VVVIRUZ",
         type,
         isPublished: true
       },
@@ -706,6 +757,7 @@ const getCachedRelatedPublishedReleases = unstable_cache(
       id: {
         notIn: Array.from(relatedReleaseIds)
       },
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: publicReleaseSelect,
@@ -728,6 +780,7 @@ export async function getRelatedPublishedReleases(releaseId: string, type: Relea
 const getCachedPublishedReleaseSlugs = unstable_cache(
   async () => prisma.release.findMany({
     where: {
+      catalogScope: "VVVIRUZ",
       isPublished: true
     },
     select: {

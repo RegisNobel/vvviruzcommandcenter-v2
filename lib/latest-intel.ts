@@ -2,9 +2,11 @@ export const LATEST_INTEL_PUBLIC_LIMIT = 5;
 
 const HIDDEN_PUBLIC_PATHS = new Set([
   "/commissions",
+  "/artists",
   "/exclusive",
   "/exclusives",
   "/links",
+  "/preview",
   "/unsubscribe",
   "/vault"
 ]);
@@ -22,7 +24,12 @@ function pathMatches(pathname: string, route: string) {
 
 export function shouldShowLatestIntel(pathname: string, configuredHubPaths: string[] = []) {
   const normalizedPathname = normalizePath(pathname);
-  if (HIDDEN_PUBLIC_PATHS.has(normalizedPathname) || pathMatches(normalizedPathname, "/listen")) {
+  if (
+    HIDDEN_PUBLIC_PATHS.has(normalizedPathname) ||
+    pathMatches(normalizedPathname, "/artists") ||
+    pathMatches(normalizedPathname, "/preview") ||
+    pathMatches(normalizedPathname, "/listen")
+  ) {
     return false;
   }
 

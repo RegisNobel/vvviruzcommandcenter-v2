@@ -8,6 +8,7 @@ import {gzipSync} from "node:zlib";
 import {prisma} from "@/lib/db/prisma";
 import {getAssetStorageDriver, getBlobPath, type StoredAssetKind} from "@/lib/server/asset-storage";
 import {
+  artistIntakeImagesDir,
   exclusiveArtDir,
   exclusiveTracksDir,
   releaseCoversDir,
@@ -28,6 +29,7 @@ type LocalAssetDirectory = {
 
 const localAssetDirectories: LocalAssetDirectory[] = [
   {kind: "site-icon", directory: siteIconsDir},
+  {kind: "artist-intake-image", directory: artistIntakeImagesDir},
   {kind: "cover", directory: releaseCoversDir},
   {kind: "exclusive-art", directory: exclusiveArtDir},
   {kind: "exclusive-track", directory: exclusiveTracksDir}
@@ -57,9 +59,16 @@ function countSnapshotTables(snapshot: Record<string, unknown>) {
 export async function createDatabaseSnapshotArtifact() {
   const snapshot = {
     exportedAt: new Date().toISOString(),
-    schemaVersion: 4,
+    schemaVersion: 7,
     adminUsers: await prisma.adminUser.findMany(),
     releases: await prisma.release.findMany(),
+    artistProfiles: await prisma.artistProfile.findMany(),
+    artistIntakes: await prisma.artistIntake.findMany(),
+    artistProfileVersions: await prisma.artistProfileVersion.findMany(),
+    artistProfileApprovals: await prisma.artistProfileApproval.findMany(),
+    artistLinks: await prisma.artistLink.findMany(),
+    artistProfileMedia: await prisma.artistProfileMedia.findMany(),
+    artistFeaturedItems: await prisma.artistFeaturedItem.findMany(),
     releaseCategories: await prisma.releaseCategory.findMany(),
     releaseCategoryAssignments: await prisma.releaseCategoryAssignment.findMany(),
     releaseTasks: await prisma.releaseTask.findMany(),
@@ -71,6 +80,8 @@ export async function createDatabaseSnapshotArtifact() {
     fanUpdates: await prisma.fanUpdate.findMany(),
     vaultItems: await prisma.vaultItem.findMany(),
     appearsOn: await prisma.appearsOn.findMany(),
+    releaseArtistCredits: await prisma.releaseArtistCredit.findMany(),
+    appearsOnArtistCredits: await prisma.appearsOnArtistCredit.findMany(),
     copyEntries: await prisma.copyEntry.findMany(),
     siteSettings: await prisma.siteSettings.findMany(),
     subscribers: await prisma.subscriber.findMany(),

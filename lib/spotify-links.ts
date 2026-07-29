@@ -1,4 +1,5 @@
 export type SpotifyResourceType = "track" | "playlist";
+export type SpotifyReleaseResourceType = "track" | "album";
 
 export type ParsedSpotifyResource = {
   type: SpotifyResourceType;
@@ -11,6 +12,12 @@ export type SpotifyContextLinkResult = {
   playlistId: string;
   shareToken: string | null;
   targetUrl: string;
+};
+
+export type ParsedSpotifyRelease = {
+  type: SpotifyReleaseResourceType;
+  id: string;
+  canonicalUrl: string;
 };
 
 export function parseSpotifyResourceUrl(
@@ -51,6 +58,44 @@ export function parseSpotifyResourceUrl(
     type: expectedType,
     id,
     shareToken
+  };
+}
+
+export function parseSpotifyReleaseUrl(input: string): ParsedSpotifyRelease {
+  const trimmed = input.trim();
+  if (!trimmed.startsWith("https://")) {
+    throw new Error("Spotify URL must use https:// protocol.");
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(trimmed);
+  } catch {
+    throw new Error("Invalid URL syntax.");
+  }
+
+  if (parsedUrl.hostname !== "open.spotify.com") {
+    throw new Error("Use an open.spotify.com track or album link.");
+  }
+
+  const segments = parsedUrl.pathname.split("/").filter(Boolean);
+  const typeIndex = segments.findIndex(
+    (segment) => segment === "track" || segment === "album"
+  );
+  if (typeIndex === -1 || typeIndex === segments.length - 1) {
+    throw new Error("Use a Spotify track or album link.");
+  }
+
+  const type = segments[typeIndex] as SpotifyReleaseResourceType;
+  const id = segments[typeIndex + 1];
+  if (!/^[a-zA-Z0-9]+$/.test(id)) {
+    throw new Error("Invalid Spotify release ID.");
+  }
+
+  return {
+    type,
+    id,
+    canonicalUrl: `https://open.spotify.com/${type}/${id}`
   };
 }
 

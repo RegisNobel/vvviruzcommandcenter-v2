@@ -275,6 +275,10 @@ export type ReleaseRecord = {
   id: string;
   title: string;
   slug: string;
+  catalog_scope: "VVVIRUZ" | "ARTIST";
+  primary_artist_profile_id: string;
+  primary_artist_slug: string;
+  primary_artist_name: string;
   pinned: boolean;
   collaborator: boolean;
   collaborator_name: string;
@@ -304,6 +308,7 @@ export type ReleaseRecord = {
   contextual_cta_url: string;
   featured_video_url: string;
   public_lyrics_enabled: boolean;
+  lyrics_rights_confirmed_at: string;
   is_published: boolean;
   is_featured: boolean;
   concept_complete: boolean;
@@ -367,8 +372,11 @@ export type PublicReleaseRecord = {
   id: string;
   slug: string;
   title: string;
+  catalog_scope: "VVVIRUZ" | "ARTIST";
+  primary_artist_profile_id: string;
   collaborator: boolean;
   collaborator_name: string;
+  collaborator_profiles: Array<{name: string; slug: string}>;
   release_date: string;
   type: ReleaseType;
   cover_art_path: string;

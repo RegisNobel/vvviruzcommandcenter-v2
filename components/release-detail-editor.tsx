@@ -63,6 +63,10 @@ import {
   type DiscoveryChecklistItem
 } from "@/lib/releases";
 import {parseSpotifyResourceUrl} from "@/lib/spotify-links";
+import {
+  applySpotifyReleaseMetadata,
+  type SpotifyReleaseMetadata
+} from "@/lib/spotify-release-import";
 import {SpotifyMembershipControls} from "@/components/spotify-membership-controls";
 import {
   getCurrentReleasePlanningStage,
@@ -115,6 +119,10 @@ type ReleaseSaveResponse = {
   release?: ReleaseRecord;
   message?: string;
   annotationRevalidation?: {needsReanchoring: number};
+};
+
+type SpotifyMetadataResponse = SpotifyReleaseMetadata & {
+  message?: string;
 };
 
 function serializeRelease(release: ReleaseRecord) {
@@ -410,7 +418,9 @@ export function ReleaseDetailEditor({
   historicalReports = [],
   initialPlaylists = [],
   initialPlaylistMemberships = [],
-  initialAnnotations = []
+  initialAnnotations = [],
+  managedArtistEditorial = false,
+  backHref = "/admin/releases"
 }: {
   adMetrics: ReleaseAdMetricsOverview;
   campaignHistory: ReleaseCampaignHistory;
@@ -428,6 +438,8 @@ export function ReleaseDetailEditor({
   initialPlaylists?: any[];
   initialPlaylistMemberships?: any[];
   initialAnnotations?: ReleaseAnnotationRecord[];
+  managedArtistEditorial?: boolean;
+  backHref?: string;
 }) {
   const router = useRouter();
   const [release, setRelease] = useState(initialRelease);
@@ -441,6 +453,10 @@ export function ReleaseDetailEditor({
   const [message, setMessage] = useState<string | null>(null);
   const [taskText, setTaskText] = useState("");
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [spotifyImportUrl, setSpotifyImportUrl] = useState(
+    initialRelease.streaming_links.spotify
+  );
+  const [isImportingSpotify, setIsImportingSpotify] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSlugLocked, setIsSlugLocked] = useState(
     () => initialRelease.slug.trim() === getSuggestedReleaseSlug(initialRelease.title)
@@ -724,8 +740,12 @@ export function ReleaseDetailEditor({
     ? "Active"
     : "Prepared";
   const publicUrlPreview = release.slug.trim()
-    ? `/music/${release.slug.trim()}`
-    : "/music/untitled-release";
+    ? release.catalog_scope === "ARTIST"
+      ? `/artists/${release.primary_artist_slug || "artist"}/music/${release.slug.trim()}`
+      : `/music/${release.slug.trim()}`
+    : release.catalog_scope === "ARTIST"
+      ? `/artists/${release.primary_artist_slug || "artist"}/music/untitled-release`
+      : "/music/untitled-release";
 
   const saveStatusLabel =
     saveState === "saving"
@@ -892,6 +912,41 @@ export function ReleaseDetailEditor({
       title: value,
       ...(isSlugLocked ? {slug: getSuggestedReleaseSlug(value)} : {})
     }));
+  }
+
+  async function handleSpotifyImport() {
+    const url = spotifyImportUrl.trim();
+    if (!url) {
+      setMessage("Paste a Spotify track or album link first.");
+      return;
+    }
+
+    setIsImportingSpotify(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/spotify/metadata?url=${encodeURIComponent(url)}`
+      );
+      const metadata = await readAdminApiResponse<SpotifyMetadataResponse>(
+        response,
+        "Spotify metadata could not be imported."
+      );
+      const applied = applySpotifyReleaseMetadata(release, metadata, {
+        isSlugLocked
+      });
+      updateRelease(() => applied.release);
+      setSpotifyImportUrl(metadata.spotifyUrl);
+      setMessage(
+        `Imported ${applied.importedFields.join(", ")} from Spotify. Existing completed fields were preserved.`
+      );
+    } catch (error) {
+      setMessage(
+        getAdminErrorMessage(error, "Spotify metadata could not be imported.")
+      );
+    } finally {
+      setIsImportingSpotify(false);
+    }
   }
 
   function applySuggestedSlug() {
@@ -1194,12 +1249,36 @@ export function ReleaseDetailEditor({
                 {release.title}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-                Source-of-truth workspace for release identity, media, discovery
-                packaging, planning, and lightweight promo readouts.
+                {managedArtistEditorial
+                  ? "Editorial workspace for the artist’s release identity, story context, media, lyrics, and Breaking Barz annotations."
+                  : "Source-of-truth workspace for release identity, media, discovery packaging, planning, and lightweight promo readouts."}
               </p>
             </div>
 
             <div className="rounded-xl border border-edge bg-surface-elevated p-4 sm:p-5">
+              {managedArtistEditorial ? (
+                <div className="rounded-lg border border-edge-strong bg-surface p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className={pageLabelClass}>Editorial Draft</p>
+                    <span className={pageAccentPillClass}>{saveStatusLabel}</span>
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm text-muted">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span>Collaborators</span>
+                      <span className="font-semibold text-ink">
+                        {release.collaborator
+                          ? formatCollaboratorsList(release.collaborator_name) ||
+                            "Yes"
+                          : "No"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span>Autosave</span>
+                      <span className="font-semibold text-ink">Every minute</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <div className="rounded-lg border border-edge-strong bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Internal Progress</p>
@@ -1236,6 +1315,7 @@ export function ReleaseDetailEditor({
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </section>
@@ -1257,6 +1337,56 @@ export function ReleaseDetailEditor({
                   </p>
                 </div>
               </div>
+
+              {managedArtistEditorial ? (
+                <div className="rounded-xl border border-[#245b3d] bg-[#0f1b15] p-4 sm:p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="max-w-2xl">
+                      <div className="flex items-center gap-2">
+                        <SpotifyLogo className="h-5 w-5 text-[#1db954]" />
+                        <p className={pageLabelClass}>Import from Spotify</p>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-[#aeb9b2]">
+                        Paste a Spotify track or album link to prefill its title,
+                        artwork, Spotify destination, artwork alt text, and empty
+                        SEO/share-title fields.
+                      </p>
+                    </div>
+                    <span className={pagePillClass}>Existing work is preserved</span>
+                  </div>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <input
+                      className={`${pageInputClass} min-w-0 flex-1`}
+                      onChange={(event) => setSpotifyImportUrl(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void handleSpotifyImport();
+                        }
+                      }}
+                      placeholder="https://open.spotify.com/track/…"
+                      type="url"
+                      value={spotifyImportUrl}
+                    />
+                    <button
+                      className={pagePrimaryButtonClass}
+                      disabled={isImportingSpotify}
+                      onClick={() => void handleSpotifyImport()}
+                      type="button"
+                    >
+                      <RefreshCw
+                        className={isImportingSpotify ? "animate-spin" : ""}
+                        size={16}
+                      />
+                      {isImportingSpotify ? "Importing…" : "Prefill release"}
+                    </button>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[#7f9287]">
+                    Spotify does not provide release date, artist credits, UPC,
+                    ISRC, genre, lyrics, or editorial story through this import.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2 md:col-span-2">
@@ -1703,6 +1833,32 @@ export function ReleaseDetailEditor({
                   </span>
                 </label>
 
+                {release.catalog_scope === "ARTIST" ? (
+                  <label className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
+                    <span className="flex items-center gap-3 text-sm font-semibold text-ink">
+                      <input
+                        checked={Boolean(release.lyrics_rights_confirmed_at)}
+                        className={pageCheckboxClass}
+                        onChange={(event) =>
+                          updateRelease((current) => ({
+                            ...current,
+                            lyrics_rights_confirmed_at: event.target.checked
+                              ? new Date().toISOString()
+                              : ""
+                          }))
+                        }
+                        type="checkbox"
+                      />
+                      Lyrics Publication Permission Confirmed
+                    </span>
+                    <span className="mt-2 block text-xs leading-5 text-muted">
+                      Required before an artist-owned release can publish lyrics publicly.
+                    </span>
+                  </label>
+                ) : null}
+
+                {!managedArtistEditorial ? (
+                <>
                 <div className="space-y-3 md:col-span-2">
                   <button
                     aria-pressed={release.is_published}
@@ -1888,6 +2044,8 @@ export function ReleaseDetailEditor({
                     </div>
                   </div>
                 </div>
+                </>
+                ) : null}
               </div>
             </section>
 
@@ -1897,6 +2055,7 @@ export function ReleaseDetailEditor({
               releaseId={release.id}
             />
 
+            {!managedArtistEditorial ? (
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Overview</p>
@@ -1921,6 +2080,7 @@ export function ReleaseDetailEditor({
                 value={release.concept_details}
               />
             </section>
+            ) : null}
 
             <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="media">
               <div>
@@ -2058,6 +2218,7 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
+            {!managedArtistEditorial ? (
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
                 <p className={pageLabelClass}>Overview</p>
@@ -2146,6 +2307,7 @@ export function ReleaseDetailEditor({
                 })}
               </div>
             </section>
+            ) : null}
 
             <section className={`${pagePanelClass} space-y-4 px-4 py-5 sm:px-6 sm:py-6`}>
               <div>
@@ -2234,6 +2396,7 @@ export function ReleaseDetailEditor({
               </div>
             </section>
 
+            {!managedArtistEditorial ? (
             <section className={`${pagePanelClass} scroll-mt-36 space-y-4 px-4 py-5 sm:px-6 sm:py-6`} id="promo-summary">
               <div>
                 <p className={pageLabelClass}>Promo Summary</p>
@@ -2314,7 +2477,9 @@ export function ReleaseDetailEditor({
                 ) : null}
               </div>
             </section>
+            ) : null}
 
+            {!managedArtistEditorial ? (
             <section className={`${pagePanelClass} space-y-6 px-4 py-5 sm:px-6 sm:py-6`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -2772,6 +2937,7 @@ export function ReleaseDetailEditor({
               )}
               </>
             </section>
+            ) : null}
 
             <section className={`${pagePanelClass} scroll-mt-36 space-y-6 px-4 py-5 sm:px-6 sm:py-6`} id="playlists">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#272b31] pb-4">
@@ -2943,6 +3109,8 @@ export function ReleaseDetailEditor({
                 <span className={pageAccentPillClass}>{saveStatusLabel}</span>
               </div>
 
+              {!managedArtistEditorial ? (
+              <>
               <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={pageLabelClass}>Internal Progress</p>
@@ -3008,6 +3176,8 @@ export function ReleaseDetailEditor({
                   {publicUrlPreview}
                 </p>
               </div>
+              </>
+              ) : null}
 
               <div className="rounded-xl border border-edge bg-surface-elevated px-4 py-4 text-sm text-secondary">
                 <p className={pageLabelClass}>Metadata</p>
@@ -3165,9 +3335,9 @@ export function ReleaseDetailEditor({
           }
           secondaryActionsSlot={
             <div className="flex items-center gap-2">
-              <Link className={pageTertiaryButtonClass} href="/admin/releases">
+              <Link className={pageTertiaryButtonClass} href={backHref}>
                 <ArrowLeft size={16} />
-                Back
+                {managedArtistEditorial ? "Back to artist" : "Back"}
               </Link>
               <button
                 className={pageDangerButtonClass}
@@ -3200,7 +3370,9 @@ export function ReleaseDetailEditor({
               {href: "#overview", label: "Overview"},
               {href: "#discovery", label: "Discovery"},
               {href: "#media", label: "Media"},
-              {href: "#promo-summary", label: "Promo"},
+              ...(managedArtistEditorial
+                ? []
+                : [{href: "#promo-summary", label: "Promo"}]),
               {href: "#playlists", label: "Playlists"},
               {href: "#release-actions", label: "Actions"}
             ].map((item) => (

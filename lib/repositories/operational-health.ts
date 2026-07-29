@@ -332,13 +332,49 @@ async function collectEmailCandidates(now: Date): Promise<HealthCandidate[]> {
   return candidates;
 }
 
+async function collectArtistIntakeNotificationCandidates(): Promise<
+  HealthCandidate[]
+> {
+  const intakes = await prisma.artistIntake.findMany({
+    where: {
+      submissionNotificationStatus: {in: ["FAILED", "NOT_CONFIGURED"]},
+      status: {in: ["SUBMITTED", "REVIEWED"]}
+    },
+    select: {
+      id: true,
+      artistName: true,
+      submissionNotificationStatus: true,
+      submissionNotificationError: true
+    },
+    take: 20,
+    orderBy: {updatedAt: "desc"}
+  });
+
+  return intakes.map((intake) => ({
+    actionPath: `/admin/artists/intake/${intake.id}`,
+    category: "email" as const,
+    checkKey: `artist-intake-notification:${intake.id}`,
+    entityId: intake.id,
+    entityType: "artist-intake",
+    message:
+      intake.submissionNotificationError ||
+      `${intake.artistName}'s submission notification was not delivered.`,
+    severity: "warning" as const,
+    title:
+      intake.submissionNotificationStatus === "NOT_CONFIGURED"
+        ? "Artist intake notification is not configured"
+        : "Artist intake notification failed"
+  }));
+}
+
 export async function runOperationalHealthChecks() {
   const now = new Date();
   const releases = await readPublicReleaseHealthRows();
   const candidateGroups = await Promise.all([
     collectBackupCandidates(now),
     collectAssetCandidates(releases),
-    collectEmailCandidates(now)
+    collectEmailCandidates(now),
+    collectArtistIntakeNotificationCandidates()
   ]);
   const candidates = [
     ...candidateGroups.flat(),

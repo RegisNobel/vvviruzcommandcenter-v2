@@ -7,11 +7,56 @@ const snapshotPath =
   process.env.DB_SNAPSHOT_PATH ||
   path.join(process.cwd(), "storage", "production-data-snapshot.json");
 
+async function readOptionalTable<T>(
+  label: string,
+  read: () => Promise<T[]>
+): Promise<T[]> {
+  try {
+    return await read();
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? String(error.code)
+        : "";
+    if (code === "P2021") {
+      console.warn(
+        `${label} is not present in the source database; exporting it as an empty collection.`
+      );
+      return [];
+    }
+    throw error;
+  }
+}
+
 async function main() {
   const snapshot = {
     exportedAt: new Date().toISOString(),
     adminUsers: await prisma.adminUser.findMany(),
     releases: await prisma.release.findMany(),
+    artistProfiles: await readOptionalTable("ArtistProfile", () =>
+      prisma.artistProfile.findMany()
+    ),
+    artistIntakes: await readOptionalTable("ArtistIntake", () =>
+      prisma.artistIntake.findMany()
+    ),
+    artistProfileVersions: await readOptionalTable(
+      "ArtistProfileVersion",
+      () => prisma.artistProfileVersion.findMany()
+    ),
+    artistProfileApprovals: await readOptionalTable(
+      "ArtistProfileApproval",
+      () => prisma.artistProfileApproval.findMany()
+    ),
+    artistLinks: await readOptionalTable("ArtistLink", () =>
+      prisma.artistLink.findMany()
+    ),
+    artistProfileMedia: await readOptionalTable("ArtistProfileMedia", () =>
+      prisma.artistProfileMedia.findMany()
+    ),
+    artistFeaturedItems: await readOptionalTable(
+      "ArtistFeaturedItem",
+      () => prisma.artistFeaturedItem.findMany()
+    ),
     releaseCategories: await prisma.releaseCategory.findMany(),
     releaseCategoryAssignments: await prisma.releaseCategoryAssignment.findMany(),
     releaseTasks: await prisma.releaseTask.findMany(),
@@ -23,6 +68,8 @@ async function main() {
     fanUpdates: await prisma.fanUpdate.findMany(),
     vaultItems: await prisma.vaultItem.findMany(),
     appearsOn: await prisma.appearsOn.findMany(),
+    releaseArtistCredits: await prisma.releaseArtistCredit.findMany(),
+    appearsOnArtistCredits: await prisma.appearsOnArtistCredit.findMany(),
     copyEntries: await prisma.copyEntry.findMany(),
     siteSettings: await prisma.siteSettings.findMany(),
     subscribers: await prisma.subscriber.findMany(),

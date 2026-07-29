@@ -3,11 +3,11 @@ import Link from "next/link";
 
 import {PublicPlatformLinks} from "@/components/public-platform-links";
 import {
-  formatCollaboratorsList,
   formatPublicReleaseDate,
   getPublicCardTitleSize,
   getPublicReleaseDiscoveryMetadata
 } from "@/lib/public-utils";
+import {PublicCollaboratorCredits} from "@/components/public-collaborator-credits";
 import type {PublicReleaseRecord} from "@/lib/types";
 
 type PublicRelatedReleaseItemProps = {
@@ -25,9 +25,6 @@ export function PublicRelatedReleaseItem({
   platformLabels,
   release
 }: PublicRelatedReleaseItemProps) {
-  const collaboratorName = release.collaborator
-    ? formatCollaboratorsList(release.collaborator_name)
-    : "";
   const {coverArtAltText} = getPublicReleaseDiscoveryMetadata(release);
   const titleSizeClass = getPublicCardTitleSize(release.title, "compact");
 
@@ -74,12 +71,15 @@ export function PublicRelatedReleaseItem({
             </h3>
           </Link>
           <div className="min-h-5 overflow-hidden">
-            {collaboratorName ? (
+            {release.collaborator && release.collaborator_name.trim() ? (
               <p
                 className="truncate text-xs font-semibold leading-5 text-[#e3c16e]"
-                title={`with ${collaboratorName}`}
+                title={`with ${release.collaborator_name}`}
               >
-                with {collaboratorName}
+                <PublicCollaboratorCredits
+                  collaboratorName={release.collaborator_name}
+                  profiles={release.collaborator_profiles}
+                />
               </p>
             ) : null}
           </div>
