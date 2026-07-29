@@ -23,7 +23,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getPublishedArtistCatalogPaths(),
       getSiteSettings()
     ]);
-  const stablePaths = new Set(["/", "/music", "/projects", "/about", "/exclusives"]);
+  const stablePaths = new Set([
+    "/",
+    "/music",
+    "/projects",
+    "/artists",
+    "/about",
+    "/exclusives"
+  ]);
 
   if (siteSettings.site_content.commissions?.is_enabled) {
     stablePaths.add("/commissions");

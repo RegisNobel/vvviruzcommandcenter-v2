@@ -33,12 +33,17 @@ export async function PublicSiteChrome({
   }
 
   navItems.push({href: "/exclusives", label: "Exclusives"});
+  navItems.push({href: "/artists", label: "Artist Profiles"});
   navItems.push({href: "/about", label: siteSettings.site_content.chrome.nav_about_label});
   navItems.push({href: "/commissions", label: "Commissions"});
 
   if (siteSettings.site_content.vault?.is_enabled) {
     navItems.push({href: "/vault", label: "Vault"});
   }
+
+  const desktopMoreHrefs = new Set(["/artists", "/about", "/commissions", "/vault"]);
+  const desktopPrimaryItems = navItems.filter((item) => !desktopMoreHrefs.has(item.href));
+  const desktopMoreItems = navItems.filter((item) => desktopMoreHrefs.has(item.href));
 
   return (
     <div className="public-app flex min-h-screen flex-col">
@@ -103,7 +108,7 @@ export async function PublicSiteChrome({
           </Link>
 
           <nav aria-label="Public navigation" className="hidden items-center gap-2 lg:flex">
-            {navItems.map((item) => (
+            {desktopPrimaryItems.map((item) => (
               <Link
                 className="public-nav-link"
                 href={item.href}
@@ -112,6 +117,24 @@ export async function PublicSiteChrome({
                 {item.label}
               </Link>
             ))}
+            {desktopMoreItems.length ? (
+              <details className="group relative">
+                <summary className="public-nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
+                  More
+                </summary>
+                <div className="public-nav-more-panel absolute right-0 top-[calc(100%+0.65rem)] z-50 grid min-w-52 gap-1 p-2 shadow-2xl">
+                  {desktopMoreItems.map((item) => (
+                    <Link
+                      className="public-nav-more-link px-4 py-3 text-sm font-semibold transition"
+                      href={item.href}
+                      key={item.href}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </nav>
         </div>
       </header>

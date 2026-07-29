@@ -1008,6 +1008,28 @@ export async function readPublishedArtistProfile(slug: string) {
   return profile?.publishedVersion ? parseArtistProfileSnapshot(profile.publishedVersion.content) : null;
 }
 
+export async function listPublishedArtistProfiles() {
+  const profiles = await prisma.artistProfile.findMany({
+    where: {
+      publishedVersionId: {not: null},
+      publishedSlug: {not: ""},
+      pausedAt: null,
+      archivedAt: null
+    },
+    orderBy: [{displayName: "asc"}, {createdAt: "asc"}],
+    select: {
+      publishedVersion: {select: {content: true}}
+    }
+  });
+
+  return profiles.flatMap((profile) => {
+    const snapshot = profile.publishedVersion
+      ? parseArtistProfileSnapshot(profile.publishedVersion.content)
+      : null;
+    return snapshot ? [snapshot] : [];
+  });
+}
+
 export async function readArtistPreviewByToken(token: string) {
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const version = await prisma.artistProfileVersion.findUnique({
