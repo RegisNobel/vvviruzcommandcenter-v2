@@ -119,7 +119,7 @@ export default async function ArtistDirectoryPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8b95f]">
-                            Managed artist profile
+                            Artist profile
                           </p>
                           <h2 className="mt-2 text-2xl font-semibold text-[#fff8ec]">
                             {profile.displayName}

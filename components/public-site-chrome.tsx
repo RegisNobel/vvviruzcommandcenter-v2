@@ -41,7 +41,7 @@ export async function PublicSiteChrome({
     navItems.push({href: "/vault", label: "Vault"});
   }
 
-  const desktopMoreHrefs = new Set(["/artists", "/about", "/commissions", "/vault"]);
+  const desktopMoreHrefs = new Set(["/projects", "/artists", "/commissions", "/vault"]);
   const desktopPrimaryItems = navItems.filter((item) => !desktopMoreHrefs.has(item.href));
   const desktopMoreItems = navItems.filter((item) => desktopMoreHrefs.has(item.href));
 
