@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
-import {parseArtistProfileSnapshot} from "../lib/artist-profiles";
+import {
+  getArtistFeaturedItemHref,
+  parseArtistProfileSnapshot
+} from "../lib/artist-profiles";
 
 const release = {
   id: "release-1",
@@ -112,5 +115,37 @@ assert(expanded);
 assert.equal(expanded.expansion.catalogEnabled, true);
 assert.deepEqual(expanded.expansion.catalogReleaseIds, [release.id]);
 assert.equal(expanded.releaseLibrary[0]?.editorialEnabled, true);
+
+const sharedRelease = {
+  ...release,
+  id: "release-shared",
+  slug: "shared-release",
+  catalogScope: "VVVIRUZ" as const,
+  primaryArtistProfileId: "",
+  primaryArtistName: "vvviruz",
+  editorialEnabled: true
+};
+const sharedItem = {
+  itemType: "collaboration" as const,
+  eyebrow: "Start Here",
+  title: sharedRelease.title,
+  subtitle: "",
+  description: "",
+  url: "https://example.com/shared-release",
+  coverArtUrl: "",
+  coverArtAlt: "",
+  isStartHere: true,
+  releaseId: sharedRelease.id,
+  editorialRelease: sharedRelease
+};
+
+assert.equal(
+  getArtistFeaturedItemHref({slug: "artist"}, sharedItem, "private-token"),
+  "/preview/artists/private-token/music/shared-release"
+);
+assert.equal(
+  getArtistFeaturedItemHref({slug: "artist"}, sharedItem),
+  "/artists/artist/music/shared-release"
+);
 
 console.log("Artist profile expansion snapshot tests passed.");

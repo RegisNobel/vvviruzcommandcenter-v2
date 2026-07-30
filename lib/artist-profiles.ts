@@ -198,9 +198,6 @@ export function getArtistFeaturedItemHref(
 ) {
   const release = item.editorialRelease;
   if (!release) return item.url;
-  if (release.catalogScope === "VVVIRUZ") {
-    return `/music/${encodeURIComponent(release.slug)}`;
-  }
   if (previewToken) {
     return `/preview/artists/${encodeURIComponent(previewToken)}/music/${encodeURIComponent(release.slug)}`;
   }

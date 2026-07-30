@@ -84,15 +84,7 @@ const editorInclude = {
   },
   releaseCredits: {
     select: {
-      release: {
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          catalogScope: true,
-          primaryArtistProfileId: true
-        }
-      }
+      release: {include: editorialReleaseInclude}
     },
     orderBy: [{displayOrder: "asc" as const}]
   },
@@ -259,6 +251,17 @@ function toSnapshot(
     featuredStoriesLabel: profile.featuredStoriesLabel,
     featuredStoriesHeading: profile.featuredStoriesHeading
   };
+  const releaseLibraryModels = Array.from(
+    new Map(
+      [
+        ...profile.primaryReleases,
+        ...profile.releaseCredits.map((credit) => credit.release),
+        ...profile.featuredItems.flatMap((item) =>
+          item.release ? [item.release] : []
+        )
+      ].map((release) => [release.id, release])
+    ).values()
+  );
   return {
     schemaVersion: 5,
     artistProfileId: profile.id,
@@ -290,7 +293,7 @@ function toSnapshot(
       featuredStoryModels.map(mapPlacement)
     ),
     expansion,
-    releaseLibrary: profile.primaryReleases.map((release) =>
+    releaseLibrary: releaseLibraryModels.map((release) =>
       toEditorialReleaseSnapshot(
         release,
         profile.displayName,
@@ -1064,7 +1067,6 @@ export async function readPublishedArtistEditorialRelease(
   if (!profile) return null;
   const release = profile.releaseLibrary.find(
     (item) =>
-      item.catalogScope === "ARTIST" &&
       item.editorialEnabled &&
       item.slug === releaseSlug
   );
@@ -1079,7 +1081,6 @@ export async function readArtistPreviewEditorialRelease(
   if (!preview) return null;
   const release = preview.profile.releaseLibrary.find(
     (item) =>
-      item.catalogScope === "ARTIST" &&
       item.editorialEnabled &&
       item.slug === releaseSlug
   );
@@ -1118,7 +1119,7 @@ export async function getPublishedArtistEditorialReleasePaths() {
       : null;
     if (!snapshot) return [];
     return snapshot.releaseLibrary.flatMap((release) =>
-      release.catalogScope === "ARTIST" && release.editorialEnabled
+      release.editorialEnabled
         ? [
             {
               artistSlug: profile.publishedSlug,

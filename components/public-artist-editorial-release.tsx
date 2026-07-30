@@ -82,9 +82,11 @@ export function PublicArtistEditorialRelease({
     ? `/preview/artists/${encodeURIComponent(preview.token)}`
     : `/artists/${encodeURIComponent(profile.slug)}`;
   const canShowLyrics =
-    release.publicLyricsEnabled &&
-    release.lyricsRightsConfirmed &&
-    Boolean(release.lyrics.trim());
+    Boolean(release.lyrics.trim()) &&
+    Boolean(
+      preview ||
+        (release.publicLyricsEnabled && release.lyricsRightsConfirmed)
+    );
   const videoUrl = getYouTubeEmbedUrl(release.featuredVideoUrl);
   const locationFlagUrl = getCountryFlagImageUrl(profile.locationCountryCode);
   const socialLinks = profile.links.filter(
@@ -94,6 +96,7 @@ export function PublicArtistEditorialRelease({
     <section
       aria-labelledby="artist-release-social-links-heading"
       className="lg:sticky lg:top-24"
+      key="artist-release-social-links"
     >
       <div className="border-l-2 border-[var(--artist-accent)]/60 pl-4">
         <p

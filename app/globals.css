@@ -1095,6 +1095,7 @@ input[type="range"]::-moz-range-thumb {
   background:
     linear-gradient(135deg, transparent 0 70%, color-mix(in srgb, var(--artist-atmosphere) 10%, transparent)),
     var(--artist-panel);
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1111,11 +1112,12 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .artist-profile-hero h1 {
-  font-size: clamp(4.4rem, 11vw, 10rem);
+  font-size: clamp(4.4rem, 17cqi, 10rem);
   font-weight: 950;
   letter-spacing: -0.075em;
   line-height: 0.76;
   margin: clamp(2rem, 5vw, 4.5rem) 0 2rem;
+  max-width: 100%;
   text-transform: uppercase;
 }
 
@@ -1437,6 +1439,6 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .artist-profile-hero h1 {
-    font-size: clamp(4rem, 24vw, 7rem);
+    font-size: clamp(4rem, 17cqi, 7rem);
   }
 }

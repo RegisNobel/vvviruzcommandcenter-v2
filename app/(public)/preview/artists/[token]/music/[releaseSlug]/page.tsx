@@ -9,7 +9,7 @@ import {readArtistPreviewEditorialRelease} from "@/lib/repositories/artist-profi
 export const metadata: Metadata = {
   title: "Private artist release preview",
   robots: {index: false, follow: false, nocache: true},
-  referrer: "no-referrer"
+  referrer: "origin"
 };
 
 export default async function ArtistEditorialReleasePreviewPage({

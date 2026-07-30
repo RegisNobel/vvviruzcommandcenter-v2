@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-07-29 - Shared-release artist editorial routing:** Managed artist profiles can now open a linked vvviruz-catalog collaboration inside the artist-specific editorial layout while continuing to reuse the canonical release, lyrics, credits, streaming links, and annotations. Private previews may display stored lyrics for collaborator review before public lyric permission is confirmed; published pages retain the existing rights-confirmation gate. Editorial previews use an origin-only referrer so YouTube embeds receive the required site identity without exposing private preview tokens.
+
 > **2026-07-29 - Managed artist approval and intake hardening:** Kept published artist snapshots live while newer drafts move through review, isolated published slugs from draft edits, added expiring/superseding/revocable preview links, made off-platform approval language explicit, and added confirmation plus audit details around approval and publishing. Artist intake now supports reviewed/converted/archived lifecycle states, reopen and invitation rotation, notification-failure visibility, cover-art permissions, cleanup of abandoned uploads, and reviewed import into unpublished artist/release/annotation drafts. Vercel builds no longer mutate the production schema automatically; schema deployment is a separate explicit pre-deploy step.
 
 > **2026-07-28 - README current-state alignment:** Reconciled the current-state overview with the live product. The README now reflects the dual local/production architecture, complete public route surface, current Appears On lifecycle, playlists and link hubs, Fan Content, Vault, commissions, operational health, backups, and the corrected local-development sequence.
@@ -547,6 +549,13 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-07-29 - Shared Release Artist Editorials
+
+- Managed artist profiles can open a linked vvviruz-catalog collaboration inside the artist-specific editorial layout without duplicating the release or splitting its lyrics, credits, streaming links, and annotations.
+- Private collaborator previews may display stored lyrics before public lyric permission is confirmed; published pages continue to require both public lyrics enablement and explicit rights confirmation.
+- Editorial previews send only the site origin to YouTube so embedded videos work without leaking private preview tokens.
+- Added the reusable Jamar Rose seed workflow and profile asset for a Crimson Voltage private preview built around Shibuya, WHAT A DRAG, and BLITZ.
 
 ### 2026-07-13 - Public Site Settings Admin Controls
 
