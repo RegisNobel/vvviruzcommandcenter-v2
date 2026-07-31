@@ -66,6 +66,35 @@ export type BrandPillar = {
   imageFile: string;
 };
 
+export type CommissionService = {
+  id: string;
+  title: string;
+  description: string;
+};
+
+export type VaultOfferTrack = {
+  title: string;
+  subtitle: string;
+};
+
+export type VaultOfferDetails = {
+  facts: string[];
+  detailsEyebrow: string;
+  detailsHeading: string;
+  detailsDescription: string;
+  tracks: VaultOfferTrack[];
+  availableLabel: string;
+  comingSoonLabel: string;
+  purchaseHeading: string;
+  purchaseDescription: string;
+  minimumLabel: string;
+  priceDisplay: string;
+  currencyLabel: string;
+  checkoutHelper: string;
+  purchaseCtaLabel: string;
+  fulfillmentNote: string;
+};
+
 export type ExclusiveCommunityBenefit = {
   id: string;
   title: string;
@@ -125,6 +154,12 @@ export type SiteContentSettings = {
     nav_about_label: string;
     nav_links_label: string;
     nav_exclusive_label: string;
+    nav_projects_label: string;
+    nav_artists_label: string;
+    nav_commissions_label: string;
+    nav_vault_label: string;
+    nav_more_label: string;
+    desktop_more_hrefs: string[];
     footer_copyright_text: string;
   };
   home: {
@@ -148,13 +183,47 @@ export type SiteContentSettings = {
     lock_in_spotlight_cta_label: string;
     recent_releases_eyebrow: string;
     recent_releases_heading: string;
+    recent_releases_description: string;
     recent_releases_view_all_label: string;
+    exclusive_cta_eyebrow: string;
     brand_pillars_eyebrow: string;
     brand_pillars_heading: string;
     brand_pillars: BrandPillar[];
   };
   projects: {
     approved_slugs: string[];
+    homepage_eyebrow: string;
+    homepage_heading: string;
+    homepage_description: string;
+    homepage_card_cta_label: string;
+    index_meta_title: string;
+    index_meta_description: string;
+    index_heading: string;
+    index_description: string;
+    index_browse_label: string;
+    index_card_cta_label: string;
+    empty_heading: string;
+    empty_description: string;
+    empty_cta_label: string;
+    not_found_eyebrow: string;
+    not_found_heading: string;
+    not_found_description: string;
+    not_found_cta_label: string;
+  };
+  artist_directory: {
+    metadata_title: string;
+    metadata_description: string;
+    eyebrow: string;
+    heading: string;
+    description: string;
+    card_eyebrow: string;
+    empty_eyebrow: string;
+    empty_heading: string;
+    empty_description: string;
+  };
+  intel: {
+    rail_label: string;
+    cta_label: string;
   };
   music: {
     page_eyebrow: string;
@@ -164,8 +233,19 @@ export type SiteContentSettings = {
     nerdcore_label: string;
     mainstream_label: string;
     empty_state_text: string;
+    releases_tab_label: string;
+    appears_on_tab_label: string;
+    browse_projects_label: string;
+    showing_label: string;
+    open_project_label: string;
+    clear_filter_label: string;
+    appears_on_empty_text: string;
+    search_label: string;
+    search_placeholder: string;
+    search_empty_text: string;
   };
   about: {
+    hero_cta_label: string;
     statement_heading: string;
     statement_text: string;
     artist_image_file: string;
@@ -180,6 +260,11 @@ export type SiteContentSettings = {
     connect_empty_text: string;
     contact_microcopy: string;
     contact_empty_text: string;
+    catalog_eyebrow: string;
+    catalog_heading: string;
+    catalog_description: string;
+    catalog_primary_cta_label: string;
+    catalog_secondary_cta_label: string;
   };
   analytics: {
     meta_pixel_enabled: boolean;
@@ -236,6 +321,12 @@ export type SiteContentSettings = {
     community_cta_label: string;
     community_cta_helper: string;
     community_benefits: ExclusiveCommunityBenefit[];
+    preview_private_notice: string;
+    preview_status_label: string;
+    activated_heading: string;
+    activated_body: string;
+    discord_unavailable_label: string;
+    discord_unavailable_helper: string;
   };
   release: {
     back_to_music_label: string;
@@ -257,9 +348,23 @@ export type SiteContentSettings = {
     cta_label: string;
     cta_url: string;
     benefits: ExclusiveCommunityBenefit[];
+    waitlist_consent_label: string;
+    waitlist_success_heading: string;
+    waitlist_note: string;
+    future_updates_heading: string;
+    future_updates_description: string;
+    future_updates_consent_label: string;
+    future_updates_cta_label: string;
+    more_eyebrow: string;
+    more_heading: string;
+    preview_cta_label: string;
+    item_purchase_cta_label: string;
   };
   commissions: {
     is_enabled: boolean;
+    metadata_title: string;
+    metadata_open_description: string;
+    metadata_closed_description: string;
     page_eyebrow: string;
     page_title: string;
     page_subtitle: string;
@@ -268,6 +373,45 @@ export type SiteContentSettings = {
     card_description: string;
     card_button_text: string;
     closed_message: string;
+    closed_eyebrow: string;
+    closed_heading: string;
+    closed_cta_label: string;
+    services: CommissionService[];
+    quote_eyebrow: string;
+    quote_description: string;
+    terms_primary: string;
+    terms_secondary: string;
+    form_heading: string;
+    form_success_heading: string;
+    form_disclaimer: string;
+    name_label: string;
+    name_placeholder: string;
+    email_label: string;
+    email_placeholder: string;
+    request_type_label: string;
+    request_type_placeholder: string;
+    other_service_label: string;
+    budget_label: string;
+    budget_placeholder: string;
+    usage_label: string;
+    usage_placeholder: string;
+    deadline_label: string;
+    deadline_placeholder: string;
+    specific_date_label: string;
+    specific_date_placeholder: string;
+    topic_label: string;
+    topic_placeholder: string;
+    beat_link_label: string;
+    beat_link_placeholder: string;
+    reference_link_label: string;
+    reference_link_placeholder: string;
+    notes_label: string;
+    notes_placeholder: string;
+    submit_label: string;
+    submitting_label: string;
+    budget_options: string[];
+    usage_options: string[];
+    deadline_options: string[];
   };
 };
 
@@ -453,6 +597,7 @@ export type PublicVaultItem = {
   preview_url: string;
   price_label: string;
   checkout_url: string;
+  offer_details: VaultOfferDetails;
 };
 
 export type SiteSettingsRecord = {

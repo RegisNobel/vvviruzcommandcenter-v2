@@ -28,9 +28,13 @@ function formatIntelDate(value: string) {
 
 export function LatestIntelRail({
   configuredHubPaths,
+  ctaLabel,
+  label,
   items
 }: {
   configuredHubPaths: string[];
+  ctaLabel: string;
+  label: string;
   items: PublicFanUpdate[];
 }) {
   const pathname = usePathname() || "/";
@@ -132,7 +136,7 @@ export function LatestIntelRail({
 
   return (
     <section
-      aria-label="Latest Intel"
+      aria-label={label}
       aria-roledescription="carousel"
       className="relative z-30 border-b border-[var(--public-gold)]/30 bg-[linear-gradient(105deg,rgba(31,27,18,0.98),rgba(13,16,20,0.99)_48%,rgba(13,16,20,0.98))] shadow-[0_14px_36px_rgba(0,0,0,0.24)] lg:sticky lg:top-[69px]"
       onBlur={(event) => {
@@ -150,7 +154,7 @@ export function LatestIntelRail({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand-primary)] opacity-35 motion-reduce:animate-none" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--brand-primary)]" />
             </span>
-            <span className="hidden sm:inline">Latest Intel</span>
+            <span className="hidden sm:inline">{label}</span>
             <Radio aria-hidden="true" className="sm:hidden" size={14} />
           </span>
 
@@ -181,7 +185,7 @@ export function LatestIntelRail({
             href={activeItem.href}
             onClick={() => trackLatestIntelClick({intelId: activeItem.id, pageVisitId, targetUrl: activeItem.href, label: activeItem.title})}
           >
-            Read update
+            {ctaLabel}
             <ArrowUpRight aria-hidden="true" size={14} />
           </Link>
         ) : null}
@@ -226,7 +230,7 @@ export function LatestIntelRail({
           href={activeItem.href}
           onClick={() => trackLatestIntelClick({intelId: activeItem.id, pageVisitId, targetUrl: activeItem.href, label: activeItem.title})}
         >
-          Read update
+          {ctaLabel}
           <ArrowUpRight aria-hidden="true" size={14} />
         </Link>
       ) : null}

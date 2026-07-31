@@ -1,7 +1,16 @@
 import type {SiteContentSettings} from "@/lib/types";
 import {extractYouTubeVideoId, getCanonicalYouTubeWatchUrl} from "./youtube-utils";
 
-type ExclusiveDeliverySettings = SiteContentSettings["exclusive"];
+type ExclusiveDeliverySettings = Pick<
+  SiteContentSettings["exclusive"],
+  | "unlock_experience"
+  | "also_email_link"
+  | "email_subject"
+  | "email_body"
+  | "private_external_url"
+> & {
+  release_id?: string | null;
+};
 
 function hasEmailDeliveryEnabled(values: ExclusiveDeliverySettings) {
   return (
@@ -56,7 +65,10 @@ export function validateExclusiveEmailDeliverySettings(values: ExclusiveDelivery
 
 export function normalizeExclusiveDeliverySettings<T extends ExclusiveDeliverySettings>(
   values: T
-): T {
+): Omit<T, "release_id" | "private_external_url"> & {
+  release_id: string | null;
+  private_external_url: string;
+} {
   const normalizedValues = {
     ...values,
     release_id: values.release_id?.trim() || null,

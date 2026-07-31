@@ -3,9 +3,13 @@ export const dynamic = "force-dynamic";
 import {listCommissionRequests} from "@/lib/repositories/commissions";
 import {CommissionsAdminPage} from "@/components/commissions-admin-page";
 import {Palette} from "lucide-react";
+import {readSiteSettings} from "@/lib/repositories/site-settings";
 
 export default async function AdminCommissionsRoute() {
-  const initialRequests = await listCommissionRequests();
+  const [initialRequests, siteSettings] = await Promise.all([
+    listCommissionRequests(),
+    readSiteSettings()
+  ]);
 
   return (
     <main className="px-4 py-5 sm:px-6 lg:px-8">
@@ -28,7 +32,12 @@ export default async function AdminCommissionsRoute() {
           </div>
         </section>
 
-        <CommissionsAdminPage initialRequests={initialRequests} />
+        <CommissionsAdminPage
+          initialRequests={initialRequests}
+          serviceTitles={siteSettings.site_content.commissions.services.map(
+            (service) => service.title
+          )}
+        />
       </div>
     </main>
   );

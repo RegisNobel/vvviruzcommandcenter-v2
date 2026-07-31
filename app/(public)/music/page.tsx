@@ -110,12 +110,12 @@ export default async function PublicMusicPage({
               <Link 
                 href="/music" 
                 className={`rounded-full px-5 py-2 text-sm font-semibold transition ${!isAppearsOn ? "bg-[var(--brand-primary)] text-[var(--text-inverse)]" : "text-[#9da7b1] hover:text-[#fff8ec]"}`}>
-                Releases
+                {content.releases_tab_label}
               </Link>
               <Link 
                 href="/music?view=appears-on" 
                 className={`rounded-full px-5 py-2 text-sm font-semibold transition ${isAppearsOn ? "bg-[var(--brand-primary)] text-[var(--text-inverse)]" : "text-[#9da7b1] hover:text-[#fff8ec]"}`}>
-                Appears On
+                {content.appears_on_tab_label}
               </Link>
             </div>
 
@@ -144,7 +144,7 @@ export default async function PublicMusicPage({
                   className="inline-flex min-h-9 items-center gap-2 border-l border-white/10 pl-3 text-sm font-semibold text-[#e3c16e] transition hover:text-[#fff2c8]"
                   href="/projects"
                 >
-                  Browse Projects
+                  {content.browse_projects_label}
                   <ArrowUpRight aria-hidden="true" size={15} />
                 </Link>
               </div>
@@ -154,18 +154,18 @@ export default async function PublicMusicPage({
           {!isAppearsOn && activeCategory ? (
             <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#aeb6c0]">
               <span>
-                Showing: <strong className="text-[#fff8ec]">{activeCategoryRecord?.name || activeCategory}</strong>
+                {content.showing_label}: <strong className="text-[#fff8ec]">{activeCategoryRecord?.name || activeCategory}</strong>
               </span>
               {activeProject ? (
                 <Link
                   className="font-semibold text-[#e3c16e] transition hover:text-[#fff2c8]"
                   href={`/projects/${encodeURIComponent(activeProject.slug)}`}
                 >
-                  Open project hub
+                  {content.open_project_label}
                 </Link>
               ) : null}
               <Link className="font-semibold text-[#cbd1d8] transition hover:text-white" href="/music">
-                Clear filter
+                {content.clear_filter_label}
               </Link>
             </div>
           ) : null}
@@ -174,7 +174,7 @@ export default async function PublicMusicPage({
         {isAppearsOn ? (
           <PublicAppearsOnLibrary 
             records={appearsOnRecords} 
-            emptyText="No collaborations or features published yet." 
+            emptyText={content.appears_on_empty_text}
           />
         ) : (
           <PublicMusicLibrary
@@ -182,6 +182,9 @@ export default async function PublicMusicPage({
             fallbackText={siteSettings.artist_name}
             platformLabels={platformLabels}
             releases={releases}
+            searchEmptyText={content.search_empty_text}
+            searchLabel={content.search_label}
+            searchPlaceholder={content.search_placeholder}
           />
         )}
       </div>

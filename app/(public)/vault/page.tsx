@@ -8,7 +8,10 @@ import {Check, LockKeyhole, Music2} from "lucide-react";
 import {readSiteSettings} from "@/lib/repositories/site-settings";
 import {VaultPageAnalytics} from "@/components/vault-page-analytics";
 import {FanTrackedLink, VaultItemImpressions} from "@/components/public-fan-content-analytics";
-import {listPublicVaultItems} from "@/lib/repositories/fan-content";
+import {
+  DEFAULT_VAULT_OFFER_DETAILS,
+  listPublicVaultItems
+} from "@/lib/repositories/fan-content";
 import {ExclusiveSignupForm} from "@/components/exclusive-signup-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -49,6 +52,7 @@ export default async function PublicVaultPage() {
   const isAvailable = Boolean(checkoutUrl);
   const offerTitle = featuredBundle?.title || vault.title;
   const offerDescription = featuredBundle?.description || vault.body;
+  const offerDetails = featuredBundle?.offer_details ?? DEFAULT_VAULT_OFFER_DETAILS;
 
   return (
     <main className="public-conversion-shell overflow-hidden pb-20">
@@ -104,9 +108,11 @@ export default async function PublicVaultPage() {
               </p>
 
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-3 border-y border-white/10 py-4 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-[#a7b0ba]">
-                <span className="text-[#f7f1e6]">5 tracks</span>
-                <span>Digital only</span>
-                <span>Never on streaming</span>
+                {offerDetails.facts.map((fact, index) => (
+                  <span className={index === 0 ? "text-[#f7f1e6]" : undefined} key={fact}>
+                    {fact}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
@@ -115,30 +121,29 @@ export default async function PublicVaultPage() {
         <section className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0">
             <div className="mb-5">
-              <p className="public-eyebrow">Inside the drop</p>
+              <p className="public-eyebrow">{offerDetails?.detailsEyebrow}</p>
               <h2 className="public-heading mt-3 text-3xl font-semibold">
-                Five tracks. Held outside the algorithm.
+                {offerDetails?.detailsHeading}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-[#a7b0ba]">
-                Titles and previews will be revealed as the bundle takes shape. The complete
-                drop will be delivered as digital files and will not be released to DSPs.
+                {offerDetails?.detailsDescription}
               </p>
             </div>
 
             <div className="border-y border-white/10">
-              {Array.from({length: 5}, (_, index) => (
+              {offerDetails.tracks.map((track, index) => (
                 <div
                   className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-white/10 px-1 py-5 last:border-b-0 sm:grid-cols-[3rem_minmax(0,1fr)_auto]"
-                  key={index}
+                  key={`${track.title}-${index}`}
                 >
                   <span className="font-mono text-xs text-[#59616d]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-[#e8dcc3]">
-                      Vault track {String(index + 1).padStart(2, "0")}
+                      {track.title}
                     </p>
-                    <p className="mt-1 text-xs text-[#8f98a5]">Title held until reveal</p>
+                    <p className="mt-1 text-xs text-[#8f98a5]">{track.subtitle}</p>
                   </div>
                   <LockKeyhole className="text-[#59616d]" size={16} />
                 </div>
@@ -147,24 +152,30 @@ export default async function PublicVaultPage() {
           </div>
 
           <aside className="public-panel overflow-hidden p-5 sm:p-6 lg:sticky lg:top-28">
-            <p className="public-eyebrow">{isAvailable ? "Available now" : "Coming soon"}</p>
+            <p className="public-eyebrow">
+              {isAvailable ? offerDetails?.availableLabel : offerDetails?.comingSoonLabel}
+            </p>
             <h2 className="mt-4 text-2xl font-semibold text-[#f7f1e6]">
-              Pay what you want
+              {offerDetails?.purchaseHeading}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#a7b0ba]">
-              Every buyer receives the same five-track digital bundle.
+              {offerDetails?.purchaseDescription}
             </p>
 
             <div className="mt-6 rounded-lg border border-white/10 bg-black/20 p-4">
               <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[#8f98a5]">
-                Minimum
+                {offerDetails?.minimumLabel}
               </p>
               <div className="mt-2 flex items-end justify-between gap-3">
-                <p className="text-4xl font-semibold tracking-tight text-[#f7f1e6]">$9.99</p>
-                <span className="pb-1 font-mono text-xs uppercase text-[#59616d]">USD</span>
+                <p className="text-4xl font-semibold tracking-tight text-[#f7f1e6]">
+                  {offerDetails.priceDisplay}
+                </p>
+                <span className="pb-1 font-mono text-xs uppercase text-[#59616d]">
+                  {offerDetails?.currencyLabel}
+                </span>
               </div>
               <p className="mt-3 text-xs leading-5 text-[#8f98a5]">
-                Enter any amount of $9.99 or more at Gumroad checkout.
+                {offerDetails?.checkoutHelper}
               </p>
             </div>
 
@@ -196,18 +207,18 @@ export default async function PublicVaultPage() {
                   page="vault"
                   target="_blank"
                 >
-                  Unlock the Vault
+                  {offerDetails?.purchaseCtaLabel}
                 </FanTrackedLink>
               ) : (
                 <ExclusiveSignupForm
-                  consentLabel="Send me this Vault drop notice and future vvviruz updates. I can unsubscribe anytime."
+                  consentLabel={vault.waitlist_consent_label}
                   ctaLabel={vault.cta_label || "Get the Drop Notice"}
                   emailLabel="Email"
                   nameLabel="Name"
                   requireConsent
                   showNameField={false}
                   signupContext="vault_waitlist"
-                  successHeading="Signal received"
+                  successHeading={vault.waitlist_success_heading}
                   unlockExperience="signup_notify"
                 />
               )}
@@ -215,15 +226,15 @@ export default async function PublicVaultPage() {
 
             <p className="mt-4 text-center text-xs leading-5 text-[#59616d]">
               {isAvailable
-                ? "Secure checkout and digital delivery are handled by Gumroad."
-                : "No payment is being collected yet. This only adds you to the Vault update list."}
+                ? offerDetails?.fulfillmentNote
+                : vault.waitlist_note}
             </p>
 
             {isAvailable ? (
               <div className="mt-7 border-t border-white/10 pt-6">
                 <details className="group">
                   <summary className="cursor-pointer list-none text-sm font-semibold text-[#d7b663] marker:hidden">
-                    Get notified about future Vault drops
+                    {vault.future_updates_heading}
                     <span
                       aria-hidden="true"
                       className="ml-2 inline-block transition group-open:rotate-45"
@@ -232,18 +243,18 @@ export default async function PublicVaultPage() {
                     </span>
                   </summary>
                   <p className="mt-3 text-sm leading-6 text-[#a7b0ba]">
-                    Optional. Gumroad checkout stays separate and direct.
+                    {vault.future_updates_description}
                   </p>
                   <div className="mt-4">
                     <ExclusiveSignupForm
-                      consentLabel="Send me future vvviruz Vault drops and updates. I can unsubscribe anytime."
-                      ctaLabel="Notify Me About the Next Drop"
+                      consentLabel={vault.future_updates_consent_label}
+                      ctaLabel={vault.future_updates_cta_label}
                       emailLabel="Email"
                       nameLabel="Name"
                       requireConsent
                       showNameField={false}
                       signupContext="vault_waitlist"
-                      successHeading="Signal received"
+                      successHeading={vault.waitlist_success_heading}
                       unlockExperience="signup_notify"
                     />
                   </div>
@@ -256,9 +267,9 @@ export default async function PublicVaultPage() {
         {additionalItems.length > 0 ? (
           <section className="relative mt-16">
             <div className="mb-6">
-              <p className="public-eyebrow">More from the Vault</p>
+              <p className="public-eyebrow">{vault.more_eyebrow}</p>
               <h2 className="public-heading mt-3 text-3xl font-semibold">
-                Other direct-to-fan drops
+                {vault.more_heading}
               </h2>
             </div>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -295,7 +306,7 @@ export default async function PublicVaultPage() {
                         page="vault"
                         target="_blank"
                       >
-                        Preview
+                        {vault.preview_cta_label}
                       </FanTrackedLink>
                     ) : null}
                     {item.checkout_url ? (
@@ -307,7 +318,7 @@ export default async function PublicVaultPage() {
                         page="vault"
                         target="_blank"
                       >
-                        Get it
+                        {vault.item_purchase_cta_label}
                       </FanTrackedLink>
                     ) : null}
                   </div>

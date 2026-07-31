@@ -4,7 +4,12 @@ import {BookOpen, Box, Radio} from "lucide-react";
 import {ReleasePicker} from "@/components/release-picker";
 import {VaultItemDeleteButton} from "@/components/vault-item-delete-button";
 import {ErrorState} from "@/components/ui-state";
-import {listAdminFanContent} from "@/lib/repositories/fan-content";
+import {
+  DEFAULT_VAULT_OFFER_DETAILS,
+  listAdminFanContent,
+  parseVaultOfferDetails
+} from "@/lib/repositories/fan-content";
+import type {VaultOfferDetails} from "@/lib/types";
 import {getLatestIntelTypeLabel} from "@/lib/latest-intel";
 import {
   createFanUpdateAction,
@@ -87,6 +92,84 @@ function IntelAge({publishedAt}: {publishedAt: Date | null}) {
 type FanContentData = Awaited<ReturnType<typeof listAdminFanContent>>;
 type FanUpdateRow = FanContentData["fanUpdates"][number];
 type VaultItemRow = FanContentData["vaultItems"][number];
+
+function VaultOfferFields({details}: {details: VaultOfferDetails}) {
+  return (
+    <fieldset className="grid gap-4 rounded-lg border border-edge bg-input p-4 sm:col-span-2 sm:grid-cols-2">
+      <legend className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-brand-primary">
+        Featured bundle offer
+      </legend>
+      <p className="text-xs leading-5 text-muted sm:col-span-2">
+        These fields control the featured bundle facts, track list, purchase card, and fulfillment copy on the public Vault.
+      </p>
+      <label className="sm:col-span-2">
+        Offer facts (one per line)
+        <textarea className={input} defaultValue={details.facts.join("\n")} name="offerFacts" rows={3}/>
+      </label>
+      <label>
+        Detail eyebrow
+        <input className={input} defaultValue={details.detailsEyebrow} name="detailsEyebrow"/>
+      </label>
+      <label>
+        Detail heading
+        <input className={input} defaultValue={details.detailsHeading} name="detailsHeading"/>
+      </label>
+      <label className="sm:col-span-2">
+        Detail description
+        <textarea className={input} defaultValue={details.detailsDescription} name="detailsDescription" rows={3}/>
+      </label>
+      <label className="sm:col-span-2">
+        Track list (Title | Supporting line)
+        <textarea
+          className={input}
+          defaultValue={details.tracks.map((track) => `${track.title} | ${track.subtitle}`).join("\n")}
+          name="offerTracks"
+          rows={6}
+        />
+      </label>
+      <label>
+        Available label
+        <input className={input} defaultValue={details.availableLabel} name="availableLabel"/>
+      </label>
+      <label>
+        Coming soon label
+        <input className={input} defaultValue={details.comingSoonLabel} name="comingSoonLabel"/>
+      </label>
+      <label>
+        Purchase heading
+        <input className={input} defaultValue={details.purchaseHeading} name="purchaseHeading"/>
+      </label>
+      <label>
+        Price label heading
+        <input className={input} defaultValue={details.minimumLabel} name="minimumLabel"/>
+      </label>
+      <label>
+        Display price
+        <input className={input} defaultValue={details.priceDisplay} name="priceDisplay"/>
+      </label>
+      <label className="sm:col-span-2">
+        Purchase description
+        <textarea className={input} defaultValue={details.purchaseDescription} name="purchaseDescription" rows={2}/>
+      </label>
+      <label className="sm:col-span-2">
+        Currency label
+        <input className={input} defaultValue={details.currencyLabel} name="currencyLabel"/>
+      </label>
+      <label>
+        Purchase CTA
+        <input className={input} defaultValue={details.purchaseCtaLabel} name="purchaseCtaLabel"/>
+      </label>
+      <label className="sm:col-span-2">
+        Checkout helper
+        <textarea className={input} defaultValue={details.checkoutHelper} name="checkoutHelper" rows={2}/>
+      </label>
+      <label className="sm:col-span-2">
+        Fulfillment note
+        <textarea className={input} defaultValue={details.fulfillmentNote} name="fulfillmentNote" rows={2}/>
+      </label>
+    </fieldset>
+  );
+}
 
 function IntelEntry({
   item,
@@ -178,6 +261,7 @@ function VaultItemEntry({
       : item.status === "archived"
         ? "status-badge-neutral"
         : "status-badge-warning";
+  const offerDetails = parseVaultOfferDetails(item.offerDetails);
 
   return (
     <article className="rounded-xl border border-edge bg-surface p-4">
@@ -275,6 +359,7 @@ function VaultItemEntry({
             Display order
             <input className={input} defaultValue={item.sortOrder} name="sortOrder" type="number"/>
           </label>
+          <VaultOfferFields details={offerDetails}/>
           <p className="text-xs leading-5 text-muted sm:col-span-2">
             Publishing requires a checkout URL. Archiving preserves this record and its history while hiding it from the public Vault.
           </p>
@@ -379,6 +464,7 @@ export default async function FanContentPage({searchParams}: {searchParams: Prom
               <label>Gumroad checkout URL<input className={input} name="checkoutUrl" placeholder="https://...gumroad.com/l/..."/></label>
               <label>Status<select className={input} name="status"><option value="draft">Draft</option><option value="public">Public</option></select></label>
               <label>Display order<input className={input} defaultValue={0} name="sortOrder" type="number"/></label>
+              <VaultOfferFields details={DEFAULT_VAULT_OFFER_DETAILS}/>
               <p className="text-xs leading-5 text-muted sm:col-span-2">Keep the bundle in Draft while songs are in progress. Publishing requires a checkout URL and makes it available on the public Vault.</p>
               <button className="btn-primary sm:col-span-2" type="submit">Save Vault item</button>
             </form>

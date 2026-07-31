@@ -290,6 +290,7 @@ export function SiteSettingsEditor({
       site_content: {
         ...current.site_content,
         projects: {
+          ...current.site_content.projects,
           approved_slugs: [
             ...current.site_content.projects.approved_slugs,
             projectCandidateSlug
@@ -315,6 +316,7 @@ export function SiteSettingsEditor({
       site_content: {
         ...current.site_content,
         projects: {
+          ...current.site_content.projects,
           approved_slugs: current.site_content.projects.approved_slugs.filter(
             (value) => value !== slug
           )
@@ -329,6 +331,7 @@ export function SiteSettingsEditor({
       site_content: {
         ...current.site_content,
         projects: {
+          ...current.site_content.projects,
           approved_slugs: moveOrderedItem(
             current.site_content.projects.approved_slugs,
             slug,
@@ -775,6 +778,62 @@ export function SiteSettingsEditor({
               />
             </label>
 
+            {([
+              ["nav_projects_label", "Nav Projects Label"],
+              ["nav_artists_label", "Nav Artist Profiles Label"],
+              ["nav_commissions_label", "Nav Commissions Label"],
+              ["nav_vault_label", "Nav Vault Label"],
+              ["nav_more_label", "Nav More Label"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input
+                  className="field-input"
+                  onChange={(event) => updateSiteContent("chrome", key, event.target.value)}
+                  value={settings.site_content.chrome[key]}
+                />
+              </label>
+            ))}
+
+            <fieldset className="rounded-lg border border-edge bg-input p-4 md:col-span-2">
+              <legend className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                Desktop “More” menu placement
+              </legend>
+              <p className="mb-3 text-xs leading-5 text-muted">
+                Checked destinations move into the desktop More menu. Mobile navigation still lists every destination directly.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {([
+                  ["/projects", settings.site_content.chrome.nav_projects_label],
+                  ["/artists", settings.site_content.chrome.nav_artists_label],
+                  ["/commissions", settings.site_content.chrome.nav_commissions_label],
+                  ["/vault", settings.site_content.chrome.nav_vault_label],
+                  ["/about", settings.site_content.chrome.nav_about_label],
+                  ["/exclusives", settings.site_content.chrome.nav_exclusive_label],
+                  ["/links", settings.site_content.chrome.nav_links_label],
+                  ["/music", settings.site_content.chrome.nav_music_label]
+                ] as const).map(([href, label]) => (
+                  <label className="flex items-center gap-2 text-sm text-ink" key={href}>
+                    <input
+                      checked={settings.site_content.chrome.desktop_more_hrefs.includes(href)}
+                      onChange={(event) => {
+                        const current = settings.site_content.chrome.desktop_more_hrefs;
+                        updateSiteContent(
+                          "chrome",
+                          "desktop_more_hrefs",
+                          event.target.checked
+                            ? [...current, href]
+                            : current.filter((value) => value !== href)
+                        );
+                      }}
+                      type="checkbox"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
               <label className="space-y-2 md:col-span-2">
                 <span className="field-label">Footer Copyright Line</span>
                 <input
@@ -852,6 +911,17 @@ export function SiteSettingsEditor({
                   )
                 }
                 value={settings.site_content.home.recent_releases_view_all_label}
+              />
+            </label>
+
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Recent Releases Description</span>
+              <textarea
+                className="field-input min-h-[80px]"
+                onChange={(event) =>
+                  updateSiteContent("home", "recent_releases_description", event.target.value)
+                }
+                value={settings.site_content.home.recent_releases_description}
               />
             </label>
 
@@ -1043,6 +1113,16 @@ export function SiteSettingsEditor({
                   The section remains tied to the existing Insider Access offer and route.
                 </p>
               </div>
+              <label className="space-y-2">
+                <span className="field-label">Eyebrow</span>
+                <input
+                  className="field-input"
+                  onChange={(event) =>
+                    updateSiteContent("home", "exclusive_cta_eyebrow", event.target.value)
+                  }
+                  value={settings.site_content.home.exclusive_cta_eyebrow}
+                />
+              </label>
               <label className="space-y-2 md:col-span-2">
                 <span className="field-label">Heading</span>
                 <input
@@ -1090,6 +1170,57 @@ export function SiteSettingsEditor({
             <span className="pill">
               {eligibleProjectSlugs.length}/{approvedProjectSlugs.length} public
             </span>
+          </div>
+
+          <div className="mt-5 grid gap-5 rounded-lg border border-edge bg-input p-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <p className="field-label">Homepage projects section</p>
+            </div>
+            {([
+              ["homepage_eyebrow", "Eyebrow"],
+              ["homepage_heading", "Heading"],
+              ["homepage_card_cta_label", "Card CTA"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input className="field-input" onChange={(event) => updateSiteContent("projects", key, event.target.value)} value={settings.site_content.projects[key]}/>
+              </label>
+            ))}
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Description</span>
+              <textarea className="field-input min-h-[90px]" onChange={(event) => updateSiteContent("projects", "homepage_description", event.target.value)} value={settings.site_content.projects.homepage_description}/>
+            </label>
+
+            <div className="mt-2 border-t border-edge pt-5 md:col-span-2">
+              <p className="field-label">Projects index and empty states</p>
+            </div>
+            {([
+              ["index_meta_title", "Search title"],
+              ["index_heading", "Page heading"],
+              ["index_browse_label", "Browse music CTA"],
+              ["index_card_cta_label", "Project card CTA"],
+              ["empty_heading", "Empty-state heading"],
+              ["empty_cta_label", "Empty-state CTA"],
+              ["not_found_eyebrow", "Not-found eyebrow"],
+              ["not_found_heading", "Not-found heading"],
+              ["not_found_cta_label", "Not-found CTA"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input className="field-input" onChange={(event) => updateSiteContent("projects", key, event.target.value)} value={settings.site_content.projects[key]}/>
+              </label>
+            ))}
+            {([
+              ["index_meta_description", "Search description"],
+              ["index_description", "Page description"],
+              ["empty_description", "Empty-state description"],
+              ["not_found_description", "Not-found description"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2 md:col-span-2" key={key}>
+                <span className="field-label">{label}</span>
+                <textarea className="field-input min-h-[80px]" onChange={(event) => updateSiteContent("projects", key, event.target.value)} value={settings.site_content.projects[key]}/>
+              </label>
+            ))}
           </div>
 
           <div className="mt-5 grid gap-3">
@@ -1242,6 +1373,46 @@ export function SiteSettingsEditor({
           </p>
         </section>
 
+        <section className="rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5">
+          <div>
+            <p className="field-label">Directory + return rail</p>
+            <h3 className="mt-3 text-2xl font-semibold text-ink">Artist Profiles and Latest Intel</h3>
+          </div>
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            {([
+              ["metadata_title", "Artist directory search title"],
+              ["eyebrow", "Directory eyebrow"],
+              ["heading", "Directory heading"],
+              ["card_eyebrow", "Profile card eyebrow"],
+              ["empty_eyebrow", "Empty-state eyebrow"],
+              ["empty_heading", "Empty-state heading"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input className="field-input" onChange={(event) => updateSiteContent("artist_directory", key, event.target.value)} value={settings.site_content.artist_directory[key]}/>
+              </label>
+            ))}
+            {([
+              ["metadata_description", "Artist directory search description"],
+              ["description", "Directory description"],
+              ["empty_description", "Empty-state description"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2 md:col-span-2" key={key}>
+                <span className="field-label">{label}</span>
+                <textarea className="field-input min-h-[80px]" onChange={(event) => updateSiteContent("artist_directory", key, event.target.value)} value={settings.site_content.artist_directory[key]}/>
+              </label>
+            ))}
+            <label className="space-y-2">
+              <span className="field-label">Latest Intel rail label</span>
+              <input className="field-input" onChange={(event) => updateSiteContent("intel", "rail_label", event.target.value)} value={settings.site_content.intel.rail_label}/>
+            </label>
+            <label className="space-y-2">
+              <span className="field-label">Latest Intel CTA</span>
+              <input className="field-input" onChange={(event) => updateSiteContent("intel", "cta_label", event.target.value)} value={settings.site_content.intel.cta_label}/>
+            </label>
+          </div>
+        </section>
+
         <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="music-page">
           <div>
             <p className="field-label">Section 5</p>
@@ -1313,6 +1484,30 @@ export function SiteSettingsEditor({
                 }
                 value={settings.site_content.music.empty_state_text}
               />
+            </label>
+
+            {([
+              ["releases_tab_label", "Releases tab"],
+              ["appears_on_tab_label", "Appears On tab"],
+              ["browse_projects_label", "Browse Projects CTA"],
+              ["showing_label", "Active filter label"],
+              ["open_project_label", "Open project CTA"],
+              ["clear_filter_label", "Clear filter CTA"],
+              ["search_label", "Search label"],
+              ["search_placeholder", "Search placeholder"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input className="field-input" onChange={(event) => updateSiteContent("music", key, event.target.value)} value={settings.site_content.music[key]}/>
+              </label>
+            ))}
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Appears On empty state</span>
+              <textarea className="field-input min-h-[80px]" onChange={(event) => updateSiteContent("music", "appears_on_empty_text", event.target.value)} value={settings.site_content.music.appears_on_empty_text}/>
+            </label>
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Search no-results state</span>
+              <textarea className="field-input min-h-[80px]" onChange={(event) => updateSiteContent("music", "search_empty_text", event.target.value)} value={settings.site_content.music.search_empty_text}/>
             </label>
           </div>
         </section>
@@ -1474,6 +1669,26 @@ export function SiteSettingsEditor({
                 }
                 value={settings.site_content.about.contact_empty_text}
               />
+            </label>
+
+            <div className="mt-2 border-t border-edge pt-5 md:col-span-2">
+              <p className="field-label">Catalog calls to action</p>
+            </div>
+            {([
+              ["hero_cta_label", "Hero music CTA"],
+              ["catalog_eyebrow", "Catalog eyebrow"],
+              ["catalog_heading", "Catalog heading"],
+              ["catalog_primary_cta_label", "Catalog primary CTA"],
+              ["catalog_secondary_cta_label", "Catalog secondary CTA"]
+            ] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input className="field-input" onChange={(event) => updateSiteContent("about", key, event.target.value)} value={settings.site_content.about[key]}/>
+              </label>
+            ))}
+            <label className="space-y-2 md:col-span-2">
+              <span className="field-label">Catalog description</span>
+              <textarea className="field-input min-h-[90px]" onChange={(event) => updateSiteContent("about", "catalog_description", event.target.value)} value={settings.site_content.about.catalog_description}/>
             </label>
           </div>
         </section>

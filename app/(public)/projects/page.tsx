@@ -11,25 +11,32 @@ import {
 } from "@/components/public-project-analytics";
 import {getPublicProjectPath} from "@/lib/public-projects";
 import {getPublicReleaseDiscoveryMetadata} from "@/lib/public-utils";
-import {getEligiblePublicProjects} from "@/lib/repositories/public-site";
+import {getEligiblePublicProjects, getSiteSettings} from "@/lib/repositories/public-site";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const projects = await getEligiblePublicProjects();
-  const description =
-    "Explore the recurring series and creative worlds behind vvviruz releases.";
+  const [projects, siteSettings] = await Promise.all([
+    getEligiblePublicProjects(),
+    getSiteSettings()
+  ]);
+  const content = siteSettings.site_content.projects;
+  const description = content.index_meta_description;
 
   return {
-    title: "Projects",
+    title: content.index_meta_title,
     description,
     alternates: {canonical: "/projects"},
     robots: projects.length > 0 ? {index: true, follow: true} : {index: false, follow: true},
-    openGraph: {title: "vvviruz Projects", description, url: "/projects"},
-    twitter: {card: "summary", title: "vvviruz Projects", description}
+    openGraph: {title: content.index_meta_title, description, url: "/projects"},
+    twitter: {card: "summary", title: content.index_meta_title, description}
   };
 }
 
 export default async function PublicProjectsPage() {
-  const projects = await getEligiblePublicProjects();
+  const [projects, siteSettings] = await Promise.all([
+    getEligiblePublicProjects(),
+    getSiteSettings()
+  ]);
+  const content = siteSettings.site_content.projects;
 
   return (
     <main className="public-page-wrap">
@@ -37,13 +44,13 @@ export default async function PublicProjectsPage() {
       <div className="space-y-10">
         <section className="public-panel overflow-hidden px-5 py-9 sm:px-9 sm:py-11">
           <h1 className="public-heading max-w-4xl text-4xl font-semibold sm:text-6xl">
-            Projects
+            {content.index_heading}
           </h1>
           <p className="public-copy mt-5 max-w-3xl text-sm leading-7 sm:text-base">
-            Explore the recurring series and creative worlds behind vvviruz releases.
+            {content.index_description}
           </p>
           <Link className="public-action-secondary mt-7" href="/music">
-            Browse all music
+            {content.index_browse_label}
           </Link>
         </section>
 
@@ -96,7 +103,7 @@ export default async function PublicProjectsPage() {
                           {project.description}
                         </p>
                         <span className="mt-auto inline-flex items-center gap-2 pt-7 text-sm font-semibold text-[#e3c16e]">
-                          Explore {project.name}
+                          {content.index_card_cta_label} {project.name}
                           <ArrowUpRight aria-hidden="true" size={15} />
                         </span>
                       </div>
@@ -108,12 +115,12 @@ export default async function PublicProjectsPage() {
           </section>
         ) : (
           <section className="public-panel px-5 py-10 text-center sm:px-8">
-            <h2 className="public-heading text-2xl font-semibold">The projects are taking shape.</h2>
+            <h2 className="public-heading text-2xl font-semibold">{content.empty_heading}</h2>
             <p className="public-copy mx-auto mt-3 max-w-xl text-sm leading-7">
-              Explore the full catalog while the next recurring series is prepared.
+              {content.empty_description}
             </p>
             <Link className="public-action-primary mt-6" href="/music">
-              Explore music
+              {content.empty_cta_label}
             </Link>
           </section>
         )}

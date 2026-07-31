@@ -66,7 +66,7 @@ export function ReleaseAnnotationsEditor({
 }) {
   const document = useMemo(() => parseCanonicalLyrics(lyrics), [lyrics]);
   const sections = document.sections.filter((section) => section.lines.length > 0);
-  const [annotations, setAnnotations] = useState(initialAnnotations);
+  const [annotationRecords, setAnnotationRecords] = useState(initialAnnotations);
   const [form, setForm] = useState<AnnotationForm>(() => {
     const next = emptyForm();
     const first = sections[0];
@@ -88,7 +88,7 @@ export function ReleaseAnnotationsEditor({
         .map((line) => line.text)
         .join("\n")
     : "";
-  const brokenCount = annotations.filter(
+  const brokenCount = annotationRecords.filter(
     (annotation) => annotation.status === "needs_reanchoring"
   ).length;
 
@@ -101,9 +101,9 @@ export function ReleaseAnnotationsEditor({
       undefined,
       "Breaking Barz annotations could not be loaded."
     )
-      .then((payload) => {
-        if (!cancelled && payload.annotations) {
-          setAnnotations(payload.annotations);
+      .then(({annotations: refreshedAnnotations}) => {
+        if (!cancelled && refreshedAnnotations) {
+          setAnnotationRecords(() => refreshedAnnotations);
         }
       })
       .catch((error) => {
@@ -176,7 +176,7 @@ export function ReleaseAnnotationsEditor({
         })
       }, "The annotation could not be saved.");
       if (!payload.annotations) throw new Error(payload.message || "The annotation could not be saved.");
-      setAnnotations(payload.annotations);
+      setAnnotationRecords(payload.annotations);
       reset();
       setMessage(
         action === "publish"
@@ -203,14 +203,14 @@ export function ReleaseAnnotationsEditor({
           </p>
         </div>
         <div className="flex gap-2">
-          <span className="rounded-full border border-status-info/40 bg-[var(--status-info-soft)] px-3 py-1 text-xs font-semibold text-status-info">{annotations.filter((item) => item.status !== "archived").length} active</span>
+          <span className="rounded-full border border-status-info/40 bg-[var(--status-info-soft)] px-3 py-1 text-xs font-semibold text-status-info">{annotationRecords.filter((item) => item.status !== "archived").length} active</span>
           {brokenCount ? <span className="rounded-full border border-status-warning/40 bg-[var(--status-warning-soft)] px-3 py-1 text-xs font-semibold text-status-warning">{brokenCount} need re-anchoring</span> : null}
         </div>
       </div>
 
-      {annotations.length ? (
+      {annotationRecords.length ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          {annotations.map((annotation) => (
+          {annotationRecords.map((annotation) => (
             <button
               className="rounded-xl border border-edge bg-surface-elevated p-4 text-left transition hover:border-brand-primary/50"
               key={annotation.id}

@@ -51,6 +51,7 @@ export default async function PublicHomePage() {
       readPublicExclusiveOffer()
     ]);
   const content = siteSettings.site_content.home;
+  const projectContent = siteSettings.site_content.projects;
   const randomReleases = randomReleasePool
     .filter((release) => release.id !== spotlightRelease?.id)
     .slice(0, 3);
@@ -85,12 +86,12 @@ export default async function PublicHomePage() {
         {projects.length > 0 ? (
           <section className="space-y-5">
             <div className="max-w-2xl">
-              <p className="public-eyebrow">Explore projects</p>
+              <p className="public-eyebrow">{projectContent.homepage_eyebrow}</p>
               <h2 className="public-heading mt-3 text-3xl font-semibold sm:text-4xl">
-                The worlds inside the catalog
+                {projectContent.homepage_heading}
               </h2>
               <p className="mt-3 text-sm leading-7 text-[#aeb6c0]">
-                Recurring series and connected releases, organized by the ideas that keep evolving.
+                {projectContent.homepage_description}
               </p>
             </div>
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -132,7 +133,7 @@ export default async function PublicHomePage() {
                         {project.description}
                       </span>
                       <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-[#e3c16e]">
-                        View project <ArrowUpRight size={15} />
+                        {projectContent.homepage_card_cta_label} <ArrowUpRight size={15} />
                       </span>
                     </span>
                   </HomepageTrackedLink>
@@ -150,7 +151,7 @@ export default async function PublicHomePage() {
                 {content.recent_releases_heading}
               </h2>
               <p className="mt-2 text-sm text-[#aeb6c0]">
-                Three random tracks from the vvviruz catalog. Refresh for a new signal.
+                {content.recent_releases_description}
               </p>
             </div>
             <Link className="text-sm font-semibold text-[#e3c16e] hover:text-[#fff2c8]" href="/music">
@@ -173,7 +174,7 @@ export default async function PublicHomePage() {
           <section className="public-panel relative overflow-hidden px-6 py-10 text-center sm:px-10 sm:py-14">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(246,201,69,0.14),transparent_48%)]" />
             <div className="relative mx-auto max-w-3xl">
-              <p className="public-eyebrow">From the vault</p>
+              <p className="public-eyebrow">{content.exclusive_cta_eyebrow}</p>
               <h2 className="public-heading mt-4 text-3xl font-semibold sm:text-5xl">
                 {content.exclusive_cta_heading}
               </h2>

@@ -117,6 +117,42 @@ export function VaultSettingsPanel({vaultSettings, onChange}: VaultSettingsPanel
 
       </div>
 
+      <fieldset className="mt-8 grid gap-4 rounded-lg border border-edge bg-input p-4 md:grid-cols-2">
+        <legend className="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+          Waitlist and archive copy
+        </legend>
+        {([
+          ["waitlist_consent_label", "Initial waitlist consent"],
+          ["waitlist_success_heading", "Waitlist success heading"],
+          ["waitlist_note", "Coming-soon note"],
+          ["future_updates_heading", "Future updates heading"],
+          ["future_updates_description", "Future updates description"],
+          ["future_updates_consent_label", "Future updates consent"],
+          ["future_updates_cta_label", "Future updates CTA"],
+          ["more_eyebrow", "More-items eyebrow"],
+          ["more_heading", "More-items heading"],
+          ["preview_cta_label", "Preview CTA"],
+          ["item_purchase_cta_label", "Purchase CTA"]
+        ] as const).map(([key, label]) => (
+          <label className={key.includes("description") || key.includes("consent") || key === "waitlist_note" ? "space-y-2 md:col-span-2" : "space-y-2"} key={key}>
+            <span className="field-label">{label}</span>
+            {key.includes("description") || key.includes("consent") || key === "waitlist_note" ? (
+              <textarea
+                className="field-input min-h-[80px]"
+                onChange={(event) => updateVault({[key]: event.target.value})}
+                value={vaultSettings[key]}
+              />
+            ) : (
+              <input
+                className="field-input"
+                onChange={(event) => updateVault({[key]: event.target.value})}
+                value={vaultSettings[key]}
+              />
+            )}
+          </label>
+        ))}
+      </fieldset>
+
       <div className="mt-8">
         <p className="field-label mb-2">What Buyers Receive</p>
         <p className="mb-4 text-sm leading-6 text-muted">

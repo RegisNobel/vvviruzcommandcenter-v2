@@ -8,7 +8,8 @@ import type {
   PublicFanUpdate,
   PublicReleaseAnnotation,
   ReleaseAnnotationRecord,
-  PublicVaultItem
+  PublicVaultItem,
+  VaultOfferDetails
 } from "@/lib/types";
 import {createId, slugify} from "@/lib/utils";
 import {LATEST_INTEL_PUBLIC_LIMIT} from "@/lib/latest-intel";
@@ -46,6 +47,29 @@ const ANNOTATION_ACTIONS = new Set(["draft", "publish", "archive"]);
 export const PUBLIC_LATEST_INTEL_CACHE_TAG = "latest-intel-public";
 const VAULT_ITEM_STATUSES = new Set(["draft", "public", "archived"]);
 
+export const DEFAULT_VAULT_OFFER_DETAILS: VaultOfferDetails = {
+  facts: ["5 tracks", "Digital only", "Never on streaming"],
+  detailsEyebrow: "Inside the drop",
+  detailsHeading: "Five tracks. Held outside the algorithm.",
+  detailsDescription:
+    "Titles and previews will be revealed as the bundle takes shape. The complete drop will be delivered as digital files and will not be released to DSPs.",
+  tracks: Array.from({length: 5}, (_, index) => ({
+    title: `Vault track ${String(index + 1).padStart(2, "0")}`,
+    subtitle: "Title held until reveal"
+  })),
+  availableLabel: "Available now",
+  comingSoonLabel: "Coming soon",
+  purchaseHeading: "Pay what you want",
+  purchaseDescription:
+    "Every buyer receives the same five-track digital bundle.",
+  minimumLabel: "Minimum",
+  priceDisplay: "$9.99",
+  currencyLabel: "USD",
+  checkoutHelper: "Enter any amount of $9.99 or more at Gumroad checkout.",
+  purchaseCtaLabel: "Unlock the Vault",
+  fulfillmentNote: "Secure checkout and digital delivery are handled by Gumroad."
+};
+
 type VaultItemInput = {
   releaseId?: string;
   title: string;
@@ -56,9 +80,42 @@ type VaultItemInput = {
   previewUrl: string;
   priceLabel: string;
   checkoutUrl: string;
+  offerDetails?: Partial<VaultOfferDetails>;
   status: string;
   sortOrder?: number;
 };
+
+export function parseVaultOfferDetails(value?: string | null): VaultOfferDetails {
+  let parsed: Partial<VaultOfferDetails> = {};
+
+  if (value?.trim()) {
+    try {
+      parsed = JSON.parse(value) as Partial<VaultOfferDetails>;
+    } catch {
+      parsed = {};
+    }
+  }
+
+  const facts = Array.isArray(parsed.facts)
+    ? parsed.facts.map((fact) => String(fact).trim()).filter(Boolean).slice(0, 8)
+    : [];
+  const tracks = Array.isArray(parsed.tracks)
+    ? parsed.tracks
+        .map((track) => ({
+          title: String(track?.title || "").trim(),
+          subtitle: String(track?.subtitle || "").trim()
+        }))
+        .filter((track) => track.title || track.subtitle)
+        .slice(0, 30)
+    : [];
+
+  return {
+    ...DEFAULT_VAULT_OFFER_DETAILS,
+    ...parsed,
+    facts: facts.length ? facts : DEFAULT_VAULT_OFFER_DETAILS.facts,
+    tracks: tracks.length ? tracks : DEFAULT_VAULT_OFFER_DETAILS.tracks
+  };
+}
 
 function requirePublicUrl(value: string, field: string) {
   const normalized = value.trim();
@@ -112,6 +169,17 @@ function normalizeVaultItemInput(input: VaultItemInput) {
     previewUrl,
     priceLabel: input.priceLabel.trim(),
     checkoutUrl,
+    offerDetails: JSON.stringify({
+      ...DEFAULT_VAULT_OFFER_DETAILS,
+      ...input.offerDetails,
+      facts: input.offerDetails?.facts?.map((fact) => fact.trim()).filter(Boolean),
+      tracks: input.offerDetails?.tracks
+        ?.map((track) => ({
+          title: track.title.trim(),
+          subtitle: track.subtitle.trim()
+        }))
+        .filter((track) => track.title || track.subtitle)
+    }),
     status,
     sortOrder: Number.isFinite(input.sortOrder) ? Math.trunc(input.sortOrder || 0) : 0
   };
@@ -506,5 +574,5 @@ export async function listPublicFanUpdates(limit = LATEST_INTEL_PUBLIC_LIMIT): P
 
 export async function listPublicVaultItems(): Promise<PublicVaultItem[]> {
   const rows = await prisma.vaultItem.findMany({where: {status: "public"}, orderBy: [{sortOrder: "asc"}, {publishedAt: "desc"}]});
-  return rows.map((row) => ({id: row.id, release_id: row.releaseId, title: row.title, slug: row.slug, item_type: row.itemType, description: row.description, cover_art_url: row.coverArtUrl, preview_url: row.previewUrl, price_label: row.priceLabel, checkout_url: row.checkoutUrl}));
+  return rows.map((row) => ({id: row.id, release_id: row.releaseId, title: row.title, slug: row.slug, item_type: row.itemType, description: row.description, cover_art_url: row.coverArtUrl, preview_url: row.previewUrl, price_label: row.priceLabel, checkout_url: row.checkoutUrl, offer_details: parseVaultOfferDetails(row.offerDetails)}));
 }

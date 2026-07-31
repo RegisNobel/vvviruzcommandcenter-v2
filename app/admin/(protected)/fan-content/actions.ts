@@ -15,12 +15,46 @@ import {
   updateVaultItem,
   updateFanUpdate
 } from "@/lib/repositories/fan-content";
+import type {VaultOfferDetails} from "@/lib/types";
 
 function value(formData: FormData, name: string) {
   return String(formData.get(name) || "").trim();
 }
 function checked(formData: FormData, name: string) {
   return formData.get(name) === "on";
+}
+
+function lines(formData: FormData, name: string) {
+  return value(formData, name)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function vaultOfferDetails(formData: FormData): VaultOfferDetails {
+  return {
+    facts: lines(formData, "offerFacts"),
+    detailsEyebrow: value(formData, "detailsEyebrow"),
+    detailsHeading: value(formData, "detailsHeading"),
+    detailsDescription: value(formData, "detailsDescription"),
+    tracks: lines(formData, "offerTracks").map((line) => {
+      const [title, ...subtitleParts] = line.split("|");
+      return {
+        title: title?.trim() || "",
+        subtitle: subtitleParts.join("|").trim()
+      };
+    }),
+    availableLabel: value(formData, "availableLabel"),
+    comingSoonLabel: value(formData, "comingSoonLabel"),
+    purchaseHeading: value(formData, "purchaseHeading"),
+    purchaseDescription: value(formData, "purchaseDescription"),
+    minimumLabel: value(formData, "minimumLabel"),
+    priceDisplay: value(formData, "priceDisplay"),
+    currencyLabel: value(formData, "currencyLabel"),
+    checkoutHelper: value(formData, "checkoutHelper"),
+    purchaseCtaLabel: value(formData, "purchaseCtaLabel"),
+    fulfillmentNote: value(formData, "fulfillmentNote")
+  };
 }
 function done(message: string) {
   revalidateTag(PUBLIC_LATEST_INTEL_CACHE_TAG);
@@ -101,7 +135,7 @@ export async function createVaultItemAction(formData: FormData) {
     "The Vault item could not be saved.",
     "Vault item saved.",
     async () => {
-      await createVaultItem({releaseId: value(formData, "releaseId"), title: value(formData, "title"), slug: value(formData, "slug"), itemType: value(formData, "itemType"), description: value(formData, "description"), coverArtUrl: value(formData, "coverArtUrl"), previewUrl: value(formData, "previewUrl"), priceLabel: value(formData, "priceLabel"), checkoutUrl: value(formData, "checkoutUrl"), status: value(formData, "status"), sortOrder: Number(value(formData, "sortOrder")) || 0});
+      await createVaultItem({releaseId: value(formData, "releaseId"), title: value(formData, "title"), slug: value(formData, "slug"), itemType: value(formData, "itemType"), description: value(formData, "description"), coverArtUrl: value(formData, "coverArtUrl"), previewUrl: value(formData, "previewUrl"), priceLabel: value(formData, "priceLabel"), checkoutUrl: value(formData, "checkoutUrl"), offerDetails: vaultOfferDetails(formData), status: value(formData, "status"), sortOrder: Number(value(formData, "sortOrder")) || 0});
     }
   );
 }
@@ -122,6 +156,7 @@ export async function updateVaultItemAction(formData: FormData) {
         previewUrl: value(formData, "previewUrl"),
         priceLabel: value(formData, "priceLabel"),
         checkoutUrl: value(formData, "checkoutUrl"),
+        offerDetails: vaultOfferDetails(formData),
         status: value(formData, "status"),
         sortOrder: Number(value(formData, "sortOrder")) || 0
       });

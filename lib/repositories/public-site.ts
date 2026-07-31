@@ -276,7 +276,7 @@ const getCachedSiteSettings = unstable_cache(
     const settings = await readSiteSettings();
     return rewriteSiteSettingsUrls(settings);
   },
-  ["public-site-settings-v7"],
+  ["public-site-settings-v8"],
   {
     tags: [PUBLIC_CACHE_TAGS.siteSettings]
   }

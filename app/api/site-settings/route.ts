@@ -53,6 +53,29 @@ const exclusiveCommunityBenefitSchema = z.object({
   description: z.string().trim().default("")
 });
 
+const commissionServiceSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || createId()),
+  title: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(600).default("")
+});
+
+const uniqueTextOptionsSchema = z
+  .array(z.string().trim().min(1).max(120))
+  .max(20)
+  .default([])
+  .superRefine((values, ctx) => {
+    if (new Set(values).size !== values.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Option lists cannot contain duplicates."
+      });
+    }
+  });
+
 function normalizeLinkItems(
   value: Array<{
     id?: string;
@@ -131,6 +154,26 @@ const siteSettingsSchema = z.object({
       nav_about_label: z.string().default(""),
       nav_links_label: z.string().default(""),
       nav_exclusive_label: z.string().default("Exclusives"),
+      nav_projects_label: z.string().default("Projects"),
+      nav_artists_label: z.string().default("Artist Profiles"),
+      nav_commissions_label: z.string().default("Commissions"),
+      nav_vault_label: z.string().default("Vault"),
+      nav_more_label: z.string().default("More"),
+      desktop_more_hrefs: z
+        .array(
+          z.enum([
+            "/projects",
+            "/artists",
+            "/commissions",
+            "/vault",
+            "/about",
+            "/exclusives",
+            "/links",
+            "/music"
+          ])
+        )
+        .max(8)
+        .default(["/about", "/artists", "/commissions", "/vault"]),
       footer_copyright_text: z.string().default("")
     }),
     home: z.object({
@@ -195,7 +238,9 @@ const siteSettingsSchema = z.object({
       lock_in_spotlight_cta_label: spotlightTextSchema(32, "GO BEAST MODE"),
       recent_releases_eyebrow: z.string().default(""),
       recent_releases_heading: z.string().default(""),
+      recent_releases_description: z.string().default(""),
       recent_releases_view_all_label: z.string().default(""),
+      exclusive_cta_eyebrow: z.string().default(""),
       brand_pillars_eyebrow: z.string().default(""),
       brand_pillars_heading: z.string().default(""),
       brand_pillars: z.array(brandPillarSchema).default([])
@@ -223,9 +268,60 @@ const siteSettingsSchema = z.object({
                 message: "Approved public projects cannot contain duplicate slugs."
               });
             }
-          })
+          }),
+        homepage_eyebrow: z.string().default(""),
+        homepage_heading: z.string().default(""),
+        homepage_description: z.string().default(""),
+        homepage_card_cta_label: z.string().default(""),
+        index_meta_title: z.string().default(""),
+        index_meta_description: z.string().default(""),
+        index_heading: z.string().default(""),
+        index_description: z.string().default(""),
+        index_browse_label: z.string().default(""),
+        index_card_cta_label: z.string().default(""),
+        empty_heading: z.string().default(""),
+        empty_description: z.string().default(""),
+        empty_cta_label: z.string().default(""),
+        not_found_eyebrow: z.string().default(""),
+        not_found_heading: z.string().default(""),
+        not_found_description: z.string().default(""),
+        not_found_cta_label: z.string().default("")
       })
-      .default({approved_slugs: [...PUBLIC_PROJECT_SLUGS]}),
+      .default({
+        approved_slugs: [...PUBLIC_PROJECT_SLUGS],
+        homepage_eyebrow: "",
+        homepage_heading: "",
+        homepage_description: "",
+        homepage_card_cta_label: "",
+        index_meta_title: "",
+        index_meta_description: "",
+        index_heading: "",
+        index_description: "",
+        index_browse_label: "",
+        index_card_cta_label: "",
+        empty_heading: "",
+        empty_description: "",
+        empty_cta_label: "",
+        not_found_eyebrow: "",
+        not_found_heading: "",
+        not_found_description: "",
+        not_found_cta_label: ""
+      }),
+    artist_directory: z.object({
+      metadata_title: z.string().default(""),
+      metadata_description: z.string().default(""),
+      eyebrow: z.string().default(""),
+      heading: z.string().default(""),
+      description: z.string().default(""),
+      card_eyebrow: z.string().default(""),
+      empty_eyebrow: z.string().default(""),
+      empty_heading: z.string().default(""),
+      empty_description: z.string().default("")
+    }),
+    intel: z.object({
+      rail_label: z.string().default(""),
+      cta_label: z.string().default("")
+    }),
     music: z.object({
       page_eyebrow: z.string().default(""),
       page_heading: z.string().default(""),
@@ -233,9 +329,20 @@ const siteSettingsSchema = z.object({
       all_releases_label: z.string().default(""),
       nerdcore_label: z.string().default(""),
       mainstream_label: z.string().default(""),
-      empty_state_text: z.string().default("")
+      empty_state_text: z.string().default(""),
+      releases_tab_label: z.string().default(""),
+      appears_on_tab_label: z.string().default(""),
+      browse_projects_label: z.string().default(""),
+      showing_label: z.string().default(""),
+      open_project_label: z.string().default(""),
+      clear_filter_label: z.string().default(""),
+      appears_on_empty_text: z.string().default(""),
+      search_label: z.string().default(""),
+      search_placeholder: z.string().default(""),
+      search_empty_text: z.string().default("")
     }),
     about: z.object({
+      hero_cta_label: z.string().default(""),
       statement_heading: z.string().default(""),
       statement_text: z.string().default(""),
       artist_image_file: z.string().default(""),
@@ -249,7 +356,12 @@ const siteSettingsSchema = z.object({
       connect_heading: z.string().default(""),
       connect_empty_text: z.string().default(""),
       contact_microcopy: z.string().default(""),
-      contact_empty_text: z.string().default("")
+      contact_empty_text: z.string().default(""),
+      catalog_eyebrow: z.string().default(""),
+      catalog_heading: z.string().default(""),
+      catalog_description: z.string().default(""),
+      catalog_primary_cta_label: z.string().default(""),
+      catalog_secondary_cta_label: z.string().default("")
     }),
     analytics: z.object({
       meta_pixel_enabled: z.boolean().default(false),
@@ -305,7 +417,13 @@ const siteSettingsSchema = z.object({
       community_cta_heading: z.string().default(""),
       community_cta_label: z.string().default(""),
       community_cta_helper: z.string().default(""),
-      community_benefits: z.array(exclusiveCommunityBenefitSchema).default([])
+      community_benefits: z.array(exclusiveCommunityBenefitSchema).default([]),
+      preview_private_notice: z.string().default(""),
+      preview_status_label: z.string().default(""),
+      activated_heading: z.string().default(""),
+      activated_body: z.string().default(""),
+      discord_unavailable_label: z.string().default(""),
+      discord_unavailable_helper: z.string().default("")
     }),
     release: z.object({
       back_to_music_label: z.string().default(""),
@@ -326,10 +444,24 @@ const siteSettingsSchema = z.object({
       body: z.string().default(""),
       cta_label: z.string().default(""),
       cta_url: z.string().default(""),
-      benefits: z.array(exclusiveCommunityBenefitSchema).default([])
+      benefits: z.array(exclusiveCommunityBenefitSchema).default([]),
+      waitlist_consent_label: z.string().default(""),
+      waitlist_success_heading: z.string().default(""),
+      waitlist_note: z.string().default(""),
+      future_updates_heading: z.string().default(""),
+      future_updates_description: z.string().default(""),
+      future_updates_consent_label: z.string().default(""),
+      future_updates_cta_label: z.string().default(""),
+      more_eyebrow: z.string().default(""),
+      more_heading: z.string().default(""),
+      preview_cta_label: z.string().default(""),
+      item_purchase_cta_label: z.string().default("")
     }),
     commissions: z.object({
       is_enabled: z.boolean().default(true),
+      metadata_title: z.string().default(""),
+      metadata_open_description: z.string().default(""),
+      metadata_closed_description: z.string().default(""),
       page_eyebrow: z.string().default(""),
       page_title: z.string().default(""),
       page_subtitle: z.string().default(""),
@@ -337,7 +469,46 @@ const siteSettingsSchema = z.object({
       card_price: z.string().default(""),
       card_description: z.string().default(""),
       card_button_text: z.string().default(""),
-      closed_message: z.string().default("")
+      closed_message: z.string().default(""),
+      closed_eyebrow: z.string().default(""),
+      closed_heading: z.string().default(""),
+      closed_cta_label: z.string().default(""),
+      services: z.array(commissionServiceSchema).max(8).default([]),
+      quote_eyebrow: z.string().default(""),
+      quote_description: z.string().default(""),
+      terms_primary: z.string().default(""),
+      terms_secondary: z.string().default(""),
+      form_heading: z.string().default(""),
+      form_success_heading: z.string().default(""),
+      form_disclaimer: z.string().default(""),
+      name_label: z.string().default(""),
+      name_placeholder: z.string().default(""),
+      email_label: z.string().default(""),
+      email_placeholder: z.string().default(""),
+      request_type_label: z.string().default(""),
+      request_type_placeholder: z.string().default(""),
+      other_service_label: z.string().default(""),
+      budget_label: z.string().default(""),
+      budget_placeholder: z.string().default(""),
+      usage_label: z.string().default(""),
+      usage_placeholder: z.string().default(""),
+      deadline_label: z.string().default(""),
+      deadline_placeholder: z.string().default(""),
+      specific_date_label: z.string().default(""),
+      specific_date_placeholder: z.string().default(""),
+      topic_label: z.string().default(""),
+      topic_placeholder: z.string().default(""),
+      beat_link_label: z.string().default(""),
+      beat_link_placeholder: z.string().default(""),
+      reference_link_label: z.string().default(""),
+      reference_link_placeholder: z.string().default(""),
+      notes_label: z.string().default(""),
+      notes_placeholder: z.string().default(""),
+      submit_label: z.string().default(""),
+      submitting_label: z.string().default(""),
+      budget_options: uniqueTextOptionsSchema,
+      usage_options: uniqueTextOptionsSchema,
+      deadline_options: uniqueTextOptionsSchema
     })
   }),
   created_on: z.string().default(""),

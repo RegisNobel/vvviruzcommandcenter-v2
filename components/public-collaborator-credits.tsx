@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {ArrowUpRight} from "lucide-react";
 
 import {parseCollaborators} from "@/lib/public-utils";
 
@@ -26,8 +27,18 @@ export function PublicCollaboratorCredits({
           <span key={`${name}-${index}`}>
             {separator}
             {profile ? (
-              <Link className="underline decoration-current/40 underline-offset-4 hover:text-white" href={`/artists/${profile.slug}`}>
-                {name}
+              <Link
+                aria-label={`Open ${name} artist profile`}
+                className="group/artist-link inline-flex items-center gap-1 rounded-full border border-[#d8b95f]/35 bg-[#d8b95f]/10 px-2 py-0.5 font-semibold text-[#f0cd74] no-underline shadow-[0_0_0_rgba(216,185,95,0)] transition hover:-translate-y-px hover:border-[#f0cd74]/70 hover:bg-[#d8b95f]/20 hover:text-[#fff3c9] hover:shadow-[0_6px_18px_rgba(216,185,95,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f0cd74]/70"
+                href={`/artists/${profile.slug}`}
+              >
+                <span>{name}</span>
+                <ArrowUpRight
+                  aria-hidden="true"
+                  className="transition-transform group-hover/artist-link:-translate-y-0.5 group-hover/artist-link:translate-x-0.5"
+                  size={11}
+                  strokeWidth={2.4}
+                />
               </Link>
             ) : name}
           </span>

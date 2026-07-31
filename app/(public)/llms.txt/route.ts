@@ -5,15 +5,20 @@ import {NextResponse} from "next/server";
 import {getPublicSiteBaseUrl} from "@/lib/public-site-url";
 import {
   getEligiblePublicProjects,
-  getPublishedReleases
+  getPublishedReleases,
+  getSiteSettings
 } from "@/lib/repositories/public-site";
+import {listPublishedArtistProfiles} from "@/lib/repositories/artist-profiles";
 
 export async function GET() {
   const baseUrl = getPublicSiteBaseUrl();
-  const [projects, releases] = await Promise.all([
+  const [projects, releases, siteSettings, artistProfiles] = await Promise.all([
     getEligiblePublicProjects(),
-    getPublishedReleases()
+    getPublishedReleases(),
+    getSiteSettings(),
+    listPublishedArtistProfiles()
   ]);
+  const siteContent = siteSettings.site_content;
   const projectSection = projects.length
     ? projects
         .map(
@@ -40,20 +45,33 @@ export async function GET() {
         })
         .join("\n\n")
     : "No published releases are currently available.";
+  const artistSection = artistProfiles.length
+    ? artistProfiles
+        .map(
+          (profile) =>
+            `### ${profile.displayName}\n\n- URL: ${baseUrl}/artists/${encodeURIComponent(profile.slug)}\n- Location: ${profile.location || "Not listed"}\n- Genres: ${profile.genres.join(", ") || "Not listed"}\n\n${profile.longBio || profile.differentiator}`
+        )
+        .join("\n\n")
+    : "No artist profiles are currently published.";
+  const positioning =
+    siteContent.about.statement_text.trim() ||
+    siteSettings.tagline.trim() ||
+    siteSettings.short_bio.trim();
 
-  const content = `# vvviruz
+  const content = `# ${siteSettings.artist_name}
 
-> vvviruz is an independent bilingual/trilingual rap artist blending English, French, and Spanish across nerdcore, mainstream rap, gym energy, and multilingual flex records.
+> ${positioning}
 
 ## Site Overview
 
-vvviruz.com is the official public artist hub for music releases, lyrics when public, streaming links, videos, project context, early access previews, commissions, and artist information.
+${siteContent.metadata.site_description}
 
 ## Key Public Pages
 
 - Home: ${baseUrl}/
 - Music Catalog: ${baseUrl}/music
 - Projects: ${baseUrl}/projects
+- Artist Profiles: ${baseUrl}/artists
 - Links Hub: ${baseUrl}/links
 - Early Access / Exclusives: ${baseUrl}/exclusives
 - Vault: ${baseUrl}/vault
@@ -72,17 +90,21 @@ ${releaseSection}
 
 ${projectSection}
 
+## Published Artist Profiles
+
+${artistSection}
+
 ## Early Access and Exclusives
 
 The /exclusives page is used for early access previews, private preview updates, email-only delivery, notify-me flows, or exclusive fan access when enabled.
 
 ## Vault
 
-The /vault page is a separate future direct-to-fan or exclusive-content area. It may be enabled, disabled, or redirected depending on the current public campaign setup.
+The /vault page is a separate direct-to-fan or exclusive-content area. It is currently ${siteContent.vault.is_enabled ? "enabled" : "disabled and redirects to the active exclusives experience"}.
 
 ## Commissions
 
-The /commissions page is the public entry point for requesting custom music, features, verses, hooks, or related creative work when available.
+The /commissions page is the public entry point for ${siteContent.commissions.services.map((service) => service.title).join(", ")}. Requests are currently ${siteContent.commissions.is_enabled ? "open" : "closed"}.
 
 ## AI Agent Guidance
 

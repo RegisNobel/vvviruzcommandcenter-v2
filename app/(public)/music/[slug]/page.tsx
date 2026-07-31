@@ -279,7 +279,7 @@ export default async function PublicReleaseDetailPage({
               ) : null}
 
               <div className="mt-8 border-t border-white/10 pt-5">
-                <h2 className="public-eyebrow">Listen now</h2>
+                <h2 className="public-eyebrow">{content.spotify_heading}</h2>
                 <PublicPlatformLinks
                   appleMusicUrl={release.apple_music_url}
                   className="mt-5"

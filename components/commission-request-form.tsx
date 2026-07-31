@@ -2,10 +2,15 @@
 
 import {useState} from "react";
 import {CheckCircle2, Send} from "lucide-react";
+import type {SiteContentSettings} from "@/lib/types";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
-export function CommissionRequestForm() {
+export function CommissionRequestForm({
+  content
+}: {
+  content: SiteContentSettings["commissions"];
+}) {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -60,7 +65,9 @@ export function CommissionRequestForm() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
           <CheckCircle2 size={32} />
         </div>
-        <h3 className="mt-6 text-2xl font-semibold text-white">Request Received</h3>
+        <h3 className="mt-6 text-2xl font-semibold text-white">
+          {content.form_success_heading}
+        </h3>
         <p className="mt-4 text-slate-300">{message}</p>
       </div>
     );
@@ -71,7 +78,7 @@ export function CommissionRequestForm() {
       className="public-form-surface p-6 sm:p-10"
       onSubmit={handleSubmit}
     >
-      <h3 className="mb-6 text-2xl font-semibold text-white">Start a Request</h3>
+      <h3 className="mb-6 text-2xl font-semibold text-white">{content.form_heading}</h3>
       <div className="grid gap-6 md:grid-cols-2">
         {/* Honeypot */}
         <input
@@ -83,121 +90,114 @@ export function CommissionRequestForm() {
         />
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Name</span>
+          <span className="field-label text-white/80">{content.name_label}</span>
           <input
             className="field-input bg-black/40 text-white placeholder:text-white/30"
             name="name"
-            placeholder="Your name or artist name"
+            placeholder={content.name_placeholder}
             required
             type="text"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Email</span>
+          <span className="field-label text-white/80">{content.email_label}</span>
           <input
             className="field-input bg-black/40 text-white placeholder:text-white/30"
             name="email"
-            placeholder="For communication & quote"
+            placeholder={content.email_placeholder}
             required
             type="email"
           />
         </label>
 
         <label className="space-y-2 md:col-span-2">
-          <span className="field-label text-white/80">Request Type</span>
+          <span className="field-label text-white/80">{content.request_type_label}</span>
           <select className="field-input bg-black/40 text-white" name="requestType" required defaultValue="">
-            <option disabled value="">Select a service...</option>
-            <option value="Hook / Verse">Hook / Verse</option>
-            <option value="Full Custom Song">Full Custom Song</option>
-            <option value="Collab / Feature Inquiry">Collab / Feature Inquiry</option>
-            <option value="Other">Other</option>
+            <option disabled value="">{content.request_type_placeholder}</option>
+            {content.services.map((service) => (
+              <option key={service.id} value={service.title}>{service.title}</option>
+            ))}
+            <option value={content.other_service_label}>{content.other_service_label}</option>
           </select>
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Budget Range</span>
+          <span className="field-label text-white/80">{content.budget_label}</span>
           <select className="field-input bg-black/40 text-white" name="budgetRange" required defaultValue="">
-            <option disabled value="">Select a range...</option>
-            <option value="Under $100">Under $100</option>
-            <option value="$100 - $250">$100 - $250</option>
-            <option value="$250 - $500">$250 - $500</option>
-            <option value="$500+">$500+</option>
-            <option value="Not sure yet">Not sure yet</option>
+            <option disabled value="">{content.budget_placeholder}</option>
+            {content.budget_options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
           </select>
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Usage Intent</span>
+          <span className="field-label text-white/80">{content.usage_label}</span>
           <select className="field-input bg-black/40 text-white" name="usageIntent" required defaultValue="">
-            <option disabled value="">Select intent...</option>
-            <option value="Personal">Personal</option>
-            <option value="Commercial release">Commercial release</option>
-            <option value="YouTube / social content">YouTube / social content</option>
-            <option value="Gift">Gift</option>
-            <option value="Brand / project">Brand / project</option>
-            <option value="Not sure yet">Not sure yet</option>
+            <option disabled value="">{content.usage_placeholder}</option>
+            {content.usage_options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
           </select>
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Deadline</span>
+          <span className="field-label text-white/80">{content.deadline_label}</span>
           <select className="field-input bg-black/40 text-white" name="deadline" required defaultValue="">
-            <option disabled value="">Select deadline...</option>
-            <option value="No rush">No rush</option>
-            <option value="1 week">1 week</option>
-            <option value="2 weeks">2 weeks</option>
-            <option value="1 month">1 month</option>
-            <option value="Specific date">Specific date</option>
+            <option disabled value="">{content.deadline_placeholder}</option>
+            {content.deadline_options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
           </select>
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Specific Date (Optional)</span>
+          <span className="field-label text-white/80">{content.specific_date_label}</span>
           <input
             className="field-input bg-black/40 text-white placeholder:text-white/30"
             name="specificDeadline"
-            placeholder="e.g., Oct 31st"
+            placeholder={content.specific_date_placeholder}
             type="text"
           />
         </label>
 
         <label className="space-y-2 md:col-span-2">
-          <span className="field-label text-white/80">Topic / Concept</span>
+          <span className="field-label text-white/80">{content.topic_label}</span>
           <textarea
             className="field-input min-h-[100px] bg-black/40 text-white placeholder:text-white/30"
             name="topic"
-            placeholder="What is the song about? Describe the story, character, or vibe you want."
+            placeholder={content.topic_placeholder}
             required
           />
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Beat Link (Optional)</span>
+          <span className="field-label text-white/80">{content.beat_link_label}</span>
           <input
             className="field-input bg-black/40 text-white placeholder:text-white/30"
             name="beatLink"
-            placeholder="YouTube, Soundcloud, Drive, etc."
+            placeholder={content.beat_link_placeholder}
             type="url"
           />
         </label>
 
         <label className="space-y-2">
-          <span className="field-label text-white/80">Reference Link (Optional)</span>
+          <span className="field-label text-white/80">{content.reference_link_label}</span>
           <input
             className="field-input bg-black/40 text-white placeholder:text-white/30"
             name="referenceLink"
-            placeholder="A song with a similar vibe"
+            placeholder={content.reference_link_placeholder}
             type="url"
           />
         </label>
 
         <label className="space-y-2 md:col-span-2">
-          <span className="field-label text-white/80">Additional Notes (Optional)</span>
+          <span className="field-label text-white/80">{content.notes_label}</span>
           <textarea
             className="field-input min-h-[80px] bg-black/40 text-white placeholder:text-white/30"
             name="additionalNotes"
-            placeholder="Any extra details or requests?"
+            placeholder={content.notes_placeholder}
           />
         </label>
       </div>
@@ -214,12 +214,11 @@ export function CommissionRequestForm() {
         type="submit"
       >
         <Send size={20} />
-        {submitState === "submitting" ? "Submitting..." : "Submit Request"}
+        {submitState === "submitting" ? content.submitting_label : content.submit_label}
       </button>
 
       <p className="mt-4 text-center text-xs leading-5 text-white/50">
-        Submitting a request does not guarantee acceptance. Custom work is reviewed before approval.
-        Payment is handled externally through PayPal for now.
+        {content.form_disclaimer}
       </p>
     </form>
   );

@@ -10,22 +10,31 @@ import {
 } from "@/lib/artist-profiles";
 import {getPublicSiteUrl} from "@/lib/public-site-url";
 import {listPublishedArtistProfiles} from "@/lib/repositories/artist-profiles";
+import {getSiteSettings} from "@/lib/repositories/public-site";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Artist Profiles",
-  description:
-    "Explore independent artist profiles, selected releases, creative context, and official listening links.",
-  alternates: {canonical: getPublicSiteUrl("/artists")}
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteSettings = await getSiteSettings();
+  const content = siteSettings.site_content.artist_directory;
+
+  return {
+    title: content.metadata_title,
+    description: content.metadata_description,
+    alternates: {canonical: getPublicSiteUrl("/artists")}
+  };
+}
 
 export default async function ArtistDirectoryPage() {
-  const profiles = await listPublishedArtistProfiles();
+  const [profiles, siteSettings] = await Promise.all([
+    listPublishedArtistProfiles(),
+    getSiteSettings()
+  ]);
+  const content = siteSettings.site_content.artist_directory;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Artist Profiles",
+    name: content.heading,
     numberOfItems: profiles.length,
     itemListElement: profiles.map((profile, index) => ({
       "@type": "ListItem",
@@ -51,14 +60,13 @@ export default async function ArtistDirectoryPage() {
         <div className="mx-auto max-w-[1280px] space-y-8">
           <section className="public-panel overflow-hidden px-5 py-9 sm:px-9 sm:py-11">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#d8b95f]">
-              Independent signals
+              {content.eyebrow}
             </p>
             <h1 className="public-heading mt-4 max-w-4xl text-4xl font-semibold sm:text-6xl">
-              Artist Profiles
+              {content.heading}
             </h1>
             <p className="public-copy mt-5 max-w-3xl text-sm leading-7 sm:text-base">
-              Meet the artists behind the music through focused profiles, selected
-              releases, editorial context, and direct links to their wider catalog.
+              {content.description}
             </p>
           </section>
 
@@ -119,7 +127,7 @@ export default async function ArtistDirectoryPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8b95f]">
-                            Artist profile
+                            {content.card_eyebrow}
                           </p>
                           <h2 className="mt-2 text-2xl font-semibold text-[#fff8ec]">
                             {profile.displayName}
@@ -156,14 +164,13 @@ export default async function ArtistDirectoryPage() {
           ) : (
             <section className="public-panel-quiet px-6 py-12 text-center sm:px-10">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#d8b95f]">
-                Profiles in progress
+                {content.empty_eyebrow}
               </p>
               <h2 className="mt-3 text-2xl font-semibold text-[#fff8ec]">
-                The first published artist profile will appear here.
+                {content.empty_heading}
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[#aeb6c0]">
-                Approved profiles remain private until their final published
-                version is confirmed.
+                {content.empty_description}
               </p>
             </section>
           )}

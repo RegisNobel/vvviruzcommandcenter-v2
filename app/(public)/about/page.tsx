@@ -183,7 +183,7 @@ export default async function PublicAboutPage() {
                   ))}
                 </div>
                 <Link className="public-action-primary mt-7" href="/music">
-                  Explore the music
+                  {content.hero_cta_label}
                 </Link>
               </div>
             </div>
@@ -256,19 +256,19 @@ export default async function PublicAboutPage() {
 
         <section className="public-panel-quiet py-9 text-center sm:py-12">
           <div className="mx-auto max-w-3xl px-5">
-            <p className="public-eyebrow">Start with the catalog</p>
+            <p className="public-eyebrow">{content.catalog_eyebrow}</p>
             <h2 className="public-heading mt-4 text-3xl font-semibold sm:text-4xl">
-              The clearest introduction is the music
+              {content.catalog_heading}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#aeb6c0]">
-              Explore the releases, recurring projects, and latest records shaping the vvviruz sound.
+              {content.catalog_description}
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <Link className="public-action-primary" href="/music">
-                Explore music
+                {content.catalog_primary_cta_label}
               </Link>
               <Link className="public-action-secondary" href="/links">
-                Play the latest release
+                {content.catalog_secondary_cta_label}
               </Link>
             </div>
           </div>

@@ -345,6 +345,35 @@ export function ExclusiveOfferSettingsPanel({
               value={exclusiveOffer.unavailable_body}
             />
           </label>
+
+          {([
+            ["preview_status_label", "Preview Status Label"],
+            ["preview_private_notice", "Unlocked Preview Notice"],
+            ["activated_heading", "Activated / No Preview Heading"],
+            ["activated_body", "Activated / No Preview Body"],
+            ["discord_unavailable_label", "Discord Unavailable Button"],
+            ["discord_unavailable_helper", "Discord Unavailable Helper"]
+          ] as const).map(([key, label]) => (
+            <label
+              className={key.endsWith("_body") || key.endsWith("_notice") || key.endsWith("_helper") ? "space-y-2 md:col-span-2" : "space-y-2"}
+              key={key}
+            >
+              <span className="field-label">{label}</span>
+              {key.endsWith("_body") || key.endsWith("_notice") || key.endsWith("_helper") ? (
+                <textarea
+                  className="field-input min-h-[90px]"
+                  onChange={(event) => updateExclusiveOffer({[key]: event.target.value})}
+                  value={exclusiveOffer[key]}
+                />
+              ) : (
+                <input
+                  className="field-input"
+                  onChange={(event) => updateExclusiveOffer({[key]: event.target.value})}
+                  value={exclusiveOffer[key]}
+                />
+              )}
+            </label>
+          ))}
         </div>
 
         {/* DELIVERY & EXPERIENCE SUB-SECTION */}

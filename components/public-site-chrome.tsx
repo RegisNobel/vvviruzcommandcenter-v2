@@ -5,6 +5,7 @@ import type {SiteSettingsRecord} from "@/lib/types";
 import {getSiteIconUrl} from "@/lib/site-assets";
 import {PublicMobileNav} from "@/components/public-mobile-nav";
 import {LatestIntelRail} from "@/components/latest-intel-rail";
+import {PublicDesktopMoreNav} from "@/components/public-desktop-more-nav";
 import type {PublicFanUpdate} from "@/lib/types";
 
 export async function PublicSiteChrome({
@@ -16,32 +17,34 @@ export async function PublicSiteChrome({
   latestIntel: PublicFanUpdate[];
   siteSettings: SiteSettingsRecord;
 }) {
+  const chrome = siteSettings.site_content.chrome;
   const navItems = [
-    {href: "/music", label: siteSettings.site_content.chrome.nav_music_label},
-    {href: "/projects", label: "Projects"}
+    {href: "/", label: chrome.nav_home_label},
+    {href: "/music", label: chrome.nav_music_label},
+    {href: "/projects", label: chrome.nav_projects_label}
   ];
 
   if (siteSettings.nav_hubs && siteSettings.nav_hubs.length > 0) {
     for (const hub of siteSettings.nav_hubs) {
       navItems.push({
         href: `/${hub.path}`,
-        label: hub.path === "links" ? siteSettings.site_content.chrome.nav_links_label : hub.label
+        label: hub.path === "links" ? chrome.nav_links_label : hub.label
       });
     }
   } else {
-    navItems.push({href: "/links", label: siteSettings.site_content.chrome.nav_links_label});
+    navItems.push({href: "/links", label: chrome.nav_links_label});
   }
 
-  navItems.push({href: "/exclusives", label: "Exclusives"});
-  navItems.push({href: "/artists", label: "Artist Profiles"});
-  navItems.push({href: "/about", label: siteSettings.site_content.chrome.nav_about_label});
-  navItems.push({href: "/commissions", label: "Commissions"});
+  navItems.push({href: "/exclusives", label: chrome.nav_exclusive_label});
+  navItems.push({href: "/artists", label: chrome.nav_artists_label});
+  navItems.push({href: "/about", label: chrome.nav_about_label});
+  navItems.push({href: "/commissions", label: chrome.nav_commissions_label});
 
   if (siteSettings.site_content.vault?.is_enabled) {
-    navItems.push({href: "/vault", label: "Vault"});
+    navItems.push({href: "/vault", label: chrome.nav_vault_label});
   }
 
-  const desktopMoreHrefs = new Set(["/projects", "/artists", "/commissions", "/vault"]);
+  const desktopMoreHrefs = new Set(chrome.desktop_more_hrefs);
   const desktopPrimaryItems = navItems.filter((item) => !desktopMoreHrefs.has(item.href));
   const desktopMoreItems = navItems.filter((item) => desktopMoreHrefs.has(item.href));
 
@@ -118,22 +121,10 @@ export async function PublicSiteChrome({
               </Link>
             ))}
             {desktopMoreItems.length ? (
-              <details className="group relative">
-                <summary className="public-nav-link cursor-pointer list-none select-none [&::-webkit-details-marker]:hidden">
-                  More
-                </summary>
-                <div className="public-nav-more-panel absolute right-0 top-[calc(100%+0.65rem)] z-50 grid min-w-52 gap-1 p-2 shadow-2xl">
-                  {desktopMoreItems.map((item) => (
-                    <Link
-                      className="public-nav-more-link px-4 py-3 text-sm font-semibold transition"
-                      href={item.href}
-                      key={item.href}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </details>
+              <PublicDesktopMoreNav
+                items={desktopMoreItems}
+                label={chrome.nav_more_label}
+              />
             ) : null}
           </nav>
         </div>
@@ -141,7 +132,9 @@ export async function PublicSiteChrome({
 
       <LatestIntelRail
         configuredHubPaths={(siteSettings.nav_hubs || []).map((hub) => hub.path)}
+        ctaLabel={siteSettings.site_content.intel.cta_label}
         items={latestIntel}
+        label={siteSettings.site_content.intel.rail_label}
       />
 
       <main className="public-canvas flex-grow">

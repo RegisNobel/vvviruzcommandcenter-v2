@@ -28,16 +28,16 @@ const COMMUNITY_MARKERS = [Lightbulb, PenLine, Swords, Trophy, Radio, BadgeCheck
 
 export async function generateMetadata(): Promise<Metadata> {
   const {siteSettings} = await readPublicExclusiveOffer();
+  const metadata = siteSettings.site_content.metadata;
 
   return {
-    title: "Insider Access",
-    description: "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community.",
+    title: metadata.exclusive_page_title,
+    description: metadata.exclusive_page_description,
     alternates: {canonical: "/exclusives"},
     openGraph: {
       type: "website",
-      title: "vvviruz Insider Access",
-      description:
-        "Get early access to unreleased previews, work-in-progress drafts, and join our Discord community.",
+      title: metadata.exclusive_page_title,
+      description: metadata.exclusive_page_description,
       url: "/exclusives"
     }
   };
@@ -52,7 +52,8 @@ export default async function PublicExclusivesPage({
   const cookieStore = await cookies();
   const token = resolvedSearchParams?.t || cookieStore.get("vcc_exclusive_access")?.value;
 
-  const {offer} = await readPublicExclusiveOffer();
+  const {offer, siteSettings} = await readPublicExclusiveOffer();
+  const content = siteSettings.site_content.exclusive;
 
   let isUnlocked = false;
   if (token) {
@@ -179,10 +180,12 @@ export default async function PublicExclusivesPage({
           ) : (
             <>
               <div className="public-status-strip mt-7 px-6 py-8 text-center">
-                <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">Preview Status</span>
-                <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">Next preview coming soon</h3>
+                <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[#c9a347]">
+                  {content.preview_status_label}
+                </span>
+                <h3 className="mt-3 text-xl font-bold text-[#f7f1e6]">{content.unavailable_heading}</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-[#98a1aa]">
-                  Sign up below to lock in your access. You will receive an email notice the exact second the next unreleased draft goes live.
+                  {content.unavailable_body}
                 </p>
               </div>
             </>
@@ -201,16 +204,16 @@ export default async function PublicExclusivesPage({
                     {offer.instant_unlock_button_label || "Access the Current Preview"}
                   </TrackedExternalLink>
                   <p className="text-center text-xs leading-6 text-[#8f98a3]">
-                    This private preview is unlisted. Please check back often as previews rotate out when commercial releases occur.
+                    {content.preview_private_notice}
                   </p>
                 </div>
               ) : (
                 <div className="public-quiet-card bg-black/16 px-6 py-8 text-center">
                   <h3 className="text-xl font-semibold tracking-tight text-[#f7f1e6]">
-                    Insider Access Activated
+                    {content.activated_heading}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#b6bec7]">
-                    You are signed up! There is no active preview right now, but you will receive an email notice when the next track is uploaded.
+                    {content.activated_body}
                   </p>
                 </div>
               )
@@ -297,14 +300,14 @@ export default async function PublicExclusivesPage({
                     disabled
                     type="button"
                   >
-                    Coming Soon
+                    {content.discord_unavailable_label}
                   </button>
                 )}
               </div>
               <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[#98a1aa]">
                 {discordInviteUrl
                   ? offer.community_cta_helper
-                  : "Discord invite coming soon."}
+                  : content.discord_unavailable_helper}
               </p>
             </div>
           </div>

@@ -58,7 +58,13 @@ const exclusiveOfferSchema = z.object({
   community_cta_heading: z.string().default(""),
   community_cta_label: z.string().default(""),
   community_cta_helper: z.string().default(""),
-  community_benefits: z.array(exclusiveCommunityBenefitSchema).default([])
+  community_benefits: z.array(exclusiveCommunityBenefitSchema).default([]),
+  preview_private_notice: z.string().default(""),
+  preview_status_label: z.string().default(""),
+  activated_heading: z.string().default(""),
+  activated_body: z.string().default(""),
+  discord_unavailable_label: z.string().default(""),
+  discord_unavailable_helper: z.string().default("")
 });
 
 async function validateExclusiveAssets(values: z.infer<typeof exclusiveOfferSchema>) {

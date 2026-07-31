@@ -7,12 +7,24 @@ import type {CommissionRequestRecord} from "@/lib/types";
 
 type Props = {
   initialRequests: CommissionRequestRecord[];
+  serviceTitles: string[];
 };
 
-export function CommissionsAdminPage({initialRequests}: Props) {
+export function CommissionsAdminPage({initialRequests, serviceTitles}: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
+  const typeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...serviceTitles,
+          ...initialRequests.map((request) => request.requestType),
+          "Other"
+        ])
+      ).filter(Boolean),
+    [initialRequests, serviceTitles]
+  );
 
   const filteredRequests = useMemo(() => {
     let filtered = initialRequests;
@@ -81,11 +93,9 @@ export function CommissionsAdminPage({initialRequests}: Props) {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="All">All Types</option>
-              <option value="Hook">Hook</option>
-              <option value="Verse">Verse</option>
-              <option value="Full Custom Song">Full Custom Song</option>
-              <option value="Collab / Feature Inquiry">Collab / Feature Inquiry</option>
-              <option value="Other">Other</option>
+              {typeOptions.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
             </select>
           </div>
         </div>

@@ -928,6 +928,7 @@ model VaultItem {
   previewUrl  String    @default("")
   priceLabel  String    @default("")
   checkoutUrl String    @default("")
+  offerDetails String   @default("{}")
   status      String    @default("draft")
   sortOrder   Int       @default(0)
   publishedAt DateTime?

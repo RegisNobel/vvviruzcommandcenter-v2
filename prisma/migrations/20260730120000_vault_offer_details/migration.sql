@@ -1,0 +1,1 @@
+ALTER TABLE "VaultItem" ADD COLUMN "offerDetails" TEXT NOT NULL DEFAULT '{}';

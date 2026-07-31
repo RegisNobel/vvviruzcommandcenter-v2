@@ -16,6 +16,9 @@ type PublicMusicLibraryProps = {
     youtube: string;
   };
   releases: PublicReleaseRecord[];
+  searchEmptyText: string;
+  searchLabel: string;
+  searchPlaceholder: string;
 };
 
 function matchesSearch(release: PublicReleaseRecord, query: string) {
@@ -42,7 +45,10 @@ export function PublicMusicLibrary({
   emptyText,
   fallbackText,
   platformLabels,
-  releases
+  releases,
+  searchEmptyText,
+  searchLabel,
+  searchPlaceholder
 }: PublicMusicLibraryProps) {
   const [searchValue, setSearchValue] = useState("");
   const deferredSearchValue = useDeferredValue(searchValue);
@@ -56,7 +62,7 @@ export function PublicMusicLibrary({
     <section className="space-y-7">
       <label className="public-panel block px-4 py-4 sm:px-5">
         <span className="public-eyebrow">
-          Search Releases
+          {searchLabel}
         </span>
         <span className="relative mt-3 block">
           <Search
@@ -66,7 +72,7 @@ export function PublicMusicLibrary({
           <input
             className="w-full rounded-md border border-white/10 bg-black/20 px-11 py-3 text-sm text-[#fff8ec] outline-none transition placeholder:text-[#7f8994] focus:border-[rgba(246,201,69,0.68)] focus:ring-2 focus:ring-[rgba(246,201,69,0.14)]"
             onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="Find a release by title, type, or description"
+            placeholder={searchPlaceholder}
             value={searchValue}
           />
         </span>
@@ -88,7 +94,7 @@ export function PublicMusicLibrary({
         <div className="rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-8 text-sm leading-7 text-[#aeb6c0] sm:px-8 sm:py-10">
           {releases.length === 0
             ? emptyText
-            : "No releases match that search yet. Try a title, type, or keyword."}
+            : searchEmptyText}
         </div>
       )}
     </section>

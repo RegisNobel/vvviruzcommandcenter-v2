@@ -120,6 +120,12 @@ function createDefaultSiteContent(): SiteContentSettings {
       nav_about_label: "About",
       nav_links_label: "On Repeat",
       nav_exclusive_label: "Exclusives",
+      nav_projects_label: "Projects",
+      nav_artists_label: "Artist Profiles",
+      nav_commissions_label: "Commissions",
+      nav_vault_label: "Vault",
+      nav_more_label: "More",
+      desktop_more_hrefs: ["/about", "/artists", "/commissions", "/vault"],
       footer_copyright_text: `Copyright ${new Date().getFullYear()} vvviruz. All rights reserved.`
     },
   home: {
@@ -146,7 +152,10 @@ function createDefaultSiteContent(): SiteContentSettings {
       lock_in_spotlight_cta_label: "GO BEAST MODE",
       recent_releases_eyebrow: "Recent Releases",
       recent_releases_heading: "Pick A Poison",
+      recent_releases_description:
+        "Three random tracks from the vvviruz catalog. Refresh for a new signal.",
       recent_releases_view_all_label: "View all",
+      exclusive_cta_eyebrow: "From the vault",
       brand_pillars_eyebrow: "Brand Pillars",
       brand_pillars_heading: "What the catalog is built around",
       brand_pillars: [
@@ -188,7 +197,47 @@ function createDefaultSiteContent(): SiteContentSettings {
       ]
     },
     projects: {
-      approved_slugs: [...PUBLIC_PROJECT_SLUGS]
+      approved_slugs: [...PUBLIC_PROJECT_SLUGS],
+      homepage_eyebrow: "Explore projects",
+      homepage_heading: "The worlds inside the catalog",
+      homepage_description:
+        "Recurring series and connected releases, organized by the ideas that keep evolving.",
+      homepage_card_cta_label: "View project",
+      index_meta_title: "Projects",
+      index_meta_description:
+        "Explore the recurring series and creative worlds behind vvviruz releases.",
+      index_heading: "Projects",
+      index_description:
+        "Explore the recurring series and creative worlds behind vvviruz releases.",
+      index_browse_label: "Browse all music",
+      index_card_cta_label: "Explore",
+      empty_heading: "The projects are taking shape.",
+      empty_description:
+        "Explore the full catalog while the next recurring series is prepared.",
+      empty_cta_label: "Explore music",
+      not_found_eyebrow: "Project unavailable",
+      not_found_heading: "That project is not public.",
+      not_found_description:
+        "It may still be taking shape. The complete public catalog is available now.",
+      not_found_cta_label: "Explore music"
+    },
+    artist_directory: {
+      metadata_title: "Artist Profiles",
+      metadata_description:
+        "Explore independent artist profiles, selected releases, creative context, and official listening links.",
+      eyebrow: "Independent signals",
+      heading: "Artist Profiles",
+      description:
+        "Meet the artists behind the music through focused profiles, selected releases, editorial context, and direct links to their wider catalog.",
+      card_eyebrow: "Artist profile",
+      empty_eyebrow: "Profiles in progress",
+      empty_heading: "The first published artist profile will appear here.",
+      empty_description:
+        "Approved profiles remain private until their final published version is confirmed."
+    },
+    intel: {
+      rail_label: "Latest Intel",
+      cta_label: "Read update"
     },
     music: {
       page_eyebrow: "Discography",
@@ -198,9 +247,21 @@ function createDefaultSiteContent(): SiteContentSettings {
       all_releases_label: "All Releases",
       nerdcore_label: "Nerdcore",
       mainstream_label: "Mainstream",
-      empty_state_text: "No published releases match this filter yet."
+      empty_state_text: "No published releases match this filter yet.",
+      releases_tab_label: "Releases",
+      appears_on_tab_label: "Appears On",
+      browse_projects_label: "Browse Projects",
+      showing_label: "Showing",
+      open_project_label: "Open project hub",
+      clear_filter_label: "Clear filter",
+      appears_on_empty_text: "No collaborations or features published yet.",
+      search_label: "Search Releases",
+      search_placeholder: "Find a release by title, type, or description",
+      search_empty_text:
+        "No releases match that search yet. Try a title, type, or keyword."
   },
   about: {
+    hero_cta_label: "Explore the music",
     statement_heading: "Artist Statement",
     statement_text:
       "Gymrat - Nerd - Lyricist: The Avatar In Real Life.\nSurpassing Limits In Every Lane While Documenting The Process.",
@@ -218,7 +279,13 @@ function createDefaultSiteContent(): SiteContentSettings {
     connect_heading: "Tap into the signal.",
     connect_empty_text: "Social links coming soon.",
     contact_microcopy: "For collaborations, media, or direct inquiries, reach out here.",
-    contact_empty_text: "inquiry@vvviruz.com"
+    contact_empty_text: "inquiry@vvviruz.com",
+    catalog_eyebrow: "Start here",
+    catalog_heading: "The clearest introduction is the music",
+    catalog_description:
+      "Explore the releases, recurring projects, and latest records shaping the vvviruz sound.",
+    catalog_primary_cta_label: "Explore music",
+    catalog_secondary_cta_label: "Play the latest release"
   },
   analytics: {
     meta_pixel_enabled: false,
@@ -280,7 +347,15 @@ function createDefaultSiteContent(): SiteContentSettings {
     community_cta_heading: "Ready to enter the Command Center?",
     community_cta_label: "Join the vvviruz Command Center",
     community_cta_helper: "Discord invite opens in a new tab.",
-    community_benefits: DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS
+    community_benefits: DEFAULT_EXCLUSIVE_COMMUNITY_BENEFITS,
+    preview_private_notice:
+      "This private preview is unlisted. Please check back often as previews rotate out when commercial releases occur.",
+    preview_status_label: "Preview Status",
+    activated_heading: "Insider Access Activated",
+    activated_body:
+      "You are signed up! There is no active preview right now, but you will receive an email notice when the next track is uploaded.",
+    discord_unavailable_label: "Coming Soon",
+    discord_unavailable_helper: "Discord invite coming soon."
   },
   release: {
     back_to_music_label: "Back to music",
@@ -322,10 +397,30 @@ function createDefaultSiteContent(): SiteContentSettings {
         title: "",
         description: ""
       }
-    ]
+    ],
+    waitlist_consent_label:
+      "Send me this Vault drop notice and future vvviruz updates. I can unsubscribe anytime.",
+    waitlist_success_heading: "Signal received",
+    waitlist_note:
+      "No payment is being collected yet. This only adds you to the Vault update list.",
+    future_updates_heading: "Get notified about future Vault drops",
+    future_updates_description:
+      "Optional. Gumroad checkout stays separate and direct.",
+    future_updates_consent_label:
+      "Send me future vvviruz Vault drops and updates. I can unsubscribe anytime.",
+    future_updates_cta_label: "Notify Me About the Next Drop",
+    more_eyebrow: "More from the Vault",
+    more_heading: "Other direct-to-fan drops",
+    preview_cta_label: "Preview",
+    item_purchase_cta_label: "Get it"
   },
   commissions: {
     is_enabled: true,
+    metadata_title: "Commissions",
+    metadata_open_description:
+      "Request custom hooks, verses, full custom songs, or collab features from vvviruz.",
+    metadata_closed_description:
+      "Commission requests from vvviruz are currently closed. Check the page for availability updates.",
     page_eyebrow: "Work With vvviruz",
     page_title: "Custom hooks, verses, and songs from vvviruz.",
     page_subtitle: "Need bilingual bars, anime-level energy, or a custom track built around your idea? Submit a request and I’ll review the fit.",
@@ -333,13 +428,122 @@ function createDefaultSiteContent(): SiteContentSettings {
     card_price: "Custom quote",
     card_description: "Need a catchy hook, a custom verse, or both for your track? Send the beat, topic, and direction. I’ll review the fit, then write and record a part tailored to your song.",
     card_button_text: "Request Hook / Verse",
-    closed_message: "Commissions are currently closed. Check back soon."
+    closed_message: "Commissions are currently closed. Check back soon.",
+    closed_eyebrow: "Commissions",
+    closed_heading: "Requests are currently closed",
+    closed_cta_label: "Explore the catalog",
+    services: [
+      {
+        id: "service-hook-verse",
+        title: "Custom Hook / Verse",
+        description:
+          "Need a catchy hook, a custom verse, or both for your track? Send the beat, topic, and direction. I’ll review the fit, then write and record a part tailored to your song."
+      },
+      {
+        id: "service-custom-song",
+        title: "Full Custom Song",
+        description:
+          "A custom song built around your topic, character, story, brand, or concept. Final quote depends on length, deadline, and usage."
+      },
+      {
+        id: "service-collab-feature",
+        title: "Collab / Feature Inquiry",
+        description:
+          "For artists looking to collaborate, co-release, or get a vvviruz feature. Splits, credits, and release terms must be agreed before delivery."
+      }
+    ],
+    quote_eyebrow: "Custom quote",
+    quote_description:
+      "Pricing depends on the request type, scope, deadline, usage, revisions, and required deliverables. Submit your brief and you will receive a quote before work begins.",
+    terms_primary:
+      "Custom dedications or supporter mentions can be requested, but placement depends on creative fit and is not guaranteed on any specific release unless agreed directly.",
+    terms_secondary:
+      "Submitting a request does not guarantee acceptance. Custom work is reviewed before approval. Pricing, rights, credits, splits, turnaround time, and delivery details must be agreed before work begins. Payment is handled externally through PayPal for now.",
+    form_heading: "Start a Request",
+    form_success_heading: "Request Received",
+    form_disclaimer:
+      "Submitting a request does not guarantee acceptance. Custom work is reviewed before approval. Payment is handled externally through PayPal for now.",
+    name_label: "Name",
+    name_placeholder: "Your name or artist name",
+    email_label: "Email",
+    email_placeholder: "For communication & quote",
+    request_type_label: "Request Type",
+    request_type_placeholder: "Select a service...",
+    other_service_label: "Other",
+    budget_label: "Budget Range",
+    budget_placeholder: "Select a range...",
+    usage_label: "Usage Intent",
+    usage_placeholder: "Select intent...",
+    deadline_label: "Deadline",
+    deadline_placeholder: "Select deadline...",
+    specific_date_label: "Specific Date (Optional)",
+    specific_date_placeholder: "e.g., Oct 31st",
+    topic_label: "Topic / Concept",
+    topic_placeholder:
+      "What is the song about? Describe the story, character, or vibe you want.",
+    beat_link_label: "Beat Link (Optional)",
+    beat_link_placeholder: "YouTube, Soundcloud, Drive, etc.",
+    reference_link_label: "Reference Link (Optional)",
+    reference_link_placeholder: "A song with a similar vibe",
+    notes_label: "Additional Notes (Optional)",
+    notes_placeholder: "Any extra details or requests?",
+    submit_label: "Submit Request",
+    submitting_label: "Submitting...",
+    budget_options: [
+      "Under $100",
+      "$100 - $250",
+      "$250 - $500",
+      "$500+",
+      "Not sure yet"
+    ],
+    usage_options: [
+      "Personal",
+      "Commercial release",
+      "YouTube / social content",
+      "Gift",
+      "Brand / project",
+      "Not sure yet"
+    ],
+    deadline_options: [
+      "No rush",
+      "1 week",
+      "2 weeks",
+      "1 month",
+      "Specific date"
+    ]
   }
 };
 }
 
+function normalizeStringOptions(
+  values: string[] | undefined,
+  fallback: string[]
+) {
+  if (!values?.length) {
+    return fallback;
+  }
+
+  const normalized = values
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value, index, items) => items.indexOf(value) === index)
+    .slice(0, 20);
+
+  return normalized.length ? normalized : fallback;
+}
+
 function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): SiteContentSettings {
   const defaults = createDefaultSiteContent();
+  const allowedMoreHrefs = new Set([
+    "/projects",
+    "/artists",
+    "/commissions",
+    "/vault",
+    "/about",
+    "/exclusives",
+    "/links",
+    "/music"
+  ]);
   const normalizedLinksBadgeText = input?.links?.badge_text?.trim();
   const normalizedBrandMarkFile = input?.chrome?.brand_mark_file?.trim();
   const normalizedArtistImageFile = input?.about?.artist_image_file?.trim();
@@ -369,6 +573,13 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
       ...defaults.chrome,
       ...input?.chrome,
       brand_mark_file: normalizedBrandMarkFile || defaults.chrome.brand_mark_file,
+      desktop_more_hrefs: (
+        input?.chrome?.desktop_more_hrefs ?? defaults.chrome.desktop_more_hrefs
+      )
+        .map((value) => value.trim())
+        .filter((value, index, values) => {
+          return allowedMoreHrefs.has(value) && values.indexOf(value) === index;
+        }),
       nav_exclusive_label:
         !normalizedExclusiveNavLabel ||
         normalizedExclusiveNavLabel.toLowerCase() === "exclusive"
@@ -458,6 +669,14 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
       approved_slugs: normalizeApprovedPublicProjectSlugs(
         input?.projects?.approved_slugs ?? defaults.projects.approved_slugs
       )
+    },
+    artist_directory: {
+      ...defaults.artist_directory,
+      ...input?.artist_directory
+    },
+    intel: {
+      ...defaults.intel,
+      ...input?.intel
     },
     music: {
       ...defaults.music,
@@ -574,7 +793,29 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     },
     commissions: {
       ...defaults.commissions,
-      ...input?.commissions
+      ...input?.commissions,
+      services: input?.commissions?.services?.length
+        ? input.commissions.services
+            .map((service) => ({
+              id: service.id?.trim() || createId(),
+              title: service.title?.trim() || "",
+              description: service.description?.trim() || ""
+            }))
+            .filter((service) => service.title)
+            .slice(0, 8)
+        : defaults.commissions.services,
+      budget_options: normalizeStringOptions(
+        input?.commissions?.budget_options,
+        defaults.commissions.budget_options
+      ),
+      usage_options: normalizeStringOptions(
+        input?.commissions?.usage_options,
+        defaults.commissions.usage_options
+      ),
+      deadline_options: normalizeStringOptions(
+        input?.commissions?.deadline_options,
+        defaults.commissions.deadline_options
+      )
     }
   };
 }
