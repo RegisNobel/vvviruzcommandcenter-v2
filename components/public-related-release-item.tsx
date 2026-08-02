@@ -70,13 +70,14 @@ export function PublicRelatedReleaseItem({
               {release.title}
             </h3>
           </Link>
-          <div className="min-h-5 overflow-hidden">
+          <div className="min-h-6 min-w-0">
             {release.collaborator && release.collaborator_name.trim() ? (
               <p
-                className="truncate text-xs font-semibold leading-5 text-[#e3c16e]"
+                className="min-w-0 text-xs font-semibold leading-5 text-[#e3c16e]"
                 title={`with ${release.collaborator_name}`}
               >
                 <PublicCollaboratorCredits
+                  className="inline-flex max-w-full min-w-0 items-center gap-1"
                   collaboratorName={release.collaborator_name}
                   profiles={release.collaborator_profiles}
                 />
