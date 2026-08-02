@@ -59,7 +59,7 @@ function countSnapshotTables(snapshot: Record<string, unknown>) {
 export async function createDatabaseSnapshotArtifact() {
   const snapshot = {
     exportedAt: new Date().toISOString(),
-    schemaVersion: 7,
+    schemaVersion: 8,
     adminUsers: await prisma.adminUser.findMany(),
     releases: await prisma.release.findMany(),
     artistProfiles: await prisma.artistProfile.findMany(),
@@ -77,6 +77,12 @@ export async function createDatabaseSnapshotArtifact() {
     playlistReleases: await prisma.playlistRelease.findMany(),
     releaseAnnotations: await prisma.releaseAnnotation.findMany(),
     releaseAnnotationSources: await prisma.releaseAnnotationSource.findMany(),
+    breakingBarzEntries: await prisma.breakingBarzEntry.findMany(),
+    breakingBarzVersions: await prisma.breakingBarzVersion.findMany(),
+    breakingBarzVersionSources: await prisma.breakingBarzVersionSource.findMany(),
+    breakingBarzCategories: await prisma.breakingBarzCategory.findMany(),
+    breakingBarzEntryCategories: await prisma.breakingBarzEntryCategory.findMany(),
+    breakingBarzSubmissions: await prisma.breakingBarzSubmission.findMany(),
     fanUpdates: await prisma.fanUpdate.findMany(),
     vaultItems: await prisma.vaultItem.findMany(),
     appearsOn: await prisma.appearsOn.findMany(),

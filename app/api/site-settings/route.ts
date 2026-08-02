@@ -158,6 +158,7 @@ const siteSettingsSchema = z.object({
       nav_artists_label: z.string().default("Artist Profiles"),
       nav_commissions_label: z.string().default("Commissions"),
       nav_vault_label: z.string().default("Vault"),
+      nav_breaking_barz_label: z.string().default("Breaking Barz"),
       nav_more_label: z.string().default("More"),
       desktop_more_hrefs: z
         .array(
@@ -166,13 +167,14 @@ const siteSettingsSchema = z.object({
             "/artists",
             "/commissions",
             "/vault",
+            "/breaking-barz",
             "/about",
             "/exclusives",
             "/links",
             "/music"
           ])
         )
-        .max(8)
+        .max(9)
         .default(["/about", "/artists", "/commissions", "/vault"]),
       footer_copyright_text: z.string().default("")
     }),
@@ -435,6 +437,17 @@ const siteSettingsSchema = z.object({
       related_releases_view_all_label: z.string().default(""),
       not_found_heading: z.string().default(""),
       not_found_body: z.string().default("")
+    }),
+    breaking_barz: z.object({
+      is_enabled: z.boolean().default(true),
+      show_in_nav: z.boolean().default(true),
+      submissions_enabled: z.boolean().default(true),
+      metadata_title: z.string().trim().max(120).default("Breaking Barz"),
+      metadata_description: z.string().trim().max(320).default(""),
+      eyebrow: z.string().trim().max(80).default("Lyric Discovery"),
+      heading: z.string().trim().max(120).default("Breaking Barz"),
+      description: z.string().trim().max(500).default(""),
+      suggestion_cta_label: z.string().trim().max(80).default("Suggest a bar")
     }),
     vault: z.object({
       is_enabled: z.boolean().default(false),

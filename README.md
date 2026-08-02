@@ -2250,3 +2250,12 @@ After applying RLS changes:
 - Added one backward-compatible admin error contract for API routes and Server Actions, including safe operator messages, stable error codes, optional field errors, retry guidance, and request IDs for matching a visible failure to server logs.
 - Replaced unsafe direct JSON parsing across admin create, save, upload, delete, import, Audience, Ad Lab, Playlist, Project, Breaking Barz, Link Hub, Appears On, and Fan Content workflows so empty or non-JSON deployment responses no longer surface browser parsing errors.
 - Added shared admin loading and recovery boundaries, reusable error presentation, guarded asset-upload responses, and regression coverage for structured, legacy, empty, and unreadable responses.
+
+### 2026-08-01 - Breaking Barz discovery feed
+
+- Added a public `/breaking-barz` discovery feed with artist, song, and type filters; canonical detail pages; streaming links; verified/interpretive labels; and a responsive fan suggestion form.
+- Added `/admin/breaking-barz` for standalone breakdowns, private fan review, approval/rejection history, versioned publishing, and withdrawal. Release-linked entries remain edited from Release Detail.
+- Release annotations now synchronize into versioned Breaking Barz entries in the same transaction. Draft revisions preserve the last published title, artists, links, categories, excerpt, summary, and breakdown until the revision is published.
+- Added persistent submission throttling, a honeypot, sitemap and backup coverage, SQLite migrations, matching PostgreSQL schema support, and default-dry-run inventory/backfill tools.
+- Run `npm run breaking-barz:inventory`, `npm run breaking-barz:backfill`, and then `npm run breaking-barz:backfill -- --apply` after reviewing the dry-run report. Production writes additionally require `--confirm-production-write`.
+- Added `npm run test:breaking-barz-discovery` to verify public-version stability and release-annotation synchronization against a disposable database copy.

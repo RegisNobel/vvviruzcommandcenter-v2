@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 import {createId, slugify} from "@/lib/utils";
 import {LATEST_INTEL_PUBLIC_LIMIT} from "@/lib/latest-intel";
+import {syncReleaseAnnotationToBreakingBarz} from "@/lib/repositories/breaking-barz";
 import {
   createReleaseAnnotationAnchor,
   rebaseReleaseAnnotationAnchor,
@@ -186,7 +187,14 @@ function normalizeVaultItemInput(input: VaultItemInput) {
 }
 
 const annotationInclude = {
-  sources: {orderBy: {sortOrder: "asc" as const}}
+  sources: {orderBy: {sortOrder: "asc" as const}},
+  breakingBarzEntry: {
+    include: {
+      currentPublishedVersion: {
+        include: {sources: {orderBy: {sortOrder: "asc" as const}}}
+      }
+    }
+  }
 };
 
 type AnnotationRow = Prisma.ReleaseAnnotationGetPayload<{
@@ -284,7 +292,22 @@ export async function saveReleaseAnnotation(input: {
     const [release, existingAnnotation] = await Promise.all([
       tx.release.findUnique({
         where: {id: input.releaseId},
-        select: {lyrics: true}
+        select: {
+          id: true,
+          title: true,
+          lyrics: true,
+          catalogScope: true,
+          collaborator: true,
+          collaboratorName: true,
+          spotifyUrl: true,
+          appleMusicUrl: true,
+          youtubeUrl: true,
+          primaryArtistProfile: {select: {displayName: true}},
+          artistCredits: {
+            orderBy: {displayOrder: "asc"},
+            select: {artistProfile: {select: {displayName: true}}}
+          }
+        }
       }),
       input.id
         ? tx.releaseAnnotation.findUnique({
@@ -300,10 +323,25 @@ export async function saveReleaseAnnotation(input: {
 
     if (input.action === "archive") {
       if (!input.id) throw new Error("Choose an annotation to archive.");
-      return tx.releaseAnnotation.update({
+      const annotation = await tx.releaseAnnotation.update({
         where: {id: input.id},
         data: {status: "archived", isPublic: false, updatedAt: new Date()}
       });
+      await syncReleaseAnnotationToBreakingBarz(tx, {
+        annotationId: annotation.id,
+        release,
+        annotation: {
+          title,
+          type,
+          excerpt: annotation.excerptSnapshot,
+          summary,
+          breakdown: explanation,
+          confidence,
+          sources
+        },
+        action: "archive"
+      });
+      return annotation;
     }
     if (input.action === "publish" && existingAnnotation?.status === "needs_reanchoring") {
       throw new Error(
@@ -372,6 +410,20 @@ export async function saveReleaseAnnotation(input: {
         }))
       });
     }
+    await syncReleaseAnnotationToBreakingBarz(tx, {
+      annotationId: annotation.id,
+      release,
+      annotation: {
+        title,
+        type,
+        excerpt: anchor.excerptSnapshot,
+        summary,
+        breakdown: explanation,
+        confidence,
+        sources
+      },
+      action: input.action === "publish" ? "publish" : "draft"
+    });
     return annotation;
   });
 }
@@ -396,6 +448,10 @@ export async function revalidateReleaseAnnotationsInTransaction(
       await tx.releaseAnnotation.update({
         where: {id: annotation.id},
         data: {status: "needs_reanchoring", isPublic: false, updatedAt: new Date()}
+      });
+      await tx.breakingBarzEntry.updateMany({
+        where: {releaseAnnotationId: annotation.id},
+        data: {status: "withdrawn", withdrawnAt: new Date()}
       });
       continue;
     }
@@ -520,7 +576,19 @@ export async function setVaultItemStatus(id: string, status: string) {
 }
 
 export async function deleteFanContent(kind: string, id: string) {
-  if (kind === "annotation") return prisma.releaseAnnotation.update({where: {id}, data: {status: "archived", isPublic: false}});
+  if (kind === "annotation") {
+    return prisma.$transaction(async (tx) => {
+      const annotation = await tx.releaseAnnotation.update({
+        where: {id},
+        data: {status: "archived", isPublic: false}
+      });
+      await tx.breakingBarzEntry.updateMany({
+        where: {releaseAnnotationId: id},
+        data: {status: "archived", archivedAt: new Date()}
+      });
+      return annotation;
+    });
+  }
   if (kind === "update") return prisma.fanUpdate.delete({where: {id}});
   if (kind === "vault") return prisma.vaultItem.delete({where: {id}});
   throw new Error("Unsupported content type.");
@@ -544,20 +612,31 @@ export async function listPublicAnnotations(releaseId: string): Promise<PublicRe
   return rows.flatMap((row) => {
     const validation = validateReleaseAnnotationAnchor(release.lyrics, row);
     if (!validation.valid) return [];
+    const breakingBarzVersion =
+      row.breakingBarzEntry?.status === "published"
+        ? row.breakingBarzEntry.currentPublishedVersion
+        : null;
     return [{
       id: row.id,
       type: row.type,
-      lyric_excerpt: row.excerptSnapshot,
-      summary: row.summary,
+      lyric_excerpt: breakingBarzVersion?.lyricExcerpt || row.excerptSnapshot,
+      summary: breakingBarzVersion?.summary || row.summary,
       title: row.title,
-      explanation: row.explanation,
-      confidence: row.confidence,
+      explanation: breakingBarzVersion?.breakdown || row.explanation,
+      confidence:
+        breakingBarzVersion?.verificationStatus === "interpretation"
+          ? "interpretive"
+          : row.confidence,
       anchor_version: validation.anchor.anchorVersion,
       section_key: validation.anchor.sectionKey,
       section_occurrence: validation.anchor.sectionOccurrence,
       start_line_index: validation.anchor.startLineIndex,
       end_line_index: validation.anchor.endLineIndex,
-      sources: row.sources.map((source) => ({label: source.label, url: source.url}))
+      sources: (breakingBarzVersion?.sources || row.sources).map((source) => ({
+        label: source.label,
+        url: source.url
+      })),
+      breaking_barz_slug: row.breakingBarzEntry?.slug
     }];
   });
 }

@@ -2,7 +2,10 @@ import type {PrismaClient} from "@prisma/client";
 
 import {validateReleaseAnnotationAnchor} from "@/lib/server/release-annotation-anchors";
 
-type AnnotationRestoreClient = Pick<PrismaClient, "releaseAnnotation">;
+type AnnotationRestoreClient = Pick<
+  PrismaClient,
+  "releaseAnnotation" | "breakingBarzEntry"
+>;
 
 export async function revalidateRestoredReleaseAnnotations(
   client: AnnotationRestoreClient
@@ -29,6 +32,10 @@ export async function revalidateRestoredReleaseAnnotations(
           isPublic: false,
           updatedAt: new Date()
         }
+      });
+      await client.breakingBarzEntry.updateMany({
+        where: {releaseAnnotationId: annotation.id},
+        data: {status: "withdrawn", withdrawnAt: new Date()}
       });
       continue;
     }

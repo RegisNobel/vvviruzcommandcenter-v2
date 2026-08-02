@@ -158,6 +158,7 @@ export type SiteContentSettings = {
     nav_artists_label: string;
     nav_commissions_label: string;
     nav_vault_label: string;
+    nav_breaking_barz_label: string;
     nav_more_label: string;
     desktop_more_hrefs: string[];
     footer_copyright_text: string;
@@ -338,6 +339,17 @@ export type SiteContentSettings = {
     related_releases_view_all_label: string;
     not_found_heading: string;
     not_found_body: string;
+  };
+  breaking_barz: {
+    is_enabled: boolean;
+    show_in_nav: boolean;
+    submissions_enabled: boolean;
+    metadata_title: string;
+    metadata_description: string;
+    eyebrow: string;
+    heading: string;
+    description: string;
+    suggestion_cta_label: string;
   };
   vault: {
     is_enabled: boolean;
@@ -566,6 +578,7 @@ export type PublicReleaseAnnotation = {
   start_line_index: number;
   end_line_index: number;
   sources: Array<{label: string; url: string}>;
+  breaking_barz_slug?: string;
 };
 
 export type ReleaseAnnotationRecord = PublicReleaseAnnotation & {

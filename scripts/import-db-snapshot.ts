@@ -31,6 +31,12 @@ type Snapshot = {
   playlistReleases?: SnapshotRecord[];
   releaseAnnotations?: SnapshotRecord[];
   releaseAnnotationSources?: SnapshotRecord[];
+  breakingBarzEntries?: SnapshotRecord[];
+  breakingBarzVersions?: SnapshotRecord[];
+  breakingBarzVersionSources?: SnapshotRecord[];
+  breakingBarzCategories?: SnapshotRecord[];
+  breakingBarzEntryCategories?: SnapshotRecord[];
+  breakingBarzSubmissions?: SnapshotRecord[];
   fanUpdates?: SnapshotRecord[];
   vaultItems?: SnapshotRecord[];
   appearsOn?: SnapshotRecord[];
@@ -86,6 +92,11 @@ const dateFieldsByModel: Record<string, string[]> = {
   playlistRelease: ["createdAt", "updatedAt"],
   releaseAnnotation: ["lastReviewedAt", "createdAt", "updatedAt"],
   releaseAnnotationSource: ["createdAt", "updatedAt"],
+  breakingBarzEntry: ["publishedAt", "archivedAt", "withdrawnAt", "createdAt", "updatedAt"],
+  breakingBarzVersion: ["createdAt", "publishedAt"],
+  breakingBarzVersionSource: ["createdAt"],
+  breakingBarzCategory: ["createdAt", "updatedAt"],
+  breakingBarzSubmission: ["submittedAt", "reviewedAt"],
   fanUpdate: ["publishedAt", "createdAt", "updatedAt"],
   vaultItem: ["publishedAt", "createdAt", "updatedAt"],
   appearsOn: ["releaseDate", "archivedAt", "createdAt", "updatedAt"],
@@ -124,7 +135,8 @@ const compositeUniqueKeys: Record<string, string[]> = {
   playlistRelease: ["playlistId", "releaseId"],
   adCreativeCopyLink: ["adCreativeReportId", "copyEntryId"],
   releaseArtistCredit: ["releaseId", "artistProfileId", "role"],
-  appearsOnArtistCredit: ["appearsOnId", "artistProfileId", "role"]
+  appearsOnArtistCredit: ["appearsOnId", "artistProfileId", "role"],
+  breakingBarzEntryCategory: ["entryId", "categoryId"]
 };
 
 async function upsertMany(modelName: string, records: SnapshotRecord[] = []) {
@@ -213,6 +225,27 @@ async function main() {
   counts.playlistReleases = await upsertMany("playlistRelease", snapshot.playlistReleases);
   counts.releaseAnnotations = await upsertMany("releaseAnnotation", snapshot.releaseAnnotations);
   counts.releaseAnnotationSources = await upsertMany("releaseAnnotationSource", snapshot.releaseAnnotationSources);
+  const publishedBreakingBarzVersions = (snapshot.breakingBarzEntries ?? []).map((record) => ({
+    id: record.id,
+    currentPublishedVersionId: record.currentPublishedVersionId
+  }));
+  counts.breakingBarzCategories = await upsertMany("breakingBarzCategory", snapshot.breakingBarzCategories);
+  counts.breakingBarzEntries = await upsertMany(
+    "breakingBarzEntry",
+    (snapshot.breakingBarzEntries ?? []).map((record) => ({...record, currentPublishedVersionId: null}))
+  );
+  counts.breakingBarzVersions = await upsertMany("breakingBarzVersion", snapshot.breakingBarzVersions);
+  counts.breakingBarzVersionSources = await upsertMany("breakingBarzVersionSource", snapshot.breakingBarzVersionSources);
+  counts.breakingBarzEntryCategories = await upsertMany("breakingBarzEntryCategory", snapshot.breakingBarzEntryCategories);
+  counts.breakingBarzSubmissions = await upsertMany("breakingBarzSubmission", snapshot.breakingBarzSubmissions);
+  for (const record of publishedBreakingBarzVersions) {
+    if (typeof record.id === "string" && typeof record.currentPublishedVersionId === "string") {
+      await prisma.breakingBarzEntry.update({
+        where: {id: record.id},
+        data: {currentPublishedVersionId: record.currentPublishedVersionId}
+      });
+    }
+  }
   const annotationValidation = await revalidateRestoredReleaseAnnotations(prisma);
   counts.releaseAnnotationsValid = annotationValidation.valid;
   counts.releaseAnnotationsNeedingReanchoring = annotationValidation.needsReanchoring;

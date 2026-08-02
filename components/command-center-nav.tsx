@@ -13,6 +13,7 @@ const navItems = [
   {href: "/admin/audience", label: "Audience"},
   {href: "/admin/site", label: "Public Site"},
   {href: "/admin/fan-content", label: "Fan Content"},
+  {href: "/admin/breaking-barz", label: "Breaking Barz"},
   {href: "/admin/commissions", label: "Commissions"},
   {href: "/admin/backups", label: "Backups"}
 ];

@@ -124,6 +124,7 @@ function createDefaultSiteContent(): SiteContentSettings {
       nav_artists_label: "Artist Profiles",
       nav_commissions_label: "Commissions",
       nav_vault_label: "Vault",
+      nav_breaking_barz_label: "Breaking Barz",
       nav_more_label: "More",
       desktop_more_hrefs: ["/about", "/artists", "/commissions", "/vault"],
       footer_copyright_text: `Copyright ${new Date().getFullYear()} vvviruz. All rights reserved.`
@@ -368,6 +369,19 @@ function createDefaultSiteContent(): SiteContentSettings {
     not_found_heading: "Release not found",
     not_found_body: "This release is not available or is not published yet."
   },
+  breaking_barz: {
+    is_enabled: true,
+    show_in_nav: true,
+    submissions_enabled: true,
+    metadata_title: "Breaking Barz",
+    metadata_description:
+      "Explore lyric breakdowns, interpretations, wordplay, references, and verified context.",
+    eyebrow: "Lyric Discovery",
+    heading: "Breaking Barz",
+    description:
+      "A growing collection of lines, meanings, wordplay, references, and verified breakdowns.",
+    suggestion_cta_label: "Suggest a bar"
+  },
   vault: {
     is_enabled: false,
     badge_text: "DIGITAL-ONLY VAULT DROP",
@@ -539,6 +553,7 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     "/artists",
     "/commissions",
     "/vault",
+    "/breaking-barz",
     "/about",
     "/exclusives",
     "/links",
@@ -776,6 +791,10 @@ function mergeSiteContentDefaults(input?: Partial<SiteContentSettings> | null): 
     release: {
       ...defaults.release,
       ...input?.release
+    },
+    breaking_barz: {
+      ...defaults.breaking_barz,
+      ...input?.breaking_barz
     },
     vault: {
       ...defaults.vault,

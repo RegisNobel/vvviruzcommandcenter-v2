@@ -100,6 +100,7 @@ model Release {
   featuredPlaylists       Playlist[]                  @relation("PlaylistFeaturedRelease")
   playlists               PlaylistRelease[]
   annotations             ReleaseAnnotation[]
+  breakingBarzEntries     BreakingBarzEntry[]
   fanUpdates              FanUpdate[]
   vaultItems              VaultItem[]
   artistCredits           ReleaseArtistCredit[]
@@ -883,6 +884,7 @@ model ReleaseAnnotation {
   updatedAt         DateTime                  @updatedAt
   release           Release                   @relation(fields: [releaseId], references: [id], onDelete: Cascade)
   sources           ReleaseAnnotationSource[]
+  breakingBarzEntry BreakingBarzEntry?
 
   @@index([releaseId, status, isPublic, sortOrder])
   @@index([updatedAt])
@@ -899,6 +901,119 @@ model ReleaseAnnotationSource {
   annotation   ReleaseAnnotation @relation(fields: [annotationId], references: [id], onDelete: Cascade)
 
   @@index([annotationId, sortOrder])
+}
+
+model BreakingBarzEntry {
+  id                        String                      @id
+  slug                      String                      @unique
+  releaseId                 String?
+  releaseAnnotationId       String?                     @unique
+  songTitle                 String
+  artistNames               String                      @default("[]")
+  spotifyUrl                String                      @default("")
+  appleMusicUrl             String                      @default("")
+  youtubeUrl                String                      @default("")
+  status                    String                      @default("draft")
+  currentPublishedVersionId String?                     @unique
+  publishedAt               DateTime?
+  archivedAt                DateTime?
+  withdrawnAt               DateTime?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  release                   Release?                    @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  releaseAnnotation         ReleaseAnnotation?          @relation(fields: [releaseAnnotationId], references: [id], onDelete: SetNull)
+  versions                  BreakingBarzVersion[]       @relation("BreakingBarzVersions")
+  currentPublishedVersion   BreakingBarzVersion?        @relation("PublishedBreakingBarzVersion", fields: [currentPublishedVersionId], references: [id], onDelete: SetNull)
+  categories                BreakingBarzEntryCategory[]
+  promotedSubmissions       BreakingBarzSubmission[]    @relation("PromotedBreakingBarzEntry")
+
+  @@index([status, publishedAt, id])
+  @@index([releaseId, status, publishedAt])
+  @@index([songTitle, status])
+}
+
+model BreakingBarzVersion {
+  id                 String                      @id
+  entryId            String
+  version            Int
+  songTitle          String                      @default("")
+  artistNames        String                      @default("[]")
+  spotifyUrl         String                      @default("")
+  appleMusicUrl      String                      @default("")
+  youtubeUrl         String                      @default("")
+  categorySlugs      String                      @default("[]")
+  lyricExcerpt       String
+  summary            String
+  breakdown          String
+  verificationStatus String                      @default("interpretation")
+  verificationNote   String                      @default("")
+  editorialStatus    String                      @default("draft")
+  createdAt          DateTime                    @default(now())
+  publishedAt        DateTime?
+  entry              BreakingBarzEntry           @relation("BreakingBarzVersions", fields: [entryId], references: [id], onDelete: Cascade)
+  publishedFor       BreakingBarzEntry?          @relation("PublishedBreakingBarzVersion")
+  sources            BreakingBarzVersionSource[]
+
+  @@unique([entryId, version])
+  @@index([entryId, editorialStatus, createdAt])
+  @@index([publishedAt])
+}
+
+model BreakingBarzVersionSource {
+  id        String              @id
+  versionId String
+  label     String
+  url       String
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+  version   BreakingBarzVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([versionId, sortOrder])
+}
+
+model BreakingBarzCategory {
+  id          String                      @id
+  name        String
+  slug        String                      @unique
+  description String                      @default("")
+  sortOrder   Int                         @default(0)
+  isActive    Boolean                     @default(true)
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  entries     BreakingBarzEntryCategory[]
+
+  @@index([isActive, sortOrder, name])
+}
+
+model BreakingBarzEntryCategory {
+  entryId    String
+  categoryId String
+  entry      BreakingBarzEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  category   BreakingBarzCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, categoryId])
+  @@index([categoryId, entryId])
+}
+
+model BreakingBarzSubmission {
+  id              String             @id
+  songTitle       String
+  artistNames     String             @default("[]")
+  lyricExcerpt    String
+  summary         String             @default("")
+  breakdown       String             @default("")
+  songUrl         String             @default("")
+  submitterName   String             @default("")
+  submitterEmail  String             @default("")
+  status          String             @default("pending")
+  reviewNote      String             @default("")
+  promotedEntryId String?
+  submittedAt     DateTime           @default(now())
+  reviewedAt      DateTime?
+  promotedEntry   BreakingBarzEntry? @relation("PromotedBreakingBarzEntry", fields: [promotedEntryId], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([promotedEntryId])
 }
 
 model FanUpdate {

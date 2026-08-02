@@ -783,6 +783,7 @@ export function SiteSettingsEditor({
               ["nav_artists_label", "Nav Artist Profiles Label"],
               ["nav_commissions_label", "Nav Commissions Label"],
               ["nav_vault_label", "Nav Vault Label"],
+              ["nav_breaking_barz_label", "Nav Breaking Barz Label"],
               ["nav_more_label", "Nav More Label"]
             ] as const).map(([key, label]) => (
               <label className="space-y-2" key={key}>
@@ -808,6 +809,7 @@ export function SiteSettingsEditor({
                   ["/artists", settings.site_content.chrome.nav_artists_label],
                   ["/commissions", settings.site_content.chrome.nav_commissions_label],
                   ["/vault", settings.site_content.chrome.nav_vault_label],
+                  ["/breaking-barz", settings.site_content.chrome.nav_breaking_barz_label],
                   ["/about", settings.site_content.chrome.nav_about_label],
                   ["/exclusives", settings.site_content.chrome.nav_exclusive_label],
                   ["/links", settings.site_content.chrome.nav_links_label],
@@ -2027,6 +2029,75 @@ export function SiteSettingsEditor({
                 value={settings.site_content.release.not_found_body}
               />
             </label>
+          </div>
+        </section>
+
+        <section className="scroll-mt-36 rounded-lg border border-edge bg-surface-elevated p-4 sm:p-5" id="breaking-barz-settings">
+          <div>
+            <p className="field-label">Discovery feed</p>
+            <h3 className="mt-3 text-2xl font-semibold text-ink">Breaking Barz</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              Keep the feed private while you prepare it, then enable the page and fan suggestion form independently.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            {([[
+              "is_enabled",
+              "Enable the public Breaking Barz page"
+            ], [
+              "show_in_nav",
+              "Show Breaking Barz in public navigation"
+            ], [
+              "submissions_enabled",
+              "Accept fan suggestions"
+            ]] as const).map(([key, label]) => (
+              <label className="flex items-center gap-3 rounded-lg border border-edge bg-input p-4 text-sm text-ink" key={key}>
+                <input
+                  checked={settings.site_content.breaking_barz[key]}
+                  onChange={(event) => updateSiteContent("breaking_barz", key, event.target.checked)}
+                  type="checkbox"
+                />
+                {label}
+              </label>
+            ))}
+            {([[
+              "metadata_title",
+              "Browser / Search Title"
+            ], [
+              "eyebrow",
+              "Eyebrow"
+            ], [
+              "heading",
+              "Page Heading"
+            ], [
+              "suggestion_cta_label",
+              "Suggestion Button Label"
+            ]] as const).map(([key, label]) => (
+              <label className="space-y-2" key={key}>
+                <span className="field-label">{label}</span>
+                <input
+                  className="field-input"
+                  onChange={(event) => updateSiteContent("breaking_barz", key, event.target.value)}
+                  value={settings.site_content.breaking_barz[key]}
+                />
+              </label>
+            ))}
+            {([[
+              "metadata_description",
+              "Search Description"
+            ], [
+              "description",
+              "Page Introduction"
+            ]] as const).map(([key, label]) => (
+              <label className="space-y-2 md:col-span-2" key={key}>
+                <span className="field-label">{label}</span>
+                <textarea
+                  className="field-input min-h-24"
+                  onChange={(event) => updateSiteContent("breaking_barz", key, event.target.value)}
+                  value={settings.site_content.breaking_barz[key]}
+                />
+              </label>
+            ))}
           </div>
         </section>
 

@@ -12,6 +12,7 @@ import {
   getPublishedArtistEditorialReleasePaths,
   getPublishedArtistSlugs
 } from "@/lib/repositories/artist-profiles";
+import {getPublishedBreakingBarzSitemapEntries} from "@/lib/repositories/breaking-barz";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [projects, releases, artists, artistReleases, artistCatalogs, siteSettings] =
@@ -40,6 +41,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     stablePaths.add("/vault");
   }
 
+  const breakingBarzEntries = siteSettings.site_content.breaking_barz?.is_enabled
+    ? await getPublishedBreakingBarzSitemapEntries()
+    : [];
+  if (siteSettings.site_content.breaking_barz?.is_enabled) {
+    stablePaths.add("/breaking-barz");
+  }
+
   return [
     ...Array.from(stablePaths).map((path) => ({url: getPublicSiteUrl(path)})),
     ...projects.map((project) => ({
@@ -49,6 +57,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...releases.map((release) => ({
       url: getPublicSiteUrl(`/music/${encodeURIComponent(release.slug)}`),
       lastModified: release.updatedOn
+    })),
+    ...breakingBarzEntries.map((entry) => ({
+      url: getPublicSiteUrl(`/breaking-barz/${encodeURIComponent(entry.slug)}`),
+      lastModified: entry.updatedAt
     })),
     ...artists.map((artist) => ({
       url: getPublicSiteUrl(

@@ -43,6 +43,12 @@ export async function PublicSiteChrome({
   if (siteSettings.site_content.vault?.is_enabled) {
     navItems.push({href: "/vault", label: chrome.nav_vault_label});
   }
+  if (
+    siteSettings.site_content.breaking_barz?.is_enabled &&
+    siteSettings.site_content.breaking_barz?.show_in_nav
+  ) {
+    navItems.push({href: "/breaking-barz", label: chrome.nav_breaking_barz_label});
+  }
 
   const desktopMoreHrefs = new Set(chrome.desktop_more_hrefs);
   const desktopPrimaryItems = navItems.filter((item) => !desktopMoreHrefs.has(item.href));
