@@ -253,10 +253,12 @@ export function ArtistProfileForm({initialRecord}: {initialRecord?: ArtistProfil
 
   const approve = async () => {
     if (!initialRecord || !latestVersion) return;
+    const normalizedApprovalEmail = approvalEmail.trim();
+    const confirmationMessage = normalizedApprovalEmail
+      ? `Confirm that ${normalizedApprovalEmail} approved ${initialRecord.displayName} profile version ${latestVersion.version} outside this system?`
+      : `Confirm that ${initialRecord.displayName} profile version ${latestVersion.version} was approved outside this system? No approver email will be recorded.`;
     if (
-      !window.confirm(
-        `Confirm that ${approvalEmail} approved ${initialRecord.displayName} profile version ${latestVersion.version} outside this system?`
-      )
+      !window.confirm(confirmationMessage)
     ) {
       return;
     }
@@ -265,7 +267,7 @@ export function ArtistProfileForm({initialRecord}: {initialRecord?: ArtistProfil
     const result = await approveArtistProfileAction({
       artistProfileId: initialRecord.artistProfileId,
       versionId: latestVersion.id,
-      decidedByEmail: approvalEmail,
+      decidedByEmail: normalizedApprovalEmail,
       notes: "Off-platform approval confirmed by an authenticated administrator."
     });
     setBusy("");
@@ -354,7 +356,7 @@ export function ArtistProfileForm({initialRecord}: {initialRecord?: ArtistProfil
               onChange={(value) => update("themeFamily", value)}
               options={ARTIST_THEME_FAMILIES.map((theme) => ({label: theme.label, value: theme.value}))}
             />
-            <Field label="Private email" type="email" value={draft.privateContactEmail} onChange={(value) => update("privateContactEmail", value)} />
+            <Field label="Private email (optional)" type="email" value={draft.privateContactEmail} onChange={(value) => update("privateContactEmail", value)} />
             <Field label="Genres (comma separated)" value={draft.genres} onChange={(value) => update("genres", value)} />
           </div>
           <TextField label="Editorial biography" rows={7} value={draft.longBio} onChange={(value) => update("longBio", value)} />
@@ -1044,8 +1046,8 @@ export function ArtistProfileForm({initialRecord}: {initialRecord?: ArtistProfil
                   {latestVersion.approvalStatus === "AWAITING_APPROVAL" &&
                   !latestVersion.previewIsExpired ? (
                     <>
-                      <Field label="Approver email" type="email" value={approvalEmail} onChange={setApprovalEmail} />
-                      <button className="action-button-secondary w-full justify-center" disabled={!approvalEmail || Boolean(busy)} onClick={approve} type="button">
+                      <Field label="Approver email (optional)" type="email" value={approvalEmail} onChange={setApprovalEmail} />
+                      <button className="action-button-secondary w-full justify-center" disabled={Boolean(busy)} onClick={approve} type="button">
                         {busy === "approve" ? "Recording…" : "Confirm off-platform approval"}
                       </button>
                     </>
@@ -1053,7 +1055,9 @@ export function ArtistProfileForm({initialRecord}: {initialRecord?: ArtistProfil
                   {latestVersion.approval ? (
                     <div className="rounded-md border border-edge bg-surface p-3 text-xs leading-5 text-muted">
                       <p className="font-semibold text-secondary">
-                        Approved by {latestVersion.approval.decidedByEmail}
+                        {latestVersion.approval.decidedByEmail
+                          ? `Approved by ${latestVersion.approval.decidedByEmail}`
+                          : "Approval confirmed by an authenticated administrator"}
                       </p>
                       <p>
                         {new Intl.DateTimeFormat("en", {

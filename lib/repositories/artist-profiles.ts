@@ -878,7 +878,7 @@ export async function recordArtistProfileApproval(input: {
 }) {
   const now = new Date();
   const decidedByEmail = input.decidedByEmail.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decidedByEmail)) {
+  if (decidedByEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decidedByEmail)) {
     throw new Error("Enter a valid approver email.");
   }
   const version = await prisma.artistProfileVersion.findFirst({

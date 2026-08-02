@@ -44,7 +44,7 @@ try {
     id: profileId,
     slug: `workflow-polish-${runId}`,
     displayName: "Workflow Polish Test",
-    privateContactEmail: "artist@example.com",
+    privateContactEmail: "",
     longBio: "A test artist profile.",
     differentiator: "A safe workflow test.",
     featuredItems: [],
@@ -60,9 +60,13 @@ try {
   await recordArtistProfileApproval({
     artistProfileId: profileId,
     versionId: firstVersion.id,
-    decidedByEmail: "artist@example.com",
+    decidedByEmail: "",
     notes: "Workflow test approval."
   });
+  const approvalWithoutEmail = await prisma.artistProfileApproval.findFirstOrThrow({
+    where: {versionId: firstVersion.id}
+  });
+  assert.equal(approvalWithoutEmail.decidedByEmail, "");
   await publishArtistProfile(profileId, firstVersion.id);
   assert(await readPublishedArtistProfile(`workflow-polish-${runId}`));
 
