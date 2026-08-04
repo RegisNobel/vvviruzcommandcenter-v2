@@ -59,7 +59,7 @@ function countSnapshotTables(snapshot: Record<string, unknown>) {
 export async function createDatabaseSnapshotArtifact() {
   const snapshot = {
     exportedAt: new Date().toISOString(),
-    schemaVersion: 8,
+    schemaVersion: 12,
     adminUsers: await prisma.adminUser.findMany(),
     releases: await prisma.release.findMany(),
     artistProfiles: await prisma.artistProfile.findMany(),
@@ -94,12 +94,25 @@ export async function createDatabaseSnapshotArtifact() {
     emailCampaigns: await prisma.emailCampaign.findMany(),
     emailSendLogs: await prisma.emailSendLog.findMany(),
     analyticsEvents: await prisma.analyticsEvent.findMany(),
+    analyticsImports: await prisma.analyticsImport.findMany(),
+    artistMetricObservations: await prisma.artistMetricObservation.findMany(),
+    trackMetricObservations: await prisma.trackMetricObservation.findMany(),
+    songPeriodSnapshots: await prisma.songPeriodSnapshot.findMany(),
+    playlistPeriodSnapshots: await prisma.playlistPeriodSnapshot.findMany(),
+    analyticsImportRows: await prisma.analyticsImportRow.findMany(),
+    releaseImportAliases: await prisma.releaseImportAlias.findMany(),
+    mappingAuditEvents: await prisma.mappingAuditEvent.findMany(),
     backupRuns: await prisma.backupRun.findMany(),
     shortLinks: await prisma.shortLink.findMany(),
     adImportBatches: await prisma.adImportBatch.findMany(),
     adCreativeReports: await prisma.adCreativeReport.findMany(),
     adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),
     adCampaignLearnings: await prisma.adCampaignLearning.findMany(),
+    promotionCampaigns: await prisma.promotionCampaign.findMany(),
+    campaignEvidence: await prisma.campaignEvidence.findMany(),
+    campaignActiveIntervals: await prisma.campaignActiveInterval.findMany(),
+    campaignTimelineEvents: await prisma.campaignTimelineEvent.findMany(),
+    campaignAuditEvents: await prisma.campaignAuditEvent.findMany(),
     commissionRequests: await prisma.commissionRequest.findMany()
   };
 
@@ -153,7 +166,11 @@ async function listBlobAssets() {
     });
 
     for (const blob of result.blobs) {
-      if (blob.pathname.startsWith(`${prefix}/backups/`)) {
+      if (
+        blob.pathname.startsWith(`${prefix}/backups/`) ||
+        blob.pathname.startsWith(`${prefix}/analytics-preview/`) ||
+        blob.pathname.startsWith(`${prefix}/analytics-raw/`)
+      ) {
         continue;
       }
 

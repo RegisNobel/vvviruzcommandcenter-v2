@@ -54,7 +54,7 @@ export async function runBackupJob(job: BackupJob) {
       fileStem: job.fileStem,
       type: job.blobType
     });
-    const driveFileName = blob.pathname.split("/").pop() || `${job.fileStem}.json.gz`;
+    const driveFileName = blob.fileName;
     const drive = await uploadBackupArtifactToGoogleDrive({
       buffer: encryptedBuffer,
       fileName: driveFileName

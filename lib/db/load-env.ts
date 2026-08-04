@@ -87,6 +87,14 @@ export function ensureDatabaseUrl() {
   const provider = getGeneratedPrismaProvider();
 
   if (provider === "sqlite") {
+    const explicitDisposableUrl = process.env.ALLOW_DATABASE_URL_OVERRIDE === "1"
+      ? process.env.DATABASE_URL?.trim()
+      : null;
+    if (explicitDisposableUrl?.startsWith("file:")) {
+      process.env.DATABASE_URL = explicitDisposableUrl;
+      process.env.DIRECT_URL = explicitDisposableUrl;
+      return process.env.DATABASE_URL;
+    }
     const localDbUrl = findEnvValue(root, [".env.local", ".env"], "DATABASE_URL");
     if (localDbUrl && localDbUrl.startsWith("file:")) {
       process.env.DATABASE_URL = localDbUrl;
@@ -117,7 +125,6 @@ export function ensureDatabaseUrl() {
 
   return process.env.DATABASE_URL;
 }
-
 
 
 

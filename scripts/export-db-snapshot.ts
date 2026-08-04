@@ -82,12 +82,51 @@ async function main() {
     emailCampaigns: await prisma.emailCampaign.findMany(),
     emailSendLogs: await prisma.emailSendLog.findMany(),
     analyticsEvents: await prisma.analyticsEvent.findMany(),
+    analyticsImports: await readOptionalTable("AnalyticsImport", () =>
+      prisma.analyticsImport.findMany()
+    ),
+    artistMetricObservations: await readOptionalTable("ArtistMetricObservation", () =>
+      prisma.artistMetricObservation.findMany()
+    ),
+    trackMetricObservations: await readOptionalTable("TrackMetricObservation", () =>
+      prisma.trackMetricObservation.findMany()
+    ),
+    songPeriodSnapshots: await readOptionalTable("SongPeriodSnapshot", () =>
+      prisma.songPeriodSnapshot.findMany()
+    ),
+    playlistPeriodSnapshots: await readOptionalTable("PlaylistPeriodSnapshot", () =>
+      prisma.playlistPeriodSnapshot.findMany()
+    ),
+    releaseImportAliases: await readOptionalTable("ReleaseImportAlias", () =>
+      prisma.releaseImportAlias.findMany()
+    ),
+    analyticsImportRows: await readOptionalTable("AnalyticsImportRow", () =>
+      prisma.analyticsImportRow.findMany()
+    ),
+    mappingAuditEvents: await readOptionalTable("MappingAuditEvent", () =>
+      prisma.mappingAuditEvent.findMany()
+    ),
     backupRuns: await prisma.backupRun.findMany(),
     shortLinks: await prisma.shortLink.findMany(),
     adImportBatches: await prisma.adImportBatch.findMany(),
     adCreativeReports: await prisma.adCreativeReport.findMany(),
     adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),
-    adCampaignLearnings: await prisma.adCampaignLearning.findMany()
+    adCampaignLearnings: await prisma.adCampaignLearning.findMany(),
+    promotionCampaigns: await readOptionalTable("PromotionCampaign", () =>
+      prisma.promotionCampaign.findMany()
+    ),
+    campaignEvidence: await readOptionalTable("CampaignEvidence", () =>
+      prisma.campaignEvidence.findMany()
+    ),
+    campaignActiveIntervals: await readOptionalTable("CampaignActiveInterval", () =>
+      prisma.campaignActiveInterval.findMany()
+    ),
+    campaignTimelineEvents: await readOptionalTable("CampaignTimelineEvent", () =>
+      prisma.campaignTimelineEvent.findMany()
+    ),
+    campaignAuditEvents: await readOptionalTable("CampaignAuditEvent", () =>
+      prisma.campaignAuditEvent.findMany()
+    )
   };
 
   await fs.mkdir(path.dirname(snapshotPath), {recursive: true});

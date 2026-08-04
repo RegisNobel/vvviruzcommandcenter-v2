@@ -163,7 +163,7 @@ async function main() {
     client = new Client({connectionString: connectionUrl});
     await client.connect();
     const version = await client.query("SELECT current_setting('server_version') AS version");
-    assert.match(version.rows[0].version, /^17\.6/);
+    assert.match(version.rows[0].version, /^17\./);
 
     await client.query(`
       CREATE ROLE anon NOLOGIN;

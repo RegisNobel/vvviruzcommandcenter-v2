@@ -1090,6 +1090,7 @@ export type AppearsOnRecord = {
 };
 
 export type OperationalHealthCategory =
+  | "analytics"
   | "assets"
   | "backups"
   | "email"

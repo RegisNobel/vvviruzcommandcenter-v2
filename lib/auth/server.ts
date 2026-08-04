@@ -291,7 +291,19 @@ export async function requireAuthenticatedApiRequest(request: Request) {
   const session = await readSessionFromCookieValue(parsedCookie);
 
   if (!session || session.stage !== "authenticated") {
-    return NextResponse.json({message: "Unauthorized."}, {status: 401});
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "UNAUTHORIZED",
+        message: "Unauthorized.",
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Unauthorized.",
+          retryable: false
+        }
+      },
+      {status: 401}
+    );
   }
 
   return session;

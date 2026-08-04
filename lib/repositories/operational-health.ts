@@ -10,6 +10,8 @@ import type {
   OperationalHealthSeverity
 } from "@/lib/types";
 import {createId, fileNameFromPath} from "@/lib/utils";
+import {listOrphanedSpotifyRawFiles} from "@/lib/analytics/spotify-import-service";
+import {CANONICAL_ANALYTICS_ARTIST_ID} from "@/lib/repositories/analytics-imports";
 
 const BACKUP_WARNING_AGE_MS = 36 * 60 * 60 * 1000;
 const BACKUP_CRITICAL_AGE_MS = 72 * 60 * 60 * 1000;
@@ -131,6 +133,43 @@ async function collectBackupCandidates(now: Date): Promise<HealthCandidate[]> {
   }
 
   return candidates;
+}
+
+function hasHighReconciliationVariance(validationSummary: string) {
+  try {
+    const parsed = JSON.parse(validationSummary) as {reconciliation?: {entries?: Array<{severity?: string}>}};
+    return parsed.reconciliation?.entries?.some((entry) => entry.severity === "HIGH") ?? false;
+  } catch {
+    return false;
+  }
+}
+
+async function collectRetentionLabCandidates(now: Date): Promise<HealthCandidate[]> {
+  const [audienceImports, latestAudienceRow, openIntervals, suggestions, conflicts, periodUnconfirmed, failedImports, expiredRaw, recentImports, orphans] = await Promise.all([
+    prisma.analyticsImport.count({where: {artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, importType: "ARTIST_AUDIENCE_TIMELINE", status: "IMPORTED", withdrawnAt: null, replacedByImportId: null}}),
+    prisma.artistMetricObservation.findFirst({where: {artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, import: {status: "IMPORTED", withdrawnAt: null, replacedByImportId: null}}, orderBy: {metricDate: "desc"}, select: {metricDate: true}}),
+    prisma.campaignActiveInterval.findMany({where: {confirmationStatus: "CONFIRMED", activeEndDate: null, supersededBy: null, campaign: {status: {not: "ARCHIVED"}}}, take: 20, select: {id: true, campaignId: true}}),
+    prisma.campaignActiveInterval.count({where: {confirmationStatus: "SUGGESTED", supersededBy: null}}),
+    prisma.analyticsImportRow.count({where: {mappingStatus: "CONFLICT", import: {status: "IMPORTED", withdrawnAt: null, replacedByImportId: null}}}),
+    prisma.analyticsImport.count({where: {importType: {in: ["SONGS_PERIOD", "PLAYLISTS_PERIOD"]}, status: "IMPORTED", periodDatesUserConfirmed: false}}),
+    prisma.analyticsImport.count({where: {status: "FAILED"}}),
+    prisma.analyticsImport.count({where: {acceptedAt: {not: null}, rawFileStorageKey: {not: null}, rawFileDeletedAt: null, rawFileExpiresAt: {lte: now}}}),
+    prisma.analyticsImport.findMany({where: {status: "IMPORTED"}, orderBy: {acceptedAt: "desc"}, take: 40, select: {validationSummary: true}}),
+    listOrphanedSpotifyRawFiles(now, 7 * 86_400_000).catch(() => null)
+  ]);
+  const issues: HealthCandidate[] = [];
+  if (!audienceImports) issues.push({checkKey: "analytics:no-current-audience", category: "analytics", severity: "critical", title: "No current artist audience data", message: "Import a current Spotify Artist Audience Timeline before relying on retention analysis.", actionPath: "/admin/retention-lab/imports"});
+  if (latestAudienceRow && now.getTime() - latestAudienceRow.metricDate.getTime() > 7 * 86_400_000) issues.push({checkKey: "analytics:stale-audience", category: "analytics", severity: "warning", title: "Artist audience timeline is stale", message: `The newest current audience observation is ${Math.floor((now.getTime() - latestAudienceRow.metricDate.getTime()) / 86_400_000)} days old.`, actionPath: "/admin/retention-lab/imports"});
+  for (const interval of openIntervals) issues.push({checkKey: `analytics:open-campaign:${interval.id}`, category: "analytics", severity: "warning", title: "Campaign is missing an end date", message: "An open confirmed campaign interval prevents a complete post-campaign window.", actionPath: `/admin/retention-lab?campaignId=${interval.campaignId}`, entityType: "campaign", entityId: interval.campaignId});
+  if (suggestions) issues.push({checkKey: "analytics:unconfirmed-suggestions", category: "analytics", severity: "warning", title: "Campaign suggestions need confirmation", message: `${suggestions} suggested interval${suggestions === 1 ? " is" : "s are"} excluded from calculations until confirmed.`, actionPath: "/admin/retention-lab"});
+  if (conflicts) issues.push({checkKey: "analytics:mapping-conflicts", category: "analytics", severity: "critical", title: "Release mapping conflicts need review", message: `${conflicts} current mapping row${conflicts === 1 ? " has" : "s have"} conflicting release evidence.`, actionPath: "/admin/retention-lab/mappings"});
+  if (periodUnconfirmed) issues.push({checkKey: "analytics:period-unconfirmed", category: "analytics", severity: "warning", title: "Report periods need confirmation", message: `${periodUnconfirmed} imported period export${periodUnconfirmed === 1 ? " lacks" : "s lack"} confirmed report dates.`, actionPath: "/admin/retention-lab/imports"});
+  if (recentImports.some((item) => hasHighReconciliationVariance(item.validationSummary))) issues.push({checkKey: "analytics:reconciliation-high", category: "analytics", severity: "warning", title: "High reconciliation variance detected", message: "A recent active import has a high cross-export reconciliation variance.", actionPath: "/admin/retention-lab/imports"});
+  if (expiredRaw) issues.push({checkKey: "analytics:raw-cleanup-pending", category: "analytics", severity: "warning", title: "Expired raw files await cleanup", message: `${expiredRaw} expired retained raw file${expiredRaw === 1 ? " is" : "s are"} pending private storage cleanup.`, actionPath: "/admin/retention-lab/imports"});
+  if (orphans === null) issues.push({checkKey: "analytics:orphan-scan-failed", category: "analytics", severity: "warning", title: "Analytics orphan scan failed", message: "Private raw storage could not be compared with committed import references.", actionPath: "/admin/retention-lab/imports"});
+  else if (orphans.length) issues.push({checkKey: "analytics:orphan-files", category: "analytics", severity: "warning", title: "Orphaned raw files detected", message: `${orphans.length} aged private raw object${orphans.length === 1 ? " is" : "s are"} not referenced by an import.`, actionPath: "/admin/retention-lab/imports"});
+  if (failedImports) issues.push({checkKey: "analytics:failed-imports", category: "analytics", severity: "warning", title: "Failed analytics imports need diagnosis", message: `${failedImports} failed import record${failedImports === 1 ? " is" : "s are"} available for sanitized diagnosis.`, actionPath: "/admin/retention-lab/imports"});
+  return issues;
 }
 
 type PublicReleaseHealthRow = Awaited<ReturnType<typeof readPublicReleaseHealthRows>>[number];
@@ -372,6 +411,7 @@ export async function runOperationalHealthChecks() {
   const releases = await readPublicReleaseHealthRows();
   const candidateGroups = await Promise.all([
     collectBackupCandidates(now),
+    collectRetentionLabCandidates(now),
     collectAssetCandidates(releases),
     collectEmailCandidates(now),
     collectArtistIntakeNotificationCandidates()

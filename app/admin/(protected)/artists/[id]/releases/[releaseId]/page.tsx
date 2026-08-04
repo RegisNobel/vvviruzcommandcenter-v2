@@ -3,15 +3,19 @@ export const dynamic = "force-dynamic";
 import {AdminReleaseWorkspace} from "@/components/admin-release-workspace";
 
 export default async function ArtistReleaseEditorPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{id: string; releaseId: string}>;
+  searchParams: Promise<{campaignId?: string; retentionRange?: string}>;
 }) {
-  const {id, releaseId} = await params;
+  const [{id, releaseId}, query] = await Promise.all([params, searchParams]);
   return (
     <AdminReleaseWorkspace
       artistProfileId={id}
       releaseId={releaseId}
+      retentionCampaignId={query.campaignId}
+      retentionRange={query.retentionRange}
     />
   );
 }

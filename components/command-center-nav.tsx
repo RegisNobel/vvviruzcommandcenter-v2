@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useState, useEffect} from "react";
+import {Fragment, useState, useEffect} from "react";
 
 import {cn} from "@/lib/utils";
 
@@ -18,7 +18,9 @@ const navItems = [
   {href: "/admin/backups", label: "Backups"}
 ];
 
-const promoSubItems = [
+type PromoSubItem = {href: string; label: string; description: string; section?: string};
+
+const promoSubItems: PromoSubItem[] = [
   {
     href: "/admin/promo",
     label: "Promo Home",
@@ -48,8 +50,36 @@ const promoSubItems = [
     href: "/admin/promo/playlists",
     label: "Playlists",
     description: "Manage streaming playlists and campaign landing pages."
+  },
+  {
+    href: "/admin/retention-lab",
+    label: "Overview",
+    description: "Review audience retention, confidence, and release comparisons.",
+    section: "Retention Lab"
+  },
+  {
+    href: "/admin/retention-lab/imports",
+    label: "Imports",
+    description: "Validate and commit private Spotify for Artists exports."
+  },
+  {
+    href: "/admin/retention-lab/mappings",
+    label: "Mapping Queue",
+    description: "Resolve imported song rows against the release catalog."
+  },
+  {
+    href: "/admin/retention-lab/campaigns",
+    label: "Campaigns",
+    description: "Confirm promotion intervals, events, and overlap context."
   }
 ];
+
+function isPromoSubItemActive(pathname: string, href: string) {
+  if (href === "/admin/promo" || href === "/admin/retention-lab") {
+    return pathname === href;
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function CommandCenterNav() {
   const pathname = usePathname();
@@ -64,7 +94,9 @@ export function CommandCenterNav() {
     pathname === "/admin/ad-lab" ||
     pathname.startsWith("/admin/ad-lab/") ||
     pathname === "/admin/attribution" ||
-    pathname.startsWith("/admin/attribution/");
+    pathname.startsWith("/admin/attribution/") ||
+    pathname === "/admin/retention-lab" ||
+    pathname.startsWith("/admin/retention-lab/");
 
   const [isPromoExpanded, setIsPromoExpanded] = useState(isPromoRoute);
 
@@ -150,12 +182,11 @@ export function CommandCenterNav() {
               id="admin-promo-mobile-menu"
             >
               {promoSubItems.map((sub) => {
-                const isSubActive =
-                  pathname === sub.href ||
-                  (sub.href !== "/admin/promo" && pathname.startsWith(`${sub.href}/`)) ||
-                  (sub.href === "/admin/promo" && pathname === "/admin/promo");
+                const isSubActive = isPromoSubItemActive(pathname, sub.href);
 
                 return (
+                  <Fragment key={sub.href}>
+                  {sub.section ? <p className="col-span-2 px-1 pt-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted sm:col-span-3">{sub.section}</p> : null}
                   <Link
                     className={cn(
                       "rounded-md border px-3 py-2.5 text-center text-xs font-semibold transition",
@@ -164,10 +195,10 @@ export function CommandCenterNav() {
                         : "border-edge bg-surface-elevated text-secondary hover:border-edge-strong hover:bg-surface-hover hover:text-primary"
                     )}
                     href={sub.href}
-                    key={sub.href}
                   >
                     {sub.label}
                   </Link>
+                  </Fragment>
                 );
               })}
             </nav>
@@ -224,14 +255,12 @@ export function CommandCenterNav() {
                     {isPromoExpanded && (
                       <div className="ml-4 mt-1 flex flex-col gap-2 border-l border-edge py-1 pl-4 pr-1">
                         {promoSubItems.map((sub) => {
-                          const isSubActive =
-                            pathname === sub.href ||
-                            (sub.href !== "/admin/promo" && pathname.startsWith(`${sub.href}/`)) ||
-                            (sub.href === "/admin/promo" && pathname === "/admin/promo");
+                          const isSubActive = isPromoSubItemActive(pathname, sub.href);
                           return (
+                            <Fragment key={sub.href}>
+                            {sub.section ? <p className="px-1 pt-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted">{sub.section}</p> : null}
                             <Link
                               href={sub.href}
-                              key={sub.href}
                               className={cn(
                                 "block rounded-md border p-3 text-left transition",
                                 isSubActive
@@ -244,6 +273,7 @@ export function CommandCenterNav() {
                                 {sub.description}
                               </div>
                             </Link>
+                            </Fragment>
                           );
                         })}
                       </div>

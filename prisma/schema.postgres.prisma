@@ -9,14 +9,31 @@ datasource db {
 }
 
 model AdminUser {
-  id                  String        @id
-  username            String        @unique
-  totpMethod          String?
-  totpEncryptedSecret String?
-  totpEnrolledAt      DateTime?
-  createdAt           DateTime
-  updatedAt           DateTime
-  sessions            AuthSession[]
+  id                         String                   @id
+  username                   String                   @unique
+  totpMethod                 String?
+  totpEncryptedSecret        String?
+  totpEnrolledAt             DateTime?
+  createdAt                  DateTime
+  updatedAt                  DateTime
+  sessions                   AuthSession[]
+  analyticsImportsUploaded   AnalyticsImport[]        @relation("AnalyticsImportUploadedBy")
+  analyticsImportsWithdrawn  AnalyticsImport[]        @relation("AnalyticsImportWithdrawnBy")
+  analyticsRowsConfirmed     AnalyticsImportRow[]     @relation("AnalyticsImportRowConfirmedBy")
+  analyticsRowsUnmatched     AnalyticsImportRow[]     @relation("AnalyticsImportRowUnmatchedBy")
+  releaseAliasesConfirmed    ReleaseImportAlias[]     @relation("ReleaseImportAliasConfirmedBy")
+  releaseAliasesRevoked      ReleaseImportAlias[]     @relation("ReleaseImportAliasRevokedBy")
+  mappingAuditEvents         MappingAuditEvent[]
+  promotionCampaignsCreated  PromotionCampaign[]      @relation("PromotionCampaignCreatedBy")
+  promotionCampaignsUpdated  PromotionCampaign[]      @relation("PromotionCampaignUpdatedBy")
+  campaignIntervalsCreated   CampaignActiveInterval[] @relation("CampaignIntervalCreatedBy")
+  campaignIntervalsUpdated   CampaignActiveInterval[] @relation("CampaignIntervalUpdatedBy")
+  campaignIntervalsConfirmed CampaignActiveInterval[] @relation("CampaignIntervalConfirmedBy")
+  campaignIntervalsRejected  CampaignActiveInterval[] @relation("CampaignIntervalRejectedBy")
+  campaignEventsCreated      CampaignTimelineEvent[]  @relation("CampaignEventCreatedBy")
+  campaignEventsUpdated      CampaignTimelineEvent[]  @relation("CampaignEventUpdatedBy")
+  campaignEvidenceCreated    CampaignEvidence[]       @relation("CampaignEvidenceCreatedBy")
+  campaignAuditEvents        CampaignAuditEvent[]
 
   @@index([username])
 }
@@ -106,6 +123,13 @@ model Release {
   artistCredits           ReleaseArtistCredit[]
   primaryArtistProfile    ArtistProfile?              @relation("PrimaryArtistReleases", fields: [primaryArtistProfileId], references: [id], onDelete: SetNull)
   artistPlacements        ArtistFeaturedItem[]        @relation("ArtistFeaturedRelease")
+  trackMetricObservations TrackMetricObservation[]
+  songPeriodSnapshots     SongPeriodSnapshot[]
+  suggestedAnalyticsRows  AnalyticsImportRow[]        @relation("AnalyticsImportRowSuggestedRelease")
+  confirmedAnalyticsRows  AnalyticsImportRow[]        @relation("AnalyticsImportRowConfirmedRelease")
+  importAliases           ReleaseImportAlias[]
+  promotionCampaigns      PromotionCampaign[]
+  campaignTimelineEvents  CampaignTimelineEvent[]
 
   @@index([pinned, updatedOn])
   @@index([isPublished, releaseDate])
@@ -214,6 +238,7 @@ model AdImportBatch {
   release            Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
   reports            AdCreativeReport[]
   learnings          AdCampaignLearning[]
+  campaignEvidence   CampaignEvidence[]
 
   @@index([releaseId])
   @@index([createdAt])
@@ -451,6 +476,432 @@ model AnalyticsEvent {
   @@index([shortLinkId, createdAt])
 }
 
+model AnalyticsImport {
+  id                       String                    @id
+  source                   String                    @default("SPOTIFY_FOR_ARTISTS")
+  importType               String
+  originalFilename         String
+  fileHash                 String                    @unique
+  commitIdempotencyKey     String?                   @unique
+  artistProfileId          String
+  uploadedById             String?
+  uploadedByUsername       String                    @default("")
+  uploadedAt               DateTime
+  status                   String                    @default("PENDING")
+  reportingTimezone        String                    @default("UTC")
+  detectedPeriodStart      DateTime?
+  detectedPeriodEnd        DateTime?
+  userConfirmedPeriodStart DateTime?
+  userConfirmedPeriodEnd   DateTime?
+  periodDatesUserConfirmed Boolean                   @default(false)
+  rowCount                 Int                       @default(0)
+  acceptedRowCount         Int                       @default(0)
+  rejectedRowCount         Int                       @default(0)
+  unmatchedRowCount        Int                       @default(0)
+  warningCount             Int                       @default(0)
+  validationSummary        String                    @default("{}")
+  metadata                 String                    @default("{}")
+  normalizationVersion     Int                       @default(1)
+  rawFileStorageDriver     String?
+  rawFileStorageKey        String?
+  rawFileSizeBytes         Int?
+  rawFileExpiresAt         DateTime?
+  rawFileDeletedAt         DateTime?
+  acceptedAt               DateTime?
+  withdrawnAt              DateTime?
+  withdrawnById            String?
+  withdrawalReason         String                    @default("")
+  replacedByImportId       String?
+  createdAt                DateTime
+  updatedAt                DateTime
+  artistProfile            ArtistProfile             @relation(fields: [artistProfileId], references: [id], onDelete: Restrict)
+  uploadedBy               AdminUser?                @relation("AnalyticsImportUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  withdrawnBy              AdminUser?                @relation("AnalyticsImportWithdrawnBy", fields: [withdrawnById], references: [id], onDelete: SetNull)
+  replacedBy               AnalyticsImport?          @relation("AnalyticsImportReplacements", fields: [replacedByImportId], references: [id], onDelete: Restrict)
+  replaces                 AnalyticsImport[]         @relation("AnalyticsImportReplacements")
+  artistMetricObservations ArtistMetricObservation[]
+  trackMetricObservations  TrackMetricObservation[]
+  songPeriodSnapshots      SongPeriodSnapshot[]
+  playlistPeriodSnapshots  PlaylistPeriodSnapshot[]
+  mappingRows              AnalyticsImportRow[]
+  mappingAuditEvents       MappingAuditEvent[]
+
+  @@index([source, importType])
+  @@index([artistProfileId, importType, acceptedAt])
+  @@index([status, acceptedAt])
+  @@index([uploadedById])
+  @@index([withdrawnById])
+  @@index([replacedByImportId])
+  @@index([rawFileExpiresAt])
+}
+
+model AnalyticsImportRow {
+  id                  String              @id
+  importId            String
+  sourceRowNumber     Int
+  exportType          String
+  rowIdentityKey      String
+  originalValues      String              @default("{}")
+  safeDisplayValues   String              @default("{}")
+  normalizedValues    String              @default("{}")
+  structuralOutcome   String
+  mappingStatus       String              @default("UNREVIEWED")
+  mappingReason       String              @default("")
+  suggestedReleaseId  String?
+  confirmedReleaseId  String?
+  confirmedScopeKey   String?             @unique
+  mappingConfidence   String              @default("NO_MATCH")
+  mappingEvidence     String              @default("{}")
+  appliedAliasId      String?
+  confirmedById       String?
+  confirmedByUsername String              @default("")
+  confirmedAt         DateTime?
+  unmatchedReason     String?
+  unmatchedNote       String              @default("")
+  unmatchedById       String?
+  unmatchedByUsername String              @default("")
+  unmatchedAt         DateTime?
+  mappingVersion      Int                 @default(1)
+  createdAt           DateTime
+  updatedAt           DateTime
+  import              AnalyticsImport     @relation(fields: [importId], references: [id], onDelete: Restrict)
+  suggestedRelease    Release?            @relation("AnalyticsImportRowSuggestedRelease", fields: [suggestedReleaseId], references: [id], onDelete: SetNull)
+  confirmedRelease    Release?            @relation("AnalyticsImportRowConfirmedRelease", fields: [confirmedReleaseId], references: [id], onDelete: Restrict)
+  appliedAlias        ReleaseImportAlias? @relation(fields: [appliedAliasId], references: [id], onDelete: SetNull)
+  confirmedBy         AdminUser?          @relation("AnalyticsImportRowConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  unmatchedBy         AdminUser?          @relation("AnalyticsImportRowUnmatchedBy", fields: [unmatchedById], references: [id], onDelete: SetNull)
+  songPeriodSnapshot  SongPeriodSnapshot?
+  auditEvents         MappingAuditEvent[]
+
+  @@unique([importId, sourceRowNumber])
+  @@index([importId, mappingStatus])
+  @@index([exportType, mappingStatus])
+  @@index([mappingConfidence])
+  @@index([suggestedReleaseId])
+  @@index([confirmedReleaseId])
+  @@index([appliedAliasId])
+}
+
+model ReleaseImportAlias {
+  id                  String               @id
+  source              String
+  exportType          String
+  exportedTitle       String
+  normalizedTitle     String
+  exportedReleaseDate DateTime?
+  artistProfileId     String
+  releaseId           String
+  status              String               @default("ACTIVE")
+  matchMethod         String
+  evidence            String               @default("{}")
+  scopeKey            String
+  activeScopeKey      String?              @unique
+  confirmedById       String?
+  confirmedByUsername String               @default("")
+  confirmedAt         DateTime
+  revokedAt           DateTime?
+  revokedById         String?
+  revokedByUsername   String               @default("")
+  revocationReason    String               @default("")
+  supersededByAliasId String?
+  createdAt           DateTime
+  updatedAt           DateTime
+  artistProfile       ArtistProfile        @relation(fields: [artistProfileId], references: [id], onDelete: Restrict)
+  release             Release              @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  confirmedBy         AdminUser?           @relation("ReleaseImportAliasConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  revokedBy           AdminUser?           @relation("ReleaseImportAliasRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+  supersededBy        ReleaseImportAlias?  @relation("ReleaseImportAliasSupersession", fields: [supersededByAliasId], references: [id], onDelete: Restrict)
+  supersedes          ReleaseImportAlias[] @relation("ReleaseImportAliasSupersession")
+  appliedRows         AnalyticsImportRow[]
+  auditEvents         MappingAuditEvent[]
+
+  @@index([artistProfileId, source, exportType, normalizedTitle])
+  @@index([releaseId, status])
+  @@index([scopeKey, status])
+  @@index([confirmedById])
+  @@index([revokedById])
+  @@index([supersededByAliasId])
+}
+
+model MappingAuditEvent {
+  id                    String              @id
+  rowId                 String?
+  importId              String?
+  aliasId               String?
+  action                String
+  previousMappingStatus String?
+  newMappingStatus      String?
+  previousReleaseId     String?
+  newReleaseId          String?
+  reason                String              @default("")
+  evidence              String              @default("{}")
+  actorId               String?
+  actorUsername         String              @default("")
+  createdAt             DateTime
+  row                   AnalyticsImportRow? @relation(fields: [rowId], references: [id], onDelete: SetNull)
+  import                AnalyticsImport?    @relation(fields: [importId], references: [id], onDelete: SetNull)
+  alias                 ReleaseImportAlias? @relation(fields: [aliasId], references: [id], onDelete: SetNull)
+  actor                 AdminUser?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([rowId, createdAt])
+  @@index([importId, createdAt])
+  @@index([aliasId, createdAt])
+  @@index([actorId])
+}
+
+model PromotionCampaign {
+  id                   String                   @id
+  artistProfileId      String
+  releaseId            String
+  platform             String
+  name                 String
+  objective            String
+  status               String                   @default("DRAFT")
+  notes                String                   @default("")
+  externalCampaignId   String                   @default("")
+  externalCampaignName String                   @default("")
+  createdById          String?
+  createdByUsername    String                   @default("")
+  updatedById          String?
+  updatedByUsername    String                   @default("")
+  createdAt            DateTime
+  updatedAt            DateTime
+  archivedAt           DateTime?
+  artistProfile        ArtistProfile            @relation(fields: [artistProfileId], references: [id], onDelete: Restrict)
+  release              Release                  @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  createdBy            AdminUser?               @relation("PromotionCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy            AdminUser?               @relation("PromotionCampaignUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  activeIntervals      CampaignActiveInterval[]
+  timelineEvents       CampaignTimelineEvent[]
+  evidence             CampaignEvidence[]
+  auditEvents          CampaignAuditEvent[]
+
+  @@index([releaseId, status, updatedAt])
+  @@index([artistProfileId, status, updatedAt])
+  @@index([platform, status])
+  @@index([externalCampaignId])
+}
+
+model CampaignActiveInterval {
+  id                   String                  @id
+  campaignId           String
+  activeStartDate      DateTime
+  activeEndDate        DateTime?
+  timezone             String                  @default("UTC")
+  sourceType           String
+  confirmationStatus   String                  @default("SUGGESTED")
+  evidenceId           String?
+  supersedesIntervalId String?                 @unique
+  notes                String                  @default("")
+  correctionReason     String                  @default("")
+  createdById          String?
+  createdByUsername    String                  @default("")
+  updatedById          String?
+  updatedByUsername    String                  @default("")
+  confirmedById        String?
+  confirmedByUsername  String                  @default("")
+  confirmedAt          DateTime?
+  rejectedById         String?
+  rejectedByUsername   String                  @default("")
+  rejectedAt           DateTime?
+  createdAt            DateTime
+  updatedAt            DateTime
+  campaign             PromotionCampaign       @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  evidence             CampaignEvidence?       @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  supersedes           CampaignActiveInterval? @relation("CampaignIntervalSupersession", fields: [supersedesIntervalId], references: [id], onDelete: Restrict)
+  supersededBy         CampaignActiveInterval? @relation("CampaignIntervalSupersession")
+  createdBy            AdminUser?              @relation("CampaignIntervalCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy            AdminUser?              @relation("CampaignIntervalUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  confirmedBy          AdminUser?              @relation("CampaignIntervalConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  rejectedBy           AdminUser?              @relation("CampaignIntervalRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  generatedEvents      CampaignTimelineEvent[]
+  auditEvents          CampaignAuditEvent[]
+
+  @@index([campaignId, confirmationStatus, activeStartDate])
+  @@index([confirmationStatus, activeStartDate, activeEndDate])
+  @@index([evidenceId])
+  @@index([createdById])
+  @@index([confirmedById])
+}
+
+model CampaignTimelineEvent {
+  id                 String                  @id
+  campaignId         String?
+  releaseId          String
+  intervalId         String?
+  eventType          String
+  eventDate          DateTime
+  eventTime          String                  @default("")
+  timezone           String                  @default("UTC")
+  title              String
+  notes              String                  @default("")
+  metadata           String                  @default("{}")
+  source             String
+  confirmationStatus String                  @default("CONFIRMED")
+  supersedesEventId  String?                 @unique
+  correctionReason   String                  @default("")
+  createdById        String?
+  createdByUsername  String                  @default("")
+  updatedById        String?
+  updatedByUsername  String                  @default("")
+  revokedAt          DateTime?
+  createdAt          DateTime
+  updatedAt          DateTime
+  campaign           PromotionCampaign?      @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  release            Release                 @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  interval           CampaignActiveInterval? @relation(fields: [intervalId], references: [id], onDelete: SetNull)
+  supersedes         CampaignTimelineEvent?  @relation("CampaignEventSupersession", fields: [supersedesEventId], references: [id], onDelete: Restrict)
+  supersededBy       CampaignTimelineEvent?  @relation("CampaignEventSupersession")
+  createdBy          AdminUser?              @relation("CampaignEventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy          AdminUser?              @relation("CampaignEventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  auditEvents        CampaignAuditEvent[]
+
+  @@index([releaseId, eventDate, eventType])
+  @@index([campaignId, eventDate, eventType])
+  @@index([intervalId])
+  @@index([confirmationStatus, eventDate])
+}
+
+model CampaignEvidence {
+  id                 String                   @id
+  campaignId         String
+  adImportBatchId    String?
+  sourceType         String
+  sourceRecordId     String                   @default("")
+  campaignName       String                   @default("")
+  importedStartDate  DateTime?
+  importedEndDate    DateTime?
+  spendStartDate     DateTime?
+  spendEndDate       DateTime?
+  suggestedStartDate DateTime?
+  suggestedEndDate   DateTime?
+  timezone           String                   @default("")
+  rationale          String                   @default("")
+  confidence         String                   @default("LOW")
+  metadata           String                   @default("{}")
+  createdById        String?
+  createdByUsername  String                   @default("")
+  createdAt          DateTime
+  updatedAt          DateTime
+  campaign           PromotionCampaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  adImportBatch      AdImportBatch?           @relation(fields: [adImportBatchId], references: [id], onDelete: SetNull)
+  createdBy          AdminUser?               @relation("CampaignEvidenceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  suggestedIntervals CampaignActiveInterval[]
+  auditEvents        CampaignAuditEvent[]
+
+  @@index([campaignId, sourceType, createdAt])
+  @@index([adImportBatchId])
+  @@index([campaignName])
+  @@unique([campaignId, sourceType, sourceRecordId])
+}
+
+model CampaignAuditEvent {
+  id              String                  @id
+  campaignId      String
+  intervalId      String?
+  timelineEventId String?
+  evidenceId      String?
+  action          String
+  reason          String                  @default("")
+  previousValues  String                  @default("{}")
+  newValues       String                  @default("{}")
+  actorId         String?
+  actorUsername   String                  @default("")
+  createdAt       DateTime
+  campaign        PromotionCampaign       @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  interval        CampaignActiveInterval? @relation(fields: [intervalId], references: [id], onDelete: SetNull)
+  timelineEvent   CampaignTimelineEvent?  @relation(fields: [timelineEventId], references: [id], onDelete: SetNull)
+  evidence        CampaignEvidence?       @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  actor           AdminUser?              @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, createdAt])
+  @@index([intervalId, createdAt])
+  @@index([timelineEventId, createdAt])
+  @@index([evidenceId, createdAt])
+  @@index([actorId])
+}
+
+model ArtistMetricObservation {
+  id                     String          @id
+  importId               String
+  artistProfileId        String
+  metricDate             DateTime
+  listeners              Int
+  monthlyListeners       Int
+  monthlyActiveListeners Int
+  streams                Int
+  playlistAdds           Int
+  saves                  Int
+  followers              Int
+  createdAt              DateTime
+  import                 AnalyticsImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  artistProfile          ArtistProfile   @relation(fields: [artistProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, artistProfileId, metricDate])
+  @@index([artistProfileId, metricDate])
+}
+
+model TrackMetricObservation {
+  id             String          @id
+  importId       String
+  releaseId      String
+  spotifyTrackId String?
+  metricDate     DateTime
+  streams        Int
+  listeners      Int?
+  saves          Int?
+  playlistAdds   Int?
+  createdAt      DateTime
+  import         AnalyticsImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+  release        Release         @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, releaseId, metricDate])
+  @@index([releaseId, metricDate])
+  @@index([spotifyTrackId, metricDate])
+}
+
+model SongPeriodSnapshot {
+  id                  String              @id
+  importId            String
+  releaseId           String
+  periodStart         DateTime
+  periodEnd           DateTime
+  exportedTitle       String
+  exportedReleaseDate DateTime
+  listeners           Int
+  streams             Int
+  saves               Int
+  createdAt           DateTime
+  mappingRowId        String?             @unique
+  import              AnalyticsImport     @relation(fields: [importId], references: [id], onDelete: Restrict)
+  release             Release             @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  mappingRow          AnalyticsImportRow? @relation(fields: [mappingRowId], references: [id], onDelete: SetNull)
+
+  @@unique([importId, releaseId, periodStart, periodEnd])
+  @@index([releaseId, periodStart, periodEnd])
+  @@index([periodStart, periodEnd])
+}
+
+model PlaylistPeriodSnapshot {
+  id                String          @id
+  importId          String
+  playlistTitle     String
+  playlistAuthor    String
+  playlistSpotifyId String?
+  periodStart       DateTime
+  periodEnd         DateTime
+  listeners         Int
+  streams           Int
+  dateAdded         DateTime?
+  createdAt         DateTime
+  import            AnalyticsImport @relation(fields: [importId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, playlistTitle, playlistAuthor, periodStart, periodEnd])
+  @@index([playlistTitle, playlistAuthor, periodStart, periodEnd])
+  @@index([playlistSpotifyId, periodStart, periodEnd])
+  @@index([periodStart, periodEnd])
+}
+
 model PublicRateLimit {
   id              String    @id
   bucket          String
@@ -527,69 +978,69 @@ model ShortLink {
 }
 
 model AppearsOn {
-  id                    String                  @id
-  title                 String
-  artists               String
-  coverArtUrl           String
-  spotifyUrl            String
-  appleMusicUrl         String                  @default("")
-  youtubeMusicUrl       String                  @default("")
-  youtubeUrl            String                  @default("")
-  releaseDate           DateTime?
-  isPublished           Boolean                 @default(false)
-  archivedAt            DateTime?
-  sortOrder             Int                     @default(0)
-  createdAt             DateTime
-  updatedAt             DateTime
-  AppearsOnArtistCredit AppearsOnArtistCredit[]
+  id              String                  @id
+  title           String
+  artists         String
+  coverArtUrl     String
+  spotifyUrl      String
+  appleMusicUrl   String                  @default("")
+  youtubeMusicUrl String                  @default("")
+  youtubeUrl      String                  @default("")
+  releaseDate     DateTime?
+  isPublished     Boolean                 @default(false)
+  archivedAt      DateTime?
+  sortOrder       Int                     @default(0)
+  createdAt       DateTime
+  updatedAt       DateTime
+  artistCredits   AppearsOnArtistCredit[]
 
   @@index([isPublished, sortOrder])
   @@index([archivedAt, releaseDate])
 }
 
 model ArtistProfile {
-  id                     String                  @id
-  slug                   String                  @unique
+  id                     String                    @id
+  slug                   String                    @unique
   displayName            String
-  privateContactEmail    String                  @default("")
-  location               String                  @default("")
-  locationCountryCode    String                  @default("")
-  workflowStatus         String                  @default("DRAFT")
-  themeFamily            String                  @default("signal-noir")
-  tagline                String                  @default("")
-  shortBio               String                  @default("")
-  longBio                String                  @default("")
-  differentiator         String                  @default("")
-  genres                 String                  @default("[]")
-  primaryCtaLabel        String                  @default("")
-  primaryCtaUrl          String                  @default("")
-  secondaryCtaLabel      String                  @default("")
-  secondaryCtaUrl        String                  @default("")
-  profileImagePath       String                  @default("")
-  profileImageAlt        String                  @default("")
-  presentationCopy       String                  @default("{}")
-  catalogEnabled         Boolean                 @default(false)
-  catalogTitle           String                  @default("Releases")
-  catalogIntro           String                  @default("")
-  catalogCtaLabel        String                  @default("View all releases")
-  catalogReleaseIds      String                  @default("[]")
-  editorialReleaseIds    String                  @default("[]")
-  featuredStoriesEnabled Boolean                 @default(false)
-  featuredStoriesLabel   String                  @default("Featured stories")
-  featuredStoriesHeading String                  @default("Go deeper")
-  seoTitle               String                  @default("")
-  seoDescription         String                  @default("")
-  socialImageUrl         String                  @default("")
-  publishedVersionId     String?                 @unique
-  publishedSlug          String                  @default("")
+  privateContactEmail    String                    @default("")
+  location               String                    @default("")
+  locationCountryCode    String                    @default("")
+  workflowStatus         String                    @default("DRAFT")
+  themeFamily            String                    @default("signal-noir")
+  tagline                String                    @default("")
+  shortBio               String                    @default("")
+  longBio                String                    @default("")
+  differentiator         String                    @default("")
+  genres                 String                    @default("[]")
+  primaryCtaLabel        String                    @default("")
+  primaryCtaUrl          String                    @default("")
+  secondaryCtaLabel      String                    @default("")
+  secondaryCtaUrl        String                    @default("")
+  profileImagePath       String                    @default("")
+  profileImageAlt        String                    @default("")
+  presentationCopy       String                    @default("{}")
+  catalogEnabled         Boolean                   @default(false)
+  catalogTitle           String                    @default("Releases")
+  catalogIntro           String                    @default("")
+  catalogCtaLabel        String                    @default("View all releases")
+  catalogReleaseIds      String                    @default("[]")
+  editorialReleaseIds    String                    @default("[]")
+  featuredStoriesEnabled Boolean                   @default(false)
+  featuredStoriesLabel   String                    @default("Featured stories")
+  featuredStoriesHeading String                    @default("Go deeper")
+  seoTitle               String                    @default("")
+  seoDescription         String                    @default("")
+  socialImageUrl         String                    @default("")
+  publishedVersionId     String?                   @unique
+  publishedSlug          String                    @default("")
   draftUpdatedAt         DateTime
   publishedAt            DateTime?
   pausedAt               DateTime?
   archivedAt             DateTime?
   createdAt              DateTime
   updatedAt              DateTime
-  versions               ArtistProfileVersion[]  @relation("ArtistProfileVersions")
-  publishedVersion       ArtistProfileVersion?   @relation("PublishedArtistProfileVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  versions               ArtistProfileVersion[]    @relation("ArtistProfileVersions")
+  publishedVersion       ArtistProfileVersion?     @relation("PublishedArtistProfileVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
   approvals              ArtistProfileApproval[]
   intakes                ArtistIntake[]
   links                  ArtistLink[]
@@ -597,8 +1048,12 @@ model ArtistProfile {
   featuredItems          ArtistFeaturedItem[]
   releaseCredits         ReleaseArtistCredit[]
   appearsOnCredits       AppearsOnArtistCredit[]
-  primaryReleases        Release[]               @relation("PrimaryArtistReleases")
+  primaryReleases        Release[]                 @relation("PrimaryArtistReleases")
   analyticsEvents        AnalyticsEvent[]
+  analyticsImports       AnalyticsImport[]
+  metricObservations     ArtistMetricObservation[]
+  releaseImportAliases   ReleaseImportAlias[]
+  promotionCampaigns     PromotionCampaign[]
 
   @@index([workflowStatus, updatedAt])
   @@index([publishedAt])
@@ -606,27 +1061,27 @@ model ArtistProfile {
 }
 
 model ArtistIntake {
-  id                            String         @id
-  artistName                    String         @default("")
-  inviteeEmail                  String         @default("")
-  tokenHash                     String         @unique
-  tokenHint                     String         @default("")
-  status                        String         @default("DRAFT")
-  content                       String         @default("{}")
-  uploadedAssetPaths            String         @default("[]")
-  expiresAt                     DateTime
-  submittedAt                   DateTime?
-  lastOpenedAt                  DateTime?
-  reviewedAt                    DateTime?
-  convertedAt                   DateTime?
-  archivedAt                    DateTime?
-  submissionNotificationStatus  String         @default("NOT_SENT")
-  submissionNotificationError   String         @default("")
+  id                                String         @id
+  artistName                        String         @default("")
+  inviteeEmail                      String         @default("")
+  tokenHash                         String         @unique
+  tokenHint                         String         @default("")
+  status                            String         @default("DRAFT")
+  content                           String         @default("{}")
+  uploadedAssetPaths                String         @default("[]")
+  expiresAt                         DateTime
+  submittedAt                       DateTime?
+  lastOpenedAt                      DateTime?
+  reviewedAt                        DateTime?
+  convertedAt                       DateTime?
+  archivedAt                        DateTime?
+  submissionNotificationStatus      String         @default("NOT_SENT")
+  submissionNotificationError       String         @default("")
   submissionNotificationAttemptedAt DateTime?
-  linkedArtistProfileId         String?
-  createdAt                     DateTime
-  updatedAt                     DateTime
-  linkedArtistProfile           ArtistProfile? @relation(fields: [linkedArtistProfileId], references: [id], onDelete: SetNull)
+  linkedArtistProfileId             String?
+  createdAt                         DateTime
+  updatedAt                         DateTime
+  linkedArtistProfile               ArtistProfile? @relation(fields: [linkedArtistProfileId], references: [id], onDelete: SetNull)
 
   @@index([status, updatedAt])
   @@index([expiresAt])
@@ -634,21 +1089,21 @@ model ArtistIntake {
 }
 
 model ArtistProfileVersion {
-  id               String                  @id
-  artistProfileId  String
-  version          Int
-  content          String
-  approvalStatus   String                  @default("DRAFT")
-  previewTokenHash String?                 @unique
-  previewExpiresAt DateTime?
-  previewRevokedAt DateTime?
+  id                  String                  @id
+  artistProfileId     String
+  version             Int
+  content             String
+  approvalStatus      String                  @default("DRAFT")
+  previewTokenHash    String?                 @unique
+  previewExpiresAt    DateTime?
+  previewRevokedAt    DateTime?
   previewSupersededAt DateTime?
-  createdAt        DateTime
-  approvedAt       DateTime?
-  publishedAt      DateTime?
-  artistProfile    ArtistProfile           @relation("ArtistProfileVersions", fields: [artistProfileId], references: [id], onDelete: Cascade)
-  publishedFor     ArtistProfile?          @relation("PublishedArtistProfileVersion")
-  approvals        ArtistProfileApproval[]
+  createdAt           DateTime
+  approvedAt          DateTime?
+  publishedAt         DateTime?
+  artistProfile       ArtistProfile           @relation("ArtistProfileVersions", fields: [artistProfileId], references: [id], onDelete: Cascade)
+  publishedFor        ArtistProfile?          @relation("PublishedArtistProfileVersion")
+  approvals           ArtistProfileApproval[]
 
   @@unique([artistProfileId, version])
   @@index([artistProfileId, createdAt])
@@ -672,17 +1127,16 @@ model ArtistProfileApproval {
 }
 
 model ArtistLink {
-  id              String                  @id
+  id              String        @id
   artistProfileId String
   platform        String
   label           String
   url             String
-  sortOrder       Int                     @default(0)
-  isPrimary       Boolean                 @default(false)
+  sortOrder       Int           @default(0)
+  isPrimary       Boolean       @default(false)
   createdAt       DateTime
   updatedAt       DateTime
-  artistCredits   AppearsOnArtistCredit[]
-  artistProfile   ArtistProfile           @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
 
   @@unique([artistProfileId, platform])
   @@index([artistProfileId, sortOrder])
@@ -754,8 +1208,6 @@ model AppearsOnArtistCredit {
   updatedAt       DateTime
   appearsOn       AppearsOn     @relation(fields: [appearsOnId], references: [id], onDelete: Cascade)
   artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
-  ArtistLink      ArtistLink?   @relation(fields: [artistLinkId], references: [id])
-  artistLinkId    String?
 
   @@unique([appearsOnId, artistProfileId, role])
   @@index([appearsOnId, displayOrder])
@@ -1034,23 +1486,23 @@ model FanUpdate {
 }
 
 model VaultItem {
-  id          String    @id
-  releaseId   String?
-  title       String
-  slug        String    @unique
-  itemType    String    @default("track")
-  description String    @default("")
-  coverArtUrl String    @default("")
-  previewUrl  String    @default("")
-  priceLabel  String    @default("")
-  checkoutUrl String    @default("")
-  offerDetails String   @default("{}")
-  status      String    @default("draft")
-  sortOrder   Int       @default(0)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  release     Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  id           String    @id
+  releaseId    String?
+  title        String
+  slug         String    @unique
+  itemType     String    @default("track")
+  description  String    @default("")
+  coverArtUrl  String    @default("")
+  previewUrl   String    @default("")
+  priceLabel   String    @default("")
+  checkoutUrl  String    @default("")
+  offerDetails String    @default("{}")
+  status       String    @default("draft")
+  sortOrder    Int       @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  release      Release?  @relation(fields: [releaseId], references: [id], onDelete: SetNull)
 
   @@index([status, sortOrder])
   @@index([releaseId])

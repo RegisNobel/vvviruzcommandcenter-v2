@@ -44,3 +44,4 @@ test.js
 test-results/
 playwright-report/
 .artifacts/
+.codex-temp/

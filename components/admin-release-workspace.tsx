@@ -2,6 +2,8 @@ import Link from "next/link";
 import {notFound} from "next/navigation";
 
 import {ReleaseDetailEditor} from "@/components/release-detail-editor";
+import {ReleaseCampaignTimelineSection} from "@/components/release-campaign-timeline-section";
+import {ReleaseRetentionSection} from "@/components/release-retention-section";
 import {ArtistReleasePlacementControl} from "@/components/artist-release-placement-control";
 import {
   readAdPerformanceTimeline,
@@ -19,13 +21,19 @@ import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {prisma} from "@/lib/db/prisma";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
+import {readReleaseCampaignTimeline} from "@/lib/analytics/campaign-timeline-service";
+import {readReleaseRetentionDashboard} from "@/lib/analytics/retention-dashboard";
 
 export async function AdminReleaseWorkspace({
   releaseId,
-  artistProfileId
+  artistProfileId,
+  retentionCampaignId,
+  retentionRange
 }: {
   releaseId: string;
   artistProfileId?: string;
+  retentionCampaignId?: string;
+  retentionRange?: string;
 }) {
   try {
     const [
@@ -44,7 +52,9 @@ export async function AdminReleaseWorkspace({
       playlists,
       playlistMemberships,
       annotations,
-      artist
+      artist,
+      promotionTimeline,
+      retentionDashboard
     ] = await Promise.all([
       readRelease(releaseId),
       readCopiesByReleaseId(releaseId),
@@ -84,7 +94,12 @@ export async function AdminReleaseWorkspace({
               }
             }
           })
-        : Promise.resolve(null)
+        : Promise.resolve(null),
+      readReleaseCampaignTimeline(releaseId),
+      readReleaseRetentionDashboard(releaseId, {
+        campaignId: retentionCampaignId,
+        range: retentionRange
+      })
     ]);
 
     if (
@@ -162,6 +177,8 @@ export async function AdminReleaseWorkspace({
           managedArtistEditorial={Boolean(artist)}
           backHref={artist ? `/admin/artists/${artist.id}` : "/admin/releases"}
         />
+        <ReleaseCampaignTimelineSection timeline={promotionTimeline} />
+        <ReleaseRetentionSection data={retentionDashboard} releaseId={releaseId} />
       </div>
     );
   } catch {

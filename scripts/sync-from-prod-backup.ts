@@ -2,56 +2,38 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {gunzipSync} from "node:zlib";
 
-import {list} from "@vercel/blob";
-
 import {ensureDatabaseUrl} from "../lib/db/load-env";
 import {decryptBackupArtifact} from "../lib/backups/encryption";
+import {listPrivateObjects, readPrivateObject} from "../lib/server/private-object-storage";
 
 ensureDatabaseUrl();
 
 async function main() {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
-    throw new Error("BLOB_READ_WRITE_TOKEN is required to fetch backups from Vercel Blob.");
+  if (!process.env.PRIVATE_BLOB_READ_WRITE_TOKEN?.trim()) {
+    throw new Error("PRIVATE_BLOB_READ_WRITE_TOKEN is required to fetch private Blob backups.");
   }
+  process.env.PRIVATE_STORAGE_DRIVER = "vercel-blob";
 
-  const prefix = process.env.BLOB_PREFIX?.trim().replace(/^\/+|\/+$/g, "") || "vvviruz";
-  const backupFolder = `${prefix}/backups/`;
-
-  console.log(`Listing backups in ${backupFolder}...`);
-  const {blobs} = await list({
-    prefix: backupFolder,
-    limit: 100
-  });
-
-  const dbSnapshots = blobs
-    .filter((b) => b.pathname.includes("database_snapshot"))
-    .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
-
-  if (dbSnapshots.length === 0) {
-    throw new Error("No database snapshots found in Vercel Blob.");
+  console.log("Listing opaque private backup objects...");
+  const candidates = (await listPrivateObjects("database-backups"))
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    .slice(0, 20);
+  let latest: {objectId: string; jsonBuffer: Buffer; uploadedAt: Date} | null = null;
+  for (const candidate of candidates) {
+    const encrypted = await readPrivateObject("database-backups", candidate.storedPath);
+    const jsonBuffer = gunzipSync(decryptBackupArtifact(encrypted.buffer));
+    const parsed = JSON.parse(jsonBuffer.toString("utf8")) as Record<string, unknown>;
+    if (Array.isArray(parsed.releases) && Array.isArray(parsed.breakingBarzEntries)) {
+      latest = {objectId: candidate.id, jsonBuffer, uploadedAt: candidate.updatedAt};
+      break;
+    }
   }
-
-  const latest = dbSnapshots[0];
-  console.log(`Latest backup found: ${latest.pathname} (${new Date(latest.uploadedAt).toLocaleString()})`);
-
-  console.log("Downloading artifact...");
-  const response = await fetch(latest.url);
-  if (!response.ok) {
-    throw new Error(`Failed to download backup: ${response.statusText}`);
-  }
-
-  const encryptedBuffer = Buffer.from(await response.arrayBuffer());
-
-  console.log("Decrypting...");
-  const compressedBuffer = decryptBackupArtifact(encryptedBuffer);
-
-  console.log("Decompressing (Gzip)...");
-  const jsonBuffer = gunzipSync(compressedBuffer);
+  if (!latest) throw new Error("No restorable database snapshot was found among recent private backup objects.");
+  console.log(`Latest database snapshot found: ${latest.objectId} (${latest.uploadedAt.toLocaleString()})`);
 
   const outputPath = path.join(process.cwd(), "storage", "production-data-snapshot.json");
   await fs.mkdir(path.dirname(outputPath), {recursive: true});
-  await fs.writeFile(outputPath, jsonBuffer);
+  await fs.writeFile(outputPath, latest.jsonBuffer);
 
   console.log(`\nSuccess! Snapshot saved to: ${outputPath}`);
   console.log("You can now import this into your local database by running:");

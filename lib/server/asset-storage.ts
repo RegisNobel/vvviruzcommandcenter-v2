@@ -6,19 +6,31 @@ import {fileNameFromPath} from "@/lib/utils";
 
 import {
   artistIntakeImagesDir,
+  analyticsPreviewDir,
+  analyticsRawDir,
   ensureStorageDirs,
   exclusiveArtDir,
   exclusiveTracksDir,
   releaseCoversDir,
   siteIconsDir
 } from "@/lib/server/storage";
+import {
+  deletePrivateObject,
+  getPrivateStorageDriver,
+  listPrivateObjects,
+  readPrivateObject,
+  storePrivateObject,
+  type PrivateObjectNamespace
+} from "@/lib/server/private-object-storage";
 
 export type StoredAssetKind =
   | "cover"
   | "artist-intake-image"
   | "site-icon"
   | "exclusive-art"
-  | "exclusive-track";
+  | "exclusive-track"
+  | "analytics-preview"
+  | "analytics-raw";
 
 export type StoredAssetAccess = "public" | "private";
 
@@ -33,12 +45,22 @@ export function getAssetStorageDriver() {
   return process.env.ASSET_STORAGE_DRIVER === "vercel-blob" ? "vercel-blob" : "local";
 }
 
+export function getPrivateAssetStorageDriver() {
+  return getPrivateStorageDriver();
+}
+
 export function isDurableObjectStorageEnabled() {
   return getAssetStorageDriver() === "vercel-blob";
 }
 
 export function isRemoteAssetReference(value: string) {
   return /^https?:\/\//i.test(value.trim());
+}
+
+function isAnalyticsAssetKind(
+  kind: StoredAssetKind
+): kind is Extract<StoredAssetKind, PrivateObjectNamespace> {
+  return kind === "analytics-preview" || kind === "analytics-raw";
 }
 
 function getAssetDirectory(kind: StoredAssetKind) {
@@ -53,6 +75,10 @@ function getAssetDirectory(kind: StoredAssetKind) {
       return exclusiveArtDir;
     case "exclusive-track":
       return exclusiveTracksDir;
+    case "analytics-preview":
+      return analyticsPreviewDir;
+    case "analytics-raw":
+      return analyticsRawDir;
   }
 }
 
@@ -86,6 +112,23 @@ export async function storeAsset({
 }): Promise<StoredAssetResult> {
   const safeFileName = fileNameFromPath(fileName);
 
+  if (isAnalyticsAssetKind(kind)) {
+    if (access !== "private") {
+      throw new Error("Analytics objects require private storage.");
+    }
+    const stored = await storePrivateObject({
+      namespace: kind,
+      objectId: path.basename(safeFileName, path.extname(safeFileName)),
+      data
+    });
+    return {
+      id: path.basename(stored.key),
+      url: stored.key,
+      storedPath: stored.key,
+      publicUrl: null
+    };
+  }
+
   if (isDurableObjectStorageEnabled()) {
     const {put} = await import("@vercel/blob");
     const blob = await put(getBlobPath(kind, safeFileName), data, {
@@ -117,6 +160,15 @@ export async function storeAsset({
 export async function deleteAsset(kind: StoredAssetKind, assetPathOrUrl: string) {
   if (!assetPathOrUrl) return;
 
+  if (isAnalyticsAssetKind(kind)) {
+    try {
+      await deletePrivateObject(kind, assetPathOrUrl);
+    } catch {
+      console.error("Failed to delete private analytics object.");
+    }
+    return;
+  }
+
   const fileName = fileNameFromPath(assetPathOrUrl);
   if (!fileName) return;
 
@@ -141,6 +193,40 @@ export async function deleteAsset(kind: StoredAssetKind, assetPathOrUrl: string)
     }
   } catch (error) {
     console.error(`Failed to delete asset ${kind}/${fileName}:`, error);
+  }
+}
+
+/**
+ * Deletes one stored object and reports failures to the caller. Cleanup jobs use
+ * this stricter variant so they never mark database metadata as deleted after a
+ * storage failure. Missing local files are treated as an idempotent success.
+ */
+export async function deleteStoredAssetStrict(
+  kind: StoredAssetKind,
+  assetPathOrUrl: string
+) {
+  if (isAnalyticsAssetKind(kind)) {
+    return deletePrivateObject(kind, assetPathOrUrl);
+  }
+
+  const fileName = fileNameFromPath(assetPathOrUrl);
+  if (!fileName) return {deleted: false as const, alreadyAbsent: true as const};
+
+  if (isDurableObjectStorageEnabled()) {
+    const {del} = await import("@vercel/blob");
+    await del(isRemoteAssetReference(assetPathOrUrl) ? assetPathOrUrl : getBlobPath(kind, fileName));
+    return {deleted: true as const, alreadyAbsent: false as const};
+  }
+
+  const localPath = path.join(getAssetDirectory(kind), fileName);
+  try {
+    await fs.unlink(localPath);
+    return {deleted: true as const, alreadyAbsent: false as const};
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {deleted: false as const, alreadyAbsent: true as const};
+    }
+    throw error;
   }
 }
 
@@ -184,6 +270,13 @@ export async function readAssetBuffer(
   access: StoredAssetAccess = kind === "exclusive-track" ? "private" : "public"
 ) {
   const trimmedAssetId = assetId.trim();
+
+  if (isAnalyticsAssetKind(kind)) {
+    if (access !== "private") {
+      throw new Error("Analytics objects require private retrieval.");
+    }
+    return (await readPrivateObject(kind, trimmedAssetId)).buffer;
+  }
 
   if (isRemoteAssetReference(trimmedAssetId)) {
     return readRemoteAsset(trimmedAssetId, access);
@@ -229,4 +322,12 @@ export async function resolveAssetToLocalPath(
   await fs.writeFile(tempPath, buffer);
 
   return tempPath;
+}
+
+export async function listStoredAssetReferences(kind: "analytics-preview" | "analytics-raw") {
+  return (await listPrivateObjects(kind)).map(({id, storedPath, updatedAt}) => ({
+    id,
+    storedPath,
+    updatedAt
+  }));
 }

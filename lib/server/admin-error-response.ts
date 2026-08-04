@@ -155,6 +155,7 @@ export function adminErrorResponse(error: unknown, options: NormalizeOptions) {
 
   return NextResponse.json(
     {
+      code: payload.code,
       error: payload,
       message: payload.message,
       ok: false

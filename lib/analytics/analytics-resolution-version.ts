@@ -1,0 +1,1 @@
+export const CURRENT_OBSERVATION_RESOLUTION_VERSION = 1 as const;

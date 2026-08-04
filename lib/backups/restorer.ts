@@ -52,12 +52,25 @@ type Snapshot = {
   emailCampaigns?: SnapshotRecord[];
   emailSendLogs?: SnapshotRecord[];
   analyticsEvents?: SnapshotRecord[];
+  analyticsImports?: SnapshotRecord[];
+  artistMetricObservations?: SnapshotRecord[];
+  trackMetricObservations?: SnapshotRecord[];
+  songPeriodSnapshots?: SnapshotRecord[];
+  playlistPeriodSnapshots?: SnapshotRecord[];
+  analyticsImportRows?: SnapshotRecord[];
+  releaseImportAliases?: SnapshotRecord[];
+  mappingAuditEvents?: SnapshotRecord[];
   backupRuns?: SnapshotRecord[];
   shortLinks?: SnapshotRecord[];
   adImportBatches?: SnapshotRecord[];
   adCreativeReports?: SnapshotRecord[];
   adCreativeCopyLinks?: SnapshotRecord[];
   adCampaignLearnings?: SnapshotRecord[];
+  promotionCampaigns?: SnapshotRecord[];
+  campaignEvidence?: SnapshotRecord[];
+  campaignActiveIntervals?: SnapshotRecord[];
+  campaignTimelineEvents?: SnapshotRecord[];
+  campaignAuditEvents?: SnapshotRecord[];
 };
 
 const dateFieldsByModel: Record<string, string[]> = {
@@ -111,12 +124,29 @@ const dateFieldsByModel: Record<string, string[]> = {
   emailCampaign: ["sentAt", "createdAt", "updatedAt"],
   emailSendLog: ["sentAt", "createdAt"],
   analyticsEvent: ["createdAt"],
+  analyticsImport: [
+    "uploadedAt", "detectedPeriodStart", "detectedPeriodEnd", "userConfirmedPeriodStart",
+    "userConfirmedPeriodEnd", "rawFileExpiresAt", "rawFileDeletedAt", "acceptedAt",
+    "withdrawnAt", "createdAt", "updatedAt"
+  ],
+  artistMetricObservation: ["metricDate", "createdAt"],
+  trackMetricObservation: ["metricDate", "createdAt"],
+  songPeriodSnapshot: ["periodStart", "periodEnd", "exportedReleaseDate", "createdAt"],
+  playlistPeriodSnapshot: ["periodStart", "periodEnd", "dateAdded", "createdAt"],
+  analyticsImportRow: ["confirmedAt", "unmatchedAt", "createdAt", "updatedAt"],
+  releaseImportAlias: ["exportedReleaseDate", "confirmedAt", "revokedAt", "createdAt", "updatedAt"],
+  mappingAuditEvent: ["createdAt"],
   backupRun: ["startedAt", "finishedAt", "createdAt"],
   shortLink: ["createdAt", "updatedAt", "archivedAt", "pausedAt", "destinationUpdatedAt", "deletedAt"],
   adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
   adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
   adCreativeCopyLink: ["createdAt"],
-  adCampaignLearning: ["createdAt", "updatedAt"]
+  adCampaignLearning: ["createdAt", "updatedAt"],
+  promotionCampaign: ["createdAt", "updatedAt", "archivedAt"],
+  campaignEvidence: ["importedStartDate", "importedEndDate", "spendStartDate", "spendEndDate", "suggestedStartDate", "suggestedEndDate", "createdAt", "updatedAt"],
+  campaignActiveInterval: ["activeStartDate", "activeEndDate", "confirmedAt", "rejectedAt", "createdAt", "updatedAt"],
+  campaignTimelineEvent: ["eventDate", "revokedAt", "createdAt", "updatedAt"],
+  campaignAuditEvent: ["createdAt"]
 };
 
 const compositeUniqueKeys: Record<string, string[]> = {
@@ -174,6 +204,49 @@ async function upsertMany(modelName: string, records: SnapshotRecord[] = []) {
   }
 
   return imported;
+}
+
+async function insertManyImmutable(modelName: string, records: SnapshotRecord[] = []) {
+  const delegate = (prisma as Record<string, any>)[modelName];
+  let imported = 0;
+
+  for (const record of records) {
+    const data = hydrateDates(modelName, record);
+    if (typeof data.id !== "string") throw new Error(`${modelName} backup row is missing its immutable id.`);
+    const existing = await delegate.findUnique({where: {id: data.id}, select: {id: true}});
+    if (!existing) {
+      await delegate.create({data});
+      imported += 1;
+    }
+  }
+
+  return imported;
+}
+
+async function restoreAnalyticsImports(records: SnapshotRecord[] = []) {
+  const replacementLinks = records.map((record) => ({
+    id: record.id,
+    replacedByImportId: record.replacedByImportId
+  }));
+  const count = await upsertMany(
+    "analyticsImport",
+    records.map((record) => ({
+      ...record,
+      uploadedById: null,
+      withdrawnById: null,
+      replacedByImportId: null
+    }))
+  );
+
+  for (const link of replacementLinks) {
+    if (typeof link.id === "string" && typeof link.replacedByImportId === "string") {
+      await prisma.analyticsImport.update({
+        where: {id: link.id},
+        data: {replacedByImportId: link.replacedByImportId}
+      });
+    }
+  }
+  return count;
 }
 
 function decryptBuffer(encryptedBuffer: Buffer): Buffer {
@@ -317,6 +390,30 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
       });
     }
   }
+  counts.analyticsImports = await restoreAnalyticsImports(snapshot.analyticsImports);
+  counts.artistMetricObservations = await insertManyImmutable(
+    "artistMetricObservation",
+    snapshot.artistMetricObservations
+  );
+  counts.trackMetricObservations = await insertManyImmutable(
+    "trackMetricObservation",
+    snapshot.trackMetricObservations
+  );
+  const aliasSupersession = (snapshot.releaseImportAliases ?? []).map((record) => ({id: record.id, supersededByAliasId: record.supersededByAliasId}));
+  counts.releaseImportAliases = await upsertMany("releaseImportAlias", (snapshot.releaseImportAliases ?? []).map((record) => ({...record, confirmedById: null, revokedById: null, supersededByAliasId: null})));
+  for (const link of aliasSupersession) {
+    if (typeof link.id === "string" && typeof link.supersededByAliasId === "string") await prisma.releaseImportAlias.update({where: {id: link.id}, data: {supersededByAliasId: link.supersededByAliasId}});
+  }
+  counts.analyticsImportRows = await upsertMany("analyticsImportRow", (snapshot.analyticsImportRows ?? []).map((record) => ({...record, confirmedById: null, unmatchedById: null})));
+  counts.songPeriodSnapshots = await insertManyImmutable(
+    "songPeriodSnapshot",
+    snapshot.songPeriodSnapshots
+  );
+  counts.playlistPeriodSnapshots = await insertManyImmutable(
+    "playlistPeriodSnapshot",
+    snapshot.playlistPeriodSnapshots
+  );
+  counts.mappingAuditEvents = await insertManyImmutable("mappingAuditEvent", (snapshot.mappingAuditEvents ?? []).map((record) => ({...record, actorId: null})));
   counts.releaseCategories = await upsertMany("releaseCategory", snapshot.releaseCategories);
   counts.releaseCategoryAssignments = await upsertMany(
     "releaseCategoryAssignment",
@@ -377,6 +474,34 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.adCampaignLearnings = await upsertMany(
     "adCampaignLearning",
     snapshot.adCampaignLearnings
+  );
+  counts.promotionCampaigns = await upsertMany(
+    "promotionCampaign",
+    (snapshot.promotionCampaigns ?? []).map((record) => ({...record, createdById: null, updatedById: null}))
+  );
+  counts.campaignEvidence = await upsertMany(
+    "campaignEvidence",
+    (snapshot.campaignEvidence ?? []).map((record) => ({...record, createdById: null}))
+  );
+  const intervalLinks = (snapshot.campaignActiveIntervals ?? []).map((record) => ({id: record.id, supersedesIntervalId: record.supersedesIntervalId}));
+  counts.campaignActiveIntervals = await upsertMany(
+    "campaignActiveInterval",
+    (snapshot.campaignActiveIntervals ?? []).map((record) => ({...record, supersedesIntervalId: null, createdById: null, updatedById: null, confirmedById: null, rejectedById: null}))
+  );
+  for (const link of intervalLinks) {
+    if (typeof link.id === "string" && typeof link.supersedesIntervalId === "string") await prisma.campaignActiveInterval.update({where: {id: link.id}, data: {supersedesIntervalId: link.supersedesIntervalId}});
+  }
+  const eventLinks = (snapshot.campaignTimelineEvents ?? []).map((record) => ({id: record.id, supersedesEventId: record.supersedesEventId}));
+  counts.campaignTimelineEvents = await upsertMany(
+    "campaignTimelineEvent",
+    (snapshot.campaignTimelineEvents ?? []).map((record) => ({...record, supersedesEventId: null, createdById: null, updatedById: null}))
+  );
+  for (const link of eventLinks) {
+    if (typeof link.id === "string" && typeof link.supersedesEventId === "string") await prisma.campaignTimelineEvent.update({where: {id: link.id}, data: {supersedesEventId: link.supersedesEventId}});
+  }
+  counts.campaignAuditEvents = await insertManyImmutable(
+    "campaignAuditEvent",
+    (snapshot.campaignAuditEvents ?? []).map((record) => ({...record, actorId: null}))
   );
 
   return {

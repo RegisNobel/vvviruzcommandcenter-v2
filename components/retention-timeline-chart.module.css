@@ -1,0 +1,51 @@
+.chartFrame {
+  min-height: 360px;
+  width: 100%;
+}
+
+.chartSurface {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dataTable {
+  max-height: 30rem;
+  overflow: auto;
+}
+
+.modeControls {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .chartFrame {
+    min-height: 320px;
+  }
+
+  .modeControls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .chartSurface,
+  .companionSection {
+    break-inside: avoid;
+  }
+
+  .chartFrame {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  .interactiveOnly {
+    display: none;
+  }
+
+  .dataTable {
+    max-height: none;
+    overflow: visible;
+  }
+}
