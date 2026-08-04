@@ -580,7 +580,7 @@ async function finalize() {
     state.postDeploymentBackup = await uploadEncryptedSnapshot(exported.bytes, "gate-c-post-workflow");
     state.postDeploymentBackup.snapshotPath = exported.snapshotPath;
 
-    const restoreDatabase = "gate_c_post_deployment_restore";
+    const restoreDatabase = `gate_c_post_restore_${crypto.randomBytes(4).toString("hex")}`;
     await embedded.createDatabase(restoreDatabase);
     pushSchema(state, restoreDatabase, "prisma/schema.postgres.prisma");
     const restoreClient = await client(state, restoreDatabase);
@@ -606,7 +606,7 @@ async function finalize() {
     const startingSnapshot = zlib.gunzipSync(decryptArtifact(startingEncrypted.buffer, secret));
     const rollbackSnapshotPath = path.join(rehearsalRoot, "rollback-starting-state.json");
     await fs.writeFile(rollbackSnapshotPath, startingSnapshot);
-    const rollbackDatabase = "gate_c_rollback_restore";
+    const rollbackDatabase = `gate_c_rollback_restore_${crypto.randomBytes(4).toString("hex")}`;
     await embedded.createDatabase(rollbackDatabase);
     pushSchema(state, rollbackDatabase, baselineSchemaPath);
     runNode("Restore pre-deployment application state", ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], databaseEnv(state, rollbackDatabase, {DB_SNAPSHOT_PATH: rollbackSnapshotPath, IMPORT_AUTH: "1"}));
