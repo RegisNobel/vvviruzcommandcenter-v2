@@ -550,9 +550,99 @@ async function cleanupKey() {
   console.log(JSON.stringify({mode: "cleanup-key", removed: true}));
 }
 
+async function calculationFingerprint(state, database, workflowPath, outputPath) {
+  runNode("Gate C retention calculation fingerprint", ["--conditions=react-server", "--import", "tsx", "scripts/gate-c-retention-fingerprint.ts"], databaseEnv(state, database, {
+    GATE_C_WORKFLOW_PATH: workflowPath,
+    GATE_C_FINGERPRINT_PATH: outputPath
+  }));
+  return JSON.parse(await fs.readFile(outputPath, "utf8"));
+}
+
+async function finalize() {
+  const state = await readState();
+  assert.ok(state.deployment && state.fullStack && state.postgresSuites, "Deployment, full-stack, and PostgreSQL suites must pass before finalization.");
+  const workflowPath = path.join(rehearsalRoot, "workflow.json");
+  const workflow = JSON.parse(await fs.readFile(workflowPath, "utf8"));
+  const beforeFingerprintPath = path.join(rehearsalRoot, "post-workflow-fingerprint.json");
+  const restoredFingerprintPath = path.join(rehearsalRoot, "restored-workflow-fingerprint.json");
+  await withServer(state, async (embedded) => {
+    const beforeFingerprint = await calculationFingerprint(state, rehearsalDatabase, workflowPath, beforeFingerprintPath);
+    assert.ok(beforeFingerprint.counts.imports >= 4);
+    assert.ok(beforeFingerprint.counts.artistObservations > 0);
+    assert.ok(beforeFingerprint.counts.trackObservations > 0);
+    const exported = await exportSnapshot(state, rehearsalDatabase, "post-workflow");
+    const snapshotText = exported.bytes.toString("utf8");
+    assert.equal(snapshotText.includes("date,listeners,monthly listeners"), false);
+    assert.equal(snapshotText.includes("RAW_CSV_SECRET_BYTES"), false);
+    const snapshotJson = JSON.parse(snapshotText);
+    const workflowImports = snapshotJson.analyticsImports.filter((item) => workflow.importedIds.includes(item.id));
+    assert.ok(workflowImports.some((item) => item.rawFileStorageKey));
+    state.postDeploymentBackup = await uploadEncryptedSnapshot(exported.bytes, "gate-c-post-workflow");
+    state.postDeploymentBackup.snapshotPath = exported.snapshotPath;
+
+    const restoreDatabase = "gate_c_post_deployment_restore";
+    await embedded.createDatabase(restoreDatabase);
+    pushSchema(state, restoreDatabase, "prisma/schema.postgres.prisma");
+    const restoreClient = await client(state, restoreDatabase);
+    try {
+      await restoreClient.query(await sqlFile("03-post-push-constraints-and-access.sql"));
+      await restoreClient.query(await sqlFile("04-canonical-artist.sql"));
+    } finally {
+      await restoreClient.end();
+    }
+    runNode("Import post-deployment snapshot", ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], databaseEnv(state, restoreDatabase, {DB_SNAPSHOT_PATH: exported.snapshotPath, IMPORT_AUTH: "1"}));
+    const restoredFingerprint = await calculationFingerprint(state, restoreDatabase, workflowPath, restoredFingerprintPath);
+    assert.deepEqual(restoredFingerprint, beforeFingerprint);
+
+    const storage = await import("../lib/server/private-object-storage.ts");
+    const startingEncrypted = await storage.readPrivateObject("database-backups", state.startingBackup.key, {expectedSha256: state.startingBackup.checksumSha256});
+    const secret = process.env.BACKUP_ENCRYPTION_SECRET?.trim();
+    assert.ok(secret);
+    const startingSnapshot = zlib.gunzipSync(decryptArtifact(startingEncrypted.buffer, secret));
+    const rollbackSnapshotPath = path.join(rehearsalRoot, "rollback-starting-state.json");
+    await fs.writeFile(rollbackSnapshotPath, startingSnapshot);
+    const rollbackDatabase = "gate_c_rollback_restore";
+    await embedded.createDatabase(rollbackDatabase);
+    pushSchema(state, rollbackDatabase, baselineSchemaPath);
+    runNode("Restore pre-deployment application state", ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], databaseEnv(state, rollbackDatabase, {DB_SNAPSHOT_PATH: rollbackSnapshotPath, IMPORT_AUTH: "1"}));
+    const rollbackClient = await client(state, rollbackDatabase);
+    let rollbackFingerprint;
+    try {
+      rollbackFingerprint = await startingFingerprint(rollbackClient);
+      assert.deepEqual(rollbackFingerprint, state.startingState);
+    } finally {
+      await rollbackClient.end();
+    }
+
+    await storage.deletePrivateObject("database-backups", state.postDeploymentBackup.key);
+    await storage.deletePrivateObject("database-backups", state.startingBackup.key);
+    let deletedPrivateObjects = 2;
+    for (const namespace of ["analytics-preview", "analytics-raw", "database-backups"]) {
+      const objects = await storage.listPrivateObjects(namespace);
+      for (const object of objects) {
+        await storage.deletePrivateObject(namespace, object.storedPath);
+        deletedPrivateObjects += 1;
+      }
+    }
+    state.finalization = {
+      verifiedAt: new Date().toISOString(),
+      postDeploymentBackup: {...state.postDeploymentBackup, snapshotPath: undefined, deletedAfterVerification: true},
+      restoredFingerprintEquivalent: true,
+      rawCsvBytesAbsentFromSnapshot: true,
+      rawBlobReferencesRestored: true,
+      rollbackFingerprint,
+      rollbackRestoredPreDeploymentState: true,
+      deletedPrivateObjects
+    };
+    await writeState(state);
+    console.log(JSON.stringify({mode: "finalize", ...state.finalization}, null, 2));
+  });
+}
+
 const mode = process.argv[2];
 if (mode === "prepare") await prepare();
 else if (mode === "deploy") await deploy();
 else if (mode === "status") await status();
 else if (mode === "cleanup-key") await cleanupKey();
+else if (mode === "finalize") await finalize();
 else throw new Error("Use prepare, deploy, or status.");

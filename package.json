@@ -47,6 +47,7 @@
     "gate-c:prepare": "node --conditions=react-server --import tsx scripts/gate-c-postgres-rehearsal.mjs prepare",
     "gate-c:deploy": "node --conditions=react-server --import tsx scripts/gate-c-postgres-rehearsal.mjs deploy",
     "gate-c:status": "node --conditions=react-server --import tsx scripts/gate-c-postgres-rehearsal.mjs status",
+    "gate-c:finalize": "node --conditions=react-server --import tsx scripts/gate-c-postgres-rehearsal.mjs finalize",
     "gate-c:full-stack": "node scripts/run-gate-c-full-stack.mjs",
     "gate-c:postgres-suites": "node scripts/run-gate-c-full-stack.mjs --postgres-suites",
     "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts",
