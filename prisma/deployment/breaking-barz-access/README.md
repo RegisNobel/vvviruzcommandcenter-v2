@@ -25,11 +25,11 @@ This package is separate from the Audience Retention Lab deployment package. Gat
 9. Smoke-test published feed/detail, public submission, release annotations, sitemap, admin draft/publish/archive/withdraw, submission review, category assignment, backup, and restore.
 10. Reopen traffic only after the smoke tests pass.
 
-`04-rollback.sql` restores the exact insecure API-role privilege posture observed on 2026-08-04. It is an emergency compatibility rollback, not an acceptable steady state. Prefer application rollback or correction of a missed dependency before using it.
+`04-rollback.sql` restores the exact insecure API-role privilege posture observed on 2026-08-04. It is an emergency compatibility rollback, not an acceptable steady state, and must not be executed as routine deployment or steady-state rollback. Prefer application rollback or correction of a missed dependency before using it.
 
 ## Known prerequisites and limitations
 
 - Production's `postgres` default privileges still grant broad access on newly created public tables. Changing that default affects more than Breaking Barz and requires separate review. Any future Breaking Barz table must ship with explicit RLS and revocations until the default is remediated.
 - The legacy `db:export:supabase-rest` script does not include these six tables. The scheduled encrypted Prisma snapshot does include and restore them. Do not treat the legacy REST export as a complete Breaking Barz backup.
 - `01-preflight.sql`, `02-enable-rls-and-revoke.sql`, and `03-verify.sql` were executed in production during Gate A2. `04-rollback.sql` was rehearsed only on disposable PostgreSQL and was not executed in production.
-- Production authenticated admin verification remains blocked by the pre-existing undersized `AUTH_SECRET`; this did not justify restoring insecure direct table access.
+- Gate A3 rotated production `AUTH_SECRET` to a 43-character base64url value generated from 32 random bytes, invalidated existing sessions, completed controlled TOTP re-enrollment, and verified password-plus-TOTP login, logout, repeat login, and session persistence. The Breaking Barz protected page is accessible, but its multi-submit editor currently reduces “Publish revision” to the draft action; production publish/archive/withdraw and moderation verification remain incomplete until that server-action defect is fixed in a separate reviewed deployment.

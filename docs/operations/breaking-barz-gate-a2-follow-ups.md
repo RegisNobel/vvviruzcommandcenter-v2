@@ -4,7 +4,7 @@ These items are intentionally outside Gate A2 and remain tracked after the six-t
 
 ## Production admin authentication
 
-Production `AUTH_SECRET` is configured with 11 characters, while the application requires at least 32. Rotate it through a reviewed maintenance change, invalidate existing sessions, and rerun login, TOTP, Breaking Barz admin creation, draft, publish, archive, withdraw, category, version, submission moderation, release-annotation synchronization, and lyrics-change safety journeys. Do not weaken the application minimum.
+Gate A2 initially reported an 11-character production `AUTH_SECRET`; Gate A3 established that the observed 11-character text was Vercel's `[Sensitive]` pull placeholder, not the underlying value. Gate A3 still rotated the variable to a reviewed 32-random-byte, 43-character base64url secret, invalidated existing sessions, and required controlled TOTP re-enrollment. Future checks must use Vercel's sensitive-variable metadata plus the recorded generation method and must not treat pulled placeholders as secret measurements.
 
 ## Submitter contact retention
 

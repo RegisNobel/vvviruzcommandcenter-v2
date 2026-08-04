@@ -8,7 +8,7 @@ All six Breaking Barz tables remain owned by `postgres`. RLS is enabled but not 
 
 Direct SQL role testing performed 72 rolled-back SELECT/INSERT/UPDATE/DELETE attempts across the three API roles and six tables; every attempt failed with SQLSTATE `42501`. Eighteen zero-row Data API reads also returned no rows: anon returned HTTP 401 and authenticated/service-role returned HTTP 403, all with safe code `42501`. Direct Data API submission returned HTTP 401 / `42501`.
 
-The trusted Prisma public, submission, versioning, moderation, inventory, backfill, backup, and disposable-restore workflows passed. Production authenticated admin server-action verification remains blocked by a pre-existing deployment configuration: `AUTH_SECRET` has length 11 while the application requires at least 32 characters. The database hardening did not cause this defect, so the emergency insecure rollback was not used.
+The trusted Prisma public, submission, versioning, moderation, inventory, backfill, backup, and disposable-restore workflows passed. Gate A3 established that the earlier 11-character observation was Vercel's `[Sensitive]` pull placeholder rather than the underlying value, then rotated production `AUTH_SECRET` to a 43-character base64url value generated from 32 random bytes. Password-plus-TOTP enrollment, logout, repeat login, protected navigation, and session persistence passed. The Breaking Barz admin surface can read and create drafts, but its multi-submit editor currently reduces “Publish revision” to the draft action; production publish/archive/withdraw and moderation verification remain incomplete until that server-action defect is fixed in a separate reviewed deployment. The emergency insecure rollback was not used.
 
 ## Verified pre-hardening posture
 
@@ -134,4 +134,4 @@ Required checks:
 1. The product owner confirmed no direct Data API consumer and approved the server-only model with no RLS policies or API-role table grants.
 2. Optional submitter name/email may continue to be collected. Rejected-submission contact data should be removed after 90 days in a separate reviewed retention implementation.
 3. Broad `postgres` public-schema default privileges remain unchanged. A separate infrastructure gate must revoke unsafe defaults; deployment reviews must inspect ACL and RLS on every new table until then.
-4. Production `AUTH_SECRET` must be rotated to at least 32 characters and authenticated TOTP admin journeys rerun before declaring the admin compatibility surface healthy.
+4. Gate A3 rotated production `AUTH_SECRET`, invalidated existing sessions, and completed controlled TOTP re-enrollment and repeat login. The remaining admin compatibility blocker is the Breaking Barz multi-submit editor defect described above.

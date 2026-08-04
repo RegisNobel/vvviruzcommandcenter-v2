@@ -65,7 +65,10 @@ async function main() {
 
   assert.match(readme, /separate from the Audience Retention Lab/);
   assert.match(readme, /must not be executed/);
-  assert.match(audit, /No production grants, RLS state, policies, schema, rows, environment variables, storage, or deployment were changed/);
+  assert.match(audit, /Gate A2 was subsequently approved and executed/);
+  assert.match(audit, /RLS is enabled but not forced/);
+  assert.match(audit, /Gate A3 established that the earlier 11-character observation was Vercel's `\[Sensitive\]` pull placeholder/);
+  assert.match(audit, /multi-submit editor currently reduces “Publish revision” to the draft action/);
 
   console.log("Breaking Barz server-only access model, six-table SQL package, rollback warning, repository boundaries, and backup coverage passed static verification.");
 }

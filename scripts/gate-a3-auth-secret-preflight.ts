@@ -41,9 +41,14 @@ async function main() {
   const authSecret = process.env.AUTH_SECRET?.trim() || "";
   const backupSecret = process.env.BACKUP_ENCRYPTION_SECRET?.trim() || "";
   const cronSecret = process.env.CRON_SECRET?.trim() || "";
-  const authSecretObservable = authSecret !== "[Sensitive]";
-  const backupSecretObservable = backupSecret !== "[Sensitive]";
-  const cronSecretObservable = cronSecret !== "[Sensitive]";
+  const expectSensitivePlaceholders =
+    process.env.GATE_A3_EXPECT_SENSITIVE_PLACEHOLDERS === "1";
+  const authSecretObservable =
+    !expectSensitivePlaceholders && authSecret !== "[Sensitive]";
+  const backupSecretObservable =
+    !expectSensitivePlaceholders && backupSecret !== "[Sensitive]";
+  const cronSecretObservable =
+    !expectSensitivePlaceholders && cronSecret !== "[Sensitive]";
   assert.ok(process.env.DATABASE_URL?.startsWith("postgres"));
   assert.ok(authSecret);
 
@@ -71,7 +76,7 @@ async function main() {
       authSecret: {
         configured: true,
         valueObservable: authSecretObservable,
-        platformSensitivePlaceholder: !authSecretObservable,
+        platformSensitivePlaceholder: expectSensitivePlaceholders || !authSecretObservable,
         encodedLength: authSecretObservable ? authSecret.length : null,
         meetsMinimum: authSecretObservable ? authSecret.length >= 32 : null
       },
