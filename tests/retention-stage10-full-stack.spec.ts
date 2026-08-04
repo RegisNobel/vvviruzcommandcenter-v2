@@ -45,9 +45,9 @@ function dates(start: string, end: string) {
   for (let current = new Date(`${start}T00:00:00.000Z`); current <= new Date(`${end}T00:00:00.000Z`); current = new Date(current.getTime() + 86_400_000)) result.push(current.toISOString().slice(0, 10));
   return result;
 }
-function audienceCsv() {
+function audienceCsv(extra = 0) {
   const offset = Date.now() % 997;
-  return Buffer.from(["date,listeners,monthly listeners,monthly active listeners,super listeners,streams,playlist adds,saves,followers", ...dates("2026-05-01", "2026-07-25").map((date, index) => `${date},${1000 + offset + index + (date >= "2026-06-12" && date <= "2026-06-20" ? 300 : 0)},${18000 + index},${7000 + index},1,${2300 + index},20,40,${5000 + index}`)].join("\n"));
+  return Buffer.from(["date,listeners,monthly listeners,monthly active listeners,super listeners,streams,playlist adds,saves,followers", ...dates("2026-05-01", "2026-07-25").map((date, index) => `${date},${1000 + extra + offset + index + (date >= "2026-06-12" && date <= "2026-06-20" ? 300 : 0)},${18000 + extra + index},${7000 + extra + index},1,${2300 + extra + index},20,40,${5000 + extra + index}`)].join("\n"));
 }
 function trackCsv() {
   const offset = Date.now() % 991;
@@ -68,7 +68,7 @@ async function authenticate(page: Page) {
   await expect(page).toHaveURL(/\/admin\/releases/);
 }
 
-async function importCsv(request: APIRequestContext, input: {name: string; bytes: Buffer; artist?: boolean; release?: boolean; period?: boolean; type: string; mappings?: "unmatched"}) {
+async function importCsv(request: APIRequestContext, input: {name: string; bytes: Buffer; artist?: boolean; release?: boolean; period?: boolean; type: string; mappings?: "unmatched"; idempotencySuffix?: string}) {
   const multipart: Record<string, string | {name: string; mimeType: string; buffer: Buffer}> = {file: {name: input.name, mimeType: "text/csv", buffer: input.bytes}};
   if (input.artist !== false) multipart.artist_profile_id = artistId;
   if (input.release) multipart.release_id = releaseId;
@@ -78,7 +78,7 @@ async function importCsv(request: APIRequestContext, input: {name: string; bytes
   const preview = await previewResponse.json();
   expect(preview.detectedType).toBe(input.type);
   const songMappings = input.mappings === "unmatched" ? preview.rowPreview.map((row: {originalRowNumber: number}) => ({originalRowNumber: row.originalRowNumber, leaveUnmatched: true, unmatchedReason: "USER_DEFERRED", unmatchedNote: "Stage 10 mapping action follows commit"})) : undefined;
-  const commitResponse = await request.post("/api/analytics/imports/commit", {data: {previewToken: preview.previewToken, clientIdempotencyKey: `stage10-${input.type.toLowerCase()}-${run}`, artistProfileId: artistId, releaseId: input.release ? releaseId : null, periodStart: input.period ? "2026-06-01" : null, periodEnd: input.period ? "2026-07-31" : null, acknowledgeWarnings: true, acknowledgeFilenameNotIdentity: input.release, acknowledgeTrackStreamsNotRetention: input.release, songMappings}});
+  const commitResponse = await request.post("/api/analytics/imports/commit", {data: {previewToken: preview.previewToken, clientIdempotencyKey: `stage10-${input.type.toLowerCase()}-${run}-${input.idempotencySuffix || "initial"}`, artistProfileId: artistId, releaseId: input.release ? releaseId : null, periodStart: input.period ? "2026-06-01" : null, periodEnd: input.period ? "2026-07-31" : null, acknowledgeWarnings: true, acknowledgeFilenameNotIdentity: input.release, acknowledgeTrackStreamsNotRetention: input.release, songMappings}});
   expect(commitResponse.status(), await commitResponse.text()).toBe(200);
   const committed = await commitResponse.json();
   importedIds.push(committed.importId);
@@ -173,6 +173,10 @@ test("real-route import, mapping, campaign, retention, dashboard, withdrawal, re
   const reprocess = await request.post(`/api/analytics/imports/${audienceId}/reprocess`);
   expect(reprocess.status(), await reprocess.text()).toBe(200);
   expect((await reprocess.json()).code).toBe("PREVIEW_READY");
+  const replacementAudienceId = await importCsv(request, {name: "artist-audience-replacement.csv", bytes: audienceCsv(5000), type: "ARTIST_AUDIENCE_TIMELINE", idempotencySuffix: "replacement"});
+  expect((await prisma.analyticsImport.findUniqueOrThrow({where: {id: replacementAudienceId}})).status).toBe("IMPORTED");
+  const replacementAnalysis = await request.get(`/api/analytics/retention/releases/${releaseId}?campaignId=${campaignId}`);
+  expect(replacementAnalysis.status(), await replacementAnalysis.text()).toBe(200);
 
   await prisma.analyticsImport.update({where: {id: trackId}, data: {rawFileExpiresAt: new Date(Date.now() - 1000), rawFileDeletedAt: null}});
   const cronSecret = process.env.CRON_SECRET || "stage10-playwright-cron-secret";
