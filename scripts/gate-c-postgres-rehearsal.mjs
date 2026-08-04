@@ -506,9 +506,9 @@ async function deploy() {
       }
       const trusted = await db.query('SELECT count(*)::int AS count FROM "AnalyticsImport"');
       assert.equal(trusted.rows[0].count, 0);
+      const ambiguity = await verifyCanonicalAmbiguity(db);
       await seedConstraintFixtures(db);
       const checks = await verifyCheckEnforcement(db);
-      const ambiguity = await verifyCanonicalAmbiguity(db);
       const canonical = (await db.query(`SELECT id,slug,"displayName","workflowStatus","publishedAt","publishedVersionId" FROM "ArtistProfile" WHERE id='artist-profile-vvviruz'`)).rows;
       assert.deepEqual(canonical, [{id: "artist-profile-vvviruz", slug: "vvviruz", displayName: "vvviruz", workflowStatus: "DRAFT", publishedAt: null, publishedVersionId: null}]);
       state.deployment = {

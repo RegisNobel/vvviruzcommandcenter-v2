@@ -1,4 +1,4 @@
--- REGENERATED GATE C REHEARSAL PREVIEW: 2026-08-04T21:15:58.904Z
+-- REGENERATED GATE C REHEARSAL PREVIEW: 2026-08-04T21:17:09.263Z
 -- Baseline commit: 75408ca4be61b1011e01b8b5c5d19690939a5b3c
 -- SHA-256 (SQL body): 037ca162539965adf4a3a83f11ef00b5eba7f0af0ebf055db18e15e7b95b6015
 -- Classification: 13 additive tables; only artistLinkId FK and empty column removal are destructive.
