@@ -64,6 +64,7 @@ const env = {
   PRIVATE_STORAGE_MAX_OBJECT_BYTES: "536870912",
   ANALYTICS_RAW_RETENTION_DAYS: "30"
 };
+const suitesOnly = process.argv.includes("--postgres-suites");
 assert.ok(env.PRIVATE_BLOB_READ_WRITE_TOKEN, "Non-production private Blob credential is required.");
 assert.notEqual(env.PRIVATE_BLOB_READ_WRITE_TOKEN, env.BLOB_READ_WRITE_TOKEN, "Public and private Blob credentials must differ.");
 
@@ -80,20 +81,26 @@ let started = false;
 try {
   await embedded.start();
   started = true;
-  const buildOutput = run("Vercel production build", ["run", "build:vercel"], env, 600_000);
-  assert.match(buildOutput, /Compiled successfully|Creating an optimized production build/);
-  const browserOutput = run("Gate C PostgreSQL full-stack Playwright", ["exec", "--", "playwright", "test", "tests/retention-stage10-full-stack.spec.ts", "--project=chromium"], env, 600_000);
-  assert.match(browserOutput, /1 passed/);
-  state.fullStack = {
-    verifiedAt: new Date().toISOString(),
-    realHttp: true,
-    realPasswordLogin: true,
-    realTotpChallenge: true,
-    privateNonProductionBlob: true,
-    playwright: "passed"
-  };
+  if (suitesOnly) {
+    const suites = ["test:release-mapping", "test:campaign-timeline", "test:retention-data", "analytics:profile-dashboard"];
+    for (const name of suites) run(`PostgreSQL ${name}`, ["run", name], {...env, ASSET_STORAGE_DRIVER: "local"}, 600_000);
+    state.postgresSuites = {verifiedAt: new Date().toISOString(), suites, result: "passed"};
+  } else {
+    const buildOutput = run("Vercel production build", ["run", "build:vercel"], env, 600_000);
+    assert.match(buildOutput, /Compiled successfully|Creating an optimized production build/);
+    const browserOutput = run("Gate C PostgreSQL full-stack Playwright", ["exec", "--", "playwright", "test", "tests/retention-stage10-full-stack.spec.ts", "--project=chromium"], env, 600_000);
+    assert.match(browserOutput, /1 passed/);
+    state.fullStack = {
+      verifiedAt: new Date().toISOString(),
+      realHttp: true,
+      realPasswordLogin: true,
+      realTotpChallenge: true,
+      privateNonProductionBlob: true,
+      playwright: "passed"
+    };
+  }
   await fs.writeFile(statePath, JSON.stringify(state, null, 2));
-  console.log(JSON.stringify({mode: "full-stack", ...state.fullStack}, null, 2));
+  console.log(JSON.stringify(suitesOnly ? {mode: "postgres-suites", ...state.postgresSuites} : {mode: "full-stack", ...state.fullStack}, null, 2));
 } finally {
   if (started) await embedded.stop().catch(() => undefined);
 }
