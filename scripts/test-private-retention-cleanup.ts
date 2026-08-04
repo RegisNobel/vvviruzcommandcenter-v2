@@ -91,10 +91,12 @@ async function main() {
   }});
 
   const activeKeys = new Set([previewActive, rawActive, rawYoungOrphan]);
-  const list = async (kind: "analytics-preview" | "analytics-raw") =>
-    (await listStoredAssetReferences(kind)).map((item) =>
-      activeKeys.has(item.storedPath) ? {...item, updatedAt: now} : item
-    );
+  const list = async (kind: "analytics-preview" | "analytics-raw") => {
+    const ownedKeys = new Set(created.filter((item) => item.kind === kind).map((item) => item.key));
+    return (await listStoredAssetReferences(kind))
+      .filter((item) => ownedKeys.has(item.storedPath))
+      .map((item) => activeKeys.has(item.storedPath) ? {...item, updatedAt: now} : item);
+  };
   let failRetryOnce = true;
   const remove = async (kind: StoredAssetKind, key: string) => {
     assert.ok(kind === "analytics-preview" || kind === "analytics-raw");
