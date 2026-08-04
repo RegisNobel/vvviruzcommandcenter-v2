@@ -595,6 +595,11 @@ async function finalize() {
     assert.deepEqual(restoredFingerprint, beforeFingerprint);
 
     const storage = await import("../lib/server/private-object-storage.ts");
+    const backupObjects = await storage.listPrivateObjects("database-backups");
+    if (!backupObjects.some((object) => object.storedPath === state.startingBackup.key)) {
+      const startingBytes = await fs.readFile(state.startingBackup.snapshotPath);
+      state.startingBackup = {...await uploadEncryptedSnapshot(startingBytes, "gate-c-starting-state-refresh"), snapshotPath: state.startingBackup.snapshotPath, restoreVerified: true};
+    }
     const startingEncrypted = await storage.readPrivateObject("database-backups", state.startingBackup.key, {expectedSha256: state.startingBackup.checksumSha256});
     const secret = process.env.BACKUP_ENCRYPTION_SECRET?.trim();
     assert.ok(secret);
