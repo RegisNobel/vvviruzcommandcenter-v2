@@ -6,6 +6,7 @@ import path from "node:path";
 const root = process.cwd();
 
 async function loadEnvFile(fileName: string) {
+  const shouldOverride = Boolean(process.env.GATE_A3_ENV_FILE);
   let raw: string;
   try { raw = await fs.readFile(path.resolve(root, fileName), "utf8"); } catch { return; }
   for (const line of raw.split(/\r?\n/)) {
@@ -16,7 +17,7 @@ async function loadEnvFile(fileName: string) {
     const key = trimmed.slice(0, separator).trim();
     let value = trimmed.slice(separator + 1).trim();
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-    if (process.env[key] === undefined) process.env[key] = value;
+    if (shouldOverride || process.env[key] === undefined) process.env[key] = value;
   }
 }
 
@@ -40,6 +41,9 @@ async function main() {
   const authSecret = process.env.AUTH_SECRET?.trim() || "";
   const backupSecret = process.env.BACKUP_ENCRYPTION_SECRET?.trim() || "";
   const cronSecret = process.env.CRON_SECRET?.trim() || "";
+  const authSecretObservable = authSecret !== "[Sensitive]";
+  const backupSecretObservable = backupSecret !== "[Sensitive]";
+  const cronSecretObservable = cronSecret !== "[Sensitive]";
   assert.ok(process.env.DATABASE_URL?.startsWith("postgres"));
   assert.ok(authSecret);
 
@@ -52,31 +56,46 @@ async function main() {
     const admin = admins[0];
     assert.equal(admin.totpMethod, "totp");
     assert.ok(admin.totpEncryptedSecret);
-    let totpDecryptable = false;
-    try {
-      const decrypted = decryptTotpSecret(admin.totpEncryptedSecret, authSecret);
-      totpDecryptable = /^[A-Z2-7]+=*$/i.test(decrypted) && decrypted.replace(/=+$/, "").length >= 16;
-    } catch {
-      totpDecryptable = false;
+    let totpDecryptable: boolean | null = null;
+    if (authSecretObservable) {
+      try {
+        const decrypted = decryptTotpSecret(admin.totpEncryptedSecret, authSecret);
+        totpDecryptable = /^[A-Z2-7]+=*$/i.test(decrypted) && decrypted.replace(/=+$/, "").length >= 16;
+      } catch {
+        totpDecryptable = false;
+      }
     }
     const sessionCount = await prisma.authSession.count();
     console.log(JSON.stringify({
       environment: {project: "vvviruzcommandcenter-v2", target: "production"},
-      authSecret: {configured: true, encodedLength: authSecret.length, meetsMinimum: authSecret.length >= 32},
+      authSecret: {
+        configured: true,
+        valueObservable: authSecretObservable,
+        platformSensitivePlaceholder: !authSecretObservable,
+        encodedLength: authSecretObservable ? authSecret.length : null,
+        meetsMinimum: authSecretObservable ? authSecret.length >= 32 : null
+      },
       separation: {
         backupEncryptionSecretConfigured: Boolean(backupSecret),
-        backupEncryptionSecretMeetsRecommendedLength: backupSecret.length >= 32,
+        backupEncryptionSecretValueObservable: backupSecretObservable,
+        backupEncryptionSecretMeetsRecommendedLength: backupSecretObservable
+          ? backupSecret.length >= 32
+          : null,
         cronSecretConfigured: Boolean(cronSecret),
-        cronSecretMeetsRecommendedLength: cronSecret.length >= 24,
-        backupEncryptionSecretDistinct: Boolean(backupSecret) && backupSecret !== authSecret,
-        cronSecretDistinct: Boolean(cronSecret) && cronSecret !== authSecret
+        cronSecretValueObservable: cronSecretObservable,
+        cronSecretMeetsRecommendedLength: cronSecretObservable ? cronSecret.length >= 24 : null,
+        backupEncryptionSecretDistinct:
+          authSecretObservable && backupSecretObservable ? backupSecret !== authSecret : null,
+        cronSecretDistinct:
+          authSecretObservable && cronSecretObservable ? cronSecret !== authSecret : null
       },
       administrator: {
         count: admins.length,
         totpMethod: admin.totpMethod,
         totpEnrolled: Boolean(admin.totpEnrolledAt),
         encryptedTotpDecryptable: totpDecryptable,
-        requiresControlledReenrollment: !totpDecryptable
+        requiresControlledReenrollment:
+          totpDecryptable === null ? null : !totpDecryptable
       },
       sessions: {currentCount: sessionCount, rotationInvalidatesAll: true},
       expectedInvalidation: {
