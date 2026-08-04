@@ -82,7 +82,7 @@ try {
   started = true;
   const buildOutput = run("Vercel production build", ["run", "build:vercel"], env, 600_000);
   assert.match(buildOutput, /Compiled successfully|Creating an optimized production build/);
-  const browserOutput = run("Gate C PostgreSQL full-stack Playwright", ["exec", "playwright", "test", "tests/retention-stage10-full-stack.spec.ts", "--project=chromium"], env, 600_000);
+  const browserOutput = run("Gate C PostgreSQL full-stack Playwright", ["exec", "--", "playwright", "test", "tests/retention-stage10-full-stack.spec.ts", "--project=chromium"], env, 600_000);
   assert.match(browserOutput, /1 passed/);
   state.fullStack = {
     verifiedAt: new Date().toISOString(),

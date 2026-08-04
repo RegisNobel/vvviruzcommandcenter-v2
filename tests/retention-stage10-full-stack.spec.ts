@@ -175,10 +175,11 @@ test("real-route import, mapping, campaign, retention, dashboard, withdrawal, re
   expect((await reprocess.json()).code).toBe("PREVIEW_READY");
 
   await prisma.analyticsImport.update({where: {id: trackId}, data: {rawFileExpiresAt: new Date(Date.now() - 1000), rawFileDeletedAt: null}});
-  const dryRun = await request.get("/api/cron/analytics-maintenance?dryRun=1", {headers: {authorization: "Bearer stage10-playwright-cron-secret"}});
+  const cronSecret = process.env.CRON_SECRET || "stage10-playwright-cron-secret";
+  const dryRun = await request.get("/api/cron/analytics-maintenance?dryRun=1", {headers: {authorization: `Bearer ${cronSecret}`}});
   expect(dryRun.status(), await dryRun.text()).toBe(200);
   expect((await prisma.analyticsImport.findUniqueOrThrow({where: {id: trackId}})).rawFileDeletedAt).toBeNull();
-  const applied = await request.get("/api/cron/analytics-maintenance", {headers: {authorization: "Bearer stage10-playwright-cron-secret"}});
+  const applied = await request.get("/api/cron/analytics-maintenance", {headers: {authorization: `Bearer ${cronSecret}`}});
   expect([200, 207]).toContain(applied.status());
   expect((await prisma.analyticsImport.findUniqueOrThrow({where: {id: trackId}})).rawFileDeletedAt).not.toBeNull();
   expect(await prisma.trackMetricObservation.count({where: {importId: trackId}})).toBeGreaterThan(0);
