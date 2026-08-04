@@ -8,7 +8,7 @@ import {expect, test, type APIRequestContext, type Page} from "@playwright/test"
 const run = randomUUID();
 const artistId = "artist-profile-vvviruz";
 const releaseId = `stage10-e2e-release-${run}`;
-const adminId = "gate-c-admin";
+const adminId = "admin-owner";
 const totpSecret = "JBSWY3DPEHPK3PXP";
 const importedIds: string[] = [];
 let campaignId = "";
@@ -121,6 +121,7 @@ test.beforeAll(async () => {
   const secret = process.env.AUTH_SECRET || envFile(".env.production.local").AUTH_SECRET || envFile(".env.local").AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is required.");
   const username = process.env.ADMIN_USERNAME || "gate-c-admin";
+  await prisma.adminUser.deleteMany({where: {username, id: {not: adminId}}});
   await prisma.adminUser.upsert({
     where: {id: adminId},
     create: {id: adminId, username, totpMethod: "totp", totpEncryptedSecret: encryptTotpSecret(totpSecret, secret), totpEnrolledAt: new Date(), createdAt: new Date(), updatedAt: new Date()},

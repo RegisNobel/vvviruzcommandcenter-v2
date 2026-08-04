@@ -169,7 +169,7 @@ function pushSchema(state, database, schemaPath, acceptDataLoss = false) {
 async function seedStartingFixtures(db) {
   await db.query(`
     INSERT INTO "AdminUser" (id, username, "createdAt", "updatedAt")
-    VALUES ('gate-c-admin', 'gate-c-admin', now(), now());
+    VALUES ('admin-owner', 'gate-c-admin', now(), now());
     INSERT INTO "ArtistProfile" (id, slug, "displayName", "draftUpdatedAt", "createdAt", "updatedAt")
     VALUES ('gate-c-existing-artist', 'gate-c-existing-artist', 'Gate C Existing Artist', now(), now(), now());
     INSERT INTO "Release" (id, title, slug, "isPublished", "createdOn", "updatedOn")
