@@ -370,7 +370,7 @@ async function seedConstraintFixtures(db) {
     VALUES ('gate-c-check-track-metric', 'gate-c-check-import', 'gate-c-retention-release', '2026-06-01', 1, now());
     INSERT INTO "SongPeriodSnapshot" (id, "importId", "releaseId", "periodStart", "periodEnd", "exportedTitle", "exportedReleaseDate", listeners, streams, saves, "createdAt", "mappingRowId")
     VALUES ('gate-c-check-song', 'gate-c-check-import', 'gate-c-retention-release', '2026-06-01', '2026-06-30', 'Gate C', '2026-06-10', 1,1,1,now(),'gate-c-check-row');
-    INSERT INTO "PlaylistPeriodSnapshot" (id, "importId", "playlistTitle", "playlistOwner", "periodStart", "periodEnd", listeners, streams, "createdAt")
+    INSERT INTO "PlaylistPeriodSnapshot" (id, "importId", "playlistTitle", "playlistAuthor", "periodStart", "periodEnd", listeners, streams, "createdAt")
     VALUES ('gate-c-check-playlist', 'gate-c-check-import', 'Gate C Playlist', 'Gate C', '2026-06-01', '2026-06-30', 1,1,now());
     INSERT INTO "PromotionCampaign" (id, "artistProfileId", "releaseId", platform, name, objective, status, "createdAt", "updatedAt")
     VALUES ('gate-c-check-campaign', 'artist-profile-vvviruz', 'gate-c-retention-release', 'META', 'Gate C Campaign', 'STREAMS', 'DRAFT', now(), now());
@@ -542,8 +542,17 @@ async function status() {
   }, null, 2));
 }
 
+async function cleanupKey() {
+  const key = process.argv[3];
+  assert.match(key || "", /^database-backups\/[0-9a-f-]{36}\.json\.gz\.enc$/i);
+  const storage = await import("../lib/server/private-object-storage.ts");
+  await storage.deletePrivateObject("database-backups", key);
+  console.log(JSON.stringify({mode: "cleanup-key", removed: true}));
+}
+
 const mode = process.argv[2];
 if (mode === "prepare") await prepare();
 else if (mode === "deploy") await deploy();
 else if (mode === "status") await status();
+else if (mode === "cleanup-key") await cleanupKey();
 else throw new Error("Use prepare, deploy, or status.");
