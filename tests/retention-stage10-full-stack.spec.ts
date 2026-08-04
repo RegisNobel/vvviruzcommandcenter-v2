@@ -12,6 +12,7 @@ const adminId = "admin-owner";
 const totpSecret = "JBSWY3DPEHPK3PXP";
 const importedIds: string[] = [];
 let campaignId = "";
+let browserPerformance: Record<string, number> = {};
 let prisma: import("@prisma/client").PrismaClient;
 
 function envFile(file: string) {
@@ -132,7 +133,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (process.env.GATE_C_RETAIN_FIXTURES === "1") {
     const output = path.join(process.cwd(), ".codex-temp", "gate-c-rehearsal", "workflow.json");
-    await fs.writeFile(output, JSON.stringify({run, artistId, releaseId, campaignId, importedIds}, null, 2));
+    await fs.writeFile(output, JSON.stringify({run, artistId, releaseId, campaignId, importedIds, browserPerformance}, null, 2));
   } else {
     await cleanup();
   }
@@ -161,10 +162,16 @@ test("real-route import, mapping, campaign, retention, dashboard, withdrawal, re
   const analysisResponse = await request.get(`/api/analytics/retention/releases/${releaseId}?campaignId=${campaignId}`);
   expect(analysisResponse.status(), await analysisResponse.text()).toBe(200);
 
+  const browserStartedAt = Date.now();
   await page.goto(`/admin/retention-lab?releaseId=${releaseId}&campaignId=${campaignId}&range=180`);
   await expect(page.getByRole("heading", {name: "Audience Retention Lab"})).toBeVisible();
   await expect(page.getByTestId("retention-timeline-chart")).toBeVisible();
   await expect(page.getByText(/Inspect 180 timeline rows/)).toBeAttached();
+  const navigation = await page.evaluate(() => {
+    const entry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    return {domContentLoadedMs: entry?.domContentLoadedEventEnd ?? 0, loadEventMs: entry?.loadEventEnd ?? 0, responseEndMs: entry?.responseEnd ?? 0};
+  });
+  browserPerformance = {...navigation, chartAndAccessibleTableReadyMs: Date.now() - browserStartedAt};
 
   const withdrawal = await request.post(`/api/analytics/imports/${audienceId}/withdraw`, {data: {reason: "Stage 10 current-resolution verification"}});
   expect(withdrawal.status(), await withdrawal.text()).toBe(200);

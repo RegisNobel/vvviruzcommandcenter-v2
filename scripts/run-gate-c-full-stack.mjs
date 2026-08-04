@@ -83,8 +83,9 @@ try {
   started = true;
   if (suitesOnly) {
     const suites = ["test:release-mapping", "test:campaign-timeline", "test:retention-data", "analytics:profile-dashboard"];
-    for (const name of suites) run(`PostgreSQL ${name}`, ["run", name], {...env, ASSET_STORAGE_DRIVER: "local"}, 600_000);
-    state.postgresSuites = {verifiedAt: new Date().toISOString(), suites, result: "passed"};
+    const performancePath = path.join(rehearsalRoot, "postgres-performance.json");
+    for (const name of suites) run(`PostgreSQL ${name}`, ["run", name], {...env, ASSET_STORAGE_DRIVER: "local", ...(name === "analytics:profile-dashboard" ? {RETENTION_PROFILE_OUTPUT_PATH: performancePath} : {})}, 600_000);
+    state.postgresSuites = {verifiedAt: new Date().toISOString(), suites, result: "passed", performance: JSON.parse(await fs.readFile(performancePath, "utf8"))};
   } else {
     const buildOutput = run("Vercel production build", ["run", "build:vercel"], env, 600_000);
     assert.match(buildOutput, /Compiled successfully|Creating an optimized production build/);
@@ -96,7 +97,8 @@ try {
       realPasswordLogin: true,
       realTotpChallenge: true,
       privateNonProductionBlob: true,
-      playwright: "passed"
+      playwright: "passed",
+      browserPerformance: JSON.parse(await fs.readFile(path.join(rehearsalRoot, "workflow.json"), "utf8")).browserPerformance
     };
   }
   await fs.writeFile(statePath, JSON.stringify(state, null, 2));

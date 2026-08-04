@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {createHash, randomUUID} from "node:crypto";
+import fs from "node:fs/promises";
 
 import {prisma} from "../lib/db/prisma";
 import {readRetentionDashboard, type RetentionDashboardProfile} from "../lib/analytics/retention-dashboard";
@@ -128,7 +129,9 @@ async function main() {
       ranges.push(measured);
       console.log(JSON.stringify({kind: "range", measured}));
     }
-    console.log(JSON.stringify({measurementBoundary: "server adapter only; excludes HTTP, browser navigation, React hydration, chart paint, and accessible DOM paint", comparisons, ranges}, null, 2));
+    const report = {measurementBoundary: "server adapter only; excludes HTTP, browser navigation, React hydration, chart paint, and accessible DOM paint", comparisons, ranges};
+    if (process.env.RETENTION_PROFILE_OUTPUT_PATH) await fs.writeFile(process.env.RETENTION_PROFILE_OUTPUT_PATH, JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
   } finally {
     await cleanup();
     await prisma.$disconnect();
