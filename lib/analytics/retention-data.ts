@@ -6,6 +6,7 @@ import {AdminError} from "@/lib/server/admin-error-response";
 
 import {addDays, datesInclusive} from "./retention-calculations";
 import {calculateRetentionAnalysis} from "./retention-engine";
+import {calculateTrackPersistence} from "./track-persistence";
 import type {
   AudienceObservationInput,
   ImportProvenance,
@@ -13,7 +14,8 @@ import type {
   RetentionAnalysisResult,
   RetentionCalculationInput,
   RetentionOverlap,
-  TrackObservationInput
+  TrackObservationInput,
+  TrackPersistenceResult
 } from "./retention-types";
 
 type CampaignChoice = {
@@ -40,6 +42,12 @@ export type ReleaseRetentionAnalysisContext = {
   }>;
 };
 
+export type ReleaseTrackPersistenceContext = {
+  release: {id: string; title: string; releaseDate: string; artistId: string};
+  trackPersistence: TrackPersistenceResult;
+  trackObservations: TrackObservationInput[];
+};
+
 export class RetentionCampaignRequiredError extends AdminError {
   readonly campaigns: CampaignChoice[];
 
@@ -57,6 +65,47 @@ export class RetentionCampaignRequiredError extends AdminError {
 
 function dateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
+}
+
+async function readRetentionRelease(releaseId: string, now: Date) {
+  const release = await prisma.release.findUnique({
+    where: {id: releaseId},
+    select: {id: true, title: true, releaseDate: true, primaryArtistProfileId: true, catalogScope: true}
+  });
+  if (!release) throw new AdminError("Release was not found.", {code: "RETENTION_RELEASE_NOT_FOUND", status: 404});
+  const artistId = release.primaryArtistProfileId ?? (release.catalogScope === "VVVIRUZ" ? CANONICAL_ANALYTICS_ARTIST_ID : null);
+  if (!artistId) throw new AdminError("Release ownership cannot be resolved to an analytics artist.", {code: "RETENTION_DATA_UNAVAILABLE", status: 409});
+  if (!release.releaseDate) throw new AdminError("A confirmed release date is required for retention windows.", {code: "RETENTION_DATA_UNAVAILABLE", status: 409});
+  const releaseDate = dateOnly(release.releaseDate);
+  if (releaseDate > dateOnly(now)) throw new AdminError("Retention cannot be calculated before the release date.", {code: "RETENTION_DATA_UNAVAILABLE", status: 409});
+  return {...release, artistId, releaseDate};
+}
+
+export async function readReleaseTrackPersistenceContext(
+  releaseId: string,
+  options: {now?: Date; currentDataset?: Awaited<ReturnType<typeof readCurrentAnalyticsDataset>>} = {}
+): Promise<ReleaseTrackPersistenceContext> {
+  const now = options.now ?? new Date();
+  const release = await readRetentionRelease(releaseId, now);
+  const dataset = options.currentDataset ?? await readCurrentAnalyticsDataset(release.artistId);
+  const importIds = dataset.imports.map(({id}) => id);
+  const rawCurrentTrackRows = await prisma.trackMetricObservation.findMany({
+    where: {importId: {in: importIds}, releaseId},
+    select: {importId: true, spotifyTrackId: true}
+  });
+  const trackObservations = dataset.trackMetricObservations
+    .filter((row) => row.releaseId === releaseId)
+    .map((row) => ({date: dateOnly(row.metricDate), streams: row.streams, importId: row.importId, spotifyTrackId: row.spotifyTrackId}))
+    .sort((left, right) => left.date.localeCompare(right.date));
+  const trackIds = new Set(rawCurrentTrackRows.flatMap((row) => row.spotifyTrackId ? [row.spotifyTrackId] : []));
+  const trackImportIds = new Set(rawCurrentTrackRows.map((row) => row.importId));
+  const conflictingTrackTimelines = trackIds.size > 1;
+  const incompleteIdentity = rawCurrentTrackRows.some((row) => !row.spotifyTrackId) && (trackImportIds.size > 1 || trackIds.size > 0);
+  return {
+    release: {id: release.id, title: release.title, releaseDate: release.releaseDate, artistId: release.artistId},
+    trackPersistence: calculateTrackPersistence(trackObservations, release.releaseDate, {conflictingTimelines: conflictingTrackTimelines, incompleteIdentity}),
+    trackObservations
+  };
 }
 
 function safeObject(value: string): Record<string, unknown> {
@@ -144,44 +193,9 @@ export async function readReleaseRetentionAnalysisContext(
   } = {}
 ) {
   const now = options.now ?? new Date();
-  const release = await prisma.release.findUnique({
-    where: {id: releaseId},
-    select: {
-      id: true,
-      title: true,
-      releaseDate: true,
-      primaryArtistProfileId: true,
-      catalogScope: true
-    }
-  });
-  if (!release) {
-    throw new AdminError("Release was not found.", {
-      code: "RETENTION_RELEASE_NOT_FOUND",
-      status: 404
-    });
-  }
-  const artistId =
-    release.primaryArtistProfileId ??
-    (release.catalogScope === "VVVIRUZ" ? CANONICAL_ANALYTICS_ARTIST_ID : null);
-  if (!artistId) {
-    throw new AdminError("Release ownership cannot be resolved to an analytics artist.", {
-      code: "RETENTION_DATA_UNAVAILABLE",
-      status: 409
-    });
-  }
-  if (!release.releaseDate) {
-    throw new AdminError("A confirmed release date is required for retention windows.", {
-      code: "RETENTION_DATA_UNAVAILABLE",
-      status: 409
-    });
-  }
-  const releaseDate = dateOnly(release.releaseDate);
-  if (releaseDate > dateOnly(now)) {
-    throw new AdminError("Retention cannot be calculated before the release date.", {
-      code: "RETENTION_DATA_UNAVAILABLE",
-      status: 409
-    });
-  }
+  const release = await readRetentionRelease(releaseId, now);
+  const artistId = release.artistId;
+  const releaseDate = release.releaseDate;
 
   const availableCampaigns = await prisma.promotionCampaign.findMany({
     where: {releaseId, status: {not: "ARCHIVED"}},

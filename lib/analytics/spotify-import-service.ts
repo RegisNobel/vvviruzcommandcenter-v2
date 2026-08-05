@@ -10,6 +10,7 @@ import {checksumSpotifyPreviewResult, createSpotifyPreviewToken, readSpotifyPrev
 import {hashRawSpotifyFile, parseSpotifyDateOnly, sanitizeSpotifyDisplayValue} from "./spotify-export-validation";
 import {buildConfirmedMappingScope, buildReleaseAliasScope, normalizeMappingTitle} from "./release-matching";
 import {suggestReleaseMapping} from "./release-matching";
+import {resolveFinalReviewCounts} from "./import-center-ui";
 import {prisma} from "@/lib/db/prisma";
 import {AdminError} from "@/lib/server/admin-error-response";
 import {deleteAsset, getPrivateAssetStorageDriver, listStoredAssetReferences, readAssetBuffer, storeAsset} from "@/lib/server/asset-storage";
@@ -290,7 +291,14 @@ export async function createSpotifyImportPreview(input: SpotifyPreviewInput) {
     dateRange: result.dateRange,
     previewPeriod: result.previewPeriod,
     requiresPeriodConfirmation: result.requiresPeriodConfirmation,
-    counts: {accepted: result.acceptedCount, warnings: result.warningCount, rejected: result.rejectedCount, unmatched: result.unmatchedCount},
+    counts: {
+      total: result.rowCount,
+      structurallyValid: result.rowCount - result.rejectedCount,
+      accepted: result.acceptedCount,
+      warnings: result.warningCount,
+      rejected: result.rejectedCount,
+      unmatched: result.unmatchedCount
+    },
     rowPreview,
     rowPreviewTruncated: result.rows.length > SPOTIFY_IMPORT_ROW_PREVIEW_LIMIT,
     blockingErrors: result.blockingErrors,
@@ -532,6 +540,14 @@ export async function commitSpotifyImport(input: SpotifyCommitInput) {
   const periodFromParser = parserPeriod(result);
   const mappedSongCount = songEvidence.filter(({decision}) => decision === "MAPPED").length;
   const unmatchedSongCount = songEvidence.filter(({decision}) => decision === "UNMATCHED").length;
+  const resolvedReviewCounts = resolveFinalReviewCounts(result.detectedType, {
+    total: result.rowCount,
+    structurallyValid: result.rowCount - result.rejectedCount,
+    accepted: result.acceptedCount,
+    warnings: result.warningCount,
+    rejected: result.rejectedCount,
+    unmatched: result.unmatchedCount
+  }, {releaseConfirmed: Boolean(releaseId), unmatchedSongRows: unmatchedSongCount});
   try {
     await prisma.$transaction(async (tx) => {
       await createAnalyticsImport({
@@ -553,9 +569,9 @@ export async function commitSpotifyImport(input: SpotifyCommitInput) {
         userConfirmedPeriodEnd: period ? dateOnlyToDate(period.periodEnd) : null,
         periodDatesUserConfirmed: Boolean(period),
         rowCount: result.rowCount,
-        acceptedRowCount: result.detectedType === "SONGS_PERIOD" ? mappedSongCount : result.rowCount,
+        acceptedRowCount: result.detectedType === "SONGS_PERIOD" ? mappedSongCount : result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.accepted : result.rowCount,
         rejectedRowCount: 0,
-        unmatchedRowCount: result.detectedType === "SONGS_PERIOD" ? unmatchedSongCount : 0,
+        unmatchedRowCount: result.detectedType === "SONGS_PERIOD" ? unmatchedSongCount : result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.unmatched : 0,
         warningCount: result.rows.filter(({warnings}) => warnings.length > 0).length,
         validationSummary: JSON.stringify({...parserSummary(result), reconciliation}),
         metadata: JSON.stringify({previewId: token.previewId, previewResultChecksum: token.parsedResultChecksum, reprocessSourceImportId: token.reprocessSourceImportId, confirmations: {acknowledgeWarnings: Boolean(input.acknowledgeWarnings), acknowledgeFilenameNotIdentity: Boolean(input.acknowledgeFilenameNotIdentity), acknowledgeTrackStreamsNotRetention: Boolean(input.acknowledgeTrackStreamsNotRetention)}, temporaryMappings: songEvidence, mappingPolicy: "NORMALIZED_ROWS_WITH_SCOPED_ALIAS_REUSE"}),

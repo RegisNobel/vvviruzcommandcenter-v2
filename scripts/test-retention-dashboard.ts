@@ -8,7 +8,16 @@ import {CANONICAL_ANALYTICS_ARTIST_ID} from "../lib/repositories/analytics-impor
 
 const run = randomUUID();
 const now = new Date("2042-01-01T00:00:00.000Z");
-const importIds = [`stage8-audience-${run}`, `stage8-track-${run}`, `stage8-mapping-${run}`, `stage8-audience-replacement-${run}`];
+const importIds = [
+  `stage8-audience-${run}`,
+  `stage8-track-${run}`,
+  `stage8-mapping-${run}`,
+  `stage8-audience-replacement-${run}`,
+  `stage8-no-campaign-track-${run}`,
+  `stage8-partial-track-${run}`,
+  `stage8-conflict-track-a-${run}`,
+  `stage8-conflict-track-b-${run}`
+];
 const releases = {
   valid: `stage8-valid-${run}`,
   open: `stage8-open-${run}`,
@@ -133,7 +142,7 @@ async function seed() {
     createRelease(releases.missing, "Stage 8 Missing", "2040-07-01"),
     createRelease(releases.conflict, "Stage 8 Mapping Conflict", "2040-09-01"),
     createRelease(releases.conflictOther, "Stage 8 Mapping Other", "2040-11-01"),
-    createRelease(releases.noCampaign, "Stage 8 No Campaign", "2040-10-01")
+    createRelease(releases.noCampaign, "Mahoraga regression", "2026-06-10")
   ]);
   await Promise.all([
     createCampaign(campaigns.valid, releases.valid, "Complete campaign", "2040-01-10", "2040-01-20"),
@@ -147,6 +156,10 @@ async function seed() {
   await createImport(importIds[0], "ARTIST_AUDIENCE_TIMELINE");
   await createImport(importIds[1], "TRACK_STREAM_TIMELINE");
   await createImport(importIds[2], "SONGS_PERIOD");
+  await createImport(importIds[4], "TRACK_STREAM_TIMELINE");
+  await createImport(importIds[5], "TRACK_STREAM_TIMELINE");
+  await createImport(importIds[6], "TRACK_STREAM_TIMELINE");
+  await createImport(importIds[7], "TRACK_STREAM_TIMELINE");
   const missingDate = "2040-07-12";
   const audienceDates = datesInclusive("2039-12-01", "2041-12-31").filter((date) => date !== missingDate);
   await prisma.artistMetricObservation.createMany({
@@ -176,6 +189,26 @@ async function seed() {
       streams: Math.max(100, 2000 - index * 10),
       createdAt: now
     }))
+  });
+  const noCampaignDates = datesInclusive("2026-06-10", "2026-08-01");
+  await prisma.trackMetricObservation.createMany({
+    data: noCampaignDates.map((date, index) => {
+      let streams = 200;
+      if (date >= "2026-06-10" && date <= "2026-06-16") streams = date === "2026-06-16" ? 140 : 138;
+      if (date >= "2026-06-24" && date <= "2026-07-08") streams = date === "2026-07-08" ? 328 : 317;
+      if (date >= "2026-07-26" && date <= "2026-08-01") streams = date === "2026-08-01" ? 341 : 340;
+      if (date === "2026-07-17") streams = 582;
+      return {id: `stage8-no-campaign-track-${run}-${index}`, importId: importIds[4], releaseId: releases.noCampaign, spotifyTrackId: null, metricDate: day(date), streams, createdAt: now};
+    })
+  });
+  await prisma.trackMetricObservation.create({
+    data: {id: `stage8-partial-track-${run}`, importId: importIds[5], releaseId: releases.missing, spotifyTrackId: "stage8-partial", metricDate: day("2040-07-01"), streams: 50, createdAt: now}
+  });
+  await prisma.trackMetricObservation.createMany({
+    data: [
+      {id: `stage8-conflict-track-a-${run}`, importId: importIds[6], releaseId: releases.conflict, spotifyTrackId: "stage8-conflict-a", metricDate: day("2040-09-01"), streams: 100, createdAt: now},
+      {id: `stage8-conflict-track-b-${run}`, importId: importIds[7], releaseId: releases.conflict, spotifyTrackId: "stage8-conflict-b", metricDate: day("2040-09-02"), streams: 120, createdAt: now}
+    ]
   });
   await prisma.analyticsImportRow.createMany({
     data: [
@@ -244,6 +277,14 @@ async function main() {
     await seed();
     const noCampaign = await readRetentionDashboard({releaseId: releases.noCampaign}, {now, includeComparison: false});
     assert.equal(noCampaign.selectionState, "NO_CAMPAIGN");
+    assert.equal(noCampaign.analysis, null, "audience analysis remains campaign-dependent");
+    assert.equal(noCampaign.trackPersistence?.state, "AVAILABLE", "track persistence resolves without a campaign");
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-launch")?.value?.toFixed(2), "138.29");
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-days-14-28")?.value?.toFixed(2), "317.73");
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-latest")?.value?.toFixed(2), "340.14");
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-peak")?.value, 582);
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-persistence")?.value?.toFixed(2), "229.77");
+    assert.equal(noCampaign.trackPersistence?.metrics.find((metric) => metric.id === "track-latest-launch")?.value?.toFixed(2), "245.97");
     assert.ok(noCampaign.currentMetrics.every((metric) => metric.metricDate === "2041-12-31"));
     assert.equal(JSON.stringify(noCampaign).includes(`private/${importIds[0]}.csv`), false, "storage key stays server-private");
 
@@ -286,6 +327,13 @@ async function main() {
     assert.equal(overlap.analysis?.analysis.postCampaignFloor.status, "EXCLUDED");
     assert.match(overlap.analysis?.interpretation.detail ?? "", /shown for context/i);
     assert.ok(overlap.analysis?.trackMetrics.every((metric) => metric.value === null), "track persistence stays unavailable without a resolved track timeline");
+    assert.equal(overlap.trackPersistence?.state, "NO_TRACK_TIMELINE");
+
+    const incompleteTrack = await readRetentionDashboard({releaseId: releases.missing, campaignId: campaigns.missing}, {now, includeComparison: false});
+    assert.equal(incompleteTrack.trackPersistence?.state, "INSUFFICIENT_DATES");
+
+    const conflictingTrack = await readRetentionDashboard({releaseId: releases.conflict, campaignId: campaigns.conflict}, {now, includeComparison: false});
+    assert.equal(conflictingTrack.trackPersistence?.state, "IDENTITY_CONFLICT");
 
     const missing = await readRetentionDashboard({releaseId: releases.missing, campaignId: campaigns.missing, range: "1000"}, {now, includeComparison: false});
     assert.ok(missing.analysis?.chart.accessibilitySummary.gapDates.includes("2040-07-12"));

@@ -2,6 +2,7 @@ import Link from "next/link";
 import {Activity, DatabaseZap} from "lucide-react";
 
 import {RetentionAnalysisView} from "@/components/retention-analysis-view";
+import {TrackPersistenceSection} from "@/components/track-persistence-section";
 import type {
   DashboardCurrentMetric,
   RetentionDashboardData
@@ -83,6 +84,7 @@ export function RetentionDashboardView({data}: {data: RetentionDashboardData}) {
         </section>
 
         {data.analysis ? <RetentionAnalysisView analysis={data.analysis} /> : statusPanel(data)}
+        {data.trackPersistence ? <TrackPersistenceSection track={data.trackPersistence} /> : null}
 
         <section className="panel space-y-5 p-4 sm:p-6" aria-labelledby="release-comparison-heading">
           <div><p className="field-label">Comparable release analyses</p><h2 className="mt-2 text-2xl font-semibold text-ink" id="release-comparison-heading">Release comparison</h2><p className="mt-2 text-sm text-muted">Default order favors release recency. Excluded and insufficient analyses remain labeled and are never ranked as winners.</p></div>

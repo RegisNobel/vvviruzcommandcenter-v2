@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import {RetentionAnalysisView} from "@/components/retention-analysis-view";
+import {TrackPersistenceSection} from "@/components/track-persistence-section";
 import type {RetentionDashboardData} from "@/lib/analytics/retention-dashboard";
 
 export function ReleaseRetentionSection({data, releaseId}: {data: RetentionDashboardData; releaseId: string}) {
@@ -17,6 +18,7 @@ export function ReleaseRetentionSection({data, releaseId}: {data: RetentionDashb
         {!data.analysis ? <div className={data.selectionState === "DATA_UNAVAILABLE" || data.selectionState === "INVALID_SELECTION" ? "state-panel-danger" : "state-panel-warning"} role="status"><div><p className="font-semibold">{data.selectionState.replaceAll("_", " ")}</p><p className="mt-1 text-sm">{data.selectionMessage}</p><div className="mt-3 flex flex-wrap gap-3"><Link className="action-button-secondary text-xs" href="/admin/retention-lab/campaigns">Manage campaigns</Link><Link className="action-button-secondary text-xs" href="/admin/retention-lab/imports">Import data</Link><Link className="action-button-secondary text-xs" href="/admin/retention-lab/mappings">Review mappings</Link></div></div></div> : null}
       </section>
       {data.analysis ? <RetentionAnalysisView analysis={data.analysis} context="RELEASE" /> : null}
+      {data.trackPersistence ? <TrackPersistenceSection track={data.trackPersistence} /> : null}
     </section>
   );
 }

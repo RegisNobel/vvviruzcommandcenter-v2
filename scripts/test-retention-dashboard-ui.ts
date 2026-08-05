@@ -50,6 +50,8 @@ assert.match(interpretation("INSUFFICIENT", ["CONFLICTING_TRACK_TIMELINES"]).not
 const page = readFileSync(resolve(process.cwd(), "app/admin/(protected)/retention-lab/page.tsx"), "utf8");
 const dashboard = readFileSync(resolve(process.cwd(), "components/retention-dashboard-view.tsx"), "utf8");
 const analysis = readFileSync(resolve(process.cwd(), "components/retention-analysis-view.tsx"), "utf8");
+const track = readFileSync(resolve(process.cwd(), "components/track-persistence-section.tsx"), "utf8");
+const metricCard = readFileSync(resolve(process.cwd(), "components/retention-metric-card.tsx"), "utf8");
 const chart = readFileSync(resolve(process.cwd(), "components/retention-timeline-chart.tsx"), "utf8");
 const loader = readFileSync(resolve(process.cwd(), "components/retention-timeline-chart-loader.tsx"), "utf8");
 const releaseWorkspace = readFileSync(resolve(process.cwd(), "components/admin-release-workspace.tsx"), "utf8");
@@ -58,7 +60,10 @@ const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "package.json
 
 assert.ok(page.includes("readRetentionDashboard") && !page.includes("redirect("), "Retention Lab root is the dashboard");
 for (const text of ["Latest imported values", "Audience trend summary", "Release, campaign, and date range", "Release comparison"]) assert.ok(dashboard.includes(text), `dashboard includes ${text}`);
-for (const text of ["Data confidence", "Attribution confidence", "Stage 7 overall", "Measured windows and lift", "Track-stream persistence", "Metric provenance and formula"]) assert.ok(analysis.includes(text), `analysis includes ${text}`);
+for (const text of ["Data confidence", "Attribution confidence", "Stage 7 overall", "Measured windows and lift"]) assert.ok(analysis.includes(text), `analysis includes ${text}`);
+assert.ok(metricCard.includes("Metric provenance and formula"), "shared metric cards preserve provenance disclosure");
+for (const text of ["Track-stream persistence", "does not measure unique listener retention", "Identity confidence", "Window completeness"]) assert.ok(track.includes(text), `track persistence includes ${text}`);
+assert.ok(track.includes("DashboardTrackPersistence"), "track presentation consumes the server adapter contract");
 for (const text of ["Audience", "Engagement", "Track performance", "Keyboard date inspector", "Complete event list", "Inspect "]) assert.ok(chart.includes(text), `chart includes ${text}`);
 assert.ok(chart.includes("connectNulls={false}") && chart.includes("isAnimationActive={false}") && chart.includes("accessibilityLayer"));
 assert.ok(loader.includes("ssr: false"), "Recharts is dynamically client-only");

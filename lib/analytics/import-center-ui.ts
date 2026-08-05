@@ -1,5 +1,39 @@
 export const IMPORT_CENTER_MAX_FILE_BYTES = 10 * 1024 * 1024;
 
+export type ImportPreviewCounts = {
+  total: number;
+  structurallyValid: number;
+  accepted: number;
+  warnings: number;
+  rejected: number;
+  unmatched: number;
+};
+
+export function resolveFinalReviewCounts(
+  detectedType: string | null,
+  counts: ImportPreviewCounts,
+  options: {releaseConfirmed?: boolean; unmatchedSongRows?: number} = {}
+) {
+  if (detectedType === "TRACK_STREAM_TIMELINE" && options.releaseConfirmed) {
+    return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.structurallyValid, rejected: counts.rejected, unmatched: 0};
+  }
+  const unmatched = detectedType === "SONGS_PERIOD" ? options.unmatchedSongRows ?? counts.unmatched : counts.unmatched;
+  return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.accepted, rejected: counts.rejected, unmatched};
+}
+
+export function formatValidationValue(value: unknown, fallback = "Not available"): string {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (Array.isArray(value)) return value.length ? value.map((item) => formatValidationValue(item, "")).filter(Boolean).join("; ") : "None";
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const code = typeof record.code === "string" ? record.code : null;
+    const message = typeof record.message === "string" ? record.message : null;
+    if (code || message) return [code, message].filter(Boolean).join(": ");
+    return Object.entries(record).map(([key, item]) => `${key}: ${formatValidationValue(item, "")}`).join(" · ");
+  }
+  return String(value);
+}
+
 export function validateSpotifyCsvFile(file: {name: string; size: number; type?: string}) {
   if (file.size > IMPORT_CENTER_MAX_FILE_BYTES) {
     return {ok: false as const, code: "FILE_TOO_LARGE", message: "Choose a CSV file that is 10 MiB or smaller."};

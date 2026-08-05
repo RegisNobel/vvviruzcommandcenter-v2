@@ -1,10 +1,9 @@
 import {createHash, createHmac, randomUUID} from "node:crypto";
-import {readFileSync} from "node:fs";
-import {resolve} from "node:path";
 
 import {expect, test, type BrowserContext, type Page} from "@playwright/test";
 
 const TEST_DATABASE_URL = "file:c:/Users/regis/Desktop/Codex/vvviruzcommandcenter/storage/vvviruz-command-center.db";
+const TEST_AUTH_SECRET = process.env.AUTH_SECRET || "stage10-playwright-auth-secret-stage10-playwright-auth-secret";
 const lifecycleImportId = `e2e-retention-${Date.now()}`;
 const mappingRowId = `${lifecycleImportId}-row`;
 const aliasId = `${lifecycleImportId}-alias`;
@@ -15,16 +14,6 @@ let adminUserId = "";
 let releaseId = "";
 let releaseTitle = "";
 let prisma: import("@prisma/client").PrismaClient;
-
-function envFile(path: string) {
-  try {
-    return Object.fromEntries(readFileSync(resolve(process.cwd(), path), "utf8").split(/\r?\n/).flatMap((line) => {
-      const match = line.match(/^([^#=]+)=(.*)$/);
-      if (!match) return [];
-      return [[match[1].trim(), match[2].trim().replace(/^['"]|['"]$/g, "")]];
-    }));
-  } catch { return {}; }
-}
 
 function makeCookie(secret: string, sid: string, expiresAt: Date) {
   const payload = Buffer.from(JSON.stringify({sid, stage: "authenticated", exp: expiresAt.getTime(), v: 1}), "utf8").toString("base64url");
@@ -44,7 +33,7 @@ function preview(type: string, rows: Array<{number: number; title?: string; date
     fileHash: "1".repeat(64), duplicateFile: false, existingImport: null, parserVersion: "spotify-sfa-v1", normalizationVersion: 1,
     originalFilename: `${type.toLowerCase()}.csv`, safeDisplayFilename: `${type.toLowerCase()}.csv`, fileSizeBytes: 256,
     dateRange: needsPeriod ? null : {minimumDate: "2026-07-01", maximumDate: "2026-07-03", missingDates: []}, previewPeriod: null, requiresPeriodConfirmation: needsPeriod,
-    counts: {accepted: rows.length || 3, warnings: rows.filter((row) => row.warnings?.length).length, rejected: 0, unmatched: type === "SONGS_PERIOD" ? rows.length : 0},
+    counts: {total: rows.length || 3, structurallyValid: rows.length || 3, accepted: rows.length || 3, warnings: rows.filter((row) => row.warnings?.length).length, rejected: 0, unmatched: type === "SONGS_PERIOD" ? rows.length : 0},
     rowPreview: (rows.length ? rows : [{number: 2, title: "Daily metric"}]).map((row) => ({originalRowNumber: row.number, outcome: row.warnings?.length ? "WARNING" : "ACCEPTED", safeDisplayValues: {Song: row.title || "Metric", "Release date": row.date || "2026-07-01"}, normalizedValues: type === "SONGS_PERIOD" ? {exportedTitle: row.title || "Song", exportedReleaseDate: row.date || "2026-07-01"} : {metricDate: "2026-07-01", streams: 10}, errors: [], warnings: row.warnings || [], mappingSuggestion: type === "SONGS_PERIOD" ? {candidateRelease: null, matchMethod: "NO_MATCH", confidence: "NO_MATCH", competingCandidates: [], existingAliasId: null, manualConfirmationRequired: true, mayAutoApply: false} : undefined})),
     rowPreviewTruncated: false, blockingErrors: [], fileWarnings: [], requiredActions: [], overlaps: [], candidateArtist: null, candidateRelease: null, reconciliation: {entries: []}
   };
@@ -63,10 +52,6 @@ async function upload(page: Page, type: string, payload: ReturnType<typeof previ
 }
 
 test.beforeAll(async () => {
-  const production = envFile(".env.production.local");
-  const local = envFile(".env.local");
-  const secret = production.AUTH_SECRET || local.AUTH_SECRET;
-  if (!secret) throw new Error("AUTH_SECRET is required for protected-route browser tests.");
   process.env.DATABASE_URL = TEST_DATABASE_URL;
   const client = await import("@prisma/client");
   prisma = new client.PrismaClient();
@@ -80,7 +65,7 @@ test.beforeAll(async () => {
   releaseId = release.id; releaseTitle = release.title;
   const now = new Date(); const expiresAt = new Date(now.getTime() + 3_600_000);
   await prisma.authSession.create({data: {id: sessionId, userId: admin.id, username: admin.username, stage: "authenticated", factorMethod: "totp", pendingTotpSecret: null, createdAt: now, updatedAt: now, expiresAt}});
-  cookieValue = makeCookie(secret, sessionId, expiresAt);
+  cookieValue = makeCookie(TEST_AUTH_SECRET, sessionId, expiresAt);
   await prisma.analyticsImport.create({data: {id: lifecycleImportId, importType: "ARTIST_AUDIENCE_TIMELINE", originalFilename: "lifecycle-audience.csv", fileHash: createHash("sha256").update(lifecycleImportId).digest("hex"), artistProfileId: artist.id, uploadedById: admin.id, uploadedByUsername: admin.username, uploadedAt: now, status: "IMPORTED", reportingTimezone: "UTC", detectedPeriodStart: new Date("2026-07-01T00:00:00.000Z"), detectedPeriodEnd: new Date("2026-07-03T00:00:00.000Z"), rowCount: 3, acceptedRowCount: 3, validationSummary: JSON.stringify({parserVersion: "spotify-sfa-v1", blockingErrors: [], fileWarnings: [], missingDates: [], reconciliation: {entries: []}}), metadata: "{}", normalizationVersion: 1, rawFileStorageDriver: "local", rawFileStorageKey: `e2e/${lifecycleImportId}.csv`, rawFileSizeBytes: 256, rawFileExpiresAt: new Date(Date.now() + 86_400_000), acceptedAt: now, createdAt: now, updatedAt: now}});
   await prisma.releaseImportAlias.create({data: {id: aliasId, source: "SPOTIFY_FOR_ARTISTS", exportType: "SONGS_PERIOD", exportedTitle: "E2E unresolved song", normalizedTitle: "e2e unresolved song", exportedReleaseDate: null, artistProfileId: artist.id, releaseId: release.id, status: "ACTIVE", matchMethod: "MANUAL_CONFIRMATION", evidence: "{}", scopeKey: aliasId, activeScopeKey: aliasId, confirmedById: admin.id, confirmedByUsername: admin.username, confirmedAt: now, createdAt: now, updatedAt: now}});
   await prisma.analyticsImportRow.create({data: {id: mappingRowId, importId: lifecycleImportId, sourceRowNumber: 2, exportType: "SONGS_PERIOD", rowIdentityKey: `${mappingRowId}-identity`, originalValues: "{}", safeDisplayValues: JSON.stringify({Song: "E2E unresolved song", "Release date": ""}), normalizedValues: JSON.stringify({exportedTitle: "E2E unresolved song", exportedReleaseDate: null}), structuralOutcome: "ACCEPTED", mappingStatus: "SUGGESTED", mappingReason: "FUZZY_TITLE_SUGGESTION", suggestedReleaseId: release.id, mappingConfidence: "FUZZY_HIGH", mappingEvidence: "{}", createdAt: now, updatedAt: now}});
@@ -107,13 +92,22 @@ test("Journey 1: artist timeline upload, review, commit, and detail link", async
 });
 
 test("Journey 2: track timeline identity and retention wording", async ({page}) => {
-  await upload(page, "track", preview("TRACK_STREAM_TIMELINE"));
+  const trackRows = Array.from({length: 200}, (_, index) => ({number: index + 2, title: `Track day ${index + 1}`}));
+  const trackPreview = {...preview("TRACK_STREAM_TIMELINE", trackRows), counts: {total: 944, structurallyValid: 944, accepted: 0, warnings: 0, rejected: 0, unmatched: 944}, rowPreviewTruncated: true};
+  await upload(page, "track", trackPreview);
+  await expect(page.getByText("Total rows").locator("..")).toContainText("944");
+  await expect(page.getByText("Preview window").locator("..")).toContainText("Previewing first 200 rows");
   await expect(page.getByText(/stream performance, not listener retention/i)).toBeVisible();
   await page.getByRole("combobox", {name: "Select release for track timeline"}).click();
   const firstRelease = page.locator('button[role="option"]').nth(1);
   await expect(firstRelease).toBeVisible(); await firstRelease.click();
   await page.getByText("The filename is not authoritative track or release identity.").click();
   await page.getByText("Track streams measure stream performance, not listener retention.").click();
+  await expect(page.getByText("Total source rows").locator("..")).toContainText("944");
+  await expect(page.getByText("Structurally valid rows").locator("..")).toContainText("944");
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("944");
+  await expect(page.getByText("Rejected rows").locator("..")).toContainText("0");
+  await expect(page.getByText("Unmatched after confirmation").locator("..")).toContainText("0");
   await page.getByLabel(/I confirm this context/i).check();
   await mockCommit(page, "import-track");
   await page.getByRole("button", {name: "Commit import"}).click();

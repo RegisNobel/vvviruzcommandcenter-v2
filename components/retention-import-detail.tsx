@@ -8,7 +8,7 @@ import {AdminConfirmDialog} from "@/components/admin-confirm-dialog";
 import {SpotifyImportWorkflow, type SpotifyImportPreview} from "@/components/retention-import-center";
 import {ErrorState} from "@/components/ui-state";
 import {adminFetch, AdminRequestError, getAdminErrorMessage} from "@/lib/admin-errors";
-import {importErrorCopy} from "@/lib/analytics/import-center-ui";
+import {formatValidationValue, importErrorCopy} from "@/lib/analytics/import-center-ui";
 import type {ArtistOption, RetentionReleaseOption} from "@/lib/analytics/import-center-types";
 
 export type ImportDetailRecord = {
@@ -23,7 +23,7 @@ export type ImportDetailRecord = {
   _count: {artistMetricObservations: number; trackMetricObservations: number; songPeriodSnapshots: number; playlistPeriodSnapshots: number};
 };
 function dt(value: string | null) { if (!value) return "Not available"; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-US", {dateStyle: "medium", timeStyle: "short"}).format(date); }
-function text(value: unknown, fallback = "Not available") { if (value === null || value === undefined || value === "") return fallback; if (Array.isArray(value)) return value.length ? value.map(String).join(", ") : "None"; if (typeof value === "object") return Object.entries(value as Record<string, unknown>).map(([key, item]) => `${key}: ${String(item)}`).join(" · "); return String(value); }
+function text(value: unknown, fallback = "Not available") { return formatValidationValue(value, fallback); }
 function Field({label, value}: {label: string; value: unknown}) { return <div className="rounded-lg border border-edge bg-input p-3"><dt className="field-label">{label}</dt><dd className="mt-2 break-words text-sm font-semibold text-ink">{text(value)}</dd></div>; }
 function Section({title, children}: {title: string; children: React.ReactNode}) { return <section className="panel px-4 py-5 sm:px-6"><h2 className="text-xl font-semibold text-ink">{title}</h2><div className="mt-4">{children}</div></section>; }
 

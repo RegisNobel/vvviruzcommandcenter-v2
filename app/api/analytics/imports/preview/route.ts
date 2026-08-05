@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       releaseId: String(form.get("release_id") ?? "").trim() || null
     }), (value) => ({
       importType: value.detectedType,
-      rowCount: value.counts.accepted + value.counts.warnings + value.counts.rejected,
+      rowCount: value.counts.total,
       acceptedRowCount: value.counts.accepted,
       rejectedRowCount: value.counts.rejected,
       duplicate: value.duplicateFile,

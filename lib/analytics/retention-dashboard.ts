@@ -17,6 +17,7 @@ import {
 } from "./retention-calculations";
 import {
   readReleaseRetentionAnalysisContext,
+  readReleaseTrackPersistenceContext,
   RetentionCampaignRequiredError,
   type ReleaseRetentionAnalysisContext
 } from "./retention-data";
@@ -51,6 +52,7 @@ export type DashboardMetric = {
   label: string;
   value: number | null;
   format: "INTEGER" | "DECIMAL" | "PERCENTAGE";
+  maximumFractionDigits?: number;
   status: RetentionStatus;
   confidence: RetentionConfidence;
   window: {startDate: string | null; endDate: string | null};
@@ -105,6 +107,22 @@ export type DashboardAnalysis = {
   primaryMetrics: DashboardMetric[];
   trackMetrics: DashboardMetric[];
   chart: RetentionChartPayload;
+};
+
+export type DashboardTrackPersistenceState =
+  | "AVAILABLE"
+  | "NO_TRACK_TIMELINE"
+  | "IDENTITY_CONFLICT"
+  | "INSUFFICIENT_DATES"
+  | "WARNING";
+
+export type DashboardTrackPersistence = {
+  state: DashboardTrackPersistenceState;
+  message: string;
+  release: {id: string; title: string; releaseDate: string; artistId: string};
+  identityConfidence: RetentionConfidence;
+  result: TrackPersistenceResult;
+  metrics: DashboardMetric[];
 };
 
 export type DashboardComparisonRow = {
@@ -164,6 +182,7 @@ export type RetentionDashboardData = {
   selectionState: DashboardSelectionState;
   selectionMessage: string;
   analysis: DashboardAnalysis | null;
+  trackPersistence: DashboardTrackPersistence | null;
   comparisonRows: DashboardComparisonRow[];
 };
 
@@ -708,13 +727,15 @@ function primaryMetrics(analysis: RetentionAnalysisResult): DashboardMetric[] {
 }
 
 function trackMetrics(track: TrackPersistenceResult): DashboardMetric[] {
+  const windowMetric = (id: string, label: string, window: WindowStatistics, explanation: string) => ({...metricFromWindow(id, window, explanation), label, format: "DECIMAL" as const, maximumFractionDigits: 2});
+  const numericMetric = (id: string, label: string, metric: NumericMetric, window: {startDate: string | null; endDate: string | null}, completeness: DataCompleteness | null, explanation: string) => ({...metricFromNumeric(id, metric, window, completeness, "PERCENTAGE", explanation), label, maximumFractionDigits: 2});
   return [
-    metricFromWindow("track-launch", track.launchSevenDays, "Average daily track streams during release days 1 through 7."),
-    metricFromWindow("track-days-14-28", track.days14To28, "Average daily track streams during release days 14 through 28."),
-    metricFromWindow("track-latest", track.latestSevenDays, "Latest seven consecutive available track-stream days."),
+    windowMetric("track-launch", "Launch seven-day average", track.launchSevenDays, "Average daily track streams during release days 1 through 7."),
+    windowMetric("track-days-14-28", "Days 14–28 average", track.days14To28, "Average daily track streams during release days 14 through 28."),
+    windowMetric("track-latest", "Latest seven-day average", track.latestSevenDays, "Latest seven consecutive available track-stream days."),
     {
       id: "track-peak",
-      label: "Peak daily track streams",
+      label: "Peak daily streams",
       value: track.peakDailyStreams,
       format: "INTEGER",
       status: track.status,
@@ -726,9 +747,38 @@ function trackMetrics(track: TrackPersistenceResult): DashboardMetric[] {
       explanation: "Peak stream activity for the resolved track timeline.",
       reasonCodes: track.reasonCodes
     },
-    metricFromNumeric("track-persistence", track.persistenceRatio, {startDate: track.days14To28.completeness.startDate, endDate: track.days14To28.completeness.endDate}, track.days14To28.completeness, "PERCENTAGE", "Days 14–28 average divided by launch seven-day average."),
-    metricFromNumeric("track-latest-launch", track.latestVersusLaunchRatio, {startDate: track.latestSevenDays.completeness.startDate, endDate: track.latestSevenDays.completeness.endDate}, track.latestSevenDays.completeness, "PERCENTAGE", "Latest seven-day average divided by launch seven-day average.")
+    numericMetric("track-persistence", "Persistence ratio", track.persistenceRatio, {startDate: track.days14To28.completeness.startDate, endDate: track.days14To28.completeness.endDate}, track.days14To28.completeness, "Days 14–28 average divided by launch seven-day average."),
+    numericMetric("track-latest-launch", "Latest-versus-launch ratio", track.latestVersusLaunchRatio, {startDate: track.latestSevenDays.completeness.startDate, endDate: track.latestSevenDays.completeness.endDate}, track.latestSevenDays.completeness, "Latest seven-day average divided by launch seven-day average.")
   ];
+}
+
+function shapeTrackPersistence(release: DashboardTrackPersistence["release"], result: TrackPersistenceResult): DashboardTrackPersistence {
+  const hasTimeline = result.inputImportIds.length > 0;
+  const identityConflict = result.reasonCodes.includes("CONFLICTING_TRACK_TIMELINES");
+  const state: DashboardTrackPersistenceState = identityConflict
+    ? "IDENTITY_CONFLICT"
+    : !hasTimeline
+      ? "NO_TRACK_TIMELINE"
+      : result.status === "INSUFFICIENT"
+        ? "INSUFFICIENT_DATES"
+        : result.status === "WARNING" || result.confidence === "LOW"
+          ? "WARNING"
+          : "AVAILABLE";
+  const message = state === "IDENTITY_CONFLICT"
+    ? "Conflicting track identities are not merged. Review the current mapping before interpreting track performance."
+    : state === "NO_TRACK_TIMELINE"
+      ? "No current resolved track timeline is available for this release."
+      : state === "INSUFFICIENT_DATES"
+        ? "Track data exists, but one or more required stream windows are incomplete. Unavailable values remain unavailable."
+        : state === "WARNING"
+          ? "Track persistence is available with an identity or completeness warning."
+          : "Track persistence is available from the current resolved timeline.";
+  const identityConfidence: RetentionConfidence = identityConflict || !hasTimeline
+    ? "INSUFFICIENT"
+    : result.inputImportIds.length > 1
+      ? "LOW"
+      : "HIGH";
+  return {state, message, release, identityConfidence, result, metrics: trackMetrics(result)};
 }
 
 export function shapeDashboardAnalysis(
@@ -1055,6 +1105,19 @@ export async function readRetentionDashboard(
       selectionMessage = resolved.message;
     }
   }
+  let independentTrackPersistence: DashboardTrackPersistence | null = null;
+  if (selectedRelease) {
+    if (shapedAnalysis) {
+      independentTrackPersistence = shapeTrackPersistence(shapedAnalysis.release, shapedAnalysis.analysis.trackPersistence);
+    } else {
+      try {
+        const trackContext = await readReleaseTrackPersistenceContext(selectedRelease.id, {now, currentDataset: dataset});
+        independentTrackPersistence = shapeTrackPersistence(trackContext.release, trackContext.trackPersistence);
+      } catch (error) {
+        if (!(error instanceof AdminError)) throw error;
+      }
+    }
+  }
   const comparisonLimit = Math.min(20, Math.max(0, options.comparisonLimit ?? 5));
   const comparisonStartedAt = performance.now();
   const comparisonResult = options.includeComparison === false
@@ -1082,6 +1145,7 @@ export async function readRetentionDashboard(
     selectionState,
     selectionMessage,
     analysis: shapedAnalysis,
+    trackPersistence: independentTrackPersistence,
     comparisonRows: comparisonResult.rows
   };
   const serializationStartedAt = performance.now();
