@@ -547,7 +547,7 @@ export async function commitSpotifyImport(input: SpotifyCommitInput) {
     warnings: result.warningCount,
     rejected: result.rejectedCount,
     unmatched: result.unmatchedCount
-  }, {releaseConfirmed: Boolean(releaseId), unmatchedSongRows: unmatchedSongCount});
+  }, {releaseConfirmed: Boolean(releaseId), mappedSongRows: mappedSongCount, unmatchedSongRows: unmatchedSongCount});
   try {
     await prisma.$transaction(async (tx) => {
       await createAnalyticsImport({
@@ -569,9 +569,9 @@ export async function commitSpotifyImport(input: SpotifyCommitInput) {
         userConfirmedPeriodEnd: period ? dateOnlyToDate(period.periodEnd) : null,
         periodDatesUserConfirmed: Boolean(period),
         rowCount: result.rowCount,
-        acceptedRowCount: result.detectedType === "SONGS_PERIOD" ? mappedSongCount : result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.accepted : result.rowCount,
+        acceptedRowCount: result.detectedType === "SONGS_PERIOD" || result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.accepted : result.rowCount,
         rejectedRowCount: 0,
-        unmatchedRowCount: result.detectedType === "SONGS_PERIOD" ? unmatchedSongCount : result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.unmatched : 0,
+        unmatchedRowCount: result.detectedType === "SONGS_PERIOD" || result.detectedType === "TRACK_STREAM_TIMELINE" ? resolvedReviewCounts.unmatched : 0,
         warningCount: result.rows.filter(({warnings}) => warnings.length > 0).length,
         validationSummary: JSON.stringify({...parserSummary(result), reconciliation}),
         metadata: JSON.stringify({previewId: token.previewId, previewResultChecksum: token.parsedResultChecksum, reprocessSourceImportId: token.reprocessSourceImportId, confirmations: {acknowledgeWarnings: Boolean(input.acknowledgeWarnings), acknowledgeFilenameNotIdentity: Boolean(input.acknowledgeFilenameNotIdentity), acknowledgeTrackStreamsNotRetention: Boolean(input.acknowledgeTrackStreamsNotRetention)}, temporaryMappings: songEvidence, mappingPolicy: "NORMALIZED_ROWS_WITH_SCOPED_ALIAS_REUSE"}),

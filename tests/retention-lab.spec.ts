@@ -117,11 +117,19 @@ test("Journey 2: track timeline identity and retention wording", async ({page}) 
 test("Journey 3: songs period maps one row and leaves one valid row unmatched", async ({page}) => {
   const songs = preview("SONGS_PERIOD", [{number: 2, title: "Mapped song"}, {number: 3, title: "Unmatched song"}]);
   await upload(page, "songs", songs);
+  await expect(page.getByText("Mapping review incomplete: 0 of 2 structurally valid rows")).toBeVisible();
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("Pending completed mapping review");
+  await expect(page.getByRole("button", {name: "Commit import"})).toBeDisabled();
   await page.getByLabel("Report start date").fill("2026-07-01"); await page.getByLabel("Report end date").fill("2026-07-28");
   const pickers = page.getByRole("combobox", {name: /Select release for source row/});
   await pickers.first().click(); await page.locator('button[role="option"]').nth(1).click();
   await page.getByRole("article").filter({hasText: "Unmatched song"}).getByRole("button", {name: "Leave unmatched"}).click();
   await page.getByRole("article").filter({hasText: "Unmatched song"}).getByLabel("Unmatched reason").selectOption("USER_DEFERRED");
+  await expect(page.getByText("Total source rows").locator("..")).toContainText("2");
+  await expect(page.getByText("Structurally valid rows").locator("..")).toContainText("2");
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("1");
+  await expect(page.getByText("Unmatched after confirmation").locator("..")).toContainText("1");
+  await expect(page.getByText("Rejected rows").locator("..")).toContainText("0");
   await page.getByLabel(/I confirm this context/i).check();
   await mockCommit(page, "import-songs", 1);
   await page.getByRole("button", {name: "Commit import"}).click();

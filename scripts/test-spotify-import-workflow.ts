@@ -146,13 +146,19 @@ async function main() {
   await expectCode(() => commitSpotifyImport({actor, previewToken: songsAllPreview.previewToken!, clientIdempotencyKey: `${prefix}-songs-no-period`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, acknowledgeWarnings: true, songMappings: [], now}), "MISSING_CONFIRMATION");
   const songsAllCommit = await commitSpotifyImport({actor, previewToken: songsAllPreview.previewToken!, clientIdempotencyKey: `${prefix}-songs-all-key`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, periodStart: "2026-07-01", periodEnd: "2026-07-28", acknowledgeWarnings: true, songMappings: [{originalRowNumber: songRowNumbers[0], releaseId: releaseIds[0]}, {originalRowNumber: songRowNumbers[1], releaseId: releaseIds[1]}], now});
   assert.equal(await prisma.songPeriodSnapshot.count({where: {importId: songsAllCommit.importId}}), 2);
+  const songsAllImport = await prisma.analyticsImport.findUniqueOrThrow({where: {id: songsAllCommit.importId}});
+  assert.equal(songsAllImport.acceptedRowCount, 2);
+  assert.equal(songsAllImport.unmatchedRowCount, 0);
 
   const songsPartialPreview = await preview(actor, "songs-partial", songsCsv("partial"), {previewPeriod: {periodStart: "2026-07-01", periodEnd: "2026-07-28"}});
   const partialRows = songsPartialPreview.rowPreview.map(({originalRowNumber}) => originalRowNumber);
   const songsPartialCommit = await commitSpotifyImport({actor, previewToken: songsPartialPreview.previewToken!, clientIdempotencyKey: `${prefix}-songs-partial-key`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, periodStart: "2026-07-01", periodEnd: "2026-07-28", acknowledgeWarnings: true, songMappings: [{originalRowNumber: partialRows[0], releaseId: releaseIds[2]}, {originalRowNumber: partialRows[1], leaveUnmatched: true}], now});
   assert.equal(await prisma.songPeriodSnapshot.count({where: {importId: songsPartialCommit.importId}}), 1);
   const partialImport = await prisma.analyticsImport.findUniqueOrThrow({where: {id: songsPartialCommit.importId}});
+  assert.equal(partialImport.acceptedRowCount, 1);
   assert.equal(partialImport.unmatchedRowCount, 1);
+  assert.equal(partialImport.acceptedRowCount + partialImport.unmatchedRowCount, partialImport.rowCount);
+  assert.equal(await prisma.analyticsImportRow.count({where: {importId: songsPartialCommit.importId}}), 2);
   assert.match(partialImport.metadata, /NORMALIZED_ROWS_WITH_SCOPED_ALIAS_REUSE/);
   assert.match(partialImport.metadata, /UNMATCHED/);
 

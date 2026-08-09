@@ -9,16 +9,34 @@ export type ImportPreviewCounts = {
   unmatched: number;
 };
 
+export type FinalReviewCounts = Pick<ImportPreviewCounts, "total" | "structurallyValid" | "accepted" | "rejected" | "unmatched"> & {
+  reviewState: "NOT_REQUIRED" | "INCOMPLETE" | "COMPLETE";
+  reviewed: number;
+};
+
 export function resolveFinalReviewCounts(
   detectedType: string | null,
   counts: ImportPreviewCounts,
-  options: {releaseConfirmed?: boolean; unmatchedSongRows?: number} = {}
-) {
+  options: {releaseConfirmed?: boolean; mappedSongRows?: number; unmatchedSongRows?: number} = {}
+): FinalReviewCounts {
   if (detectedType === "TRACK_STREAM_TIMELINE" && options.releaseConfirmed) {
-    return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.structurallyValid, rejected: counts.rejected, unmatched: 0};
+    return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.structurallyValid, rejected: counts.rejected, unmatched: 0, reviewState: "COMPLETE", reviewed: counts.structurallyValid};
   }
-  const unmatched = detectedType === "SONGS_PERIOD" ? options.unmatchedSongRows ?? counts.unmatched : counts.unmatched;
-  return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.accepted, rejected: counts.rejected, unmatched};
+  if (detectedType === "SONGS_PERIOD") {
+    const accepted = options.mappedSongRows ?? 0;
+    const unmatched = options.unmatchedSongRows ?? 0;
+    const reviewed = accepted + unmatched;
+    return {
+      total: counts.total,
+      structurallyValid: counts.structurallyValid,
+      accepted,
+      rejected: counts.rejected,
+      unmatched,
+      reviewState: reviewed === counts.structurallyValid ? "COMPLETE" : "INCOMPLETE",
+      reviewed
+    };
+  }
+  return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.accepted, rejected: counts.rejected, unmatched: counts.unmatched, reviewState: "NOT_REQUIRED", reviewed: counts.structurallyValid};
 }
 
 export function formatValidationValue(value: unknown, fallback = "Not available"): string {
