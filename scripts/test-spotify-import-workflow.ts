@@ -41,7 +41,15 @@ const audienceCsv = (date = "2026-08-01", streams = sequence++) =>
   `date,listeners,monthly listeners,monthly active listeners,streams,playlist adds,saves,followers\n${date},10,20,18,${streams},2,3,4`;
 const trackCsv = (streams = sequence++) => `date,streams\n2026-08-01,${streams}`;
 const songsCsv = (suffix: string) => `song,listeners,streams,saves,release_date\nSong ${suffix} A,10,20,3,2026-07-01\nSong ${suffix} B,11,21,4,2026-07-02`;
-const playlistsCsv = (suffix: string) => `title,author,listeners,streams,date_added\nPlaylist ${suffix},Spotify,10,20,n/a`;
+const playlistsCsv = (suffix: string) => `title,author,listeners,streams,date_added
+Playlist ${suffix} 1,Spotify,10,20,n/a
+Playlist ${suffix} 2,Spotify,11,21,n/a
+Playlist ${suffix} 3,Spotify,12,22,-
+Playlist ${suffix} 4,Spotify,13,23,
+Playlist ${suffix} 5,Spotify,14,24,n/a
+Playlist ${suffix} 6,Spotify,15,25,-
+Playlist ${suffix} 7,Spotify,16,26,
+Playlist ${suffix} 8,=owner,17,27,2026-07-11`;
 
 async function expectCode(action: () => Promise<unknown>, code: string) {
   await assert.rejects(action, (error: unknown) => {
@@ -172,9 +180,15 @@ async function main() {
   const playlistPreview = await preview(actor, "playlists", playlistsCsv("one"), {previewPeriod: {periodStart: "2026-07-01", periodEnd: "2026-07-28"}});
   await expectCode(() => commitSpotifyImport({actor, previewToken: playlistPreview.previewToken!, clientIdempotencyKey: `${prefix}-playlist-no-warning`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, periodStart: "2026-07-01", periodEnd: "2026-07-28", now}), "MISSING_CONFIRMATION");
   const playlistCommit = await commitSpotifyImport({actor, previewToken: playlistPreview.previewToken!, clientIdempotencyKey: `${prefix}-playlist-key`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, periodStart: "2026-07-01", periodEnd: "2026-07-28", acknowledgeWarnings: true, now});
-  const playlistRow = await prisma.playlistPeriodSnapshot.findFirstOrThrow({where: {importId: playlistCommit.importId}});
-  assert.equal(playlistRow.dateAdded, null);
-  assert.equal(playlistRow.playlistSpotifyId, null);
+  const playlistRows = await prisma.playlistPeriodSnapshot.findMany({where: {importId: playlistCommit.importId}, orderBy: {playlistTitle: "asc"}});
+  assert.equal(playlistRows.length, 8);
+  assert.equal(playlistRows.filter(({dateAdded}) => dateAdded === null).length, 7);
+  assert.ok(playlistRows.every(({playlistSpotifyId}) => playlistSpotifyId === null));
+  const playlistImport = await prisma.analyticsImport.findUniqueOrThrow({where: {id: playlistCommit.importId}});
+  assert.equal(playlistImport.rowCount, 8);
+  assert.equal(playlistImport.acceptedRowCount, 8);
+  assert.equal(playlistImport.rejectedRowCount, 0);
+  assert.equal(playlistImport.acceptedRowCount + playlistImport.rejectedRowCount, playlistImport.rowCount);
 
   const keyConflictPreview = await preview(actor, "different-key-file", audienceCsv("2026-08-02"));
   await expectCode(() => commitSpotifyImport({actor, previewToken: keyConflictPreview.previewToken!, clientIdempotencyKey: `${prefix}-artist-key`, artistProfileId: CANONICAL_ANALYTICS_ARTIST_ID, now}), "CONFLICT");

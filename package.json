@@ -78,6 +78,7 @@
     "analytics:backfill-mapping-rows": "node --conditions=react-server --import tsx scripts/backfill-analytics-import-rows.ts",
     "test:release-mapping": "node --conditions=react-server --import tsx scripts/test-release-mapping.ts",
     "test:import-center-ui": "tsx scripts/test-import-center-ui.ts",
+    "test:playlists-period-final-review": "tsx scripts/test-playlists-period-final-review.ts",
     "test:campaign-timeline": "node --conditions=react-server --import tsx scripts/test-campaign-timeline.ts",
     "test:campaign-timeline-ui": "tsx scripts/test-campaign-timeline-ui.ts",
     "test:campaign-api": "tsx scripts/test-campaign-api.ts",

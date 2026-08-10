@@ -17,7 +17,13 @@ export type FinalReviewCounts = Pick<ImportPreviewCounts, "total" | "structurall
 export function resolveFinalReviewCounts(
   detectedType: string | null,
   counts: ImportPreviewCounts,
-  options: {releaseConfirmed?: boolean; mappedSongRows?: number; unmatchedSongRows?: number} = {}
+  options: {
+    releaseConfirmed?: boolean;
+    mappedSongRows?: number;
+    unmatchedSongRows?: number;
+    warningAcknowledgementRequired?: boolean;
+    warningsAcknowledged?: boolean;
+  } = {}
 ): FinalReviewCounts {
   if (detectedType === "TRACK_STREAM_TIMELINE" && options.releaseConfirmed) {
     return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.structurallyValid, rejected: counts.rejected, unmatched: 0, reviewState: "COMPLETE", reviewed: counts.structurallyValid};
@@ -34,6 +40,19 @@ export function resolveFinalReviewCounts(
       unmatched,
       reviewState: reviewed === counts.structurallyValid ? "COMPLETE" : "INCOMPLETE",
       reviewed
+    };
+  }
+  if (detectedType === "PLAYLISTS_PERIOD") {
+    const acknowledgementRequired = options.warningAcknowledgementRequired ?? counts.warnings > 0;
+    const reviewComplete = !acknowledgementRequired || Boolean(options.warningsAcknowledged);
+    return {
+      total: counts.total,
+      structurallyValid: counts.structurallyValid,
+      accepted: reviewComplete ? counts.structurallyValid : 0,
+      rejected: counts.rejected,
+      unmatched: 0,
+      reviewState: reviewComplete ? "COMPLETE" : "INCOMPLETE",
+      reviewed: reviewComplete ? counts.structurallyValid : 0
     };
   }
   return {total: counts.total, structurallyValid: counts.structurallyValid, accepted: counts.accepted, rejected: counts.rejected, unmatched: counts.unmatched, reviewState: "NOT_REQUIRED", reviewed: counts.structurallyValid};

@@ -137,11 +137,22 @@ test("Journey 3: songs period maps one row and leaves one valid row unmatched", 
 });
 
 test("Journey 4: playlists period exposes null date warning separately", async ({page}) => {
-  const playlists = preview("PLAYLISTS_PERIOD", [{number: 2, title: "Editorial list", warnings: [{code: "DATE_ADDED_UNAVAILABLE", message: "Date added is unavailable and remains null."}]}]);
+  const playlistRows = Array.from({length: 8}, (_, index) => ({number: index + 2, title: `Playlist ${index + 1}`, warnings: [{code: index === 7 ? "FORMULA_PREFIX_ESCAPED" : "DATE_ADDED_UNAVAILABLE", message: index === 7 ? "Author was neutralized for safe spreadsheet display." : "Date added is unavailable and remains null."}]}));
+  const playlists = {...preview("PLAYLISTS_PERIOD", playlistRows), counts: {total: 8, structurallyValid: 8, accepted: 0, warnings: 8, rejected: 0, unmatched: 0}};
   await upload(page, "playlists", playlists);
   await page.getByLabel("Report start date").fill("2026-07-01"); await page.getByLabel("Report end date").fill("2026-07-28");
   await expect(page.getByText(/Date added is unavailable and remains null/i).first()).toBeVisible();
+  await expect(page.getByText(/Warning review incomplete/i)).toBeVisible();
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("Pending required warning acknowledgements");
+  await expect(page.getByRole("button", {name: "Commit import"})).toBeDisabled();
   await page.getByText(/DATE_ADDED_UNAVAILABLE:/).click();
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("Pending required warning acknowledgements");
+  await page.getByText(/FORMULA_PREFIX_ESCAPED:/).click();
+  await expect(page.getByText("Total source rows").locator("..")).toContainText("8");
+  await expect(page.getByText("Structurally valid rows").locator("..")).toContainText("8");
+  await expect(page.getByText("Accepted after confirmation").locator("..")).toContainText("8");
+  await expect(page.getByText("Rejected rows").locator("..")).toContainText("0");
+  await expect(page.getByRole("button", {name: "Commit import"})).toBeDisabled();
   await page.getByLabel(/I confirm this context/i).check();
   await mockCommit(page, "import-playlists");
   await page.getByRole("button", {name: "Commit import"}).click();
