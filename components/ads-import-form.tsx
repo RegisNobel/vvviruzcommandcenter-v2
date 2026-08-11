@@ -202,6 +202,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
               <span className="field-label">CSV Files</span>
               <input
                 accept=".csv,text/csv"
+                aria-describedby={message ? "meta-import-error" : undefined}
                 className="field-input"
                 multiple
                 onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
@@ -246,7 +247,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
           </div>
 
           {message ? (
-            <div className="state-panel-danger">
+            <div aria-live="assertive" className="state-panel-danger" id="meta-import-error" role="alert">
               {message}
             </div>
           ) : null}

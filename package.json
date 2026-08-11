@@ -52,6 +52,7 @@
     "gate-c:postgres-suites": "node scripts/run-gate-c-full-stack.mjs --postgres-suites",
     "smoke:ads-merge": "tsx scripts/smoke-ads-merge.ts",
     "test:ad-lab-evidence": "node --import tsx scripts/test-ad-lab-campaign-evidence.ts",
+    "test:meta-import-http-semantics": "node --conditions=react-server --import tsx scripts/test-meta-import-http-semantics.ts",
     "test:ad-lab-evidence:postgres": "node --conditions=react-server --import tsx scripts/test-ad-lab-evidence-postgres.mjs",
     "audit:meta-export-contract": "node --import tsx scripts/audit-meta-export-contract.ts",
     "audit:ad-lab-production-readonly": "node scripts/audit-ad-lab-production-readonly.mjs",

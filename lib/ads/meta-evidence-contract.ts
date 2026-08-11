@@ -9,6 +9,24 @@ export const META_IMPORT_MAX_FILES = 8;
 export const META_IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const META_IMPORT_MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 
+export class MetaImportValidationError extends Error {
+  readonly code: "DUPLICATE_IMPORT_FILE" | "INVALID_FILE";
+  readonly status: 413 | 422;
+
+  constructor(
+    message: string,
+    options: {
+      code?: "DUPLICATE_IMPORT_FILE" | "INVALID_FILE";
+      status?: 413 | 422;
+    } = {}
+  ) {
+    super(message);
+    this.name = "MetaImportValidationError";
+    this.code = options.code ?? "INVALID_FILE";
+    this.status = options.status ?? 422;
+  }
+}
+
 export type MetaSourceGranularity = "DAILY" | "AGGREGATE_SNAPSHOT";
 export type MetaCampaignEligibility = "ELIGIBLE" | "NOT_INTERVAL_ELIGIBLE";
 export type MetaDayState = "ACTIVE_EVIDENCE" | "EXPLICIT_ZERO" | "UNKNOWN";
@@ -211,7 +229,7 @@ export function parseMetaEvidenceCsv(text: string) {
     else cell += char;
   }
   row.push(cell); if (row.some((item) => item.trim())) rows.push(row);
-  if (quoted) throw new Error("CSV contains an unterminated quoted field.");
+  if (quoted) throw new MetaImportValidationError("CSV contains an unterminated quoted field.");
   return rows;
 }
 function viewFor(headers: string[]): MetaMetricView {
@@ -293,15 +311,15 @@ function resolveDeliveryResults(rows: MetaEvidenceRow[], enrichmentWarnings: str
 }
 
 export function buildMetaEvidenceBundle(inputs: MetaEvidenceInputFile[], context: MetaEvidenceContext): MetaEvidenceBundle {
-  if (!inputs.length || inputs.length > META_IMPORT_MAX_FILES) throw new Error(`Upload between 1 and ${META_IMPORT_MAX_FILES} CSV files.`);
+  if (!inputs.length || inputs.length > META_IMPORT_MAX_FILES) throw new MetaImportValidationError(`Upload between 1 and ${META_IMPORT_MAX_FILES} CSV files.`);
   const total = inputs.reduce((sum, file) => sum + file.bytes.byteLength, 0);
-  if (total > META_IMPORT_MAX_TOTAL_BYTES) throw new Error("Meta import bundle exceeds the total size limit.");
+  if (total > META_IMPORT_MAX_TOTAL_BYTES) throw new MetaImportValidationError("Meta import bundle exceeds the total size limit.", {status: 413});
   const manualTimezone = normalizeTimezone(context.manualTimezone ?? "");
   const files = inputs.map((input): MetaEvidenceFile => {
-    if (input.bytes.byteLength > META_IMPORT_MAX_FILE_BYTES) throw new Error("A Meta import file exceeds the per-file size limit.");
+    if (input.bytes.byteLength > META_IMPORT_MAX_FILE_BYTES) throw new MetaImportValidationError("A Meta import file exceeds the per-file size limit.", {status: 413});
     let text: string;
-    try { text = new TextDecoder("utf-8", {fatal: true}).decode(input.bytes); } catch { throw new Error("Meta CSV files must be valid UTF-8."); }
-    const matrix = parseMetaEvidenceCsv(text.replace(/^\uFEFF/, "")); if (matrix.length < 2) throw new Error("Meta CSV file has no data rows.");
+    try { text = new TextDecoder("utf-8", {fatal: true}).decode(input.bytes); } catch { throw new MetaImportValidationError("Meta CSV files must be valid UTF-8."); }
+    const matrix = parseMetaEvidenceCsv(text.replace(/^\uFEFF/, "")); if (matrix.length < 2) throw new MetaImportValidationError("Meta CSV file has no data rows.");
     const rawHeaders = matrix[0].map(clean);
     const normalizedHeaders = rawHeaders.map(normalizeMetaHeader); const sourceView = input.sourceView ?? viewFor(normalizedHeaders);
     const headerCurrency = metricHeaderCurrency(rawHeaders);
@@ -346,7 +364,12 @@ export function buildMetaEvidenceBundle(inputs: MetaEvidenceInputFile[], context
     return {sha256: hash, sanitizedFileName: safeName(input.fileName), sourceView, viewRole: viewRole(sourceView), rowCount: rows.length, reportingStart, reportingEnd, observedDateCount: dates.length, expectedDateCount, adCount: new Set(rows.map((row) => row.adId).filter(Boolean)).size, missingCoreDateCount: 0, coverageState: !dates.length ? "NO_DAILY_COVERAGE" : expectedDateCount === dates.length ? "COMPLETE" : "GAPPED", sizeBytes: input.bytes.byteLength, warnings: [...new Set(warnings)], rows};
   });
   const duplicateHashes = files.filter((file, index) => files.findIndex((candidate) => candidate.sha256 === file.sha256) !== index);
-  if (duplicateHashes.length) throw new Error("The bundle contains the same source file more than once.");
+  if (duplicateHashes.length) {
+    throw new MetaImportValidationError(
+      "Remove the duplicate source file; the same source file was selected more than once. Then retry the preview.",
+      {code: "DUPLICATE_IMPORT_FILE", status: 422}
+    );
+  }
   const allRows = files.flatMap((file) => file.rows);
   const coreRows = allRows.filter((row) => row.sourceView === "delivery");
   const enrichmentRows = allRows.filter((row) => row.sourceView !== "delivery");

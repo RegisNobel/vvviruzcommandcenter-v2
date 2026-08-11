@@ -142,7 +142,9 @@ export function normalizeAdminError(
     error instanceof Error
       ? sanitizeDiagnostic(error.message)
       : "Non-Error value was thrown.";
-  console.error(`[admin-error:${requestId}] ${options.context}`, {
+  const log = status >= 500 ? console.error : console.warn;
+  log(`[admin-error:${requestId}] ${options.context}`, {
+    status,
     code: payload.code,
     diagnostic
   });
