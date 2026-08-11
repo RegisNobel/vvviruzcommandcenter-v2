@@ -212,7 +212,10 @@ function spawnChecked(command, args, options = {}) {
 }
 
 function postgresRuntimeIdentity() {
-  if (process.getuid?.() !== 0) return {};
+  const processUid = process.getuid?.();
+  const shellUid = Number(spawnSync("id", ["-u"], {encoding: "utf8"}).stdout?.trim());
+  const runtimeUid = Number.isInteger(processUid) ? processUid : shellUid;
+  if (runtimeUid !== 0) return {};
   let uid = Number(spawnSync("id", ["-u", "postgres"], {encoding: "utf8"}).stdout?.trim());
   let gid = Number(spawnSync("id", ["-g", "postgres"], {encoding: "utf8"}).stdout?.trim());
   if (!Number.isInteger(uid) || !Number.isInteger(gid)) {
@@ -254,7 +257,10 @@ class VercelTmpEmbeddedPostgres {
     await fs.mkdir(this.options.databaseDir, {recursive: true});
     phase = "disposable-runtime-identity";
     this.identity = postgresRuntimeIdentity();
-    if (this.identity.uid !== undefined) await fs.chown(this.options.databaseDir, this.identity.uid, this.identity.gid);
+    if (this.identity.uid !== undefined) {
+      await fs.chown(path.dirname(this.options.databaseDir), this.identity.uid, this.identity.gid);
+      await fs.chown(this.options.databaseDir, this.identity.uid, this.identity.gid);
+    }
     const passwordFile = path.join(os.tmpdir(), `pg-password-${crypto.randomBytes(8).toString("hex")}`);
     await fs.writeFile(passwordFile, `${this.options.password}\n`, {mode: 0o600});
     if (this.identity.uid !== undefined) await fs.chown(passwordFile, this.identity.uid, this.identity.gid);
