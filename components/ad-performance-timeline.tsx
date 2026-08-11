@@ -149,11 +149,17 @@ export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: Ad
         </p>
       </div>
 
-      {hasOverlappingSnapshots && (
+      {timeline.rankingBasis === "canonical_daily" && timeline.analysisWindowStart && timeline.analysisWindowEnd ? (
+        <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs leading-5 text-emerald-100">
+          <span className="font-semibold text-emerald-300">Canonical DAILY analysis window:</span> {timeline.analysisWindowStart} through {timeline.analysisWindowEnd}. Row order sums only authoritative Delivery spend facts inside this explicit window; optional cross-view spend copies are excluded.
+        </div>
+      ) : null}
+
+      {hasOverlappingSnapshots && timeline.rankingBasis === "latest_snapshot" && (
         <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold text-amber-300">Snapshot-Based Timeline:</span> Multiple snapshot uploads have overlapping date ranges. Columns represent independent snapshots chronologically rather than summed lifetime totals.
+            <span className="font-semibold text-amber-300">Latest Observed Snapshot Mode:</span> Multiple uploads overlap. Row order uses each ad&apos;s latest observed snapshot spend, which may come from different reporting windows and is not a directly comparable current-spend leaderboard. Each column retains its own reporting period and as-of date.
           </div>
         </div>
       )}
@@ -198,6 +204,9 @@ export function AdPerformanceTimelineSection({ timeline, campaignControlAd }: Ad
                     </div>
                     <div className="text-[10px] text-[#7f858d] font-normal mt-0.5">
                       Spend: {formatCurrency(snapshot.totalSpend)} &middot; Results: {snapshot.totalResults}
+                    </div>
+                    <div className="text-[10px] text-[#7f858d] font-normal mt-0.5">
+                      As of: {snapshot.sourceAsOf ? formatTimestamp(snapshot.sourceAsOf) : "Unknown"}
                     </div>
                   </th>
                 ))}

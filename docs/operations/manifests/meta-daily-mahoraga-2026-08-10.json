@@ -1,0 +1,209 @@
+{
+  "manifestVersion": "meta-daily-readiness-v1",
+  "purpose": "Gate E0.8 Mahoraga non-production source freeze",
+  "accountConfiguration": {
+    "accountId": "367019114407672",
+    "ianaTimezone": "America/Los_Angeles",
+    "origin": "USER_CONFIRMED",
+    "currency": "USD",
+    "currencyOrigin": "METRIC_HEADER"
+  },
+  "bundleManifestFingerprint": "1bfc3d1bae9e75815e59b5a987e6246fe39a4724533f239eb3a9dd5dfdc25b5a",
+  "files": [
+    {
+      "approvedSource": "mahoraga(3).csv",
+      "sanitizedSourceFilename": "mahoraga.csv",
+      "sha256": "e43d5e17fd9716203a6ac5fbb959c56265eb82e976ac51aaf23a2d933974e1a0",
+      "detectedView": "DELIVERY",
+      "role": "CORE_TIMING",
+      "sizeBytes": 266968,
+      "rowCount": 852,
+      "earliestReportingDate": "2026-06-01",
+      "latestReportingDate": "2026-08-10",
+      "accountIds": [
+        "367019114407672"
+      ],
+      "campaignIds": [
+        "120243311904960172"
+      ],
+      "adSetIds": [
+        "120245448816970172"
+      ],
+      "adIds": [
+        "120245448817050172",
+        "120245448817060172",
+        "120245448817080172",
+        "120245448817090172",
+        "120245526877040172",
+        "120245898604680172",
+        "120245898614110172",
+        "120245898630270172",
+        "120245898638380172",
+        "120246565865180172",
+        "120246566072030172",
+        "120246566082760172"
+      ],
+      "duplicateIdentityCount": 0,
+      "sourceGrain": "AD_DAILY"
+    },
+    {
+      "approvedSource": "mahoraga3(2).csv",
+      "sanitizedSourceFilename": "mahoraga3.csv",
+      "sha256": "88007b49bf69ee3ba03db71c30a640a6165a57cef866d8d3c60cf24215841a5b",
+      "detectedView": "ENGAGEMENT",
+      "role": "ENGAGEMENT_ENRICHMENT",
+      "sizeBytes": 27184,
+      "rowCount": 121,
+      "earliestReportingDate": "2026-06-10",
+      "latestReportingDate": "2026-08-10",
+      "accountIds": [
+        "367019114407672"
+      ],
+      "campaignIds": [
+        "120243311904960172"
+      ],
+      "adSetIds": [
+        "120245448816970172"
+      ],
+      "adIds": [
+        "120245448817050172",
+        "120245448817060172",
+        "120245448817080172",
+        "120245448817090172",
+        "120245526877040172",
+        "120245898604680172",
+        "120245898630270172",
+        "120245898638380172",
+        "120246565865180172",
+        "120246566072030172",
+        "120246566082760172"
+      ],
+      "duplicateIdentityCount": 0,
+      "sourceGrain": "AD_DAILY"
+    },
+    {
+      "approvedSource": "mahoraga2(2).csv",
+      "sanitizedSourceFilename": "mahoraga2.csv",
+      "sha256": "ba8c9ae9e0ca5448e786adc40f0adedfd3ecd914688e2eb51e25b26fa94dcec0",
+      "detectedView": "REACH",
+      "role": "REACH_ENRICHMENT",
+      "sizeBytes": 28221,
+      "rowCount": 121,
+      "earliestReportingDate": "2026-06-10",
+      "latestReportingDate": "2026-08-10",
+      "accountIds": [
+        "367019114407672"
+      ],
+      "campaignIds": [
+        "120243311904960172"
+      ],
+      "adSetIds": [
+        "120245448816970172"
+      ],
+      "adIds": [
+        "120245448817050172",
+        "120245448817060172",
+        "120245448817080172",
+        "120245448817090172",
+        "120245526877040172",
+        "120245898604680172",
+        "120245898630270172",
+        "120245898638380172",
+        "120246565865180172",
+        "120246566072030172",
+        "120246566082760172"
+      ],
+      "duplicateIdentityCount": 0,
+      "sourceGrain": "AD_DAILY"
+    },
+    {
+      "approvedSource": "mahoraga4(2).csv",
+      "sanitizedSourceFilename": "mahoraga4.csv",
+      "sha256": "fc93cdacefb53018482c1e5fe6b247a1ec293ff899db198e37d9895ed10bc583",
+      "detectedView": "VIDEO",
+      "role": "VIDEO_ENRICHMENT",
+      "sizeBytes": 31258,
+      "rowCount": 121,
+      "earliestReportingDate": "2026-06-10",
+      "latestReportingDate": "2026-08-10",
+      "accountIds": [
+        "367019114407672"
+      ],
+      "campaignIds": [
+        "120243311904960172"
+      ],
+      "adSetIds": [
+        "120245448816970172"
+      ],
+      "adIds": [
+        "120245448817050172",
+        "120245448817060172",
+        "120245448817080172",
+        "120245448817090172",
+        "120245526877040172",
+        "120245898604680172",
+        "120245898630270172",
+        "120245898638380172",
+        "120246565865180172",
+        "120246566072030172",
+        "120246566082760172"
+      ],
+      "duplicateIdentityCount": 0,
+      "sourceGrain": "AD_DAILY"
+    }
+  ],
+  "verifiedContract": {
+    "accountCount": 1,
+    "campaignCount": 1,
+    "adSetCount": 1,
+    "adCount": 12,
+    "coreRows": 852,
+    "coreDates": 71,
+    "expectedCoreCells": 852,
+    "presentCoreCells": 852,
+    "positiveCoreCells": 110,
+    "explicitZeroCoreCells": 742,
+    "missingCoreCells": 0,
+    "canonicalSpendFacts": 852,
+    "canonicalSpendUsd": 827.18,
+    "firstPositiveDate": "2026-06-10",
+    "lastObservedPositiveDate": "2026-08-10",
+    "zeroRun": {
+      "start": "2026-06-01",
+      "end": "2026-06-09"
+    },
+    "enrichmentIdentityMatchesPerView": 121,
+    "enrichmentAdditionalExplicitZeroFacts": 11,
+    "coreOnlyFacts": 731,
+    "coreOnlySpendUsd": 0,
+    "videoSpendMatches": 121,
+    "videoSpendConflicts": 0,
+    "sourceAsOfOrigin": "UNKNOWN",
+    "zeroOnlyCreative": {
+      "adName": "mahoraga_cover_verse2_rev1",
+      "adId": "120245898614110172",
+      "rows": 71,
+      "spendUsd": 0
+    }
+  },
+  "historicalRevision": {
+    "comparisonProvenance": "PRODUCT_OWNER_REVIEWED_PRIOR_SOURCE_COMPARISON",
+    "priorSourceArtifactPresentInGate": false,
+    "comparableRows": 852,
+    "identicalSpendRows": 851,
+    "revisedRows": 1,
+    "priorTotalUsd": 826.05,
+    "currentTotalUsd": 827.18,
+    "revisedFact": {
+      "adName": "mahoraga_cover_verse1_rev1",
+      "metricDate": "2026-08-10",
+      "priorSpendUsd": 2.71,
+      "currentSpendUsd": 3.84,
+      "differenceUsd": 1.13,
+      "currentDeliveryVerified": true,
+      "currentVideoVerified": true
+    },
+    "canonicalFutureSource": "FINAL_STABLE_ID_BUNDLE",
+    "priorEvidenceDisposition": "PRESERVE_IF_IMPORTED_NEVER_DELETE_SILENTLY"
+  }
+}

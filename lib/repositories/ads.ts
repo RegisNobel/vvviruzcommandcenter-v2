@@ -2159,12 +2159,13 @@ export async function readCreativePerformanceMemory(
 export async function readAdPerformanceTimeline(
   releaseId: string
 ): Promise<AdPerformanceTimeline> {
-  const batches = await prisma.adImportBatch.findMany({
-    where: { releaseId },
-    include: {
-      reports: true
-    }
-  });
+  const [batches, canonicalDaily] = await Promise.all([
+    prisma.adImportBatch.findMany({where: {releaseId}, include: {reports: true}}),
+    prisma.metaDailyResolution.findMany({
+      where: {metricFamily: "SPEND", currentObservation: {importBatch: {releaseId, coreTimingEligible: true, importState: "ACCEPTED", withdrawnAt: null}}},
+      include: {currentObservation: {select: {adName: true, adId: true, spend: true, currency: true}}}
+    })
+  ]);
 
   const sortedBatches = [...batches].sort((a, b) => {
     const dateA = a.reportingEnd ? new Date(a.reportingEnd).getTime() : new Date(a.createdAt).getTime();
@@ -2261,6 +2262,7 @@ export async function readAdPerformanceTimeline(
       name: batch.name,
       reportingStart: batch.reportingStart ? batch.reportingStart.toISOString() : null,
       reportingEnd: batch.reportingEnd ? batch.reportingEnd.toISOString() : null,
+      sourceAsOf: batch.sourceAsOf?.toISOString() ?? batch.exportedAt?.toISOString() ?? null,
       totalSpend,
       totalResults,
       winnerAdName,
@@ -2278,18 +2280,24 @@ export async function readAdPerformanceTimeline(
   }
 
   const adTotalSpend = new Map<string, number>();
-  for (const norm of adNamesMap.keys()) {
-    let total = 0;
-    for (const batch of sortedBatches) {
-      const adMap = batchAdDataMap.get(batch.id)!;
-      total += adMap.get(norm)?.spend ?? 0;
+  const canonicalDates = canonicalDaily.map((item) => item.metricDate.toISOString().slice(0, 10)).sort();
+  const canonicalCurrencies = [...new Set(canonicalDaily.map((item) => item.currency || item.currentObservation.currency).filter(Boolean))].sort();
+  const hasCurrencyConflict = canonicalCurrencies.length > 1;
+  if (canonicalDaily.length && !hasCurrencyConflict) {
+    for (const item of canonicalDaily) {
+      const norm = normalizeMetaAdName(item.currentObservation.adName || item.currentObservation.adId);
+      adTotalSpend.set(norm, (adTotalSpend.get(norm) ?? 0) + (item.currentObservation.spend ?? 0));
     }
-    adTotalSpend.set(norm, total);
+  } else {
+    for (const norm of adNamesMap.keys()) {
+      const latest = [...sortedBatches].reverse().map((batch) => batchAdDataMap.get(batch.id)?.get(norm)).find(Boolean);
+      adTotalSpend.set(norm, latest?.spend ?? 0);
+    }
   }
 
-  const sortedAdNames = Array.from(adNamesMap.keys()).sort((a, b) => {
-    return (adTotalSpend.get(b) ?? 0) - (adTotalSpend.get(a) ?? 0);
-  });
+  const sortedAdNames = Array.from(adNamesMap.keys()).sort((a, b) => hasCurrencyConflict
+    ? (adNamesMap.get(a) ?? a).localeCompare(adNamesMap.get(b) ?? b)
+    : (adTotalSpend.get(b) ?? 0) - (adTotalSpend.get(a) ?? 0));
 
   const rows: AdPerformanceRow[] = sortedAdNames.map((norm) => {
     const originalName = adNamesMap.get(norm)!;
@@ -2398,7 +2406,12 @@ export async function readAdPerformanceTimeline(
   return {
     snapshots,
     rows,
-    hasOverlappingSnapshots
+    hasOverlappingSnapshots,
+    rankingBasis: hasCurrencyConflict ? "canonical_daily_currency_conflict" : canonicalDaily.length ? "canonical_daily" : "latest_snapshot",
+    analysisWindowStart: canonicalDates[0] ?? null,
+    analysisWindowEnd: canonicalDates.at(-1) ?? null,
+    currencies: canonicalCurrencies,
+    currencyStatus: hasCurrencyConflict ? "MULTIPLE_CURRENCIES_UNRANKED" : canonicalCurrencies.length === 1 ? "SINGLE_CURRENCY" : "LEGACY_CURRENCY_UNSPECIFIED"
   };
 }
 

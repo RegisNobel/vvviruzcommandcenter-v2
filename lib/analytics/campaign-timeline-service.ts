@@ -1,9 +1,11 @@
 import "server-only";
 
+import {createHash} from "node:crypto";
 import {Prisma} from "@prisma/client";
 
 import {prisma} from "@/lib/db/prisma";
 import type {AdminErrorCode} from "@/lib/admin-errors";
+import {metaPromotionScopeWhere, selectMostSpecificMetaPromotionLinks} from "@/lib/ads/meta-promotion-links";
 import {AdminError} from "@/lib/server/admin-error-response";
 
 export const CAMPAIGN_STATUSES = ["DRAFT", "ACTIVE", "PAUSED", "ENDED", "ARCHIVED"] as const;
@@ -256,47 +258,69 @@ export async function listPromotionCampaigns(filters: {page?: number; pageSize?:
 
 export async function readPromotionCampaign(id: string, options: {futureWindowEndDate?: string} = {}) {
   await campaignOrThrow(id);
-  const record = await prisma.promotionCampaign.findUnique({where: {id}, include: {release: {select: {id: true, title: true, releaseDate: true}}, artistProfile: {select: {id: true, displayName: true, slug: true}}, activeIntervals: {orderBy: [{activeStartDate: "asc"}, {createdAt: "asc"}], include: {evidence: {select: {id: true, sourceType: true, campaignName: true, importedStartDate: true, importedEndDate: true, spendStartDate: true, spendEndDate: true, rationale: true, confidence: true, timezone: true, adImportBatchId: true}}}}, timelineEvents: {orderBy: [{eventDate: "asc"}, {createdAt: "asc"}]}, evidence: {orderBy: {createdAt: "asc"}}, auditEvents: {orderBy: {createdAt: "asc"}}}});
+  const record = await prisma.promotionCampaign.findUnique({where: {id}, include: {release: {select: {id: true, title: true, releaseDate: true}}, artistProfile: {select: {id: true, displayName: true, slug: true}}, activeIntervals: {orderBy: [{activeStartDate: "asc"}, {createdAt: "asc"}], include: {evidence: {select: {id: true, sourceType: true, campaignName: true, importedStartDate: true, importedEndDate: true, spendStartDate: true, spendEndDate: true, rationale: true, confidence: true, timezone: true, adImportBatchId: true}}}}, timelineEvents: {orderBy: [{eventDate: "asc"}, {createdAt: "asc"}]}, evidence: {orderBy: {createdAt: "asc"}}, auditEvents: {orderBy: {createdAt: "asc"}}, metaPromotionLinks: {orderBy: [{createdAt: "asc"}, {id: "asc"}], include: {supersededBy: {select: {id: true}}, auditEvents: {orderBy: {createdAt: "asc"}}}}}});
   if (!record) throw new AdminError("Promotion campaign was not found.", {code: "CAMPAIGN_NOT_FOUND", status: 404});
-  return JSON.parse(JSON.stringify({...record, activeIntervals: record.activeIntervals.map((interval) => ({...interval, activeStartDate: serializeDate(interval.activeStartDate), activeEndDate: serializeDate(interval.activeEndDate), evidence: interval.evidence ? {...interval.evidence, importedStartDate: serializeDate(interval.evidence.importedStartDate), importedEndDate: serializeDate(interval.evidence.importedEndDate), spendStartDate: serializeDate(interval.evidence.spendStartDate), spendEndDate: serializeDate(interval.evidence.spendEndDate)} : null})), timelineEvents: record.timelineEvents.map((event) => ({...event, eventDate: serializeDate(event.eventDate), metadata: safeJson(event.metadata)})), evidence: record.evidence.map((evidence) => ({...evidence, importedStartDate: serializeDate(evidence.importedStartDate), importedEndDate: serializeDate(evidence.importedEndDate), spendStartDate: serializeDate(evidence.spendStartDate), spendEndDate: serializeDate(evidence.spendEndDate), suggestedStartDate: serializeDate(evidence.suggestedStartDate), suggestedEndDate: serializeDate(evidence.suggestedEndDate), metadata: safeJson(evidence.metadata)})), auditEvents: record.auditEvents.map((event) => ({...event, previousValues: safeJson(event.previousValues), newValues: safeJson(event.newValues)})), overlaps: await readCampaignOverlaps(id, options)}));
+  return JSON.parse(JSON.stringify({...record, activeIntervals: record.activeIntervals.map((interval) => ({...interval, activeStartDate: serializeDate(interval.activeStartDate), activeEndDate: serializeDate(interval.activeEndDate), evidence: interval.evidence ? {...interval.evidence, importedStartDate: serializeDate(interval.evidence.importedStartDate), importedEndDate: serializeDate(interval.evidence.importedEndDate), spendStartDate: serializeDate(interval.evidence.spendStartDate), spendEndDate: serializeDate(interval.evidence.spendEndDate)} : null})), timelineEvents: record.timelineEvents.map((event) => ({...event, eventDate: serializeDate(event.eventDate), metadata: safeJson(event.metadata)})), evidence: record.evidence.map((evidence) => ({...evidence, importedStartDate: serializeDate(evidence.importedStartDate), importedEndDate: serializeDate(evidence.importedEndDate), spendStartDate: serializeDate(evidence.spendStartDate), spendEndDate: serializeDate(evidence.spendEndDate), suggestedStartDate: serializeDate(evidence.suggestedStartDate), suggestedEndDate: serializeDate(evidence.suggestedEndDate), metadata: safeJson(evidence.metadata)})), auditEvents: record.auditEvents.map((event) => ({...event, previousValues: safeJson(event.previousValues), newValues: safeJson(event.newValues)})), metaPromotionLinks: record.metaPromotionLinks.map((link) => ({...link, evidence: safeJson(link.evidence), auditEvents: link.auditEvents.map((event) => ({...event, previousValues: safeJson(event.previousValues), newValues: safeJson(event.newValues)}))})), overlaps: await readCampaignOverlaps(id, options)}));
 }
 
 export async function generateMetaIntervalSuggestions(campaignId: string, actor: CampaignActor, now = new Date()) {
   const campaign = await campaignOrThrow(campaignId); assertNotArchived(campaign);
   if (campaign.platform !== "META" && campaign.platform !== "INSTAGRAM") return {ok: true as const, code: "NO_META_EVIDENCE", message: "This campaign platform has no Meta evidence suggestions.", created: 0};
-  const names = [campaign.externalCampaignName, campaign.name].map((value) => clean(value, 300)).filter(Boolean);
-  const batches = await prisma.adImportBatch.findMany({where: {releaseId: campaign.releaseId}, include: {reports: {where: {campaignName: {in: names}}}}});
-  let created = 0; let evidenceOnly = 0;
-  for (const batch of batches) {
-    const reports = batch.reports.filter((report) => (report.spend ?? 0) > 0);
-    const dailyPositive = reports.filter((report) => report.reportingStart && report.reportingEnd && dateOnly(report.reportingStart) === dateOnly(report.reportingEnd));
-    const positiveDates = [...new Set(dailyPositive.map((report) => dateOnly(report.reportingStart)!).filter(Boolean))].sort();
-    const explicitZeroDates = new Set(batch.reports.filter((report) => (report.spend ?? 0) === 0 && report.reportingStart && report.reportingEnd && dateOnly(report.reportingStart) === dateOnly(report.reportingEnd)).map((report) => dateOnly(report.reportingStart)!));
+  const confirmedLinks = await prisma.metaPromotionLink.findMany({where: {promotionCampaignId: campaignId, status: "CONFIRMED", supersededBy: null}, orderBy: [{createdAt: "asc"}, {id: "asc"}]});
+  const links = selectMostSpecificMetaPromotionLinks(confirmedLinks);
+  if (!links.length) return {ok: true as const, code: "META_LINK_CONFIRMATION_REQUIRED", message: "Confirm at least one scoped external Meta promotion link before generating timeline evidence.", created: 0, evidenceOnly: 0};
+  if (new Set(links.map((link) => link.scopeIdentityKey)).size !== links.length) throw new AdminError("Multiple current links claim the same external Meta scope for this campaign.", {code: "CONFLICT", status: 409});
+  let created = 0;
+  for (const link of links) {
+    const resolutions = await prisma.metaDailyResolution.findMany({
+      where: {...metaPromotionScopeWhere(link), metricFamily: "SPEND", currentObservation: {importBatch: {coreTimingEligible: true, importState: "ACCEPTED", withdrawnAt: null}}},
+      include: {currentObservation: true}, orderBy: [{metricDate: "asc"}, {id: "asc"}]
+    });
+    const byDay = new Map<string, Array<{spend: number; currency: string}>>();
+    for (const resolution of resolutions) {
+      const day = dateOnly(resolution.metricDate)!; const spend = resolution.currentObservation.spend;
+      if (spend !== null) byDay.set(day, [...(byDay.get(day) ?? []), {spend, currency: resolution.currency || resolution.currentObservation.currency}]);
+    }
+    const currencies = [...new Set([...byDay.values()].flat().map((item) => item.currency).filter(Boolean))].sort();
+    const positiveDates = [...byDay.entries()].filter(([, values]) => values.some(({spend}) => spend > 0)).map(([day]) => day).sort();
+    const explicitZeroDates = new Set([...byDay.entries()].filter(([, values]) => values.length > 0 && values.every(({spend}) => spend === 0)).map(([day]) => day));
     const segments: Array<{start: string; end: string}> = [];
     for (const day of positiveDates) {
-      const prior = segments[segments.length - 1];
-      if (!prior) { segments.push({start: day, end: day}); continue; }
-      let cursor = new Date(`${prior.end}T00:00:00.000Z`); cursor.setUTCDate(cursor.getUTCDate() + 1); let hasExplicitZero = false;
-      while (cursor < new Date(`${day}T00:00:00.000Z`)) { if (explicitZeroDates.has(cursor.toISOString().slice(0, 10))) hasExplicitZero = true; cursor.setUTCDate(cursor.getUTCDate() + 1); }
-      if (hasExplicitZero) segments.push({start: day, end: day}); else prior.end = day;
+      const prior = segments.at(-1); if (!prior) {segments.push({start: day, end: day}); continue;}
+      const cursor = new Date(`${prior.end}T00:00:00.000Z`); cursor.setUTCDate(cursor.getUTCDate() + 1); let explicitZeroBetween = false;
+      while (cursor < new Date(`${day}T00:00:00.000Z`)) { if (explicitZeroDates.has(cursor.toISOString().slice(0, 10))) explicitZeroBetween = true; cursor.setUTCDate(cursor.getUTCDate() + 1); }
+      if (explicitZeroBetween) segments.push({start: day, end: day}); else prior.end = day; // UNKNOWN gaps never close a campaign.
     }
-    if (!segments.length && reports.length) {
-      const sourceRecordId = `${batch.id}:reporting-evidence:${names[0]}`;
-      const exists = await prisma.campaignEvidence.findUnique({where: {campaignId_sourceType_sourceRecordId: {campaignId, sourceType: "META_IMPORT_BATCH", sourceRecordId}}});
-      if (!exists) { await prisma.campaignEvidence.create({data: {id: crypto.randomUUID(), campaignId, adImportBatchId: batch.id, sourceType: "META_IMPORT_BATCH", sourceRecordId, campaignName: names[0], importedStartDate: batch.reportingStart, importedEndDate: batch.reportingEnd, rationale: "Positive spend exists only inside a multi-day reporting window; it is evidence but cannot safely define active dates.", confidence: "LOW", metadata: json({positiveSpendRowCount: reports.length, reportingWindowOnly: true}), createdById: actor.userId, createdByUsername: clean(actor.username, 120), createdAt: now, updatedAt: now}}); evidenceOnly += 1; }
-    }
+    const sourceResolutionFingerprint = createHash("sha256").update(JSON.stringify(resolutions.map((item) => [item.id, item.resolutionVersion, item.currentObservationId, dateOnly(item.metricDate), item.currency, item.currentObservation.spend]))).digest("hex");
+    const currentEvidence = await prisma.campaignEvidence.findMany({where: {campaignId, suggestionState: "CURRENT", suggestionKey: {startsWith: `meta:${link.id}:`}}, include: {suggestedIntervals: true}});
+    const currentByKey = new Map(currentEvidence.map((item) => [item.suggestionKey, item]));
+    const desiredKeys = new Set<string>();
     for (const [index, segment] of segments.entries()) {
-      const sourceRecordId = `${batch.id}:${names[0]}:${segment.start}:${segment.end}:${index}`;
-      const exists = await prisma.campaignEvidence.findUnique({where: {campaignId_sourceType_sourceRecordId: {campaignId, sourceType: "META_IMPORT_BATCH", sourceRecordId}}});
-      if (exists) continue;
+      const suggestionKey = `meta:${link.id}:ACTIVE_EVIDENCE_WINDOW:${index + 1}`; desiredKeys.add(suggestionKey);
+      const prior = currentByKey.get(suggestionKey);
+      if (prior?.sourceResolutionFingerprint === sourceResolutionFingerprint && dateOnly(prior.suggestedStartDate) === segment.start && dateOnly(prior.suggestedEndDate) === segment.end) continue;
       await prisma.$transaction(async (tx) => {
-        const evidence = await tx.campaignEvidence.create({data: {id: crypto.randomUUID(), campaignId, adImportBatchId: batch.id, sourceType: "META_IMPORT_BATCH", sourceRecordId, campaignName: names[0], importedStartDate: batch.reportingStart, importedEndDate: batch.reportingEnd, spendStartDate: date(segment.start), spendEndDate: date(segment.end), suggestedStartDate: date(segment.start), suggestedEndDate: date(segment.end), timezone: "", rationale: "Suggested from exact daily Meta report dates with spend greater than zero. Missing days were not treated as zero; only explicit zero-spend dates split segments.", confidence: positiveDates.length > 1 ? "HIGH" : "MEDIUM", metadata: json({positiveSpendDates: positiveDates.length, explicitZeroDates: [...explicitZeroDates], reportingWindowNotAuthoritative: true}), createdById: actor.userId, createdByUsername: clean(actor.username, 120), createdAt: now, updatedAt: now}});
+        const winner = resolutions.find((item) => dateOnly(item.metricDate) === segment.start)?.currentObservation;
+        const evidenceId = crypto.randomUUID();
+        const generationVersion = (prior?.generationVersion ?? 0) + 1;
+        const evidence = await tx.campaignEvidence.create({data: {id: evidenceId, campaignId, adImportBatchId: winner?.importBatchId ?? null, sourceType: "META_IMPORT_BATCH", sourceRecordId: `canonical-daily:${suggestionKey}:${sourceResolutionFingerprint}`, suggestionKey, generationVersion, sourceResolutionFingerprint, suggestionState: "CURRENT", campaignName: link.currentDisplayName, spendStartDate: date(segment.start), spendEndDate: date(segment.end), suggestedStartDate: date(segment.start), suggestedEndDate: date(segment.end), timezone: winner?.normalizedTimezone ?? "", rationale: "First and last observed positive-spend days are conservative activity evidence, not proven campaign boundaries. Missing dates remain UNKNOWN; explicit zeroes do not confirm pauses.", confidence: positiveDates.length > 1 ? "HIGH" : "MEDIUM", metadata: json({evidencePrimitives: {first: "FIRST_ACTIVE_EVIDENCE", withinWindow: "ACTIVE_EVIDENCE", last: "LAST_ACTIVE_EVIDENCE", zeroDates: "EXPLICIT_ZERO", gaps: "UNKNOWN", resumesAfterZero: "ACTIVE_EVIDENCE_RESUMES"}, externalLinkId: link.id, accountId: link.accountId, scopeType: link.scopeType, externalCampaignId: link.externalCampaignId, externalAdSetId: link.externalAdSetId, externalAdId: link.externalAdId, scopeIdentityKey: link.scopeIdentityKey, associationMode: link.associationMode, spendAllocation: link.monetaryAttribution, ambiguous: link.ambiguous, currencyStatus: currencies.length > 1 ? "MULTIPLE_CURRENCIES_NO_MONETARY_AGGREGATE" : "SINGLE_CURRENCY", currencies, positiveSpendDates: positiveDates.length, explicitZeroDates: [...explicitZeroDates], canonicalResolutionOnly: true, nameBasedLinking: false}), createdById: actor.userId, createdByUsername: clean(actor.username, 120), createdAt: now, updatedAt: now}});
         const interval = await tx.campaignActiveInterval.create({data: {id: crypto.randomUUID(), campaignId, activeStartDate: date(segment.start), activeEndDate: date(segment.end), timezone: "UNCONFIRMED", sourceType: "META_REPORT_SUGGESTION", confirmationStatus: "SUGGESTED", evidenceId: evidence.id, notes: "Admin confirmation and timezone are required.", createdById: actor.userId, createdByUsername: clean(actor.username, 120), updatedById: actor.userId, updatedByUsername: clean(actor.username, 120), createdAt: now, updatedAt: now}});
-        await audit(tx, {campaignId, intervalId: interval.id, evidenceId: evidence.id, action: "META_SUGGESTION_CREATED", next: {segment, confidence: evidence.confidence}, actor, now});
+        if (prior) {
+          await tx.campaignActiveInterval.updateMany({where: {evidenceId: prior.id, confirmationStatus: "SUGGESTED", supersededBy: null}, data: {confirmationStatus: "SUPERSEDED", updatedById: actor.userId, updatedByUsername: clean(actor.username, 120), updatedAt: now}});
+          await tx.campaignEvidence.update({where: {id: prior.id}, data: {suggestionState: "SUPERSEDED", supersededByEvidenceId: evidence.id, updatedAt: now}});
+        }
+        await audit(tx, {campaignId, intervalId: interval.id, evidenceId: evidence.id, action: prior ? "META_SUGGESTION_SUPERSEDED" : "META_SUGGESTION_CREATED", previous: prior ? {evidenceId: prior.id, fingerprint: prior.sourceResolutionFingerprint} : undefined, next: {segment, confidence: evidence.confidence, fingerprint: sourceResolutionFingerprint, associationMode: link.associationMode}, actor, now});
       }); created += 1;
     }
+    for (const stale of currentEvidence.filter((item) => !desiredKeys.has(item.suggestionKey))) {
+      await prisma.$transaction(async (tx) => {
+        await tx.campaignActiveInterval.updateMany({where: {evidenceId: stale.id, confirmationStatus: "SUGGESTED", supersededBy: null}, data: {confirmationStatus: "SUPERSEDED", updatedById: actor.userId, updatedByUsername: clean(actor.username, 120), updatedAt: now}});
+        await tx.campaignEvidence.update({where: {id: stale.id}, data: {suggestionState: "SUPERSEDED", updatedAt: now}});
+        await audit(tx, {campaignId, evidenceId: stale.id, action: "META_SUGGESTION_INVALIDATED", previous: {fingerprint: stale.sourceResolutionFingerprint}, next: {fingerprint: sourceResolutionFingerprint}, actor, now});
+      });
+    }
   }
-  return {ok: true as const, code: "META_SUGGESTIONS_GENERATED", message: "Meta evidence reviewed; suggestions remain unconfirmed.", created, evidenceOnly};
+  return {ok: true as const, code: "META_SUGGESTIONS_GENERATED", message: "Canonical Meta evidence reviewed; suggestions remain unconfirmed.", created, evidenceOnly: 0};
 }
 
 export async function readReleaseCampaignTimeline(releaseId: string) {

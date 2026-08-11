@@ -115,7 +115,7 @@ export function CopyPerformanceMemorySection({
     metricBasis?: "combined_total" | "latest_snapshot"
   ) => metricBasis === "latest_snapshot" ? (
     <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
-      latest snapshot
+      latest observed snapshot
     </span>
   ) : null;
 
@@ -137,7 +137,7 @@ export function CopyPerformanceMemorySection({
     <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
       <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
       <div>
-        <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Copy spend/results use the latest snapshot for each row instead of summing duplicated overlapping Meta exports.
+        <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Copy spend/results use the latest observed snapshot for each row instead of summing duplicated overlapping Meta exports.
       </div>
     </div>
   ) : null;
@@ -154,7 +154,7 @@ export function CopyPerformanceMemorySection({
               <h4 className="text-sm font-semibold text-ink">Copy Linking Coverage</h4>
               <p className="text-xs text-[#8a9098] mt-0.5">
                 {coverage.metricBasis === "latest_snapshot"
-                  ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
+                  ? "Percentage of latest observed snapshot spend and creative ads that have associated Copy Lab entries."
                   : "Percentage of total spend and creative ads that have associated Copy Lab entries."}
               </p>
             </div>
@@ -371,7 +371,7 @@ export function CopyPerformanceMemorySection({
             <h4 className="text-sm font-semibold text-ink">Copy Linking Coverage</h4>
             <p className="text-xs text-[#8a9098] mt-0.5">
               {coverage.metricBasis === "latest_snapshot"
-                ? "Percentage of latest snapshot spend and creative ads that have associated Copy Lab entries."
+                ? "Percentage of latest observed snapshot spend and creative ads that have associated Copy Lab entries."
                 : "Percentage of total spend and creative ads that have associated Copy Lab entries."}
             </p>
           </div>

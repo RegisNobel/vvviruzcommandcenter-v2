@@ -1322,6 +1322,7 @@ export type AdPerformanceSnapshot = {
   name: string;
   reportingStart: string | null;
   reportingEnd: string | null;
+  sourceAsOf: string | null;
   totalSpend: number;
   totalResults: number;
   winnerAdName: string | null;
@@ -1339,6 +1340,11 @@ export type AdPerformanceTimeline = {
   snapshots: AdPerformanceSnapshot[];
   rows: AdPerformanceRow[];
   hasOverlappingSnapshots: boolean;
+  rankingBasis: "canonical_daily" | "latest_snapshot" | "canonical_daily_currency_conflict";
+  analysisWindowStart: string | null;
+  analysisWindowEnd: string | null;
+  currencies: string[];
+  currencyStatus: "SINGLE_CURRENCY" | "MULTIPLE_CURRENCIES_UNRANKED" | "LEGACY_CURRENCY_UNSPECIFIED";
 };
 
 export type CopyPerformanceRow = {

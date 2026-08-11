@@ -1,0 +1,3 @@
+ALTER TABLE "AdImportBatch" ADD COLUMN "currencyOrigin" TEXT NOT NULL DEFAULT 'UNKNOWN';
+ALTER TABLE "MetaDailySourceObservation" ADD COLUMN "currencyOrigin" TEXT NOT NULL DEFAULT 'UNKNOWN';
+ALTER TABLE "MetaDailyResolution" ADD COLUMN "currencyOrigin" TEXT NOT NULL DEFAULT 'UNKNOWN';

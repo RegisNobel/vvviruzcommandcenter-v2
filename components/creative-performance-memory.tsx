@@ -125,7 +125,7 @@ export function CreativePerformanceMemorySection({
           <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
             <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest snapshot for each component instead of summing duplicated Meta exports.
+              <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest observed snapshot for each component instead of summing duplicated Meta exports.
             </div>
           </div>
         )}
@@ -155,7 +155,7 @@ export function CreativePerformanceMemorySection({
         <div className="rounded-[16px] border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-200 flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest snapshot for each component instead of summing duplicated Meta exports.
+            <span className="font-semibold text-amber-300">Rolling Snapshot Mode:</span> Date ranges overlap, so spend and results show the latest observed snapshot for each component instead of summing duplicated Meta exports.
           </div>
         </div>
       )}
@@ -263,7 +263,7 @@ export function CreativePerformanceMemorySection({
                     <span>{formatCurrency(row.totalSpend)}</span>
                     {row.metricBasis === "latest_snapshot" && (
                       <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
-                        latest snapshot
+                        latest observed snapshot
                       </span>
                     )}
                   </td>
@@ -271,7 +271,7 @@ export function CreativePerformanceMemorySection({
                     <span>{formatNumber(row.totalResults)}</span>
                     {row.metricBasis === "latest_snapshot" && (
                       <span className="block text-[10px] text-amber-400 font-medium mt-0.5">
-                        latest snapshot
+                        latest observed snapshot
                       </span>
                     )}
                   </td>

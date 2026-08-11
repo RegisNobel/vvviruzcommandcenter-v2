@@ -7,6 +7,8 @@ import path from "node:path";
 import {
   analyticsPreviewDir,
   analyticsRawDir,
+  adsPreviewDir,
+  adsRawDir,
   ensureStorageDirs,
   storageRoot
 } from "@/lib/server/storage";
@@ -14,6 +16,8 @@ import {
 export type PrivateObjectNamespace =
   | "analytics-preview"
   | "analytics-raw"
+  | "ads-preview"
+  | "ads-raw"
   | "database-backups";
 
 export type PrivateStorageErrorCode =
@@ -37,18 +41,24 @@ export class PrivateStorageError extends Error {
 const namespaceEnvironmentKeys: Record<PrivateObjectNamespace, string> = {
   "analytics-preview": "PRIVATE_STORAGE_PREVIEW_NAMESPACE",
   "analytics-raw": "PRIVATE_STORAGE_RAW_NAMESPACE",
+  "ads-preview": "PRIVATE_STORAGE_ADS_PREVIEW_NAMESPACE",
+  "ads-raw": "PRIVATE_STORAGE_ADS_RAW_NAMESPACE",
   "database-backups": "PRIVATE_STORAGE_BACKUP_NAMESPACE"
 };
 
 const defaultNamespaces: Record<PrivateObjectNamespace, string> = {
   "analytics-preview": "analytics-preview",
   "analytics-raw": "analytics-raw",
+  "ads-preview": "ads-preview",
+  "ads-raw": "ads-raw",
   "database-backups": "database-backups"
 };
 
 const extensions: Record<PrivateObjectNamespace, string> = {
   "analytics-preview": ".csv",
   "analytics-raw": ".csv",
+  "ads-preview": ".csv",
+  "ads-raw": ".csv",
   "database-backups": ".json.gz.enc"
 };
 
@@ -97,6 +107,8 @@ function maximumObjectBytes() {
 function localDirectory(namespace: PrivateObjectNamespace) {
   if (namespace === "analytics-preview") return analyticsPreviewDir;
   if (namespace === "analytics-raw") return analyticsRawDir;
+  if (namespace === "ads-preview") return adsPreviewDir;
+  if (namespace === "ads-raw") return adsRawDir;
   return path.join(storageRoot, "database-backups");
 }
 

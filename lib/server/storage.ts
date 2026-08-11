@@ -11,6 +11,8 @@ export const exclusiveTracksDir = path.join(storageRoot, "exclusive-tracks");
 export const exclusiveArtDir = path.join(storageRoot, "exclusive-art");
 export const analyticsPreviewDir = path.join(storageRoot, "analytics-preview");
 export const analyticsRawDir = path.join(storageRoot, "analytics-raw");
+export const adsPreviewDir = path.join(storageRoot, "ads-preview");
+export const adsRawDir = path.join(storageRoot, "ads-raw");
 export const releasesDir = path.join(storageRoot, "releases");
 export const copiesDir = path.join(storageRoot, "copies");
 
@@ -87,6 +89,8 @@ export async function ensureStorageDirs() {
     fs.mkdir(exclusiveArtDir, {recursive: true}),
     fs.mkdir(analyticsPreviewDir, {recursive: true}),
     fs.mkdir(analyticsRawDir, {recursive: true}),
+    fs.mkdir(adsPreviewDir, {recursive: true}),
+    fs.mkdir(adsRawDir, {recursive: true}),
     fs.mkdir(releasesDir, {recursive: true}),
     fs.mkdir(copiesDir, {recursive: true})
   ]);

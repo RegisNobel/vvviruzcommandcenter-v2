@@ -1,0 +1,487 @@
+{
+  "generatedAt": "2026-08-10",
+  "guard": {
+    "productionIdentityVerified": true,
+    "transaction": "READ ONLY"
+  },
+  "inventory": {
+    "postgresServerVersion": "17.6",
+    "batches": 17,
+    "reports": 150,
+    "copyLabLinks": 109,
+    "aggregateSnapshotBatches": 17,
+    "existingDailyBatches": 0,
+    "batchTypes": {
+      "Rolling Snapshot": 17
+    },
+    "dailyLikeBatches": 0,
+    "mahoragaBatches": 5,
+    "mahoragaReports": 50,
+    "mahoragaCopyLabLinks": 18,
+    "campaigns": 0,
+    "aliases": 0,
+    "metaPromotionLinkTablePresent": false,
+    "metaPromotionLinkRows": 0,
+    "expectedLegacyDefaults": {
+      "sourceGranularity": "AGGREGATE_SNAPSHOT",
+      "campaignIntervalEligible": false,
+      "eligibilityReason": "LEGACY_AGGREGATE_SNAPSHOT",
+      "validationState": "ACCEPTED_WITH_LIMITATIONS",
+      "sourceAsOfOrigin": "UNKNOWN"
+    }
+  },
+  "spotifyFingerprints": {
+    "analyticsImports": {
+      "count": 4,
+      "sha256": "88a7a27dcde6cb2fed3cda27697a76b18419b6aac784bfde01b6aa3884c21fee"
+    },
+    "artistTimeline": {
+      "count": 944,
+      "sha256": "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923"
+    },
+    "mahoragaTrackTimeline": {
+      "count": 944,
+      "sha256": "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea"
+    },
+    "songsPeriod": {
+      "count": 27,
+      "sha256": "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"
+    },
+    "playlistsPeriod": {
+      "count": 8,
+      "sha256": "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"
+    }
+  },
+  "ranking": {
+    "labelAfterDeployment": "Latest observed snapshot spend",
+    "allProduction": {
+      "reports": 150,
+      "distinctAds": 32,
+      "changedTotals": 27,
+      "changedPositions": 29,
+      "postDeploymentFingerprint": "e88c2060631d4a3ab87b04c3b1cf6bbd70818a16b83287064db88a569deaba06",
+      "impacts": [
+        {
+          "adRef": "de40b4711f",
+          "existingAccumulatedSpend": 1045.55,
+          "latestSnapshotSpend": 506.41,
+          "difference": -539.14,
+          "oldRank": 1,
+          "newRank": 1,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "7ee97cda2d",
+          "existingAccumulatedSpend": 894.02,
+          "latestSnapshotSpend": 157.25,
+          "difference": -736.77,
+          "oldRank": 2,
+          "newRank": 3,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "0d10d71ba4",
+          "existingAccumulatedSpend": 375.32,
+          "latestSnapshotSpend": 38.65,
+          "difference": -336.67,
+          "oldRank": 3,
+          "newRank": 5,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "f6f43d8d35",
+          "existingAccumulatedSpend": 192.25,
+          "latestSnapshotSpend": 192.25,
+          "difference": 0,
+          "oldRank": 4,
+          "newRank": 2,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "b923c86993",
+          "existingAccumulatedSpend": 156.51,
+          "latestSnapshotSpend": 0.58,
+          "difference": -155.93,
+          "oldRank": 5,
+          "newRank": 21,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "3fa23da278",
+          "existingAccumulatedSpend": 131.07,
+          "latestSnapshotSpend": 33.34,
+          "difference": -97.73,
+          "oldRank": 6,
+          "newRank": 6,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "f3c8081bb7",
+          "existingAccumulatedSpend": 112.98,
+          "latestSnapshotSpend": 83.71,
+          "difference": -29.27,
+          "oldRank": 7,
+          "newRank": 4,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "afa8eac0df",
+          "existingAccumulatedSpend": 67.81,
+          "latestSnapshotSpend": 10.19,
+          "difference": -57.62,
+          "oldRank": 8,
+          "newRank": 10,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "31f9d86336",
+          "existingAccumulatedSpend": 60.51,
+          "latestSnapshotSpend": 6.09,
+          "difference": -54.42,
+          "oldRank": 9,
+          "newRank": 12,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "9ae06c18ce",
+          "existingAccumulatedSpend": 43.98,
+          "latestSnapshotSpend": 16.13,
+          "difference": -27.85,
+          "oldRank": 10,
+          "newRank": 8,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "d438de0379",
+          "existingAccumulatedSpend": 29.61,
+          "latestSnapshotSpend": 2.16,
+          "difference": -27.45,
+          "oldRank": 11,
+          "newRank": 16,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "c71a64f101",
+          "existingAccumulatedSpend": 20.7,
+          "latestSnapshotSpend": 13.18,
+          "difference": -7.52,
+          "oldRank": 12,
+          "newRank": 9,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "32fb7b6d7d",
+          "existingAccumulatedSpend": 19.15,
+          "latestSnapshotSpend": 6.4,
+          "difference": -12.75,
+          "oldRank": 13,
+          "newRank": 11,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "064a323760",
+          "existingAccumulatedSpend": 19.05,
+          "latestSnapshotSpend": 1.24,
+          "difference": -17.81,
+          "oldRank": 14,
+          "newRank": 19,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "fb4ac0ddb9",
+          "existingAccumulatedSpend": 17.34,
+          "latestSnapshotSpend": 16.31,
+          "difference": -1.03,
+          "oldRank": 15,
+          "newRank": 7,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "c669babca1",
+          "existingAccumulatedSpend": 15.95,
+          "latestSnapshotSpend": 1.95,
+          "difference": -14,
+          "oldRank": 16,
+          "newRank": 17,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "09c3756daa",
+          "existingAccumulatedSpend": 5.32,
+          "latestSnapshotSpend": 0,
+          "difference": -5.32,
+          "oldRank": 17,
+          "newRank": 29,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "bf4d7c2fe7",
+          "existingAccumulatedSpend": 4.76,
+          "latestSnapshotSpend": 0,
+          "difference": -4.76,
+          "oldRank": 18,
+          "newRank": 30,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "4c4cacf073",
+          "existingAccumulatedSpend": 4.74,
+          "latestSnapshotSpend": 4.35,
+          "difference": -0.39,
+          "oldRank": 19,
+          "newRank": 13,
+          "latestBatchRef": "d1018843ad"
+        },
+        {
+          "adRef": "adb9cad885",
+          "existingAccumulatedSpend": 4.57,
+          "latestSnapshotSpend": 2.29,
+          "difference": -2.28,
+          "oldRank": 20,
+          "newRank": 15,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "16057ef0f9",
+          "existingAccumulatedSpend": 3.35,
+          "latestSnapshotSpend": 1.68,
+          "difference": -1.67,
+          "oldRank": 21,
+          "newRank": 18,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "42d678bf4d",
+          "existingAccumulatedSpend": 2.97,
+          "latestSnapshotSpend": 2.97,
+          "difference": 0,
+          "oldRank": 22,
+          "newRank": 14,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "07cb6bf4c0",
+          "existingAccumulatedSpend": 2.34,
+          "latestSnapshotSpend": 0.78,
+          "difference": -1.56,
+          "oldRank": 23,
+          "newRank": 20,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "a4ac2d2b7e",
+          "existingAccumulatedSpend": 1.45,
+          "latestSnapshotSpend": 0.15,
+          "difference": -1.3,
+          "oldRank": 24,
+          "newRank": 26,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "f5c38ff445",
+          "existingAccumulatedSpend": 1.28,
+          "latestSnapshotSpend": 0.16,
+          "difference": -1.12,
+          "oldRank": 25,
+          "newRank": 25,
+          "latestBatchRef": "dfccec76ab"
+        },
+        {
+          "adRef": "0f1ae1fe6b",
+          "existingAccumulatedSpend": 0.95,
+          "latestSnapshotSpend": 0.02,
+          "difference": -0.93,
+          "oldRank": 26,
+          "newRank": 27,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "3285d0beb9",
+          "existingAccumulatedSpend": 0.79,
+          "latestSnapshotSpend": 0.27,
+          "difference": -0.52,
+          "oldRank": 27,
+          "newRank": 23,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "4900fd5ac5",
+          "existingAccumulatedSpend": 0.48,
+          "latestSnapshotSpend": 0,
+          "difference": -0.48,
+          "oldRank": 28,
+          "newRank": 32,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "226e716588",
+          "existingAccumulatedSpend": 0.4,
+          "latestSnapshotSpend": 0,
+          "difference": -0.4,
+          "oldRank": 29,
+          "newRank": 28,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "234f57cf0c",
+          "existingAccumulatedSpend": 0.36,
+          "latestSnapshotSpend": 0.36,
+          "difference": 0,
+          "oldRank": 30,
+          "newRank": 22,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "73f0ce04b3",
+          "existingAccumulatedSpend": 0.22,
+          "latestSnapshotSpend": 0.22,
+          "difference": 0,
+          "oldRank": 31,
+          "newRank": 24,
+          "latestBatchRef": "e1af49a89f"
+        },
+        {
+          "adRef": "a1ad0f9fdd",
+          "existingAccumulatedSpend": 0,
+          "latestSnapshotSpend": 0,
+          "difference": 0,
+          "oldRank": 32,
+          "newRank": 31,
+          "latestBatchRef": "a9c6c57482"
+        }
+      ]
+    },
+    "mahoraga": {
+      "reports": 50,
+      "distinctAds": 12,
+      "changedTotals": 11,
+      "changedPositions": 11,
+      "postDeploymentFingerprint": "5fa2ab275289b5c4cac78e5afe491f46fcb88ea150c20510ad7fd6136bda513c",
+      "impacts": [
+        {
+          "adRef": "de40b4711f",
+          "existingAccumulatedSpend": 1045.55,
+          "latestSnapshotSpend": 506.41,
+          "difference": -539.14,
+          "oldRank": 1,
+          "newRank": 1,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "b923c86993",
+          "existingAccumulatedSpend": 156.51,
+          "latestSnapshotSpend": 0.58,
+          "difference": -155.93,
+          "oldRank": 2,
+          "newRank": 4,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "32fb7b6d7d",
+          "existingAccumulatedSpend": 19.15,
+          "latestSnapshotSpend": 6.4,
+          "difference": -12.75,
+          "oldRank": 3,
+          "newRank": 2,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "09c3756daa",
+          "existingAccumulatedSpend": 5.32,
+          "latestSnapshotSpend": 0,
+          "difference": -5.32,
+          "oldRank": 4,
+          "newRank": 9,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "bf4d7c2fe7",
+          "existingAccumulatedSpend": 4.76,
+          "latestSnapshotSpend": 0,
+          "difference": -4.76,
+          "oldRank": 5,
+          "newRank": 10,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "07cb6bf4c0",
+          "existingAccumulatedSpend": 2.34,
+          "latestSnapshotSpend": 0.78,
+          "difference": -1.56,
+          "oldRank": 6,
+          "newRank": 3,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "a4ac2d2b7e",
+          "existingAccumulatedSpend": 1.45,
+          "latestSnapshotSpend": 0.15,
+          "difference": -1.3,
+          "oldRank": 7,
+          "newRank": 6,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "0f1ae1fe6b",
+          "existingAccumulatedSpend": 0.95,
+          "latestSnapshotSpend": 0.02,
+          "difference": -0.93,
+          "oldRank": 8,
+          "newRank": 7,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "3285d0beb9",
+          "existingAccumulatedSpend": 0.79,
+          "latestSnapshotSpend": 0.27,
+          "difference": -0.52,
+          "oldRank": 9,
+          "newRank": 5,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "4900fd5ac5",
+          "existingAccumulatedSpend": 0.48,
+          "latestSnapshotSpend": 0,
+          "difference": -0.48,
+          "oldRank": 10,
+          "newRank": 12,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "226e716588",
+          "existingAccumulatedSpend": 0.4,
+          "latestSnapshotSpend": 0,
+          "difference": -0.4,
+          "oldRank": 11,
+          "newRank": 8,
+          "latestBatchRef": "a9c6c57482"
+        },
+        {
+          "adRef": "a1ad0f9fdd",
+          "existingAccumulatedSpend": 0,
+          "latestSnapshotSpend": 0,
+          "difference": 0,
+          "oldRank": 12,
+          "newRank": 11,
+          "latestBatchRef": "a9c6c57482"
+        }
+      ]
+    }
+  },
+  "privacy": {
+    "identifiers": "SHA-256 truncated references only",
+    "rawNamesIncluded": false,
+    "rawRowsIncluded": false,
+    "listenerMetricsIncluded": false
+  },
+  "gateE08Freeze": {
+    "productionReadOnlyReverified": true,
+    "gameOverManifestFingerprint": "69a1b2f3321f65f5049cd27f131e2066adafa9c3f4793843d68ea2e064e505bf",
+    "mahoragaManifestFingerprint": "1bfc3d1bae9e75815e59b5a987e6246fe39a4724533f239eb3a9dd5dfdc25b5a",
+    "prismaProductionDiffSha256": "c45bf56051f393983fb0897a6d4f4062c974ac7d91b378646c609d5ef8d99de0",
+    "postgresCompanionSha256": "67701b1ec6f600c18a75dfffaa222eccef166e7a9589ec67015f9b4b45ac531d",
+    "dualReleasePostgresIsolationPassed": true,
+    "productionMutations": 0
+  }
+}

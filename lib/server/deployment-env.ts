@@ -11,6 +11,8 @@ export type DeploymentEnvValidation = {
     privateStorageEnabled: boolean;
     privateStorageNamespaces: string[];
     rawRetentionDays: number | null;
+    adsRawRetentionDays: number | null;
+    adsPreviewRetentionMinutes: number | null;
   };
 };
 
@@ -58,6 +60,8 @@ export function validateDeploymentEnvironment(env: DeploymentEnvironment): Deplo
   const privateStorageNamespaces = [
     env.PRIVATE_STORAGE_PREVIEW_NAMESPACE?.trim() || "analytics-preview",
     env.PRIVATE_STORAGE_RAW_NAMESPACE?.trim() || "analytics-raw",
+    env.PRIVATE_STORAGE_ADS_PREVIEW_NAMESPACE?.trim() || "ads-preview",
+    env.PRIVATE_STORAGE_ADS_RAW_NAMESPACE?.trim() || "ads-raw",
     env.PRIVATE_STORAGE_BACKUP_NAMESPACE?.trim() || "database-backups"
   ];
   if (privateStorageNamespaces.some((value) => !/^[a-z0-9][a-z0-9-]{2,62}$/.test(value))) {
@@ -74,6 +78,10 @@ export function validateDeploymentEnvironment(env: DeploymentEnvironment): Deplo
   }
   const rawRetentionDays = boundedNumber(env.ANALYTICS_RAW_RETENTION_DAYS ?? "30", 1, 365);
   if (rawRetentionDays === null || !Number.isInteger(rawRetentionDays)) invalid.push("ANALYTICS_RAW_RETENTION_DAYS must be an integer from 1 to 365");
+  const adsRawRetentionDays = boundedNumber(env.ADS_RAW_FILE_RETENTION_DAYS ?? "30", 1, 365);
+  if (adsRawRetentionDays === null || !Number.isInteger(adsRawRetentionDays)) invalid.push("ADS_RAW_FILE_RETENTION_DAYS must be an integer from 1 to 365");
+  const adsPreviewRetentionMinutes = boundedNumber(env.ADS_PREVIEW_RETENTION_MINUTES ?? "15", 15, 1440);
+  if (adsPreviewRetentionMinutes === null || !Number.isInteger(adsPreviewRetentionMinutes)) invalid.push("ADS_PREVIEW_RETENTION_MINUTES must be an integer from 15 to 1440");
   if (boundedNumber(env.ANALYTICS_RECONCILIATION_WARNING_PERCENT ?? "5", 0, 100) === null) invalid.push("ANALYTICS_RECONCILIATION_WARNING_PERCENT must be between 0 and 100");
   if (boundedNumber(env.ANALYTICS_RECONCILIATION_HIGH_PERCENT ?? "20", 0, 100) === null) invalid.push("ANALYTICS_RECONCILIATION_HIGH_PERCENT must be between 0 and 100");
   if (boundedNumber(env.ANALYTICS_CLEANUP_BATCH_SIZE ?? "100", 1, 500) === null) invalid.push("ANALYTICS_CLEANUP_BATCH_SIZE must be between 1 and 500");
@@ -91,7 +99,9 @@ export function validateDeploymentEnvironment(env: DeploymentEnvironment): Deplo
       blobEnabled,
       privateStorageEnabled,
       privateStorageNamespaces,
-      rawRetentionDays
+      rawRetentionDays,
+      adsRawRetentionDays,
+      adsPreviewRetentionMinutes
     }
   };
 }

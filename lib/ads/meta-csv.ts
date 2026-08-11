@@ -1,6 +1,6 @@
 import type {AdCreativeReportRecord} from "@/lib/types";
 
-export type MetaMetricView = "delivery" | "engagement" | "video" | "unknown";
+export type MetaMetricView = "delivery" | "engagement" | "video" | "reach" | "unknown";
 
 export type ParsedMetaAdRow = Omit<
   AdCreativeReportRecord,
@@ -279,6 +279,14 @@ const engagementViewHeaders = new Set([
   "instagram_follows"
 ]);
 
+const reachTrustedFields = new Set<keyof ParsedMetaAdRow>([
+  "impressions",
+  "reach",
+  "frequency",
+  "cost_per_thousand_accounts_reached",
+  "cpm"
+]);
+
 const deliveryViewHeaders = new Set([
   "ad_set_name",
   "adset_name",
@@ -363,12 +371,19 @@ function detectMetricView(headers: string[]): MetaMetricView {
     return "video";
   }
 
+  if (headers.some((header) => [
+    "amount_spent", "amount_spent_usd", "spent", "spend", "results", "result_indicator",
+    "attribution_setting", "quality_ranking", "engagement_rate_ranking", "conversion_rate_ranking"
+  ].includes(header))) {
+    return "delivery";
+  }
+
   if (headers.some((header) => engagementViewHeaders.has(header))) {
     return "engagement";
   }
 
-  if (headers.some((header) => deliveryViewHeaders.has(header))) {
-    return "delivery";
+  if (headers.some((header) => ["reach", "impressions", "frequency", "cost_per_1_000_meta_accounts_reached_usd", "cpm_cost_per_1_000_impressions_usd"].includes(header))) {
+    return "reach";
   }
 
   return "unknown";
@@ -521,6 +536,10 @@ function trustedFieldForView(view: MetaMetricView | undefined, field: keyof Pars
 
   if (view === "video") {
     return videoTrustedFields.has(field);
+  }
+
+  if (view === "reach") {
+    return reachTrustedFields.has(field);
   }
 
   return false;

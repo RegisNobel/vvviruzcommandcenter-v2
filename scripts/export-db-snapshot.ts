@@ -112,9 +112,18 @@ async function main() {
     adCreativeReports: await prisma.adCreativeReport.findMany(),
     adCreativeCopyLinks: await prisma.adCreativeCopyLink.findMany(),
     adCampaignLearnings: await prisma.adCampaignLearning.findMany(),
+    metaImportFiles: await prisma.metaImportFile.findMany(),
+    metaImportFileRows: await prisma.metaImportFileRow.findMany(),
+    metaDailySourceObservations: await prisma.metaDailySourceObservation.findMany(),
+    metaDailyResolutions: await prisma.metaDailyResolution.findMany(),
+    metaDailyResolutionEvents: await prisma.metaDailyResolutionEvent.findMany(),
+    metaImportAuditEvents: await prisma.metaImportAuditEvent.findMany(),
     promotionCampaigns: await readOptionalTable("PromotionCampaign", () =>
       prisma.promotionCampaign.findMany()
     ),
+    metaPromotionLinks: await prisma.metaPromotionLink.findMany(),
+    metaPromotionLinkAuditEvents: await prisma.metaPromotionLinkAuditEvent.findMany(),
+    metaAccountTimezoneResolutions: await prisma.metaAccountTimezoneResolution.findMany(),
     campaignEvidence: await readOptionalTable("CampaignEvidence", () =>
       prisma.campaignEvidence.findMany()
     ),

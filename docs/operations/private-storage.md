@@ -15,10 +15,12 @@ Vercel's platform maximum is 5 TB per object and recommends multipart upload abo
 
 ## Namespaces and keys
 
-One private store per environment uses three opaque namespaces:
+One private store per environment uses five opaque namespaces:
 
 - `analytics-preview/<uuid>.csv`
 - `analytics-raw/<uuid>.csv`
+- `ads-preview/<uuid>.csv`
+- `ads-raw/<uuid>.csv`
 - `database-backups/<uuid>.json.gz.enc`
 
 UUIDs are generated server-side. Keys reject URLs, traversal, nested caller paths, original filenames, artist/release names, email addresses, import titles, and raw hashes. Original filenames remain sanitized database metadata. Private CSV objects are stored as `application/octet-stream`; they are read only by trusted server code and are never routed through `/api/assets`.
@@ -29,6 +31,8 @@ The token identifies its store, so no runtime store identifier is required. Conf
 - `PRIVATE_BLOB_READ_WRITE_TOKEN` (encrypted, server-only, different per production and non-production)
 - `PRIVATE_STORAGE_PREVIEW_NAMESPACE=analytics-preview`
 - `PRIVATE_STORAGE_RAW_NAMESPACE=analytics-raw`
+- `PRIVATE_STORAGE_ADS_PREVIEW_NAMESPACE=ads-preview`
+- `PRIVATE_STORAGE_ADS_RAW_NAMESPACE=ads-raw`
 - `PRIVATE_STORAGE_BACKUP_NAMESPACE=database-backups`
 - `PRIVATE_STORAGE_MAX_OBJECT_BYTES=536870912`
 
@@ -39,6 +43,9 @@ Public assets continue to use `ASSET_STORAGE_DRIVER`, `BLOB_READ_WRITE_TOKEN`, a
 Uploads return only an opaque pathname, byte count, SHA-256 checksum, and timestamp. Listing returns opaque ID/pathname, size, timestamp, and ETag; Blob URLs are discarded. Reads validate the expected namespace and UUID key before using authenticated SDK download. An optional expected SHA-256 check rejects partial or changed content. Deletes are idempotent. SDK errors are reduced to stable operational codes without provider messages, tokens, URLs, or keys.
 
 Preview objects expire independently of the encrypted preview token. Raw objects retain a database driver, opaque key, size, hash, expiration, and deletion timestamp. Storage deletion precedes `rawFileDeletedAt`; a failure leaves the database row retryable. Imports, mappings, audits, and normalized observations are not deleted with raw bytes.
+
+Meta Ad Lab raw files default to 30-day retention via `ADS_RAW_FILE_RETENTION_DAYS`. Their normalized source observations, canonical resolutions, link audits, and legacy classifications remain after `ads-raw` deletion.
+Meta preview objects use `ADS_PREVIEW_RETENTION_MINUTES=15`, matching the encrypted preview-token lifetime so an expired 4-8 file bundle is cleanup-eligible without leaving partial database state.
 
 ## Backup behavior
 

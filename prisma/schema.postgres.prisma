@@ -9,31 +9,37 @@ datasource db {
 }
 
 model AdminUser {
-  id                         String                   @id
-  username                   String                   @unique
-  totpMethod                 String?
-  totpEncryptedSecret        String?
-  totpEnrolledAt             DateTime?
-  createdAt                  DateTime
-  updatedAt                  DateTime
-  sessions                   AuthSession[]
-  analyticsImportsUploaded   AnalyticsImport[]        @relation("AnalyticsImportUploadedBy")
-  analyticsImportsWithdrawn  AnalyticsImport[]        @relation("AnalyticsImportWithdrawnBy")
-  analyticsRowsConfirmed     AnalyticsImportRow[]     @relation("AnalyticsImportRowConfirmedBy")
-  analyticsRowsUnmatched     AnalyticsImportRow[]     @relation("AnalyticsImportRowUnmatchedBy")
-  releaseAliasesConfirmed    ReleaseImportAlias[]     @relation("ReleaseImportAliasConfirmedBy")
-  releaseAliasesRevoked      ReleaseImportAlias[]     @relation("ReleaseImportAliasRevokedBy")
-  mappingAuditEvents         MappingAuditEvent[]
-  promotionCampaignsCreated  PromotionCampaign[]      @relation("PromotionCampaignCreatedBy")
-  promotionCampaignsUpdated  PromotionCampaign[]      @relation("PromotionCampaignUpdatedBy")
-  campaignIntervalsCreated   CampaignActiveInterval[] @relation("CampaignIntervalCreatedBy")
-  campaignIntervalsUpdated   CampaignActiveInterval[] @relation("CampaignIntervalUpdatedBy")
-  campaignIntervalsConfirmed CampaignActiveInterval[] @relation("CampaignIntervalConfirmedBy")
-  campaignIntervalsRejected  CampaignActiveInterval[] @relation("CampaignIntervalRejectedBy")
-  campaignEventsCreated      CampaignTimelineEvent[]  @relation("CampaignEventCreatedBy")
-  campaignEventsUpdated      CampaignTimelineEvent[]  @relation("CampaignEventUpdatedBy")
-  campaignEvidenceCreated    CampaignEvidence[]       @relation("CampaignEvidenceCreatedBy")
-  campaignAuditEvents        CampaignAuditEvent[]
+  id                           String                          @id
+  username                     String                          @unique
+  totpMethod                   String?
+  totpEncryptedSecret          String?
+  totpEnrolledAt               DateTime?
+  createdAt                    DateTime
+  updatedAt                    DateTime
+  sessions                     AuthSession[]
+  analyticsImportsUploaded     AnalyticsImport[]               @relation("AnalyticsImportUploadedBy")
+  analyticsImportsWithdrawn    AnalyticsImport[]               @relation("AnalyticsImportWithdrawnBy")
+  analyticsRowsConfirmed       AnalyticsImportRow[]            @relation("AnalyticsImportRowConfirmedBy")
+  analyticsRowsUnmatched       AnalyticsImportRow[]            @relation("AnalyticsImportRowUnmatchedBy")
+  releaseAliasesConfirmed      ReleaseImportAlias[]            @relation("ReleaseImportAliasConfirmedBy")
+  releaseAliasesRevoked        ReleaseImportAlias[]            @relation("ReleaseImportAliasRevokedBy")
+  mappingAuditEvents           MappingAuditEvent[]
+  promotionCampaignsCreated    PromotionCampaign[]             @relation("PromotionCampaignCreatedBy")
+  promotionCampaignsUpdated    PromotionCampaign[]             @relation("PromotionCampaignUpdatedBy")
+  campaignIntervalsCreated     CampaignActiveInterval[]        @relation("CampaignIntervalCreatedBy")
+  campaignIntervalsUpdated     CampaignActiveInterval[]        @relation("CampaignIntervalUpdatedBy")
+  campaignIntervalsConfirmed   CampaignActiveInterval[]        @relation("CampaignIntervalConfirmedBy")
+  campaignIntervalsRejected    CampaignActiveInterval[]        @relation("CampaignIntervalRejectedBy")
+  campaignEventsCreated        CampaignTimelineEvent[]         @relation("CampaignEventCreatedBy")
+  campaignEventsUpdated        CampaignTimelineEvent[]         @relation("CampaignEventUpdatedBy")
+  campaignEvidenceCreated      CampaignEvidence[]              @relation("CampaignEvidenceCreatedBy")
+  campaignAuditEvents          CampaignAuditEvent[]
+  metaImportBatches            AdImportBatch[]                 @relation("MetaImportAcceptedBy")
+  metaImportWithdrawals        AdImportBatch[]                 @relation("MetaImportWithdrawnBy")
+  metaPromotionLinksActed      MetaPromotionLink[]             @relation("MetaPromotionLinkActor")
+  metaImportAuditEvents        MetaImportAuditEvent[]
+  metaPromotionLinkAuditEvents MetaPromotionLinkAuditEvent[]
+  metaTimezoneConfirmations    MetaAccountTimezoneResolution[] @relation("MetaTimezoneConfirmedBy")
 
   @@index([username])
 }
@@ -222,28 +228,253 @@ model CopyEntry {
 }
 
 model AdImportBatch {
-  id                 String               @id
-  source             String               @default("meta")
-  name               String               @default("")
-  releaseId          String?
-  reportingStart     DateTime?
-  reportingEnd       DateTime?
-  exportedAt         DateTime?
-  attributionSetting String               @default("7-day click, 1-day view, 1-day engagement")
-  batchType          String               @default("Rolling Snapshot")
-  fileNames          String               @default("[]")
-  notes              String               @default("")
-  createdAt          DateTime
-  updatedAt          DateTime
-  release            Release?             @relation(fields: [releaseId], references: [id], onDelete: SetNull)
-  reports            AdCreativeReport[]
-  learnings          AdCampaignLearning[]
-  campaignEvidence   CampaignEvidence[]
+  id                          String                       @id
+  source                      String                       @default("meta")
+  name                        String                       @default("")
+  releaseId                   String?
+  reportingStart              DateTime?
+  reportingEnd                DateTime?
+  exportedAt                  DateTime?
+  attributionSetting          String                       @default("7-day click, 1-day view, 1-day engagement")
+  batchType                   String                       @default("Rolling Snapshot")
+  fileNames                   String                       @default("[]")
+  notes                       String                       @default("")
+  bundleHash                  String                       @default("")
+  idempotencyKey              String?                      @unique
+  sourceGranularity           String                       @default("AGGREGATE_SNAPSHOT")
+  campaignIntervalEligible    Boolean                      @default(false)
+  eligibilityReason           String                       @default("LEGACY_AGGREGATE_SNAPSHOT")
+  coreTimingEligible          Boolean                      @default(false)
+  coreTimingEligibilityReason String                       @default("LEGACY_AGGREGATE_SNAPSHOT")
+  enrichmentCompatibility     String                       @default("NOT_EVALUATED")
+  enrichmentWarnings          String                       @default("[]")
+  coreTimingStart             DateTime?
+  coreTimingEnd               DateTime?
+  commonCoverageStart         DateTime?
+  commonCoverageEnd           DateTime?
+  commonCoverageDateCount     Int                          @default(0)
+  validationState             String                       @default("ACCEPTED_WITH_LIMITATIONS")
+  accountId                   String                       @default("")
+  accountName                 String                       @default("")
+  accountTimezone             String                       @default("")
+  normalizedTimezone          String                       @default("")
+  timezoneSource              String                       @default("UNKNOWN")
+  currency                    String                       @default("")
+  currencyOrigin              String                       @default("UNKNOWN")
+  sourceAsOf                  DateTime?
+  sourceAsOfOrigin            String                       @default("UNKNOWN")
+  parserVersion               String                       @default("legacy-v1")
+  normalizationVersion        String                       @default("legacy-v1")
+  acceptedById                String?
+  acceptedByUsername          String                       @default("")
+  acceptedAt                  DateTime?
+  importState                 String                       @default("ACCEPTED")
+  warnings                    String                       @default("[]")
+  withdrawnAt                 DateTime?
+  withdrawnById               String?
+  withdrawnByUsername         String                       @default("")
+  withdrawalReason            String                       @default("")
+  replacesBatchId             String?                      @unique
+  createdAt                   DateTime
+  updatedAt                   DateTime
+  release                     Release?                     @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+  reports                     AdCreativeReport[]
+  learnings                   AdCampaignLearning[]
+  campaignEvidence            CampaignEvidence[]
+  acceptedBy                  AdminUser?                   @relation("MetaImportAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  withdrawnBy                 AdminUser?                   @relation("MetaImportWithdrawnBy", fields: [withdrawnById], references: [id], onDelete: SetNull)
+  replacesBatch               AdImportBatch?               @relation("MetaImportReplacement", fields: [replacesBatchId], references: [id], onDelete: Restrict)
+  replacedByBatch             AdImportBatch?               @relation("MetaImportReplacement")
+  importFiles                 MetaImportFile[]
+  dailySourceObservations     MetaDailySourceObservation[]
+  importAuditEvents           MetaImportAuditEvent[]
 
   @@index([releaseId])
   @@index([createdAt])
   @@index([exportedAt])
   @@index([batchType])
+  @@index([accountId, sourceGranularity, acceptedAt])
+  @@index([campaignIntervalEligible, importState, acceptedAt])
+  @@index([coreTimingEligible, importState, acceptedAt])
+  @@index([bundleHash])
+  @@index([replacesBatchId])
+}
+
+model MetaImportFile {
+  id                    String              @id
+  importBatchId         String
+  sha256                String
+  sanitizedFileName     String
+  sourceView            String
+  viewRole              String              @default("UNKNOWN")
+  rowCount              Int
+  reportingStart        DateTime?
+  reportingEnd          DateTime?
+  observedDateCount     Int                 @default(0)
+  expectedDateCount     Int?
+  adCount               Int                 @default(0)
+  missingCoreDateCount  Int                 @default(0)
+  coverageState         String              @default("NO_DAILY_COVERAGE")
+  compatibilityState    String              @default("NOT_EVALUATED")
+  compatibilityWarnings String              @default("[]")
+  rawStorageKey         String?
+  rawStorageSha256      String?
+  rawSizeBytes          Int?
+  rawExpiresAt          DateTime?
+  rawDeletedAt          DateTime?
+  validationWarnings    String              @default("[]")
+  parserMetadata        String              @default("{}")
+  createdAt             DateTime
+  importBatch           AdImportBatch       @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  sourceRows            MetaImportFileRow[]
+
+  @@unique([importBatchId, sha256])
+  @@index([sha256])
+  @@index([importBatchId, sourceView])
+  @@index([rawExpiresAt, rawDeletedAt])
+}
+
+model MetaImportFileRow {
+  id                   String         @id
+  importFileId         String
+  sourceRowNumber      Int
+  sourceView           String
+  sourceIdentityKey    String
+  normalizedPayload    String
+  parserVersion        String
+  normalizationVersion String
+  createdAt            DateTime
+  importFile           MetaImportFile @relation(fields: [importFileId], references: [id], onDelete: Cascade)
+
+  @@unique([importFileId, sourceRowNumber])
+  @@index([sourceIdentityKey])
+}
+
+model MetaDailySourceObservation {
+  id                   String                     @id
+  importBatchId        String
+  sourceFileIds        String                     @default("[]")
+  sourceRowIds         String                     @default("[]")
+  accountId            String
+  accountName          String                     @default("")
+  campaignId           String
+  campaignName         String                     @default("")
+  adSetId              String
+  adSetName            String                     @default("")
+  adId                 String
+  adName               String                     @default("")
+  metricDate           DateTime
+  sourceReportingDate  String
+  accountTimezone      String
+  normalizedTimezone   String
+  timezoneSource       String
+  currency             String
+  currencyOrigin       String                     @default("UNKNOWN")
+  metricFamily         String                     @default("SPEND")
+  metricKey            String                     @default("SPEND")
+  attributionSetting   String
+  resultMetricKey      String                     @default("NONE")
+  spend                Float?
+  impressions          Int?
+  reach                Int?
+  results              Float?
+  resultIndicator      String                     @default("")
+  deliveryStatus       String                     @default("")
+  urlParameters        String                     @default("")
+  sourceAsOf           DateTime?
+  sourceAsOfOrigin     String                     @default("UNKNOWN")
+  acceptedAt           DateTime
+  parserVersion        String
+  normalizationVersion String
+  identityKey          String
+  createdAt            DateTime
+  importBatch          AdImportBatch              @relation(fields: [importBatchId], references: [id], onDelete: Restrict)
+  currentFor           MetaDailyResolution[]
+  supersessionFrom     MetaDailyResolutionEvent[] @relation("MetaResolutionPrevious")
+  supersessionTo       MetaDailyResolutionEvent[] @relation("MetaResolutionCurrent")
+
+  @@unique([importBatchId, identityKey])
+  @@index([accountId, campaignId, metricDate])
+  @@index([campaignId, metricDate])
+  @@index([adId, metricDate])
+  @@index([identityKey, sourceAsOf, acceptedAt])
+}
+
+model MetaDailyResolution {
+  id                   String                     @id
+  identityKey          String                     @unique
+  accountId            String
+  campaignId           String
+  adSetId              String
+  adId                 String
+  metricDate           DateTime
+  currency             String                     @default("")
+  currencyOrigin       String                     @default("UNKNOWN")
+  metricFamily         String                     @default("SPEND")
+  metricKey            String                     @default("SPEND")
+  attributionSetting   String
+  resultMetricKey      String                     @default("NONE")
+  currentObservationId String
+  resolvedAt           DateTime
+  resolutionVersion    Int                        @default(1)
+  currentObservation   MetaDailySourceObservation @relation(fields: [currentObservationId], references: [id], onDelete: Restrict)
+  events               MetaDailyResolutionEvent[]
+
+  @@index([accountId, campaignId, metricDate])
+  @@index([campaignId, metricDate])
+  @@index([currentObservationId])
+}
+
+model MetaDailyResolutionEvent {
+  id                    String                      @id
+  resolutionId          String
+  previousObservationId String?
+  currentObservationId  String
+  reason                String
+  precedenceEvidence    String                      @default("{}")
+  createdAt             DateTime
+  resolution            MetaDailyResolution         @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  previousObservation   MetaDailySourceObservation? @relation("MetaResolutionPrevious", fields: [previousObservationId], references: [id], onDelete: Restrict)
+  currentObservation    MetaDailySourceObservation  @relation("MetaResolutionCurrent", fields: [currentObservationId], references: [id], onDelete: Restrict)
+
+  @@index([resolutionId, createdAt])
+  @@index([currentObservationId])
+}
+
+model MetaImportAuditEvent {
+  id             String        @id
+  importBatchId  String
+  action         String
+  reason         String        @default("")
+  previousValues String        @default("{}")
+  newValues      String        @default("{}")
+  actorId        String?
+  actorUsername  String        @default("")
+  createdAt      DateTime
+  importBatch    AdImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Restrict)
+  actor          AdminUser?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([importBatchId, createdAt])
+  @@index([actorId])
+}
+
+model MetaAccountTimezoneResolution {
+  id                     String                         @id
+  accountId              String
+  ianaTimezone           String
+  sourceOrigin           String
+  resolutionState        String                         @default("CURRENT")
+  supersedesResolutionId String?                        @unique
+  confirmedAt            DateTime
+  confirmedById          String?
+  confirmedByUsername    String                         @default("")
+  createdAt              DateTime
+  confirmedBy            AdminUser?                     @relation("MetaTimezoneConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+  supersedesResolution   MetaAccountTimezoneResolution? @relation("MetaTimezoneSupersession", fields: [supersedesResolutionId], references: [id], onDelete: Restrict)
+  supersededByResolution MetaAccountTimezoneResolution? @relation("MetaTimezoneSupersession")
+
+  @@index([accountId, resolutionState])
+  @@index([confirmedById])
 }
 
 model AdCreativeReport {
@@ -675,6 +906,7 @@ model PromotionCampaign {
   timelineEvents       CampaignTimelineEvent[]
   evidence             CampaignEvidence[]
   auditEvents          CampaignAuditEvent[]
+  metaPromotionLinks   MetaPromotionLink[]
 
   @@index([releaseId, status, updatedAt])
   @@index([artistProfileId, status, updatedAt])
@@ -763,36 +995,96 @@ model CampaignTimelineEvent {
 }
 
 model CampaignEvidence {
-  id                 String                   @id
-  campaignId         String
-  adImportBatchId    String?
-  sourceType         String
-  sourceRecordId     String                   @default("")
-  campaignName       String                   @default("")
-  importedStartDate  DateTime?
-  importedEndDate    DateTime?
-  spendStartDate     DateTime?
-  spendEndDate       DateTime?
-  suggestedStartDate DateTime?
-  suggestedEndDate   DateTime?
-  timezone           String                   @default("")
-  rationale          String                   @default("")
-  confidence         String                   @default("LOW")
-  metadata           String                   @default("{}")
-  createdById        String?
-  createdByUsername  String                   @default("")
-  createdAt          DateTime
-  updatedAt          DateTime
-  campaign           PromotionCampaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  adImportBatch      AdImportBatch?           @relation(fields: [adImportBatchId], references: [id], onDelete: SetNull)
-  createdBy          AdminUser?               @relation("CampaignEvidenceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  suggestedIntervals CampaignActiveInterval[]
-  auditEvents        CampaignAuditEvent[]
+  id                          String                   @id
+  campaignId                  String
+  adImportBatchId             String?
+  sourceType                  String
+  sourceRecordId              String                   @default("")
+  campaignName                String                   @default("")
+  importedStartDate           DateTime?
+  importedEndDate             DateTime?
+  spendStartDate              DateTime?
+  spendEndDate                DateTime?
+  suggestedStartDate          DateTime?
+  suggestedEndDate            DateTime?
+  timezone                    String                   @default("")
+  rationale                   String                   @default("")
+  confidence                  String                   @default("LOW")
+  metadata                    String                   @default("{}")
+  suggestionKey               String                   @default("")
+  generationVersion           Int                      @default(1)
+  sourceResolutionFingerprint String                   @default("")
+  suggestionState             String                   @default("LEGACY")
+  supersededByEvidenceId      String?                  @unique
+  createdById                 String?
+  createdByUsername           String                   @default("")
+  createdAt                   DateTime
+  updatedAt                   DateTime
+  campaign                    PromotionCampaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  adImportBatch               AdImportBatch?           @relation(fields: [adImportBatchId], references: [id], onDelete: SetNull)
+  createdBy                   AdminUser?               @relation("CampaignEvidenceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  supersededBy                CampaignEvidence?        @relation("CampaignEvidenceSupersession", fields: [supersededByEvidenceId], references: [id], onDelete: Restrict)
+  supersedes                  CampaignEvidence[]       @relation("CampaignEvidenceSupersession")
+  suggestedIntervals          CampaignActiveInterval[]
+  auditEvents                 CampaignAuditEvent[]
 
+  @@unique([campaignId, sourceType, sourceRecordId])
   @@index([campaignId, sourceType, createdAt])
   @@index([adImportBatchId])
   @@index([campaignName])
-  @@unique([campaignId, sourceType, sourceRecordId])
+  @@index([campaignId, suggestionKey, suggestionState])
+  @@index([sourceResolutionFingerprint])
+}
+
+model MetaPromotionLink {
+  id                  String                        @id
+  promotionCampaignId String
+  accountId           String
+  scopeType           String                        @default("CAMPAIGN")
+  externalCampaignId  String
+  externalAdSetId     String                        @default("")
+  externalAdId        String                        @default("")
+  scopeIdentityKey    String
+  currentDisplayName  String                        @default("")
+  status              String                        @default("SUGGESTED")
+  associationMode     String                        @default("EXCLUSIVE")
+  monetaryAttribution String                        @default("UNALLOCATED")
+  ambiguous           Boolean                       @default(false)
+  evidence            String                        @default("{}")
+  reason              String                        @default("")
+  actorId             String?
+  actorUsername       String                        @default("")
+  supersedesLinkId    String?                       @unique
+  createdAt           DateTime
+  updatedAt           DateTime
+  promotionCampaign   PromotionCampaign             @relation(fields: [promotionCampaignId], references: [id], onDelete: Restrict)
+  actor               AdminUser?                    @relation("MetaPromotionLinkActor", fields: [actorId], references: [id], onDelete: SetNull)
+  supersedes          MetaPromotionLink?            @relation("MetaPromotionLinkSupersession", fields: [supersedesLinkId], references: [id], onDelete: Restrict)
+  supersededBy        MetaPromotionLink?            @relation("MetaPromotionLinkSupersession")
+  auditEvents         MetaPromotionLinkAuditEvent[]
+
+  @@index([scopeIdentityKey, status])
+  @@index([accountId, externalCampaignId, scopeType, status])
+  @@index([accountId, externalCampaignId, externalAdSetId, externalAdId])
+  @@index([promotionCampaignId, status])
+  @@index([status, createdAt])
+}
+
+model MetaPromotionLinkAuditEvent {
+  id             String            @id
+  linkId         String
+  action         String
+  reason         String            @default("")
+  previousValues String            @default("{}")
+  newValues      String            @default("{}")
+  actorId        String?
+  actorUsername  String            @default("")
+  createdAt      DateTime
+  link           MetaPromotionLink @relation(fields: [linkId], references: [id], onDelete: Restrict)
+  actor          AdminUser?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([linkId, createdAt])
+  @@index([actorId])
 }
 
 model CampaignAuditEvent {

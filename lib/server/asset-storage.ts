@@ -8,6 +8,8 @@ import {
   artistIntakeImagesDir,
   analyticsPreviewDir,
   analyticsRawDir,
+  adsPreviewDir,
+  adsRawDir,
   ensureStorageDirs,
   exclusiveArtDir,
   exclusiveTracksDir,
@@ -30,7 +32,9 @@ export type StoredAssetKind =
   | "exclusive-art"
   | "exclusive-track"
   | "analytics-preview"
-  | "analytics-raw";
+  | "analytics-raw"
+  | "ads-preview"
+  | "ads-raw";
 
 export type StoredAssetAccess = "public" | "private";
 
@@ -60,7 +64,7 @@ export function isRemoteAssetReference(value: string) {
 function isAnalyticsAssetKind(
   kind: StoredAssetKind
 ): kind is Extract<StoredAssetKind, PrivateObjectNamespace> {
-  return kind === "analytics-preview" || kind === "analytics-raw";
+  return kind === "analytics-preview" || kind === "analytics-raw" || kind === "ads-preview" || kind === "ads-raw";
 }
 
 function getAssetDirectory(kind: StoredAssetKind) {
@@ -79,6 +83,10 @@ function getAssetDirectory(kind: StoredAssetKind) {
       return analyticsPreviewDir;
     case "analytics-raw":
       return analyticsRawDir;
+    case "ads-preview":
+      return adsPreviewDir;
+    case "ads-raw":
+      return adsRawDir;
   }
 }
 
@@ -324,7 +332,7 @@ export async function resolveAssetToLocalPath(
   return tempPath;
 }
 
-export async function listStoredAssetReferences(kind: "analytics-preview" | "analytics-raw") {
+export async function listStoredAssetReferences(kind: "analytics-preview" | "analytics-raw" | "ads-preview" | "ads-raw") {
   return (await listPrivateObjects(kind)).map(({id, storedPath, updatedAt}) => ({
     id,
     storedPath,

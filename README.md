@@ -1,5 +1,7 @@
 # vvviruz' command center
 
+> **2026-08-10 - Real Meta DAILY contract validation:** The first genuine four-view bundle confirmed daily rows, stable account/campaign/ad-set/ad IDs, header-encoded USD, immutable correction/withdrawal supersession, safe preview expiration, and production-shaped performance. It also exposed incompatible view date ranges, a critical duplicate-spend disagreement, and missing timezone/source-as-of metadata, so campaign eligibility and production deployment remain blocked pending one reconciled same-session export plus reviewed timezone provenance. Aggregate fallback UI now says `Latest observed snapshot spend`, exposes period/as-of context, and preserves superseded campaign evidence visibly.
+
 > **2026-07-29 - Shared-release artist editorial routing:** Managed artist profiles can now open a linked vvviruz-catalog collaboration inside the artist-specific editorial layout while continuing to reuse the canonical release, lyrics, credits, streaming links, and annotations. Private previews may display stored lyrics for collaborator review before public lyric permission is confirmed; published pages retain the existing rights-confirmation gate. Editorial previews use an origin-only referrer so YouTube embeds receive the required site identity without exposing private preview tokens.
 
 > **2026-07-29 - Managed artist approval and intake hardening:** Kept published artist snapshots live while newer drafts move through review, isolated published slugs from draft edits, added expiring/superseding/revocable preview links, made off-platform approval language explicit, and added confirmation plus audit details around approval and publishing. Artist intake now supports reviewed/converted/archived lifecycle states, reopen and invitation rotation, notification-failure visibility, cover-art permissions, cleanup of abandoned uploads, and reviewed import into unpublished artist/release/annotation drafts. Vercel builds no longer mutate the production schema automatically; schema deployment is a separate explicit pre-deploy step.
@@ -2255,7 +2257,15 @@ After applying RLS changes:
 
 - Added a public `/breaking-barz` discovery feed with artist, song, and type filters; canonical detail pages; streaming links; verified/interpretive labels; and a responsive fan suggestion form.
 - Added `/admin/breaking-barz` for standalone breakdowns, private fan review, approval/rejection history, versioned publishing, and withdrawal. Release-linked entries remain edited from Release Detail.
+
 - Release annotations now synchronize into versioned Breaking Barz entries in the same transaction. Draft revisions preserve the last published title, artists, links, categories, excerpt, summary, and breakdown until the revision is published.
 - Added persistent submission throttling, a honeypot, sitemap and backup coverage, SQLite migrations, matching PostgreSQL schema support, and default-dry-run inventory/backfill tools.
 - Run `npm run breaking-barz:inventory`, `npm run breaking-barz:backfill`, and then `npm run breaking-barz:backfill -- --apply` after reviewing the dry-run report. Production writes additionally require `--confirm-production-write`.
 - Added `npm run test:breaking-barz-discovery` to verify public-version stability and release-annotation synchronization against a disposable database copy.
+
+### 2026-08-10 - Ad Lab daily timing evidence foundation
+
+- Separated authoritative Delivery-based campaign timing from optional Video, Engagement, and Reach enrichment so shorter or missing optional exports do not discard valid daily spend evidence.
+- Added per-view coverage provenance, Delivery-owned canonical spend, explicit cross-view reconciliation warnings, and analysis-window labels that prevent copied spend from being counted twice.
+- Added an immutable, administrator-reviewed Meta account timezone registry with explicit conflict replacement and supersession history.
+- Extended SQLite/PostgreSQL schemas, private import preview/commit, evidence generation, ranking, cleanup, RLS, and backup/restore rehearsals for the new contract.

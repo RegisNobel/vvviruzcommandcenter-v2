@@ -15,8 +15,13 @@ async function filesUnder(root: string): Promise<string[]> {
 async function main() {
   const routes = await filesUnder(path.join(process.cwd(), "app", "api", "analytics"));
   const privateRoutes = routes.filter((file) => !file.endsWith(path.join("track", "route.ts")));
+  const adRoutes = await filesUnder(path.join(process.cwd(), "app", "api", "ads"));
   assert.ok(privateRoutes.length >= 20);
   for (const file of privateRoutes) {
+    const source = await fs.readFile(file, "utf8");
+    assert.match(source, /requireAuthenticatedApiRequest\(request\)/, `${file} must require a TOTP-complete admin session`);
+  }
+  for (const file of adRoutes) {
     const source = await fs.readFile(file, "utf8");
     assert.match(source, /requireAuthenticatedApiRequest\(request\)/, `${file} must require a TOTP-complete admin session`);
   }

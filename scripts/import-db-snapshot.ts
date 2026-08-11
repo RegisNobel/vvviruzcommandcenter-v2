@@ -60,6 +60,15 @@ type Snapshot = {
   adCreativeReports?: SnapshotRecord[];
   adCreativeCopyLinks?: SnapshotRecord[];
   adCampaignLearnings?: SnapshotRecord[];
+  metaImportFiles?: SnapshotRecord[];
+  metaImportFileRows?: SnapshotRecord[];
+  metaDailySourceObservations?: SnapshotRecord[];
+  metaDailyResolutions?: SnapshotRecord[];
+  metaDailyResolutionEvents?: SnapshotRecord[];
+  metaImportAuditEvents?: SnapshotRecord[];
+  metaPromotionLinks?: SnapshotRecord[];
+  metaPromotionLinkAuditEvents?: SnapshotRecord[];
+  metaAccountTimezoneResolutions?: SnapshotRecord[];
   promotionCampaigns?: SnapshotRecord[];
   campaignEvidence?: SnapshotRecord[];
   campaignActiveIntervals?: SnapshotRecord[];
@@ -133,10 +142,19 @@ const dateFieldsByModel: Record<string, string[]> = {
   mappingAuditEvent: ["createdAt"],
   backupRun: ["startedAt", "finishedAt", "createdAt"],
   shortLink: ["createdAt", "updatedAt", "archivedAt", "pausedAt", "destinationUpdatedAt", "deletedAt"],
-  adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "createdAt", "updatedAt"],
+  adImportBatch: ["reportingStart", "reportingEnd", "exportedAt", "sourceAsOf", "acceptedAt", "withdrawnAt", "createdAt", "updatedAt"],
   adCreativeReport: ["reportingStart", "reportingEnd", "createdAt", "updatedAt"],
   adCreativeCopyLink: ["createdAt"],
   adCampaignLearning: ["createdAt", "updatedAt"],
+  metaImportFile: ["reportingStart", "reportingEnd", "rawExpiresAt", "rawDeletedAt", "createdAt"],
+  metaImportFileRow: ["createdAt"],
+  metaDailySourceObservation: ["metricDate", "sourceAsOf", "acceptedAt", "createdAt"],
+  metaDailyResolution: ["metricDate", "resolvedAt"],
+  metaDailyResolutionEvent: ["createdAt"],
+  metaAccountTimezoneResolution: ["confirmedAt", "createdAt"],
+  metaImportAuditEvent: ["createdAt"],
+  metaPromotionLink: ["createdAt", "updatedAt"],
+  metaPromotionLinkAuditEvent: ["createdAt"],
   promotionCampaign: ["createdAt", "updatedAt", "archivedAt"],
   campaignEvidence: ["importedStartDate", "importedEndDate", "spendStartDate", "spendEndDate", "suggestedStartDate", "suggestedEndDate", "createdAt", "updatedAt"],
   campaignActiveInterval: ["activeStartDate", "activeEndDate", "confirmedAt", "rejectedAt", "createdAt", "updatedAt"],
@@ -356,7 +374,8 @@ async function main() {
   counts.shortLinks = await upsertMany("shortLink", snapshot.shortLinks);
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
   counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
-  counts.adImportBatches = await upsertMany("adImportBatch", snapshot.adImportBatches);
+  const metaBatchReplacements = (snapshot.adImportBatches ?? []).map((record) => ({id: record.id, replacesBatchId: record.replacesBatchId}));
+  counts.adImportBatches = await upsertMany("adImportBatch", (snapshot.adImportBatches ?? []).map((record) => ({...record, acceptedById: null, withdrawnById: null, replacesBatchId: null})));
   counts.adCreativeReports = await upsertMany("adCreativeReport", snapshot.adCreativeReports);
   counts.adCreativeCopyLinks = await upsertMany(
     "adCreativeCopyLink",
@@ -366,14 +385,30 @@ async function main() {
     "adCampaignLearning",
     snapshot.adCampaignLearnings
   );
+  counts.metaImportFiles = await upsertMany("metaImportFile", snapshot.metaImportFiles);
+  counts.metaImportFileRows = await insertManyImmutable("metaImportFileRow", snapshot.metaImportFileRows);
+  counts.metaDailySourceObservations = await insertManyImmutable("metaDailySourceObservation", snapshot.metaDailySourceObservations);
+  counts.metaDailyResolutions = await upsertMany("metaDailyResolution", snapshot.metaDailyResolutions);
+  counts.metaDailyResolutionEvents = await insertManyImmutable("metaDailyResolutionEvent", snapshot.metaDailyResolutionEvents);
+  counts.metaImportAuditEvents = await insertManyImmutable("metaImportAuditEvent", (snapshot.metaImportAuditEvents ?? []).map((record) => ({...record, actorId: null})));
+  for (const link of metaBatchReplacements) if (typeof link.id === "string" && typeof link.replacesBatchId === "string") await prisma.adImportBatch.update({where: {id: link.id}, data: {replacesBatchId: link.replacesBatchId}});
   counts.promotionCampaigns = await upsertMany(
     "promotionCampaign",
     (snapshot.promotionCampaigns ?? []).map((record) => ({...record, createdById: null, updatedById: null}))
   );
+  const metaLinkSupersessions = (snapshot.metaPromotionLinks ?? []).map((record) => ({id: record.id, supersedesLinkId: record.supersedesLinkId}));
+  counts.metaPromotionLinks = await upsertMany("metaPromotionLink", (snapshot.metaPromotionLinks ?? []).map((record) => ({...record, actorId: null, supersedesLinkId: null})));
+  for (const link of metaLinkSupersessions) if (typeof link.id === "string" && typeof link.supersedesLinkId === "string") await prisma.metaPromotionLink.update({where: {id: link.id}, data: {supersedesLinkId: link.supersedesLinkId}});
+  counts.metaPromotionLinkAuditEvents = await insertManyImmutable("metaPromotionLinkAuditEvent", (snapshot.metaPromotionLinkAuditEvents ?? []).map((record) => ({...record, actorId: null})));
+  const metaTimezoneSupersessions = (snapshot.metaAccountTimezoneResolutions ?? []).map((record) => ({id: record.id, supersedesResolutionId: record.supersedesResolutionId}));
+  counts.metaAccountTimezoneResolutions = await upsertMany("metaAccountTimezoneResolution", (snapshot.metaAccountTimezoneResolutions ?? []).map((record) => ({...record, confirmedById: null, supersedesResolutionId: null})));
+  for (const link of metaTimezoneSupersessions) if (typeof link.id === "string" && typeof link.supersedesResolutionId === "string") await prisma.metaAccountTimezoneResolution.update({where: {id: link.id}, data: {supersedesResolutionId: link.supersedesResolutionId}});
+  const evidenceSupersessions = (snapshot.campaignEvidence ?? []).map((record) => ({id: record.id, supersededByEvidenceId: record.supersededByEvidenceId}));
   counts.campaignEvidence = await upsertMany(
     "campaignEvidence",
-    (snapshot.campaignEvidence ?? []).map((record) => ({...record, createdById: null}))
+    (snapshot.campaignEvidence ?? []).map((record) => ({...record, createdById: null, supersededByEvidenceId: null}))
   );
+  for (const link of evidenceSupersessions) if (typeof link.id === "string" && typeof link.supersededByEvidenceId === "string") await prisma.campaignEvidence.update({where: {id: link.id}, data: {supersededByEvidenceId: link.supersededByEvidenceId}});
   const intervalLinks = (snapshot.campaignActiveIntervals ?? []).map((record) => ({id: record.id, supersedesIntervalId: record.supersedesIntervalId}));
   counts.campaignActiveIntervals = await upsertMany(
     "campaignActiveInterval",
