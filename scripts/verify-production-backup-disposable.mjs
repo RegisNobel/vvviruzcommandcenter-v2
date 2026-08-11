@@ -224,20 +224,24 @@ class VercelTmpEmbeddedPostgres {
   }
 
   async initialise() {
+    phase = "disposable-runtime-copy";
     const source = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native");
     const approvedRoot = `${path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64")}${path.sep}`;
     assert.ok(source.startsWith(approvedRoot), "Embedded PostgreSQL source path guard failed.");
     await fs.cp(source, this.nativeDirectory, {recursive: true, dereference: true});
+    phase = "disposable-runtime-permissions";
     for (const entry of await fs.readdir(path.join(this.nativeDirectory, "bin"), {withFileTypes: true})) {
       if (entry.isFile()) await fs.chmod(path.join(this.nativeDirectory, "bin", entry.name), 0o755);
     }
     await fs.mkdir(this.options.databaseDir, {recursive: true});
+    phase = "disposable-runtime-identity";
     this.identity = postgresRuntimeIdentity();
     if (this.identity.uid !== undefined) await fs.chown(this.options.databaseDir, this.identity.uid, this.identity.gid);
     const passwordFile = path.join(os.tmpdir(), `pg-password-${crypto.randomBytes(8).toString("hex")}`);
     await fs.writeFile(passwordFile, `${this.options.password}\n`, {mode: 0o600});
     if (this.identity.uid !== undefined) await fs.chown(passwordFile, this.identity.uid, this.identity.gid);
     try {
+      phase = "disposable-initdb";
       await spawnChecked(path.join(this.nativeDirectory, "bin", "initdb"), [`--pgdata=${this.options.databaseDir}`, "--auth=password", `--username=${this.options.user}`, `--pwfile=${passwordFile}`, "--locale=C"], {...this.identity, env: this.runtimeEnv()});
     } finally {
       await fs.unlink(passwordFile).catch(() => {});
@@ -245,6 +249,7 @@ class VercelTmpEmbeddedPostgres {
   }
 
   async start() {
+    phase = "disposable-postgres-start";
     await new Promise((resolve, reject) => {
       const command = path.join(this.nativeDirectory, "bin", "postgres");
       this.process = spawn(command, ["-D", this.options.databaseDir, "-p", String(this.options.port), "-h", "127.0.0.1"], {...this.identity, env: this.runtimeEnv(), stdio: ["ignore", "ignore", "pipe"]});
@@ -258,6 +263,7 @@ class VercelTmpEmbeddedPostgres {
   }
 
   async createDatabase(name) {
+    phase = "disposable-database-create";
     const admin = new Client({host: "127.0.0.1", port: this.options.port, user: this.options.user, password: this.options.password, database: "postgres"});
     await admin.connect();
     try { await admin.query(`CREATE DATABASE ${admin.escapeIdentifier(name)}`); } finally { await admin.end(); }
@@ -379,7 +385,8 @@ try {
       ? "INVALID_BACKUP_PAYLOAD"
       : "VERIFICATION_OPERATION_FAILED";
   const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
-  console.error(JSON.stringify({gate: "E2.1B", status: "failed-safe", phase, classification, databaseCode}));
+  const operationCode = typeof error?.code === "string" && /^E[A-Z0-9_]+$/.test(error.code) ? error.code : undefined;
+  console.error(JSON.stringify({gate: "E2.1B", status: "failed-safe", phase, classification, databaseCode, operationCode}));
 } finally {
   if (target) await target.end().catch(() => {});
   if (embedded) await embedded.stop().catch(() => {});
