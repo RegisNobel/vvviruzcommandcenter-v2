@@ -86,10 +86,15 @@ async function downloadApprovedBackup(fileId) {
 }
 
 async function spotifyFingerprint(client) {
+  phase = "state-spotify-analytics-imports-read";
   const analyticsImports = (await client.query(`SELECT id,"fileHash","importType",status,"rowCount","acceptedRowCount","rejectedRowCount","unmatchedRowCount","warningCount","acceptedAt","withdrawnAt","replacedByImportId" FROM "AnalyticsImport" ORDER BY id`)).rows;
+  phase = "state-spotify-artist-timeline-read";
   const artistTimeline = (await client.query(`SELECT o.* FROM "ArtistMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" WHERE i.status='IMPORTED' ORDER BY o.id`)).rows;
+  phase = "state-spotify-mahoraga-track-read";
   const mahoragaTrackTimeline = (await client.query(`SELECT o.* FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title ILIKE '%mahoraga%' ORDER BY o.id`)).rows;
+  phase = "state-spotify-songs-read";
   const songsPeriod = (await client.query(`SELECT s.* FROM "SongPeriodSnapshot" s JOIN "AnalyticsImport" i ON i.id=s."importId" WHERE i.status='IMPORTED' ORDER BY s.id`)).rows;
+  phase = "state-spotify-playlists-read";
   const playlistsPeriod = (await client.query(`SELECT p.* FROM "PlaylistPeriodSnapshot" p JOIN "AnalyticsImport" i ON i.id=p."importId" WHERE i.status='IMPORTED' ORDER BY p.id`)).rows;
   return {
     analyticsImports: {count: analyticsImports.length, sha256: digest(analyticsImports)},
@@ -101,6 +106,7 @@ async function spotifyFingerprint(client) {
 }
 
 async function stateFingerprint(client) {
+  phase = "state-counts-read";
   const counts = (await client.query(`
     SELECT
       (SELECT count(*)::int FROM "AdImportBatch") batches,
@@ -114,6 +120,7 @@ async function stateFingerprint(client) {
       (SELECT count(*)::int FROM "PromotionCampaign") campaigns,
       (SELECT count(*)::int FROM "CampaignActiveInterval" WHERE "confirmationStatus"='CONFIRMED') confirmed_intervals
   `)).rows[0];
+  phase = "state-game-over-read";
   const gameOver = (await client.query(`
     SELECT b.id,b."importState",b."validationState",b."sourceAsOfOrigin",b."reportingStart",b."reportingEnd",
       count(*)::int facts,
@@ -129,13 +136,14 @@ async function stateFingerprint(client) {
     JOIN "MetaDailyResolution" r ON r."currentObservationId"=o.id
     WHERE b.id=$1 GROUP BY b.id
   `, [APPROVED.gameOverImportId])).rows[0];
+  phase = "state-details-read";
   const details = (await client.query(`
     SELECT
       (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1) provenance_files,
       (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1 AND "rawStorageKey"<>'' AND "rawStorageSha256"<>'') raw_provenance_files,
       (SELECT count(*)::int FROM "MetaImportAuditEvent" WHERE "importBatchId"=$1 AND action='IMPORT_ACCEPTED') acceptance_audits,
       (SELECT count(*)::int FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" JOIN "AdImportBatch" b ON b.id=o."importBatchId" WHERE b."releaseId"=(SELECT id FROM "Release" WHERE title ILIKE '%mahoraga%' ORDER BY id LIMIT 1) AND b."sourceGranularity"='DAILY') mahoraga_facts,
-      (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND timezone='America/Los_Angeles') timezone_matches,
+      (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND "ianaTimezone"='America/Los_Angeles') timezone_matches,
       (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones
   `, [APPROVED.gameOverImportId])).rows[0];
   const spotify = await spotifyFingerprint(client);
@@ -143,7 +151,9 @@ async function stateFingerprint(client) {
 }
 
 function assertExpectedState(state) {
+  phase = "invariant-foundation-counts";
   assert.deepEqual(state.counts, {batches: 18, legacy_batches: 17, daily_imports: 1, reports: 360, copy_links: 109, source_observations: 255, resolutions: 255, meta_links: 0, campaigns: 0, confirmed_intervals: 0});
+  phase = "invariant-game-over";
   assert.equal(state.gameOver.id, APPROVED.gameOverImportId);
   assert.equal(state.gameOver.importState, "ACCEPTED");
   assert.equal(state.gameOver.facts, 210);
@@ -156,8 +166,12 @@ function assertExpectedState(state) {
   assert.equal(state.gameOver.start_date, "2026-07-11");
   assert.equal(state.gameOver.end_date, "2026-08-09");
   assert.equal(state.gameOver.sourceAsOfOrigin, "IMPORT_ACCEPTED_FALLBACK");
+  phase = "invariant-provenance-and-timezone";
   assert.deepEqual(state.details, {provenance_files: 4, raw_provenance_files: 4, acceptance_audits: 1, mahoraga_facts: 0, timezone_matches: 1, current_timezones: 1});
-  assert.deepEqual(state.spotify, EXPECTED_SPOTIFY);
+  for (const key of Object.keys(EXPECTED_SPOTIFY)) {
+    phase = `invariant-spotify-${key}`;
+    assert.deepEqual(state.spotify[key], EXPECTED_SPOTIFY[key]);
+  }
 }
 
 function run(command, args, env, input) {
@@ -179,12 +193,16 @@ try {
   assert.ok(decodeURIComponent(productionIdentity.username).includes("qkwifxvfrotmmnjluhbt"), "Production identity project guard failed.");
   required("BACKUP_ENCRYPTION_SECRET");
   production = new Client(connectionOptions(productionUrl, true));
-  phase = "production-baseline";
+  phase = "production-connect";
   await production.connect();
   await production.query("BEGIN READ ONLY");
+  phase = "production-state-read";
   const before = await stateFingerprint(production);
+  phase = "production-state-invariants";
   assertExpectedState(before);
+  phase = "approved-backup-metadata-read";
   const backupResult = await production.query(`SELECT id,status,"googleDriveFileId","sizeBytes","checksumSha256","startedAt","finishedAt" FROM "BackupRun" WHERE id=$1`, [APPROVED.backupRunId]);
+  phase = "approved-backup-metadata-invariants";
   assert.equal(backupResult.rowCount, 1, "Approved backup run was not found.");
   const backup = backupResult.rows[0];
   assert.equal(backup.status, "success");
@@ -267,7 +285,8 @@ try {
     : error instanceof SyntaxError
       ? "INVALID_BACKUP_PAYLOAD"
       : "VERIFICATION_OPERATION_FAILED";
-  console.error(JSON.stringify({gate: "E2.1A", status: "failed-safe", phase, classification}));
+  const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
+  console.error(JSON.stringify({gate: "E2.1A", status: "failed-safe", phase, classification, databaseCode}));
 } finally {
   if (target) await target.end().catch(() => {});
   if (embedded) await embedded.stop().catch(() => {});
