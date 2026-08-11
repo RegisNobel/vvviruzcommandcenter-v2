@@ -214,7 +214,7 @@ function spawnChecked(command, args, options = {}) {
 function postgresRuntimeIdentity() {
   const processUid = process.getuid?.();
   const shellUid = Number(spawnSync("id", ["-u"], {encoding: "utf8"}).stdout?.trim());
-  const runtimeUid = Number.isInteger(processUid) ? processUid : shellUid;
+  const runtimeUid = shellUid === 0 ? shellUid : processUid;
   if (runtimeUid !== 0) return {};
   let uid = Number(spawnSync("id", ["-u", "postgres"], {encoding: "utf8"}).stdout?.trim());
   let gid = Number(spawnSync("id", ["-g", "postgres"], {encoding: "utf8"}).stdout?.trim());
@@ -239,6 +239,13 @@ class VercelTmpEmbeddedPostgres {
     return {...process.env, PATH: `${path.join(this.nativeDirectory, "bin")}:${process.env.PATH || ""}`, LD_LIBRARY_PATH: path.join(this.nativeDirectory, "lib"), LC_MESSAGES: "C"};
   }
 
+  runtimeInvocation(command, args) {
+    if (this.useRunuser) {
+      return {command: "runuser", args: ["-u", "postgres", "--", command, ...args], options: {env: this.runtimeEnv()}};
+    }
+    return {command, args, options: {...this.identity, env: this.runtimeEnv()}};
+  }
+
   async initialise() {
     phase = "disposable-runtime-copy";
     const packageRoot = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64");
@@ -260,13 +267,19 @@ class VercelTmpEmbeddedPostgres {
     if (this.identity.uid !== undefined) {
       await fs.chown(path.dirname(this.options.databaseDir), this.identity.uid, this.identity.gid);
       await fs.chown(this.options.databaseDir, this.identity.uid, this.identity.gid);
+      phase = "disposable-runtime-identity-fallback";
+      const runuserProbe = spawnSync("runuser", ["-u", "postgres", "--", "id", "-u"], {encoding: "utf8"});
+      assert.equal(runuserProbe.status, 0, "Disposable runtime could not switch to its unprivileged user.");
+      assert.equal(Number(runuserProbe.stdout?.trim()), this.identity.uid, "Disposable runtime user identity mismatch.");
+      this.useRunuser = true;
     }
     const passwordFile = path.join(os.tmpdir(), `pg-password-${crypto.randomBytes(8).toString("hex")}`);
     await fs.writeFile(passwordFile, `${this.options.password}\n`, {mode: 0o600});
     if (this.identity.uid !== undefined) await fs.chown(passwordFile, this.identity.uid, this.identity.gid);
     try {
       phase = "disposable-initdb";
-      await spawnChecked(path.join(this.nativeDirectory, "bin", "initdb"), [`--pgdata=${this.options.databaseDir}`, "--auth=password", `--username=${this.options.user}`, `--pwfile=${passwordFile}`, "--locale=C"], {...this.identity, env: this.runtimeEnv()});
+      const initdb = this.runtimeInvocation(path.join(this.nativeDirectory, "bin", "initdb"), [`--pgdata=${this.options.databaseDir}`, "--auth=password", `--username=${this.options.user}`, `--pwfile=${passwordFile}`, "--locale=C"]);
+      await spawnChecked(initdb.command, initdb.args, initdb.options);
     } finally {
       await fs.unlink(passwordFile).catch(() => {});
     }
@@ -276,7 +289,8 @@ class VercelTmpEmbeddedPostgres {
     phase = "disposable-postgres-start";
     await new Promise((resolve, reject) => {
       const command = path.join(this.nativeDirectory, "bin", "postgres");
-      this.process = spawn(command, ["-D", this.options.databaseDir, "-p", String(this.options.port), "-h", "127.0.0.1"], {...this.identity, env: this.runtimeEnv(), stdio: ["ignore", "ignore", "pipe"]});
+      const invocation = this.runtimeInvocation(command, ["-D", this.options.databaseDir, "-p", String(this.options.port), "-h", "127.0.0.1"]);
+      this.process = spawn(invocation.command, invocation.args, {...invocation.options, stdio: ["ignore", "ignore", "pipe"]});
       let settled = false;
       this.process.once("error", reject);
       this.process.stderr?.on("data", (chunk) => {
