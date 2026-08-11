@@ -189,6 +189,17 @@ function run(command, args, env, input) {
   return result;
 }
 
+async function ensureEmbeddedPostgresExecutables() {
+  if (process.platform !== "linux" || process.arch !== "x64") return;
+  const executableDirectory = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native", "bin");
+  const approvedRoot = `${path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native")}${path.sep}`;
+  assert.ok(executableDirectory.startsWith(approvedRoot), "Embedded PostgreSQL executable path guard failed.");
+  const entries = await fs.readdir(executableDirectory, {withFileTypes: true});
+  for (const entry of entries) {
+    if (entry.isFile()) await fs.chmod(path.join(executableDirectory, entry.name), 0o755);
+  }
+}
+
 let production;
 let embedded;
 let target;
@@ -241,6 +252,7 @@ try {
 
   phase = "disposable-target-provisioning";
   tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "vcc-backup-verify-"));
+  await ensureEmbeddedPostgresExecutables();
   embedded = new EmbeddedPostgres({databaseDir: tempDirectory, user: "postgres", password, port, persistent: false, createPostgresUser: process.getuid?.() === 0, onLog: () => {}, onError: () => {}});
   await embedded.initialise();
   await embedded.start();
