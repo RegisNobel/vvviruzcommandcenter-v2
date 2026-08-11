@@ -12,6 +12,11 @@ import pg from "pg";
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import disposableRestoreGuard from "../lib/backups/disposable-restore-guard.ts";
 
+// Prisma stores these DateTime values as timezone-naive PostgreSQL timestamps.
+// Preserve the timezone used to freeze the approved fingerprints so identical
+// rows hash consistently on local Windows and UTC Vercel build workers.
+process.env.TZ = "America/New_York";
+
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
 const {assertDisposableRestoreTarget, DISPOSABLE_DATABASE_PREFIX} = disposableRestoreGuard;
 
