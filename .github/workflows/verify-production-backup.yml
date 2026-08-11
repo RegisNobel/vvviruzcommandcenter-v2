@@ -1,0 +1,77 @@
+name: Verify approved production backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-approved-production-backup
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'RegisNobel/vvviruzcommandcenter-v2' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'RegisNobel'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: backup-restore-verification
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-only
+          POSTGRES_DB: backup_verify_gate_e2_1d
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d backup_verify_gate_e2_1d"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      GITHUB_ACTIONS_EXPECTED_ACTOR: RegisNobel
+      ALLOW_DISPOSABLE_BACKUP_RESTORE: "1"
+      BACKUP_VERIFY_TARGET_KIND: DISPOSABLE
+      DISPOSABLE_DATABASE_URL: postgresql://postgres:disposable-only@127.0.0.1:5432/backup_verify_gate_e2_1d?schema=public
+      APPROVED_GOOGLE_DRIVE_FILE_ID: ${{ vars.APPROVED_GOOGLE_DRIVE_FILE_ID }}
+      BACKUP_ENCRYPTION_SECRET: ${{ secrets.BACKUP_ENCRYPTION_SECRET }}
+      GOOGLE_DRIVE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_DRIVE_OAUTH_CLIENT_ID }}
+      GOOGLE_DRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET }}
+      GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN }}
+    steps:
+      - name: Assert dispatch boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REPOSITORY" = RegisNobel/vvviruzcommandcenter-v2
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_ACTOR" = "$GITHUB_ACTIONS_EXPECTED_ACTOR"
+          for name in POSTGRES_URL_NON_POOLING POSTGRES_PRISMA_URL POSTGRES_URL VERCEL VERCEL_ENV BLOB_READ_WRITE_TOKEN AUTH_SECRET ADMIN_TOTP_SECRET SUPABASE_SERVICE_ROLE_KEY; do
+            test -z "${!name-}"
+          done
+      - name: Check out reviewed commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.22.0
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Generate local PostgreSQL client
+        env:
+          DATABASE_URL: ${{ env.DISPOSABLE_DATABASE_URL }}
+          DIRECT_URL: ${{ env.DISPOSABLE_DATABASE_URL }}
+        run: node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma
+      - name: Restore and verify approved backup
+        run: node --conditions=react-server --import tsx scripts/verify-production-backup-ci.mjs
