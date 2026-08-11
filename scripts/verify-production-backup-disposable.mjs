@@ -1,0 +1,267 @@
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import net from "node:net";
+import os from "node:os";
+import path from "node:path";
+import {spawnSync} from "node:child_process";
+
+import EmbeddedPostgres from "embedded-postgres";
+import pg from "pg";
+
+import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
+import disposableRestoreGuard from "../lib/backups/disposable-restore-guard.ts";
+
+const {verifyAndDecodeBackup} = backupVerificationIntegrity;
+const {assertDisposableRestoreTarget, DISPOSABLE_DATABASE_PREFIX} = disposableRestoreGuard;
+
+const {Client} = pg;
+const APPROVED = Object.freeze({
+  backupRunId: "2bb759bc-cc91-4b93-839c-8d1657353c8c",
+  encryptedSha256: "894e606dc74089308489dd0d9217fefcdd68db3f0895e1202425a043ea8309bd",
+  sizeBytes: 5_938_013,
+  gameOverImportId: "e2a5a408-02ea-426b-910a-2015124877ad"
+});
+const EXPECTED_SPOTIFY = Object.freeze({
+  analyticsImports: {count: 4, sha256: "88a7a27dcde6cb2fed3cda27697a76b18419b6aac784bfde01b6aa3884c21fee"},
+  artistTimeline: {count: 944, sha256: "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923"},
+  mahoragaTrackTimeline: {count: 944, sha256: "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea"},
+  songsPeriod: {count: 27, sha256: "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"},
+  playlistsPeriod: {count: 8, sha256: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"}
+});
+const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+
+function required(name) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`Required server configuration ${name} is absent.`);
+  return value;
+}
+
+function connectionOptions(url, production = false) {
+  const parsed = new URL(url);
+  parsed.searchParams.delete("sslmode");
+  return {connectionString: parsed.toString(), ...(production ? {ssl: {rejectUnauthorized: false}} : {})};
+}
+
+async function freePort() {
+  return await new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close(() => resolve(address.port));
+    });
+  });
+}
+
+async function getGoogleAccessToken() {
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    body: new URLSearchParams({
+      client_id: required("GOOGLE_DRIVE_OAUTH_CLIENT_ID"),
+      client_secret: required("GOOGLE_DRIVE_OAUTH_CLIENT_SECRET"),
+      refresh_token: required("GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN"),
+      grant_type: "refresh_token"
+    })
+  });
+  const payload = await response.json();
+  if (!response.ok || typeof payload.access_token !== "string") {
+    throw new Error("Approved backup source authentication failed.");
+  }
+  return payload.access_token;
+}
+
+async function downloadApprovedBackup(fileId) {
+  const accessToken = await getGoogleAccessToken();
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
+    headers: {Authorization: `Bearer ${accessToken}`}
+  });
+  if (!response.ok) throw new Error("Approved encrypted backup download failed.");
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function spotifyFingerprint(client) {
+  const analyticsImports = (await client.query(`SELECT id,"fileHash","importType",status,"rowCount","acceptedRowCount","rejectedRowCount","unmatchedRowCount","warningCount","acceptedAt","withdrawnAt","replacedByImportId" FROM "AnalyticsImport" ORDER BY id`)).rows;
+  const artistTimeline = (await client.query(`SELECT o.* FROM "ArtistMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" WHERE i.status='IMPORTED' ORDER BY o.id`)).rows;
+  const mahoragaTrackTimeline = (await client.query(`SELECT o.* FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title ILIKE '%mahoraga%' ORDER BY o.id`)).rows;
+  const songsPeriod = (await client.query(`SELECT s.* FROM "SongPeriodSnapshot" s JOIN "AnalyticsImport" i ON i.id=s."importId" WHERE i.status='IMPORTED' ORDER BY s.id`)).rows;
+  const playlistsPeriod = (await client.query(`SELECT p.* FROM "PlaylistPeriodSnapshot" p JOIN "AnalyticsImport" i ON i.id=p."importId" WHERE i.status='IMPORTED' ORDER BY p.id`)).rows;
+  return {
+    analyticsImports: {count: analyticsImports.length, sha256: digest(analyticsImports)},
+    artistTimeline: {count: artistTimeline.length, sha256: digest(artistTimeline)},
+    mahoragaTrackTimeline: {count: mahoragaTrackTimeline.length, sha256: digest(mahoragaTrackTimeline)},
+    songsPeriod: {count: songsPeriod.length, sha256: digest(songsPeriod)},
+    playlistsPeriod: {count: playlistsPeriod.length, sha256: digest(playlistsPeriod)}
+  };
+}
+
+async function stateFingerprint(client) {
+  const counts = (await client.query(`
+    SELECT
+      (SELECT count(*)::int FROM "AdImportBatch") batches,
+      (SELECT count(*)::int FROM "AdImportBatch" WHERE "sourceGranularity"='AGGREGATE_SNAPSHOT') legacy_batches,
+      (SELECT count(*)::int FROM "AdImportBatch" WHERE "sourceGranularity"='DAILY' AND "importState"='ACCEPTED') daily_imports,
+      (SELECT count(*)::int FROM "AdCreativeReport") reports,
+      (SELECT count(*)::int FROM "AdCreativeCopyLink") copy_links,
+      (SELECT count(*)::int FROM "MetaDailySourceObservation") source_observations,
+      (SELECT count(*)::int FROM "MetaDailyResolution") resolutions,
+      (SELECT count(*)::int FROM "MetaPromotionLink") meta_links,
+      (SELECT count(*)::int FROM "PromotionCampaign") campaigns,
+      (SELECT count(*)::int FROM "CampaignActiveInterval" WHERE "confirmationStatus"='CONFIRMED') confirmed_intervals
+  `)).rows[0];
+  const gameOver = (await client.query(`
+    SELECT b.id,b."importState",b."validationState",b."sourceAsOfOrigin",b."reportingStart",b."reportingEnd",
+      count(*)::int facts,
+      count(*) FILTER (WHERE o.spend > 0)::int positive,
+      count(*) FILTER (WHERE o.spend = 0)::int explicit_zero,
+      count(*) FILTER (WHERE o.spend IS NULL)::int missing,
+      round(sum(o.spend)::numeric,2)::text spend,
+      count(DISTINCT o."adSetId")::int ad_set_count,
+      min(o."adSetId") ad_set_id,
+      min(o."sourceReportingDate") start_date,max(o."sourceReportingDate") end_date
+    FROM "AdImportBatch" b
+    JOIN "MetaDailySourceObservation" o ON o."importBatchId"=b.id AND o."metricKey"='SPEND'
+    JOIN "MetaDailyResolution" r ON r."currentObservationId"=o.id
+    WHERE b.id=$1 GROUP BY b.id
+  `, [APPROVED.gameOverImportId])).rows[0];
+  const details = (await client.query(`
+    SELECT
+      (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1) provenance_files,
+      (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1 AND "rawStorageKey"<>'' AND "rawStorageSha256"<>'') raw_provenance_files,
+      (SELECT count(*)::int FROM "MetaImportAuditEvent" WHERE "importBatchId"=$1 AND action='IMPORT_ACCEPTED') acceptance_audits,
+      (SELECT count(*)::int FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" JOIN "AdImportBatch" b ON b.id=o."importBatchId" WHERE b."releaseId"=(SELECT id FROM "Release" WHERE title ILIKE '%mahoraga%' ORDER BY id LIMIT 1) AND b."sourceGranularity"='DAILY') mahoraga_facts,
+      (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND timezone='America/Los_Angeles') timezone_matches,
+      (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones
+  `, [APPROVED.gameOverImportId])).rows[0];
+  const spotify = await spotifyFingerprint(client);
+  return {counts, gameOver, details, spotify, sha256: digest({counts, gameOver, details, spotify})};
+}
+
+function assertExpectedState(state) {
+  assert.deepEqual(state.counts, {batches: 18, legacy_batches: 17, daily_imports: 1, reports: 360, copy_links: 109, source_observations: 255, resolutions: 255, meta_links: 0, campaigns: 0, confirmed_intervals: 0});
+  assert.equal(state.gameOver.id, APPROVED.gameOverImportId);
+  assert.equal(state.gameOver.importState, "ACCEPTED");
+  assert.equal(state.gameOver.facts, 210);
+  assert.equal(state.gameOver.positive, 60);
+  assert.equal(state.gameOver.explicit_zero, 150);
+  assert.equal(state.gameOver.missing, 0);
+  assert.equal(state.gameOver.spend, "283.48");
+  assert.equal(state.gameOver.ad_set_count, 1);
+  assert.equal(state.gameOver.ad_set_id, "120247925536670172");
+  assert.equal(state.gameOver.start_date, "2026-07-11");
+  assert.equal(state.gameOver.end_date, "2026-08-09");
+  assert.equal(state.gameOver.sourceAsOfOrigin, "IMPORT_ACCEPTED_FALLBACK");
+  assert.deepEqual(state.details, {provenance_files: 4, raw_provenance_files: 4, acceptance_audits: 1, mahoraga_facts: 0, timezone_matches: 1, current_timezones: 1});
+  assert.deepEqual(state.spotify, EXPECTED_SPOTIFY);
+}
+
+function run(command, args, env, input) {
+  const result = spawnSync(command, args, {cwd: process.cwd(), env, input, encoding: input ? undefined : "utf8", maxBuffer: 64 * 1024 * 1024, shell: false});
+  if (result.status !== 0) throw new Error("Disposable restore subprocess failed safely.");
+  return result;
+}
+
+const productionUrl = required("POSTGRES_URL_NON_POOLING");
+const productionIdentity = new URL(productionUrl);
+assert.ok(productionIdentity.hostname.endsWith("pooler.supabase.com"), "Production identity hostname guard failed.");
+assert.equal(productionIdentity.port, "5432", "Production identity port guard failed.");
+assert.ok(decodeURIComponent(productionIdentity.username).includes("qkwifxvfrotmmnjluhbt"), "Production identity project guard failed.");
+required("BACKUP_ENCRYPTION_SECRET");
+
+const production = new Client(connectionOptions(productionUrl, true));
+let embedded;
+let target;
+let tempDirectory;
+let targetIdentity;
+try {
+  await production.connect();
+  await production.query("BEGIN READ ONLY");
+  const before = await stateFingerprint(production);
+  assertExpectedState(before);
+  const backupResult = await production.query(`SELECT id,status,"googleDriveFileId","sizeBytes","checksumSha256","startedAt","finishedAt" FROM "BackupRun" WHERE id=$1`, [APPROVED.backupRunId]);
+  assert.equal(backupResult.rowCount, 1, "Approved backup run was not found.");
+  const backup = backupResult.rows[0];
+  assert.equal(backup.status, "success");
+  assert.equal(backup.sizeBytes, APPROVED.sizeBytes);
+  assert.equal(backup.checksumSha256, APPROVED.encryptedSha256);
+  assert.ok(backup.googleDriveFileId, "Approved backup has no Drive reference.");
+  await production.query("COMMIT");
+
+  const encrypted = await downloadApprovedBackup(backup.googleDriveFileId);
+  assert.equal(encrypted.length, APPROVED.sizeBytes, "Encrypted backup size mismatch.");
+  assert.equal(sha256(encrypted), APPROVED.encryptedSha256, "Encrypted backup hash mismatch.");
+  const snapshot = verifyAndDecodeBackup(encrypted, APPROVED.encryptedSha256);
+
+  const port = await freePort();
+  const database = `${DISPOSABLE_DATABASE_PREFIX}${crypto.randomBytes(8).toString("hex")}`;
+  const password = crypto.randomBytes(32).toString("base64url");
+  const targetUrl = `postgresql://postgres:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}?schema=public`;
+  targetIdentity = assertDisposableRestoreTarget({
+    allowRestore: process.env.ALLOW_DISPOSABLE_BACKUP_RESTORE,
+    targetKind: process.env.BACKUP_VERIFY_TARGET_KIND,
+    targetUrl,
+    productionUrls: [process.env.DATABASE_URL, process.env.POSTGRES_PRISMA_URL, process.env.POSTGRES_URL, productionUrl]
+  });
+
+  tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "vcc-backup-verify-"));
+  embedded = new EmbeddedPostgres({databaseDir: tempDirectory, user: "postgres", password, port, persistent: false, createPostgresUser: process.getuid?.() === 0, onLog: () => {}, onError: () => {}});
+  await embedded.initialise();
+  await embedded.start();
+  await embedded.createDatabase(database);
+  target = new Client(connectionOptions(targetUrl));
+  await target.connect();
+  assert.equal((await target.query(`SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'`)).rows[0].count, 0, "Disposable target was not empty.");
+  await target.end(); target = undefined;
+
+  const targetEnv = {...process.env, DATABASE_URL: targetUrl, DIRECT_URL: targetUrl, POSTGRES_PRISMA_URL: targetUrl, POSTGRES_URL: targetUrl, POSTGRES_URL_NON_POOLING: targetUrl};
+  run(process.execPath, ["scripts/run-prisma.mjs", "db", "push", "--schema", "prisma/schema.postgres.prisma", "--skip-generate"], targetEnv);
+  target = new Client(connectionOptions(targetUrl)); await target.connect();
+  await target.query(`DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE service_role NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
+  await target.query(await fs.readFile(path.join(process.cwd(), "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8"));
+  await target.end(); target = undefined;
+
+  run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], {...targetEnv, DB_SNAPSHOT_STDIN: "1", IMPORT_AUTH: "0"}, snapshot);
+  snapshot.fill(0);
+  encrypted.fill(0);
+
+  target = new Client(connectionOptions(targetUrl)); await target.connect();
+  const restored = await stateFingerprint(target);
+  assertExpectedState(restored);
+  assert.equal(restored.sha256, before.sha256, "Restored product fingerprint differs from protected production state.");
+  await target.end(); target = undefined;
+
+  await production.query("BEGIN READ ONLY");
+  const after = await stateFingerprint(production);
+  await production.query("COMMIT");
+  assertExpectedState(after);
+  assert.equal(after.sha256, before.sha256, "Production state changed during disposable verification.");
+
+  console.log(JSON.stringify({
+    gate: "E2.1A",
+    status: "success",
+    backup: {runId: APPROVED.backupRunId, encryptedSha256: APPROVED.encryptedSha256, sizeBytes: APPROVED.sizeBytes},
+    target: targetIdentity,
+    restored: {counts: restored.counts, gameOver: restored.gameOver, details: restored.details, spotify: restored.spotify, fingerprint: restored.sha256},
+    production: {beforeFingerprint: before.sha256, afterFingerprint: after.sha256, writes: 0},
+    plaintextFilesCreated: 0
+  }, null, 2));
+} catch (error) {
+  try { await production.query("ROLLBACK"); } catch {}
+  console.error("Guarded disposable backup verification failed safely.");
+  process.exitCode = 1;
+} finally {
+  if (target) await target.end().catch(() => {});
+  if (embedded) await embedded.stop().catch(() => {});
+  if (tempDirectory) await fs.rm(tempDirectory, {recursive: true, force: true}).catch(() => {});
+  await production.end().catch(() => {});
+  if (tempDirectory) {
+    const remains = await fs.stat(tempDirectory).then(() => true).catch(() => false);
+    if (remains) {
+      console.error("Disposable target cleanup failed.");
+      process.exitCode = 1;
+    }
+  }
+}

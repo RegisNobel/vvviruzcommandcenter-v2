@@ -7,6 +7,7 @@ import {revalidateRestoredReleaseAnnotations} from "../lib/server/revalidate-res
 const snapshotPath =
   process.env.DB_SNAPSHOT_PATH ||
   path.join(process.cwd(), "storage", "production-data-snapshot.json");
+const snapshotFromStdin = process.env.DB_SNAPSHOT_STDIN === "1";
 const importAuth = process.env.IMPORT_AUTH === "1";
 
 type SnapshotRecord = Record<string, unknown> & {id?: string};
@@ -253,7 +254,15 @@ async function restoreAnalyticsImports(records: SnapshotRecord[] = []) {
 }
 
 async function main() {
-  const snapshot = JSON.parse(await fs.readFile(snapshotPath, "utf8")) as Snapshot;
+  const snapshotBytes = snapshotFromStdin
+    ? await new Promise<Buffer>((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        process.stdin.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        process.stdin.on("end", () => resolve(Buffer.concat(chunks)));
+        process.stdin.on("error", reject);
+      })
+    : await fs.readFile(snapshotPath);
+  const snapshot = JSON.parse(snapshotBytes.toString("utf8")) as Snapshot;
   const counts: Record<string, number | string> = {};
 
   if (importAuth) {
@@ -438,7 +447,7 @@ async function main() {
     JSON.stringify(
       {
         message: "Database snapshot imported.",
-        snapshotPath,
+        snapshotPath: snapshotFromStdin ? "<memory>" : snapshotPath,
         counts
       },
       null,
