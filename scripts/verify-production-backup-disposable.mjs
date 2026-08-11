@@ -11,6 +11,7 @@ import pg from "pg";
 
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import disposableRestoreGuard from "../lib/backups/disposable-restore-guard.ts";
+import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
 
 // Prisma stores these DateTime values as timezone-naive PostgreSQL timestamps.
 // Preserve the timezone used to freeze the approved fingerprints so identical
@@ -19,6 +20,7 @@ process.env.TZ = "America/New_York";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
 const {assertDisposableRestoreTarget, DISPOSABLE_DATABASE_PREFIX} = disposableRestoreGuard;
+const {readNormalizedGoogleDriveOAuthCredentials, retrievePinnedEncryptedGoogleDriveBackup, sanitizedBackupRetrievalFailure} = googleDriveRetrieval;
 
 const {Client} = pg;
 const APPROVED = Object.freeze({
@@ -36,7 +38,6 @@ const EXPECTED_SPOTIFY = Object.freeze({
   gameOverTrackTimeline: {count: 952, sha256: "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"}
 });
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
 let phase = "configuration";
 let failed = false;
 
@@ -62,33 +63,6 @@ async function freePort() {
       server.close(() => resolve(address.port));
     });
   });
-}
-
-async function getGoogleAccessToken() {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    body: new URLSearchParams({
-      client_id: required("GOOGLE_DRIVE_OAUTH_CLIENT_ID"),
-      client_secret: required("GOOGLE_DRIVE_OAUTH_CLIENT_SECRET"),
-      refresh_token: required("GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN"),
-      grant_type: "refresh_token"
-    })
-  });
-  const payload = await response.json();
-  if (!response.ok || typeof payload.access_token !== "string") {
-    throw new Error("Approved backup source authentication failed.");
-  }
-  return payload.access_token;
-}
-
-async function downloadApprovedBackup(fileId) {
-  const accessToken = await getGoogleAccessToken();
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
-    headers: {Authorization: `Bearer ${accessToken}`}
-  });
-  if (!response.ok) throw new Error("Approved encrypted backup download failed.");
-  return Buffer.from(await response.arrayBuffer());
 }
 
 async function spotifyFingerprint(client) {
@@ -346,10 +320,14 @@ try {
   assert.ok(backup.googleDriveFileId, "Approved backup has no Drive reference.");
   await production.query("COMMIT");
 
-  phase = "encrypted-backup-download";
-  const encrypted = await downloadApprovedBackup(backup.googleDriveFileId);
-  assert.equal(encrypted.length, APPROVED.sizeBytes, "Encrypted backup size mismatch.");
-  assert.equal(sha256(encrypted), APPROVED.encryptedSha256, "Encrypted backup hash mismatch.");
+  const credentialState = readNormalizedGoogleDriveOAuthCredentials();
+  const encrypted = await retrievePinnedEncryptedGoogleDriveBackup({
+    credentials: credentialState.credentials,
+    expectedFileId: backup.googleDriveFileId,
+    expectedSize: APPROVED.sizeBytes,
+    expectedSha256: APPROVED.encryptedSha256,
+    onPhase: (nextPhase) => { phase = nextPhase; }
+  });
   phase = "encrypted-backup-integrity-and-decryption";
   const snapshot = verifyAndDecodeBackup(encrypted, APPROVED.encryptedSha256);
 
@@ -424,7 +402,8 @@ try {
       : "VERIFICATION_OPERATION_FAILED";
   const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
   const operationCode = typeof error?.code === "string" && /^E[A-Z0-9_]+$/.test(error.code) ? error.code : undefined;
-  console.error(JSON.stringify({gate: "E2.1B", status: "failed-safe", phase, classification, databaseCode, operationCode}));
+  const retrieval = sanitizedBackupRetrievalFailure(error);
+  console.error(JSON.stringify({gate: "E2.1B", status: "failed-safe", phase: retrieval?.phase ?? phase, classification, retrievalCode: retrieval?.code, httpStatus: retrieval?.httpStatus, oauthError: retrieval?.oauthError, retryable: retrieval?.retryable, databaseCode, operationCode}));
 } finally {
   if (target) await target.end().catch(() => {});
   if (embedded) await embedded.stop().catch(() => {});

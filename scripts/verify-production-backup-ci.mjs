@@ -7,10 +7,16 @@ import {spawnSync} from "node:child_process";
 import pg from "pg";
 
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
+import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
 
 process.env.TZ = "America/New_York";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
+const {
+  readNormalizedGoogleDriveOAuthCredentials,
+  retrievePinnedEncryptedGoogleDriveBackup,
+  sanitizedBackupRetrievalFailure
+} = googleDriveRetrieval;
 const {Client} = pg;
 const APPROVED = Object.freeze({
   repository: "RegisNobel/vvviruzcommandcenter-v2",
@@ -35,11 +41,11 @@ const FORBIDDEN_ENV = [
   "BLOB_READ_WRITE_TOKEN", "AUTH_SECRET", "ADMIN_TOTP_SECRET", "SUPABASE_SERVICE_ROLE_KEY"
 ];
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
 let phase = "configuration";
 let encrypted;
 let snapshot;
 let client;
+let credentialNormalization;
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -60,32 +66,6 @@ function assertCiBoundary() {
   assert.ok(decodeURIComponent(parsed.pathname.slice(1)).startsWith("backup_verify_"), "Target prefix mismatch.");
   assert.equal(parsed.port || "5432", "5432", "Unexpected target port.");
   return parsed.toString();
-}
-
-async function getGoogleAccessToken() {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    body: new URLSearchParams({
-      client_id: required("GOOGLE_DRIVE_OAUTH_CLIENT_ID"),
-      client_secret: required("GOOGLE_DRIVE_OAUTH_CLIENT_SECRET"),
-      refresh_token: required("GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN"),
-      grant_type: "refresh_token"
-    })
-  });
-  const payload = await response.json();
-  if (!response.ok || typeof payload.access_token !== "string") throw new Error("Backup source authentication failed.");
-  return payload.access_token;
-}
-
-async function downloadApprovedBackup() {
-  const accessToken = await getGoogleAccessToken();
-  const fileId = required("APPROVED_GOOGLE_DRIVE_FILE_ID");
-  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, {
-    headers: {Authorization: `Bearer ${accessToken}`}
-  });
-  if (!response.ok) throw new Error("Approved encrypted backup download failed.");
-  return Buffer.from(await response.arrayBuffer());
 }
 
 function run(command, args, env, input) {
@@ -145,7 +125,7 @@ async function restoredState(db) {
     (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND "ianaTimezone"='America/Los_Angeles') timezone_matches,
     (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones`, [APPROVED.gameOverMetaImportId])).rows[0];
   phase = "state-game-over-spotify";
-  const gameOverSpotify = (await db.query(`SELECT i.id import_id,i."fileHash" file_hash,r.id release_id,r.title,
+  const gameOverSpotify = (await db.query(`SELECT i.id import_id,i."importType" import_type,i.status import_state,i."fileHash" file_hash,r.id release_id,r.title,r.isrc,
     count(o.*)::int observation_count,to_char(min(o."metricDate"),'YYYY-MM-DD') earliest_date,to_char(max(o."metricDate"),'YYYY-MM-DD') latest_date,
     count(*)-count(DISTINCT o."metricDate") duplicate_date_count
     FROM "AnalyticsImport" i JOIN "TrackMetricObservation" o ON o."importId"=i.id
@@ -174,6 +154,9 @@ function assertExpected(state) {
   assert.equal(state.gameOverSpotify.import_id, APPROVED.gameOverSpotifyImportId);
   assert.equal(state.gameOverSpotify.release_id, APPROVED.gameOverReleaseId);
   assert.equal(state.gameOverSpotify.title, "Game Over");
+  assert.equal(state.gameOverSpotify.import_type, "TRACK_STREAM_TIMELINE");
+  assert.equal(state.gameOverSpotify.import_state, "IMPORTED");
+  assert.equal(state.gameOverSpotify.isrc, "QT6ED2602112");
   assert.equal(state.gameOverSpotify.file_hash, "15a4bedaea68451030ede560ec8e648f925ea9349ff1973bd1aaf0cfaf3b3f16");
   assert.equal(state.gameOverSpotify.observation_count, 952);
   assert.equal(state.gameOverSpotify.earliest_date, "2024-01-01");
@@ -198,10 +181,15 @@ try {
   assert.equal((await client.query("SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'")).rows[0].count, 0, "Target is not empty.");
   await client.end(); client = undefined;
 
-  phase = "encrypted-download";
-  encrypted = await downloadApprovedBackup();
-  assert.equal(encrypted.length, APPROVED.sizeBytes, "Encrypted size mismatch.");
-  assert.equal(sha256(encrypted), APPROVED.encryptedSha256, "Encrypted hash mismatch.");
+  const credentialState = readNormalizedGoogleDriveOAuthCredentials();
+  credentialNormalization = credentialState.normalization;
+  encrypted = await retrievePinnedEncryptedGoogleDriveBackup({
+    credentials: credentialState.credentials,
+    expectedFileId: required("APPROVED_GOOGLE_DRIVE_FILE_ID"),
+    expectedSize: APPROVED.sizeBytes,
+    expectedSha256: APPROVED.encryptedSha256,
+    onPhase: (nextPhase) => { phase = nextPhase; }
+  });
   phase = "authenticated-decryption";
   snapshot = verifyAndDecodeBackup(encrypted, APPROVED.encryptedSha256);
 
@@ -222,11 +210,12 @@ try {
   const tableCount = (await client.query("SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'")).rows[0].count;
   await client.end(); client = undefined;
   const finishedAt = new Date();
-  console.log(JSON.stringify({gate:"E2.1D",status:"success",backup:{runId:APPROVED.backupRunId,sizeBytes:APPROVED.sizeBytes,encryptedSha256:APPROVED.encryptedSha256},target:{hostClass:"job-local-postgresql",majorVersion:17,tableCount,prefixVerified:true},restored,security:{productionCredentialsAvailable:false,productionWrites:0,plaintextFilesCreated:0,artifactsUploaded:0,credentialsPrinted:false},timing:{startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationMs:finishedAt-startedAt}},null,2));
+  console.log(JSON.stringify({gate:"E2.1E",status:"success",backup:{runId:APPROVED.backupRunId,sizeBytes:APPROVED.sizeBytes,encryptedSha256:APPROVED.encryptedSha256},target:{hostClass:"job-local-postgresql",majorVersion:17,tableCount,prefixVerified:true},restored,credentialNormalization,security:{productionCredentialsAvailable:false,productionWrites:0,plaintextFilesCreated:0,artifactsUploaded:0,credentialsPrinted:false},timing:{startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationMs:finishedAt-startedAt}},null,2));
 } catch (error) {
+  const retrieval = sanitizedBackupRetrievalFailure(error);
   const classification = error instanceof assert.AssertionError ? "INVARIANT_MISMATCH" : error instanceof SyntaxError ? "INVALID_BACKUP_PAYLOAD" : "VERIFICATION_OPERATION_FAILED";
   const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
-  console.error(JSON.stringify({gate:"E2.1D",status:"failed-safe",phase,classification,databaseCode}));
+  console.error(JSON.stringify({gate:"E2.1E",status:"failed-safe",phase:retrieval?.phase??phase,classification,retrievalCode:retrieval?.code,httpStatus:retrieval?.httpStatus,oauthError:retrieval?.oauthError,retryable:retrieval?.retryable,credentialNormalization,databaseCode}));
   process.exitCode = 1;
 } finally {
   await client?.end().catch(() => {});

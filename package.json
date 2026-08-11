@@ -37,6 +37,8 @@
     "backup:verify:maybe": "node scripts/run-backup-verification-if-enabled.mjs",
     "test:guarded-backup-verification": "node --conditions=react-server --import tsx scripts/test-guarded-backup-verification.ts",
     "test:guarded-backup-postgres": "node --conditions=react-server --import tsx scripts/test-guarded-backup-postgres.mjs",
+    "test:google-drive-backup-retrieval": "node --conditions=react-server --import tsx scripts/test-google-drive-backup-retrieval.ts",
+    "test:backup-verification-workflow": "tsx scripts/test-backup-verification-workflow.ts",
     "analytics:cleanup:dry-run": "node --conditions=react-server --import tsx scripts/run-retention-cleanup.ts --dry-run",
     "analytics:profile-dashboard": "node --conditions=react-server --import tsx scripts/profile-retention-dashboard.ts",
     "test:backup-restore-rehearsal": "tsx scripts/test-backup-restore-rehearsal.ts",

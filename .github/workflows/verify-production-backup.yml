@@ -27,12 +27,12 @@ jobs:
         image: postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: disposable-only
-          POSTGRES_DB: backup_verify_gate_e2_1d
+          POSTGRES_PASSWORD: ${{ github.token }}
+          POSTGRES_DB: backup_verify_${{ github.run_id }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d backup_verify_gate_e2_1d"
+          --health-cmd "pg_isready -U postgres -d backup_verify_${{ github.run_id }}"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -40,7 +40,7 @@ jobs:
       GITHUB_ACTIONS_EXPECTED_ACTOR: RegisNobel
       ALLOW_DISPOSABLE_BACKUP_RESTORE: "1"
       BACKUP_VERIFY_TARGET_KIND: DISPOSABLE
-      DISPOSABLE_DATABASE_URL: postgresql://postgres:disposable-only@127.0.0.1:5432/backup_verify_gate_e2_1d?schema=public
+      DISPOSABLE_DATABASE_URL: postgresql://postgres:${{ github.token }}@127.0.0.1:5432/backup_verify_${{ github.run_id }}?schema=public
       APPROVED_GOOGLE_DRIVE_FILE_ID: ${{ vars.APPROVED_GOOGLE_DRIVE_FILE_ID }}
       BACKUP_ENCRYPTION_SECRET: ${{ secrets.BACKUP_ENCRYPTION_SECRET }}
       GOOGLE_DRIVE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_DRIVE_OAUTH_CLIENT_ID }}
@@ -65,7 +65,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 22.22.0
+          node-version: 24.14.1
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
       - name: Generate local PostgreSQL client
