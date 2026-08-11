@@ -17,17 +17,18 @@ const {assertDisposableRestoreTarget, DISPOSABLE_DATABASE_PREFIX} = disposableRe
 
 const {Client} = pg;
 const APPROVED = Object.freeze({
-  backupRunId: "2bb759bc-cc91-4b93-839c-8d1657353c8c",
-  encryptedSha256: "894e606dc74089308489dd0d9217fefcdd68db3f0895e1202425a043ea8309bd",
-  sizeBytes: 5_938_013,
+  backupRunId: "70e04de9-3ab8-459c-971b-c23cd404a04e",
+  encryptedSha256: "efb7561a0f0279692b873fa178801432668dfe8e1ba8c31461d891b1de7d32a0",
+  sizeBytes: 5_975_016,
   gameOverImportId: "e2a5a408-02ea-426b-910a-2015124877ad"
 });
 const EXPECTED_SPOTIFY = Object.freeze({
-  analyticsImports: {count: 4, sha256: "88a7a27dcde6cb2fed3cda27697a76b18419b6aac784bfde01b6aa3884c21fee"},
+  analyticsImports: {count: 5, sha256: "0dab3136b7a034cb610d1f6e0f499b740d5fc059f33ae35bcb00aede1de2b51f"},
   artistTimeline: {count: 944, sha256: "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923"},
   mahoragaTrackTimeline: {count: 944, sha256: "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea"},
   songsPeriod: {count: 27, sha256: "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"},
-  playlistsPeriod: {count: 8, sha256: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"}
+  playlistsPeriod: {count: 8, sha256: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"},
+  gameOverTrackTimeline: {count: 952, sha256: "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"}
 });
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
@@ -96,12 +97,15 @@ async function spotifyFingerprint(client) {
   const songsPeriod = (await client.query(`SELECT s.* FROM "SongPeriodSnapshot" s JOIN "AnalyticsImport" i ON i.id=s."importId" WHERE i.status='IMPORTED' ORDER BY s.id`)).rows;
   phase = "state-spotify-playlists-read";
   const playlistsPeriod = (await client.query(`SELECT p.* FROM "PlaylistPeriodSnapshot" p JOIN "AnalyticsImport" i ON i.id=p."importId" WHERE i.status='IMPORTED' ORDER BY p.id`)).rows;
+  phase = "state-spotify-game-over-track-read";
+  const gameOverTrackTimeline = (await client.query(`SELECT o.* FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title='Game Over' ORDER BY o.id`)).rows;
   return {
     analyticsImports: {count: analyticsImports.length, sha256: digest(analyticsImports)},
     artistTimeline: {count: artistTimeline.length, sha256: digest(artistTimeline)},
     mahoragaTrackTimeline: {count: mahoragaTrackTimeline.length, sha256: digest(mahoragaTrackTimeline)},
     songsPeriod: {count: songsPeriod.length, sha256: digest(songsPeriod)},
-    playlistsPeriod: {count: playlistsPeriod.length, sha256: digest(playlistsPeriod)}
+    playlistsPeriod: {count: playlistsPeriod.length, sha256: digest(playlistsPeriod)},
+    gameOverTrackTimeline: {count: gameOverTrackTimeline.length, sha256: digest(gameOverTrackTimeline)}
   };
 }
 
@@ -269,7 +273,7 @@ try {
   assert.equal(after.sha256, before.sha256, "Production state changed during disposable verification.");
 
   console.log(JSON.stringify({
-    gate: "E2.1A",
+    gate: "E2.1B",
     status: "success",
     backup: {runId: APPROVED.backupRunId, encryptedSha256: APPROVED.encryptedSha256, sizeBytes: APPROVED.sizeBytes},
     target: targetIdentity,
@@ -286,7 +290,7 @@ try {
       ? "INVALID_BACKUP_PAYLOAD"
       : "VERIFICATION_OPERATION_FAILED";
   const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
-  console.error(JSON.stringify({gate: "E2.1A", status: "failed-safe", phase, classification, databaseCode}));
+  console.error(JSON.stringify({gate: "E2.1B", status: "failed-safe", phase, classification, databaseCode}));
 } finally {
   if (target) await target.end().catch(() => {});
   if (embedded) await embedded.stop().catch(() => {});

@@ -1,0 +1,66 @@
+{
+  "gate": "E2.1B",
+  "capturedAt": "2026-08-11T09:35:32.828Z",
+  "classification": "CONFIRMED_INTENTIONAL_GAME_OVER_IMPORT",
+  "productionWritesFromVerification": 0,
+  "spotify": {
+    "analyticsImports": {
+      "count": 5,
+      "sha256": "0dab3136b7a034cb610d1f6e0f499b740d5fc059f33ae35bcb00aede1de2b51f"
+    },
+    "artistTimeline": {
+      "count": 944,
+      "sha256": "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923"
+    },
+    "mahoragaTrackTimeline": {
+      "count": 944,
+      "sha256": "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea"
+    },
+    "songsPeriod": {
+      "count": 27,
+      "sha256": "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"
+    },
+    "playlistsPeriod": {
+      "count": 8,
+      "sha256": "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"
+    },
+    "gameOverTrackTimeline": {
+      "importId": "a060e608-24f4-4f79-8a3b-fceface408c9",
+      "releaseId": "7814c0e7-b8b1-44d7-ad44-4d0197c5330f",
+      "releaseTitle": "Game Over",
+      "fileHash": "15a4bedaea68451030ede560ec8e648f925ea9349ff1973bd1aaf0cfaf3b3f16",
+      "importFingerprintSha256": "136b64539363c48dfcc1fb2f2554980c78fdea258660c299db1d42bc418e663b",
+      "auditProvenanceFingerprintSha256": "6fd1a9d27d68c4ccf69156cedcc82fb9fd4efeb1d5a9bc67a7bbe34e63676277",
+      "count": 952,
+      "earliestDate": "2024-01-01",
+      "latestDate": "2026-08-09",
+      "duplicateDateCount": 0,
+      "missingDateCount": 0,
+      "sha256": "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"
+    }
+  },
+  "adMeta": {
+    "adImportBatches": 18,
+    "adCreativeReports": 360,
+    "copyLabLinks": 109,
+    "acceptedDailyImports": 1,
+    "gameOverCanonicalSpendFacts": 210,
+    "gameOverSpendUsd": 283.48,
+    "mahoragaCanonicalFacts": 0,
+    "metaPromotionLinks": 0,
+    "promotionCampaigns": 0,
+    "confirmedIntervals": 0,
+    "currentTimezoneResolutions": 1
+  },
+  "backup": {
+    "runId": "70e04de9-3ab8-459c-971b-c23cd404a04e",
+    "createdAt": "2026-08-11T09:35:23.679Z",
+    "finishedAt": "2026-08-11T09:35:32.828Z",
+    "sizeBytes": 5975016,
+    "encryptedSha256": "efb7561a0f0279692b873fa178801432668dfe8e1ba8c31461d891b1de7d32a0",
+    "destinations": [
+      "vercel_blob_private",
+      "google_drive"
+    ]
+  }
+}
