@@ -31,6 +31,8 @@ const EXPECTED_SPOTIFY = Object.freeze({
 });
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+let phase = "configuration";
+let failed = false;
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -164,19 +166,20 @@ function run(command, args, env, input) {
   return result;
 }
 
-const productionUrl = required("POSTGRES_URL_NON_POOLING");
-const productionIdentity = new URL(productionUrl);
-assert.ok(productionIdentity.hostname.endsWith("pooler.supabase.com"), "Production identity hostname guard failed.");
-assert.equal(productionIdentity.port, "5432", "Production identity port guard failed.");
-assert.ok(decodeURIComponent(productionIdentity.username).includes("qkwifxvfrotmmnjluhbt"), "Production identity project guard failed.");
-required("BACKUP_ENCRYPTION_SECRET");
-
-const production = new Client(connectionOptions(productionUrl, true));
+let production;
 let embedded;
 let target;
 let tempDirectory;
 let targetIdentity;
 try {
+  const productionUrl = required("POSTGRES_URL_NON_POOLING");
+  const productionIdentity = new URL(productionUrl);
+  assert.ok(productionIdentity.hostname.endsWith("pooler.supabase.com"), "Production identity hostname guard failed.");
+  assert.equal(productionIdentity.port, "5432", "Production identity port guard failed.");
+  assert.ok(decodeURIComponent(productionIdentity.username).includes("qkwifxvfrotmmnjluhbt"), "Production identity project guard failed.");
+  required("BACKUP_ENCRYPTION_SECRET");
+  production = new Client(connectionOptions(productionUrl, true));
+  phase = "production-baseline";
   await production.connect();
   await production.query("BEGIN READ ONLY");
   const before = await stateFingerprint(production);
@@ -190,15 +193,18 @@ try {
   assert.ok(backup.googleDriveFileId, "Approved backup has no Drive reference.");
   await production.query("COMMIT");
 
+  phase = "encrypted-backup-download";
   const encrypted = await downloadApprovedBackup(backup.googleDriveFileId);
   assert.equal(encrypted.length, APPROVED.sizeBytes, "Encrypted backup size mismatch.");
   assert.equal(sha256(encrypted), APPROVED.encryptedSha256, "Encrypted backup hash mismatch.");
+  phase = "encrypted-backup-integrity-and-decryption";
   const snapshot = verifyAndDecodeBackup(encrypted, APPROVED.encryptedSha256);
 
   const port = await freePort();
   const database = `${DISPOSABLE_DATABASE_PREFIX}${crypto.randomBytes(8).toString("hex")}`;
   const password = crypto.randomBytes(32).toString("base64url");
   const targetUrl = `postgresql://postgres:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}?schema=public`;
+  phase = "disposable-target-guard";
   targetIdentity = assertDisposableRestoreTarget({
     allowRestore: process.env.ALLOW_DISPOSABLE_BACKUP_RESTORE,
     targetKind: process.env.BACKUP_VERIFY_TARGET_KIND,
@@ -206,6 +212,7 @@ try {
     productionUrls: [process.env.DATABASE_URL, process.env.POSTGRES_PRISMA_URL, process.env.POSTGRES_URL, productionUrl]
   });
 
+  phase = "disposable-target-provisioning";
   tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "vcc-backup-verify-"));
   embedded = new EmbeddedPostgres({databaseDir: tempDirectory, user: "postgres", password, port, persistent: false, createPostgresUser: process.getuid?.() === 0, onLog: () => {}, onError: () => {}});
   await embedded.initialise();
@@ -216,6 +223,7 @@ try {
   assert.equal((await target.query(`SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'`)).rows[0].count, 0, "Disposable target was not empty.");
   await target.end(); target = undefined;
 
+  phase = "disposable-schema-initialization";
   const targetEnv = {...process.env, DATABASE_URL: targetUrl, DIRECT_URL: targetUrl, POSTGRES_PRISMA_URL: targetUrl, POSTGRES_URL: targetUrl, POSTGRES_URL_NON_POOLING: targetUrl};
   run(process.execPath, ["scripts/run-prisma.mjs", "db", "push", "--schema", "prisma/schema.postgres.prisma", "--skip-generate"], targetEnv);
   target = new Client(connectionOptions(targetUrl)); await target.connect();
@@ -223,16 +231,19 @@ try {
   await target.query(await fs.readFile(path.join(process.cwd(), "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8"));
   await target.end(); target = undefined;
 
+  phase = "in-memory-restore";
   run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], {...targetEnv, DB_SNAPSHOT_STDIN: "1", IMPORT_AUTH: "0"}, snapshot);
   snapshot.fill(0);
   encrypted.fill(0);
 
+  phase = "restored-invariant-verification";
   target = new Client(connectionOptions(targetUrl)); await target.connect();
   const restored = await stateFingerprint(target);
   assertExpectedState(restored);
   assert.equal(restored.sha256, before.sha256, "Restored product fingerprint differs from protected production state.");
   await target.end(); target = undefined;
 
+  phase = "production-isolation-verification";
   await production.query("BEGIN READ ONLY");
   const after = await stateFingerprint(production);
   await production.query("COMMIT");
@@ -249,14 +260,19 @@ try {
     plaintextFilesCreated: 0
   }, null, 2));
 } catch (error) {
-  try { await production.query("ROLLBACK"); } catch {}
-  console.error("Guarded disposable backup verification failed safely.");
-  process.exitCode = 1;
+  failed = true;
+  try { await production?.query("ROLLBACK"); } catch {}
+  const classification = error instanceof assert.AssertionError
+    ? "INVARIANT_MISMATCH"
+    : error instanceof SyntaxError
+      ? "INVALID_BACKUP_PAYLOAD"
+      : "VERIFICATION_OPERATION_FAILED";
+  console.error(JSON.stringify({gate: "E2.1A", status: "failed-safe", phase, classification}));
 } finally {
   if (target) await target.end().catch(() => {});
   if (embedded) await embedded.stop().catch(() => {});
   if (tempDirectory) await fs.rm(tempDirectory, {recursive: true, force: true}).catch(() => {});
-  await production.end().catch(() => {});
+  if (production) await production.end().catch(() => {});
   if (tempDirectory) {
     const remains = await fs.stat(tempDirectory).then(() => true).catch(() => false);
     if (remains) {
@@ -265,3 +281,4 @@ try {
     }
   }
 }
+if (failed) process.exit(1);
