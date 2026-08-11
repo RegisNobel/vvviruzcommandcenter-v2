@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import {spawnSync} from "node:child_process";
+import {spawn, spawnSync} from "node:child_process";
 
 import EmbeddedPostgres from "embedded-postgres";
 import pg from "pg";
@@ -189,14 +189,85 @@ function run(command, args, env, input) {
   return result;
 }
 
-async function ensureEmbeddedPostgresExecutables() {
-  if (process.platform !== "linux" || process.arch !== "x64") return;
-  const executableDirectory = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native", "bin");
-  const approvedRoot = `${path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native")}${path.sep}`;
-  assert.ok(executableDirectory.startsWith(approvedRoot), "Embedded PostgreSQL executable path guard failed.");
-  const entries = await fs.readdir(executableDirectory, {withFileTypes: true});
-  for (const entry of entries) {
-    if (entry.isFile()) await fs.chmod(path.join(executableDirectory, entry.name), 0o755);
+function spawnChecked(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {...options, stdio: ["ignore", "ignore", "pipe"]});
+    let stderr = "";
+    child.stderr?.on("data", (chunk) => { stderr += chunk.toString("utf8"); });
+    child.once("error", reject);
+    child.once("close", (code) => code === 0 ? resolve() : reject(new Error(`Disposable PostgreSQL subprocess exited with code ${code}. ${stderr.slice(-500)}`)));
+  });
+}
+
+function postgresRuntimeIdentity() {
+  if (process.getuid?.() !== 0) return {};
+  let uid = Number(spawnSync("id", ["-u", "postgres"], {encoding: "utf8"}).stdout?.trim());
+  let gid = Number(spawnSync("id", ["-g", "postgres"], {encoding: "utf8"}).stdout?.trim());
+  if (!Number.isInteger(uid) || !Number.isInteger(gid)) {
+    spawnSync("groupadd", ["postgres"], {stdio: "ignore"});
+    spawnSync("useradd", ["-g", "postgres", "postgres"], {stdio: "ignore"});
+    uid = Number(spawnSync("id", ["-u", "postgres"], {encoding: "utf8"}).stdout?.trim());
+    gid = Number(spawnSync("id", ["-g", "postgres"], {encoding: "utf8"}).stdout?.trim());
+  }
+  assert.ok(Number.isInteger(uid) && Number.isInteger(gid), "Disposable PostgreSQL runtime user is unavailable.");
+  return {uid, gid};
+}
+
+class VercelTmpEmbeddedPostgres {
+  constructor(options) {
+    this.options = options;
+    this.nativeDirectory = path.join(path.dirname(options.databaseDir), "postgres-native");
+  }
+
+  runtimeEnv() {
+    return {...process.env, PATH: `${path.join(this.nativeDirectory, "bin")}:${process.env.PATH || ""}`, LD_LIBRARY_PATH: path.join(this.nativeDirectory, "lib"), LC_MESSAGES: "C"};
+  }
+
+  async initialise() {
+    const source = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native");
+    const approvedRoot = `${path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64")}${path.sep}`;
+    assert.ok(source.startsWith(approvedRoot), "Embedded PostgreSQL source path guard failed.");
+    await fs.cp(source, this.nativeDirectory, {recursive: true, dereference: true});
+    for (const entry of await fs.readdir(path.join(this.nativeDirectory, "bin"), {withFileTypes: true})) {
+      if (entry.isFile()) await fs.chmod(path.join(this.nativeDirectory, "bin", entry.name), 0o755);
+    }
+    await fs.mkdir(this.options.databaseDir, {recursive: true});
+    this.identity = postgresRuntimeIdentity();
+    if (this.identity.uid !== undefined) await fs.chown(this.options.databaseDir, this.identity.uid, this.identity.gid);
+    const passwordFile = path.join(os.tmpdir(), `pg-password-${crypto.randomBytes(8).toString("hex")}`);
+    await fs.writeFile(passwordFile, `${this.options.password}\n`, {mode: 0o600});
+    if (this.identity.uid !== undefined) await fs.chown(passwordFile, this.identity.uid, this.identity.gid);
+    try {
+      await spawnChecked(path.join(this.nativeDirectory, "bin", "initdb"), [`--pgdata=${this.options.databaseDir}`, "--auth=password", `--username=${this.options.user}`, `--pwfile=${passwordFile}`, "--locale=C"], {...this.identity, env: this.runtimeEnv()});
+    } finally {
+      await fs.unlink(passwordFile).catch(() => {});
+    }
+  }
+
+  async start() {
+    await new Promise((resolve, reject) => {
+      const command = path.join(this.nativeDirectory, "bin", "postgres");
+      this.process = spawn(command, ["-D", this.options.databaseDir, "-p", String(this.options.port), "-h", "127.0.0.1"], {...this.identity, env: this.runtimeEnv(), stdio: ["ignore", "ignore", "pipe"]});
+      let settled = false;
+      this.process.once("error", reject);
+      this.process.stderr?.on("data", (chunk) => {
+        if (!settled && chunk.toString("utf8").includes("database system is ready to accept connections")) { settled = true; resolve(); }
+      });
+      this.process.once("close", (code) => { if (!settled) reject(new Error(`Disposable PostgreSQL exited before readiness (${code}).`)); });
+    });
+  }
+
+  async createDatabase(name) {
+    const admin = new Client({host: "127.0.0.1", port: this.options.port, user: this.options.user, password: this.options.password, database: "postgres"});
+    await admin.connect();
+    try { await admin.query(`CREATE DATABASE ${admin.escapeIdentifier(name)}`); } finally { await admin.end(); }
+  }
+
+  async stop() {
+    if (!this.process) return;
+    const child = this.process;
+    await new Promise((resolve) => { child.once("exit", resolve); child.kill("SIGINT"); });
+    this.process = undefined;
   }
 }
 
@@ -252,8 +323,9 @@ try {
 
   phase = "disposable-target-provisioning";
   tempDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "vcc-backup-verify-"));
-  await ensureEmbeddedPostgresExecutables();
-  embedded = new EmbeddedPostgres({databaseDir: tempDirectory, user: "postgres", password, port, persistent: false, createPostgresUser: process.getuid?.() === 0, onLog: () => {}, onError: () => {}});
+  const databaseDirectory = path.join(tempDirectory, "data");
+  const embeddedOptions = {databaseDir: databaseDirectory, user: "postgres", password, port, persistent: false, createPostgresUser: process.getuid?.() === 0, onLog: () => {}, onError: () => {}};
+  embedded = process.platform === "linux" && process.arch === "x64" ? new VercelTmpEmbeddedPostgres(embeddedOptions) : new EmbeddedPostgres(embeddedOptions);
   await embedded.initialise();
   await embedded.start();
   await embedded.createDatabase(database);
