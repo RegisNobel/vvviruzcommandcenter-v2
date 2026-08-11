@@ -195,7 +195,19 @@ function spawnChecked(command, args, options = {}) {
     let stderr = "";
     child.stderr?.on("data", (chunk) => { stderr += chunk.toString("utf8"); });
     child.once("error", reject);
-    child.once("close", (code) => code === 0 ? resolve() : reject(new Error(`Disposable PostgreSQL subprocess exited with code ${code}. ${stderr.slice(-500)}`)));
+    child.once("close", (code) => {
+      if (code === 0) return resolve();
+      const normalized = stderr.toLowerCase();
+      const operationCode = normalized.includes("cannot be run as root") ? "E_RUNTIME_ROOT"
+        : normalized.includes("error while loading shared libraries") ? "E_RUNTIME_LIBRARY"
+          : normalized.includes("permission denied") ? "E_RUNTIME_PERMISSION"
+            : normalized.includes("no such file or directory") ? "E_RUNTIME_FILE"
+              : normalized.includes("locale") ? "E_RUNTIME_LOCALE"
+                : "E_SUBPROCESS_EXIT";
+      const error = new Error(`Disposable PostgreSQL subprocess exited safely with code ${code}.`);
+      error.code = operationCode;
+      reject(error);
+    });
   });
 }
 
@@ -216,7 +228,8 @@ function postgresRuntimeIdentity() {
 class VercelTmpEmbeddedPostgres {
   constructor(options) {
     this.options = options;
-    this.nativeDirectory = path.join(path.dirname(options.databaseDir), "postgres-native");
+    this.runtimeDirectory = path.join(path.dirname(options.databaseDir), "postgres-runtime");
+    this.nativeDirectory = path.join(this.runtimeDirectory, "native");
   }
 
   runtimeEnv() {
@@ -225,10 +238,15 @@ class VercelTmpEmbeddedPostgres {
 
   async initialise() {
     phase = "disposable-runtime-copy";
-    const source = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64", "native");
-    const approvedRoot = `${path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64")}${path.sep}`;
+    const packageRoot = path.resolve(process.cwd(), "node_modules", "@embedded-postgres", "linux-x64");
+    const source = path.join(packageRoot, "native");
+    const hydrateScript = path.join(packageRoot, "scripts", "hydrate-symlinks.js");
+    const approvedRoot = `${packageRoot}${path.sep}`;
     assert.ok(source.startsWith(approvedRoot), "Embedded PostgreSQL source path guard failed.");
-    await fs.cp(source, this.nativeDirectory, {recursive: true, dereference: true});
+    assert.ok(hydrateScript.startsWith(approvedRoot), "Embedded PostgreSQL hydration path guard failed.");
+    await fs.cp(source, this.nativeDirectory, {recursive: true, dereference: false});
+    phase = "disposable-runtime-symlinks";
+    await spawnChecked(process.execPath, [hydrateScript], {cwd: this.runtimeDirectory, env: process.env});
     phase = "disposable-runtime-permissions";
     for (const entry of await fs.readdir(path.join(this.nativeDirectory, "bin"), {withFileTypes: true})) {
       if (entry.isFile()) await fs.chmod(path.join(this.nativeDirectory, "bin", entry.name), 0o755);
