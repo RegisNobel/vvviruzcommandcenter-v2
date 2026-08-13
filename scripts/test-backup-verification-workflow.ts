@@ -11,8 +11,17 @@ for (const forbiddenTrigger of ["push:", "pull_request:", "pull_request_target:"
 assert.match(workflow, /permissions:\s*\n\s+contents: read/);
 assert.match(workflow, /environment: backup-restore-verification/);
 assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
-assert.match(workflow, /POSTGRES_DB: backup_verify_\$\{\{ github\.run_id \}\}/);
-assert.match(workflow, /POSTGRES_PASSWORD: \$\{\{ github\.token \}\}/);
+assert.ok(!workflow.includes("github.token"), "GITHUB_TOKEN must not be reused as the database password.");
+assert.match(workflow, /od -An -N48 -tx1 \/dev\/urandom/);
+assert.match(workflow, /test "\$\{#password\}" -eq 96/);
+assert.match(workflow, /echo "::add-mask::\$password"/);
+assert.match(workflow, /DISPOSABLE_POSTGRES_PASSWORD=\$password/);
+assert.match(workflow, /database="backup_verify_\$\{GITHUB_RUN_ID\}"/);
+assert.match(workflow, /--publish 127\.0\.0\.1:5432:5432/);
+assert.match(workflow, /postgres:17@sha256:[0-9a-f]{64}/);
+assert.match(workflow, /\/proc\/1\/status\)" -ne 0/);
+assert.match(workflow, /docker rm --force backup-verify-postgres/);
+assert.match(workflow, /if: always\(\)/);
 assert.match(workflow, /node-version: 24\.14\.1/);
 assert.ok(!/uses:\s*[^\s]+@(?![0-9a-f]{40}\b)/.test(workflow), "Every Action must use a full SHA.");
 assert.ok(!/upload-artifact|actions\/cache|cache:/.test(workflow), "Artifacts and caches are forbidden.");
@@ -31,4 +40,4 @@ for (const expected of [
   'mahoragaTrackTimeline: {count: 944'
 ]) assert.ok(verifier.includes(expected), `Missing restored-baseline assertion: ${expected}`);
 
-console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomizedJobCredential: true, restoredBaselineContract: true}));
+console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomEntropyBytes: 48, githubTokenReused: false, loopbackOnly: true, teardownAlways: true, restoredBaselineContract: true}));

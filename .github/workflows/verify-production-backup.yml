@@ -22,25 +22,10 @@ jobs:
     environment: backup-restore-verification
     permissions:
       contents: read
-    services:
-      postgres:
-        image: postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ github.token }}
-          POSTGRES_DB: backup_verify_${{ github.run_id }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d backup_verify_${{ github.run_id }}"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
       GITHUB_ACTIONS_EXPECTED_ACTOR: RegisNobel
       ALLOW_DISPOSABLE_BACKUP_RESTORE: "1"
       BACKUP_VERIFY_TARGET_KIND: DISPOSABLE
-      DISPOSABLE_DATABASE_URL: postgresql://postgres:${{ github.token }}@127.0.0.1:5432/backup_verify_${{ github.run_id }}?schema=public
       APPROVED_GOOGLE_DRIVE_FILE_ID: ${{ vars.APPROVED_GOOGLE_DRIVE_FILE_ID }}
       BACKUP_ENCRYPTION_SECRET: ${{ secrets.BACKUP_ENCRYPTION_SECRET }}
       GOOGLE_DRIVE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_DRIVE_OAUTH_CLIENT_ID }}
@@ -58,6 +43,36 @@ jobs:
           for name in POSTGRES_URL_NON_POOLING POSTGRES_PRISMA_URL POSTGRES_URL VERCEL VERCEL_ENV BLOB_READ_WRITE_TOKEN AUTH_SECRET ADMIN_TOTP_SECRET SUPABASE_SERVICE_ROLE_KEY; do
             test -z "${!name-}"
           done
+      - name: Start disposable PostgreSQL 17
+        shell: bash
+        run: |
+          set -euo pipefail
+          password="$(od -An -N48 -tx1 /dev/urandom | tr -d ' \n')"
+          test "${#password}" -eq 96
+          case "$password" in *[!0-9a-f]*) exit 1;; esac
+          database="backup_verify_${GITHUB_RUN_ID}"
+          echo "::add-mask::$password"
+          {
+            echo "DISPOSABLE_POSTGRES_PASSWORD=$password"
+            echo "DISPOSABLE_DATABASE_NAME=$database"
+            echo "DISPOSABLE_DATABASE_URL=postgresql://postgres:${password}@127.0.0.1:5432/${database}?schema=public"
+          } >> "$GITHUB_ENV"
+          docker run --detach --name backup-verify-postgres \
+            --env POSTGRES_USER=postgres \
+            --env "POSTGRES_PASSWORD=$password" \
+            --env "POSTGRES_DB=$database" \
+            --publish 127.0.0.1:5432:5432 \
+            postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317 >/dev/null
+          ready=0
+          for _ in $(seq 1 30); do
+            if docker exec backup-verify-postgres pg_isready --username postgres --dbname "$database" >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          test "$(docker exec backup-verify-postgres awk '/^Uid:/{print $2}' /proc/1/status)" -ne 0
       - name: Check out reviewed commit
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -69,9 +84,15 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
       - name: Generate local PostgreSQL client
-        env:
-          DATABASE_URL: ${{ env.DISPOSABLE_DATABASE_URL }}
-          DIRECT_URL: ${{ env.DISPOSABLE_DATABASE_URL }}
-        run: node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma
+        shell: bash
+        run: |
+          DATABASE_URL="$DISPOSABLE_DATABASE_URL" DIRECT_URL="$DISPOSABLE_DATABASE_URL" \
+            node scripts/run-prisma.mjs generate --schema prisma/schema.postgres.prisma
       - name: Restore and verify approved backup
         run: node --conditions=react-server --import tsx scripts/verify-production-backup-ci.mjs
+      - name: Destroy disposable PostgreSQL
+        if: always()
+        shell: bash
+        run: |
+          docker rm --force backup-verify-postgres >/dev/null 2>&1 || true
+          test -z "$(docker ps --all --quiet --filter name='^/backup-verify-postgres$')"
