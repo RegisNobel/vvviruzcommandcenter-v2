@@ -2,16 +2,20 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import {spawnSync} from "node:child_process";
-
 import pg from "pg";
 
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
+import restoreImportContract from "../lib/backups/restore-import-contract.ts";
 
 process.env.TZ = "America/New_York";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
+const {
+  requireZeroRestoreProvenanceWarnings,
+  RestoreImportInvariantError,
+  runSanitizedSubprocess
+} = restoreImportContract;
 const {
   readNormalizedGoogleDriveOAuthCredentials,
   retrievePinnedEncryptedGoogleDriveBackup,
@@ -69,11 +73,7 @@ function assertCiBoundary() {
 }
 
 function run(command, args, env, input) {
-  const result = spawnSync(command, args, {
-    cwd: process.cwd(), env, input, encoding: input ? undefined : "utf8",
-    maxBuffer: 64 * 1024 * 1024, shell: false, stdio: [input ? "pipe" : "ignore", "ignore", "pipe"]
-  });
-  if (result.status !== 0) throw new Error("Disposable restore subprocess failed safely.");
+  return runSanitizedSubprocess(command, args, env, input);
 }
 
 function invariant(code, actual, expected) {
@@ -205,7 +205,13 @@ try {
   await client.query(await fs.readFile(path.join(process.cwd(), "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8"));
   await client.end(); client = undefined;
   phase = "in-memory-restore";
-  run(process.execPath, ["--conditions=react-server","--import","tsx","scripts/import-db-snapshot.ts"], {...targetEnv,DB_SNAPSHOT_STDIN:"1",IMPORT_AUTH:"1"}, snapshot);
+  const importResult = run(process.execPath, ["--conditions=react-server","--import","tsx","scripts/import-db-snapshot.ts"], {...targetEnv,DB_SNAPSHOT_STDIN:"1",IMPORT_AUTH:"1"}, snapshot);
+  try {
+    requireZeroRestoreProvenanceWarnings(importResult);
+  } catch (error) {
+    if (error instanceof RestoreImportInvariantError) phase = error.invariantCode;
+    throw error;
+  }
 
   phase = "restored-verification";
   client = new Client({connectionString: targetUrl}); await client.connect();

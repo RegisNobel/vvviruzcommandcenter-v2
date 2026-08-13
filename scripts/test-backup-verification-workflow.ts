@@ -41,6 +41,8 @@ for (const expected of [
   'GAME_OVER_IMPORT_FINGERPRINT_MISMATCH',
   'GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH',
   'GAME_OVER_TIMELINE_FINGERPRINT_MISMATCH',
+  'requireZeroRestoreProvenanceWarnings(importResult)',
+  'RestoreImportInvariantError',
   '91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de',
   'mahoragaTrackTimeline: {count: 944',
   'IMPORT_AUTH:"1"'

@@ -3,10 +3,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 
+import {requireZeroRestoreProvenanceWarnings} from "../lib/backups/restore-import-contract";
+
 function run(command: string, args: string[], env: NodeJS.ProcessEnv) {
   const result = spawnSync(command, args, {cwd: process.cwd(), env, encoding: "utf8", shell: false});
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`);
-  return result.stdout;
+  return {status: result.status, stdout: result.stdout, stderr: result.stderr};
 }
 
 async function main() {
@@ -40,7 +42,8 @@ async function main() {
     const restoredEnv = {...baseEnv, DATABASE_URL: `file:${restoredDb}`, DIRECT_URL: `file:${restoredDb}`, DB_SNAPSHOT_PATH: snapshotPath, STAGE10_FINGERPRINT_PATH: fingerprintPath, IMPORT_AUTH: "1"};
     await fs.copyFile(blankDbPath, restoredDbPath);
     run(process.execPath, ["scripts/run-prisma.mjs", "db", "push", "--schema", "prisma/schema.prisma", "--force-reset", "--skip-generate"], restoredEnv);
-    run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], restoredEnv);
+    const importResult = run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], restoredEnv);
+    assert.equal(requireZeroRestoreProvenanceWarnings(importResult).counts.restoreProvenanceWarnings, 0);
     run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/stage10-backup-fixture.ts", "verify"], restoredEnv);
     console.log("Disposable database export, destruction/recreation, restore, current resolution, calculation equivalence, supersession, audit, and raw-byte exclusion passed.");
   } finally {
