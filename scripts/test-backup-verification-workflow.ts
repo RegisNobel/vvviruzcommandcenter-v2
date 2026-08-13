@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 const workflow = fs.readFileSync(".github/workflows/verify-production-backup.yml", "utf8");
 const verifier = fs.readFileSync("scripts/verify-production-backup-ci.mjs", "utf8");
+assert.match(verifier, /gate:\s*"BACKUP_RESTORE_VERIFICATION"/);
+assert.ok(!verifier.includes('gate:"E2.1E"'), "Reusable verifier must not retain a gate-specific label.");
 
 assert.match(workflow, /^on:\s*\n\s+workflow_dispatch:\s*$/m);
 for (const forbiddenTrigger of ["push:", "pull_request:", "pull_request_target:", "schedule:", "workflow_run:", "repository_dispatch:"]) {

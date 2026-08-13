@@ -178,6 +178,7 @@ async function fetchWithTimeout(
 export async function refreshGoogleDriveOAuthAccessToken(input: {
   credentials: GoogleDriveOAuthCredentials;
   fetchImpl?: Fetch;
+  onSuccess?: (result: {httpStatus: number}) => void;
   timeoutMs?: number;
 }) {
   const fetchImpl = input.fetchImpl ?? fetch;
@@ -224,7 +225,96 @@ export async function refreshGoogleDriveOAuthAccessToken(input: {
       httpStatus: response.status
     });
   }
+  input.onSuccess?.({httpStatus: response.status});
   return payload.access_token;
+}
+
+async function readPinnedGoogleDriveBackupMetadata(input: {
+  accessToken: string;
+  expectedFileId: string;
+  expectedSize: number;
+  fetchImpl: Fetch;
+  timeoutMs: number;
+}) {
+  const fileUrl = `${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(input.expectedFileId)}`;
+  const metadataResponse = await fetchWithTimeout(
+    input.fetchImpl,
+    `${fileUrl}?fields=id,size,trashed,mimeType`,
+    {headers: {Authorization: `Bearer ${input.accessToken}`}, redirect: "error"},
+    "drive-metadata",
+    input.timeoutMs
+  );
+  if (!metadataResponse.ok) throw driveHttpError("drive-metadata", metadataResponse.status);
+  let metadata: {id?: unknown; size?: unknown; trashed?: unknown; mimeType?: unknown};
+  try {
+    metadata = (await metadataResponse.json()) as typeof metadata;
+  } catch {
+    throw new BackupRetrievalError({
+      code: "GOOGLE_DRIVE_METADATA_FAILED",
+      phase: "drive-metadata",
+      httpStatus: metadataResponse.status
+    });
+  }
+  if (metadata.id !== input.expectedFileId) {
+    throw new BackupRetrievalError({
+      code: "GOOGLE_DRIVE_FILE_ID_MISMATCH",
+      phase: "drive-metadata"
+    });
+  }
+  if (metadata.trashed === true) {
+    throw new BackupRetrievalError({
+      code: "GOOGLE_DRIVE_FILE_TRASHED",
+      phase: "drive-metadata"
+    });
+  }
+  if (typeof metadata.mimeType !== "string" || metadata.mimeType === "application/vnd.google-apps.folder" || metadata.mimeType === "application/vnd.google-apps.shortcut") {
+    throw new BackupRetrievalError({
+      code: "GOOGLE_DRIVE_OBJECT_NOT_FILE",
+      phase: "drive-metadata"
+    });
+  }
+  if (metadata.size !== undefined && Number(metadata.size) !== input.expectedSize) {
+    throw new BackupRetrievalError({
+      code: "BACKUP_ENCRYPTED_SIZE_MISMATCH",
+      phase: "encrypted-size"
+    });
+  }
+  return {
+    fileIdMatched: true as const,
+    sizeBytes: metadata.size === undefined ? undefined : Number(metadata.size),
+    trashed: false as const,
+    mimeType: metadata.mimeType,
+    httpStatus: metadataResponse.status
+  };
+}
+
+export async function verifyPinnedGoogleDriveBackupMetadata(input: {
+  credentials: GoogleDriveOAuthCredentials;
+  expectedFileId: string;
+  expectedSize: number;
+  fetchImpl?: Fetch;
+  onPhase?: (phase: "oauth-refresh" | "drive-metadata") => void;
+  timeoutMs?: number;
+}) {
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const timeoutMs = input.timeoutMs ?? 20_000;
+  let oauthHttpStatus: number | undefined;
+  input.onPhase?.("oauth-refresh");
+  const accessToken = await refreshGoogleDriveOAuthAccessToken({
+    credentials: input.credentials,
+    fetchImpl,
+    timeoutMs,
+    onSuccess: ({httpStatus}) => { oauthHttpStatus = httpStatus; }
+  });
+  input.onPhase?.("drive-metadata");
+  const metadata = await readPinnedGoogleDriveBackupMetadata({
+    accessToken,
+    expectedFileId: input.expectedFileId,
+    expectedSize: input.expectedSize,
+    fetchImpl,
+    timeoutMs
+  });
+  return {oauthHttpStatus, metadata};
 }
 
 async function readEncryptedStream(input: {
@@ -327,48 +417,13 @@ export async function retrievePinnedEncryptedGoogleDriveBackup(input: {
   });
   const fileUrl = `${GOOGLE_DRIVE_FILES_URL}/${encodeURIComponent(input.expectedFileId)}`;
   input.onPhase?.("drive-metadata");
-  const metadataResponse = await fetchWithTimeout(
+  await readPinnedGoogleDriveBackupMetadata({
+    accessToken,
+    expectedFileId: input.expectedFileId,
+    expectedSize: input.expectedSize,
     fetchImpl,
-    `${fileUrl}?fields=id,size,trashed,mimeType`,
-    {headers: {Authorization: `Bearer ${accessToken}`}, redirect: "error"},
-    "drive-metadata",
     timeoutMs
-  );
-  if (!metadataResponse.ok) throw driveHttpError("drive-metadata", metadataResponse.status);
-  let metadata: {id?: unknown; size?: unknown; trashed?: unknown; mimeType?: unknown};
-  try {
-    metadata = (await metadataResponse.json()) as typeof metadata;
-  } catch {
-    throw new BackupRetrievalError({
-      code: "GOOGLE_DRIVE_METADATA_FAILED",
-      phase: "drive-metadata",
-      httpStatus: metadataResponse.status
-    });
-  }
-  if (metadata.id !== input.expectedFileId) {
-    throw new BackupRetrievalError({
-      code: "GOOGLE_DRIVE_FILE_ID_MISMATCH",
-      phase: "drive-metadata"
-    });
-  }
-  if (metadata.trashed === true) {
-    throw new BackupRetrievalError({
-      code: "GOOGLE_DRIVE_FILE_TRASHED",
-      phase: "drive-metadata"
-    });
-  }
-  if (typeof metadata.mimeType !== "string" || metadata.mimeType === "application/vnd.google-apps.folder" || metadata.mimeType === "application/vnd.google-apps.shortcut") {
-    throw new BackupRetrievalError({
-      code: "GOOGLE_DRIVE_OBJECT_NOT_FILE",
-      phase: "drive-metadata"
-    });
-  }
-  if (metadata.size !== undefined && Number(metadata.size) !== input.expectedSize) {
-    throw new BackupRetrievalError({
-      code: "BACKUP_ENCRYPTED_SIZE_MISMATCH",
-      phase: "encrypted-size"
-    });
-  }
+  });
 
   input.onPhase?.("drive-download-open");
   const downloadResponse = await fetchWithTimeout(

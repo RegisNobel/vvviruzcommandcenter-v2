@@ -210,12 +210,12 @@ try {
   const tableCount = (await client.query("SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'")).rows[0].count;
   await client.end(); client = undefined;
   const finishedAt = new Date();
-  console.log(JSON.stringify({gate:"E2.1E",status:"success",backup:{runId:APPROVED.backupRunId,sizeBytes:APPROVED.sizeBytes,encryptedSha256:APPROVED.encryptedSha256},target:{hostClass:"job-local-postgresql",majorVersion:17,tableCount,prefixVerified:true},restored,credentialNormalization,security:{productionCredentialsAvailable:false,productionWrites:0,plaintextFilesCreated:0,artifactsUploaded:0,credentialsPrinted:false},timing:{startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationMs:finishedAt-startedAt}},null,2));
+  console.log(JSON.stringify({gate:"BACKUP_RESTORE_VERIFICATION",status:"success",backup:{runId:APPROVED.backupRunId,sizeBytes:APPROVED.sizeBytes,encryptedSha256:APPROVED.encryptedSha256},target:{hostClass:"job-local-postgresql",majorVersion:17,tableCount,prefixVerified:true},restored,credentialNormalization,security:{productionCredentialsAvailable:false,productionWrites:0,plaintextFilesCreated:0,artifactsUploaded:0,credentialsPrinted:false},timing:{startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationMs:finishedAt-startedAt}},null,2));
 } catch (error) {
   const retrieval = sanitizedBackupRetrievalFailure(error);
   const classification = error instanceof assert.AssertionError ? "INVARIANT_MISMATCH" : error instanceof SyntaxError ? "INVALID_BACKUP_PAYLOAD" : "VERIFICATION_OPERATION_FAILED";
   const databaseCode = typeof error?.code === "string" && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : undefined;
-  console.error(JSON.stringify({gate:"E2.1E",status:"failed-safe",phase:retrieval?.phase??phase,classification,retrievalCode:retrieval?.code,httpStatus:retrieval?.httpStatus,oauthError:retrieval?.oauthError,retryable:retrieval?.retryable,credentialNormalization,databaseCode}));
+  console.error(JSON.stringify({gate:"BACKUP_RESTORE_VERIFICATION",status:"failed-safe",phase:retrieval?.phase??phase,classification,retrievalCode:retrieval?.code,httpStatus:retrieval?.httpStatus,oauthError:retrieval?.oauthError,retryable:retrieval?.retryable,credentialNormalization,databaseCode}));
   process.exitCode = 1;
 } finally {
   await client?.end().catch(() => {});

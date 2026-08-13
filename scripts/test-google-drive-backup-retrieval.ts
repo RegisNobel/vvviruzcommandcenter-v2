@@ -4,7 +4,8 @@ import {createHash} from "node:crypto";
 import {
   BackupRetrievalError,
   readNormalizedGoogleDriveOAuthCredentials,
-  retrievePinnedEncryptedGoogleDriveBackup
+  retrievePinnedEncryptedGoogleDriveBackup,
+  verifyPinnedGoogleDriveBackupMetadata
 } from "../lib/backups/google-drive-retrieval";
 
 const fileId = "pinned-file";
@@ -96,7 +97,28 @@ assert.deepEqual(success, artifact);
 assert.equal(downloadRedirect, "follow");
 assert.deepEqual(phases, ["oauth-refresh", "drive-metadata", "drive-download-open", "encrypted-stream", "encrypted-size", "encrypted-sha256"]);
 
+const metadataPhases: string[] = [];
+const metadataOnly = await verifyPinnedGoogleDriveBackupMetadata({
+  credentials,
+  expectedFileId: fileId,
+  expectedSize: artifact.length,
+  fetchImpl: sequenceFetch([oauthSuccess(), metadataSuccess()]),
+  onPhase: (phase) => metadataPhases.push(phase)
+});
+assert.deepEqual(metadataPhases, ["oauth-refresh", "drive-metadata"]);
+assert.deepEqual(metadataOnly, {
+  oauthHttpStatus: 200,
+  metadata: {
+    fileIdMatched: true,
+    sizeBytes: artifact.length,
+    trashed: false,
+    mimeType: "application/octet-stream",
+    httpStatus: 200
+  }
+});
+
 await expectFailure(sequenceFetch([json({error: "invalid_grant"}, 400)]), "GOOGLE_OAUTH_REFRESH_REJECTED", "oauth-refresh");
+await expectFailure(sequenceFetch([json({error: "invalid_client"}, 401)]), "GOOGLE_OAUTH_REFRESH_REJECTED", "oauth-refresh");
 await expectFailure(sequenceFetch([json({error: "unauthorized_client"}, 401)]), "GOOGLE_OAUTH_REFRESH_REJECTED", "oauth-refresh");
 await expectFailure(sequenceFetch([new Response("not-json", {status: 200})]), "GOOGLE_OAUTH_RESPONSE_INVALID", "oauth-refresh");
 await expectFailure(sequenceFetch([json({token_type: "Bearer"})]), "GOOGLE_OAUTH_ACCESS_TOKEN_MISSING", "oauth-refresh");
@@ -125,7 +147,7 @@ await expectFailure(sequenceFetch([oauthSuccess(), metadataSuccess(), new Respon
 const stalled = new ReadableStream<Uint8Array>({start() {}});
 await expectFailure(sequenceFetch([oauthSuccess(), metadataSuccess(), new Response(stalled, {status: 200})]), "BACKUP_NETWORK_TIMEOUT", "encrypted-stream", {timeoutMs: 5});
 
-console.log(JSON.stringify({suite: "google-drive-backup-retrieval", cases: 26, credentialsPrinted: false, productionCredentialsUsed: false}));
+console.log(JSON.stringify({suite: "google-drive-backup-retrieval", cases: 28, metadataOnlyCoverage: true, credentialsPrinted: false, productionCredentialsUsed: false}));
 }
 
 main().catch((error) => {
