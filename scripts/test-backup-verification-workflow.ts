@@ -49,6 +49,13 @@ for (const expected of [
   'RestoreImportInvariantError',
   '91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de',
   'mahoragaTrackTimeline: {count: 944',
+  'MAHORAGA_META_CONTRACT_MISMATCH',
+  'MAHORAGA_RECOVERY_COUNT_MISMATCH',
+  'DUAL_RELEASE_SPEND_MISMATCH',
+  'dual_release_raw_provenance_files:8',
+  'corrected_aug_10:1',
+  'stale_aug_10:0',
+  'ea28eedcb1ed9f15b8e38098406bdff5f35900d4fdeeb33a56ac4eaa7fcb73db',
   'IMPORT_AUTH:"1"'
 ]) assert.ok(verifier.includes(expected), `Missing restored-baseline assertion: ${expected}`);
 
@@ -62,5 +69,20 @@ assert.match(verifier, /earliestDate: "2024-01-01"/);
 assert.match(verifier, /latestDate: "2026-08-09"/);
 assert.match(verifier, /observationCount: 952/);
 assert.match(verifier, /distinctDateCount: 952/);
+assert.match(verifier, /backupRunId: "f048a6db-fe5a-4d6a-9462-0701a69849cb"/);
+assert.match(verifier, /sizeBytes: 6_621_090/);
+assert.match(verifier, /facts:852,positive:110,explicit_zero:742,missing:0,spend:"827\.18"/);
+assert.match(verifier, /files:4,sourceRows:1215,observations:933,resolutions:933,events:933,reports:852/);
+assert.match(verifier, /o\.spend=3\.84/);
+assert.match(verifier, /o\.spend=2\.71/);
+for (const recoveryHash of [
+  "21c237b9db3a8d79a307317b8f96f25508497953a41c8ede5308ce209b56a55a",
+  "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0",
+  "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c",
+  "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3",
+  "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b",
+  "24ef8079921d8fd884674b15dec4001e3054194eca8e8737fa5cb93ede20157b",
+  "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62"
+]) assert.ok(verifier.includes(recoveryHash), `Missing frozen Mahoraga recovery hash: ${recoveryHash}`);
 
 console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomEntropyBytes: 48, githubTokenReused: false, loopbackOnly: true, teardownAlways: true, restoredBaselineContract: true}));

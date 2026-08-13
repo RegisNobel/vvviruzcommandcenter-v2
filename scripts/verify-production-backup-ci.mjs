@@ -27,12 +27,14 @@ const {Client} = pg;
 const APPROVED = Object.freeze({
   repository: "RegisNobel/vvviruzcommandcenter-v2",
   branch: "refs/heads/main",
-  backupRunId: "70e04de9-3ab8-459c-971b-c23cd404a04e",
-  encryptedSha256: "efb7561a0f0279692b873fa178801432668dfe8e1ba8c31461d891b1de7d32a0",
-  sizeBytes: 5_975_016,
+  backupRunId: "f048a6db-fe5a-4d6a-9462-0701a69849cb",
+  encryptedSha256: "ea28eedcb1ed9f15b8e38098406bdff5f35900d4fdeeb33a56ac4eaa7fcb73db",
+  sizeBytes: 6_621_090,
   gameOverMetaImportId: "e2a5a408-02ea-426b-910a-2015124877ad",
   gameOverSpotifyImportId: "a060e608-24f4-4f79-8a3b-fceface408c9",
   gameOverReleaseId: "7814c0e7-b8b1-44d7-ad44-4d0197c5330f",
+  mahoragaMetaImportId: "0ce03ec0-4f46-4857-af66-7ab2f8a106bd",
+  mahoragaReleaseId: "66122bdb-95f2-432b-84a3-c97ff38d01cd",
   gameOverTimeline: Object.freeze({
     observationCount: 952,
     distinctDateCount: 952,
@@ -47,6 +49,15 @@ const EXPECTED_SPOTIFY = Object.freeze({
   songsPeriod: {count: 27, sha256: "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"},
   playlistsPeriod: {count: 8, sha256: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"},
   gameOverTrackTimeline: {count: 952, sha256: "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"}
+});
+const EXPECTED_MAHORAGA_RECOVERY = Object.freeze({
+  importIdentityAcceptance: "21c237b9db3a8d79a307317b8f96f25508497953a41c8ede5308ce209b56a55a",
+  fileAndRawReferenceMetadata: "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0",
+  normalizedSourceRows: "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c",
+  sourceObservations: "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3",
+  currentResolutions: "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b",
+  resolutionEventHistory: "24ef8079921d8fd884674b15dec4001e3054194eca8e8737fa5cb93ede20157b",
+  compatibilityReports: "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62"
 });
 const FORBIDDEN_ENV = [
   "POSTGRES_URL_NON_POOLING", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "VERCEL", "VERCEL_ENV",
@@ -133,10 +144,40 @@ async function restoredState(db) {
   const details = (await db.query(`SELECT
     (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1) provenance_files,
     (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId"=$1 AND "rawStorageKey"<>'' AND "rawStorageSha256"<>'') raw_provenance_files,
+    (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId" IN ($1,$2)) dual_release_provenance_files,
+    (SELECT count(*)::int FROM "MetaImportFile" WHERE "importBatchId" IN ($1,$2) AND "rawStorageKey"<>'' AND "rawStorageSha256"<>'') dual_release_raw_provenance_files,
     (SELECT count(*)::int FROM "MetaImportAuditEvent" WHERE "importBatchId"=$1 AND action='IMPORT_ACCEPTED') acceptance_audits,
+    (SELECT count(*)::int FROM "MetaImportAuditEvent" WHERE "importBatchId"=$2 AND action='IMPORT_ACCEPTED') mahoraga_acceptance_audits,
     (SELECT count(*)::int FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" JOIN "AdImportBatch" b ON b.id=o."importBatchId" WHERE b."releaseId"=(SELECT id FROM "Release" WHERE title ILIKE '%mahoraga%' ORDER BY id LIMIT 1) AND b."sourceGranularity"='DAILY') mahoraga_facts,
     (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND "ianaTimezone"='America/Los_Angeles') timezone_matches,
-    (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones`, [APPROVED.gameOverMetaImportId])).rows[0];
+    (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones`, [APPROVED.gameOverMetaImportId, APPROVED.mahoragaMetaImportId])).rows[0];
+  phase = "state-mahoraga-meta";
+  const mahoragaMeta = (await db.query(`SELECT b.id,b."releaseId",b."importState",b."validationState",b."sourceAsOfOrigin",
+    to_char(b."reportingStart",'YYYY-MM-DD') "reportingStart",to_char(b."reportingEnd",'YYYY-MM-DD') "reportingEnd",
+    count(*)::int facts,count(*) FILTER (WHERE o.spend>0)::int positive,count(*) FILTER (WHERE o.spend=0)::int explicit_zero,
+    count(*) FILTER (WHERE o.spend IS NULL)::int missing,round(sum(o.spend)::numeric,2)::text spend,
+    count(DISTINCT o."adId")::int ad_count,min(o."sourceReportingDate") start_date,max(o."sourceReportingDate") end_date,
+    count(*) FILTER (WHERE o."adName"='mahoraga_cover_verse1_rev1' AND o."metricDate"='2026-08-10'::date AND o.spend=3.84)::int corrected_aug_10,
+    count(*) FILTER (WHERE o."adName"='mahoraga_cover_verse1_rev1' AND o."metricDate"='2026-08-10'::date AND o.spend=2.71)::int stale_aug_10
+    FROM "AdImportBatch" b JOIN "MetaDailySourceObservation" o ON o."importBatchId"=b.id AND o."metricKey"='SPEND'
+    JOIN "MetaDailyResolution" r ON r."currentObservationId"=o.id WHERE b.id=$1 GROUP BY b.id`, [APPROVED.mahoragaMetaImportId])).rows[0];
+  const mahoragaImport = (await db.query(`SELECT * FROM "AdImportBatch" WHERE id=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaFiles = (await db.query(`SELECT * FROM "MetaImportFile" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaSourceRows = (await db.query(`SELECT r.* FROM "MetaImportFileRow" r JOIN "MetaImportFile" f ON f.id=r."importFileId" WHERE f."importBatchId"=$1 ORDER BY r."importFileId",r."sourceRowNumber",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaObservations = (await db.query(`SELECT * FROM "MetaDailySourceObservation" WHERE "importBatchId"=$1 ORDER BY "identityKey",id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaResolutions = (await db.query(`SELECT r.* FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY r."identityKey",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaEvents = (await db.query(`SELECT e.* FROM "MetaDailyResolutionEvent" e JOIN "MetaDailyResolution" r ON r.id=e."resolutionId" JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY e."resolutionId",e."createdAt",e.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaReports = (await db.query(`SELECT * FROM "AdCreativeReport" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaRecovery = {
+    importIdentityAcceptance: digest(mahoragaImport),
+    fileAndRawReferenceMetadata: digest(mahoragaFiles),
+    normalizedSourceRows: digest(mahoragaSourceRows),
+    sourceObservations: digest(mahoragaObservations),
+    currentResolutions: digest(mahoragaResolutions),
+    resolutionEventHistory: digest(mahoragaEvents),
+    compatibilityReports: digest(mahoragaReports)
+  };
+  const mahoragaRecoveryCounts = {files:mahoragaFiles.length,sourceRows:mahoragaSourceRows.length,observations:mahoragaObservations.length,resolutions:mahoragaResolutions.length,events:mahoragaEvents.length,reports:mahoragaReports.length};
   phase = "state-game-over-spotify";
   const gameOverSpotify = (await db.query(`SELECT i.id import_id,i."importType" import_type,i.status import_state,i."fileHash" file_hash,r.id release_id,r.title,r.isrc
     FROM "AnalyticsImport" i JOIN "TrackMetricObservation" o ON o."importId"=i.id
@@ -156,13 +197,17 @@ async function restoredState(db) {
   gameOverSpotify.audit_provenance_fingerprint = digest({importId:fullImport.id,importType:fullImport.importType,fileHash:fullImport.fileHash,actorId:fullImport.uploadedById,actorUsername:fullImport.uploadedByUsername,releaseIds:releases.map((row)=>row.id),auditEvents,mappingRows,commitIdempotencyKey:fullImport.commitIdempotencyKey,confirmations:metadata.confirmations||null,previewResultChecksum:metadata.previewResultChecksum||null});
   gameOverSpotify.mapping_row_count = mappingRows.length;
   const spotify = await spotifyFingerprint(db);
-  return {counts, gameOverMeta, details, gameOverSpotify, spotify, fingerprint: digest({counts, gameOverMeta, details, gameOverSpotify, spotify})};
+  return {counts, gameOverMeta, mahoragaMeta, details, mahoragaRecovery, mahoragaRecoveryCounts, gameOverSpotify, spotify, fingerprint: digest({counts, gameOverMeta, mahoragaMeta, details, mahoragaRecovery, mahoragaRecoveryCounts, gameOverSpotify, spotify})};
 }
 
 function assertExpected(state) {
-  invariant("FOUNDATION_COUNT_MISMATCH", state.counts, {batches:18,legacy_batches:17,daily_imports:1,reports:360,copy_links:109,source_observations:255,resolutions:255,meta_links:0,campaigns:0,confirmed_intervals:0});
+  invariant("FOUNDATION_COUNT_MISMATCH", state.counts, {batches:19,legacy_batches:17,daily_imports:2,reports:1212,copy_links:109,source_observations:1188,resolutions:1188,meta_links:0,campaigns:0,confirmed_intervals:0});
   invariant("GAME_OVER_META_CONTRACT_MISMATCH", state.gameOverMeta, {id:APPROVED.gameOverMetaImportId,importState:"ACCEPTED",validationState:"ACCEPTED",sourceAsOfOrigin:"IMPORT_ACCEPTED_FALLBACK",reportingStart:"2026-07-11",reportingEnd:"2026-08-09",facts:210,positive:60,explicit_zero:150,missing:0,spend:"283.48",ad_set_count:1,ad_set_id:"120247925536670172",start_date:"2026-07-11",end_date:"2026-08-09"});
-  invariant("META_PROVENANCE_CONTRACT_MISMATCH", state.details, {provenance_files:4,raw_provenance_files:4,acceptance_audits:1,mahoraga_facts:0,timezone_matches:1,current_timezones:1});
+  invariant("MAHORAGA_META_CONTRACT_MISMATCH", state.mahoragaMeta, {id:APPROVED.mahoragaMetaImportId,releaseId:APPROVED.mahoragaReleaseId,importState:"ACCEPTED",validationState:"ACCEPTED",sourceAsOfOrigin:"IMPORT_ACCEPTED_FALLBACK",reportingStart:"2026-06-01",reportingEnd:"2026-08-10",facts:852,positive:110,explicit_zero:742,missing:0,spend:"827.18",ad_count:12,start_date:"2026-06-01",end_date:"2026-08-10",corrected_aug_10:1,stale_aug_10:0});
+  invariant("META_PROVENANCE_CONTRACT_MISMATCH", state.details, {provenance_files:4,raw_provenance_files:4,dual_release_provenance_files:8,dual_release_raw_provenance_files:8,acceptance_audits:1,mahoraga_acceptance_audits:1,mahoraga_facts:933,timezone_matches:1,current_timezones:1});
+  invariant("MAHORAGA_RECOVERY_COUNT_MISMATCH", state.mahoragaRecoveryCounts, {files:4,sourceRows:1215,observations:933,resolutions:933,events:933,reports:852});
+  for (const key of Object.keys(EXPECTED_MAHORAGA_RECOVERY)) invariant(`MAHORAGA_${key.toUpperCase()}_FINGERPRINT_MISMATCH`, state.mahoragaRecovery[key], EXPECTED_MAHORAGA_RECOVERY[key]);
+  invariant("DUAL_RELEASE_SPEND_MISMATCH", (Number(state.gameOverMeta.spend)+Number(state.mahoragaMeta.spend)).toFixed(2), "1110.66");
   invariant("GAME_OVER_SPOTIFY_IMPORT_ID_MISMATCH", state.gameOverSpotify.import_id, APPROVED.gameOverSpotifyImportId);
   invariant("GAME_OVER_SPOTIFY_RELEASE_ID_MISMATCH", state.gameOverSpotify.release_id, APPROVED.gameOverReleaseId);
   invariant("GAME_OVER_SPOTIFY_TITLE_MISMATCH", state.gameOverSpotify.title, "Game Over");
