@@ -45,7 +45,7 @@ async function seed() {
   const metaFacts = metaDates.flatMap((date, dateIndex) => Array.from({length: 7}, (_, adIndex) => {
     const index = dateIndex * 7 + adIndex;
     const identityKey = `game-over|ad-${adIndex}|${date}|SPEND`;
-    return {id: `game-over-meta-observation-${String(index).padStart(3, "0")}`, importBatchId: metaBatchId, accountId: "fixture-account", campaignId: "fixture-campaign", campaignName: "Game Over", adSetId: "fixture-ad-set", adSetName: "Game Over", adId: `fixture-ad-${adIndex}`, adName: `Creative ${adIndex}`, metricDate: day(date), sourceReportingDate: date, accountTimezone: "America/Los_Angeles", normalizedTimezone: "America/Los_Angeles", timezoneSource: "ACCOUNT_REGISTRY", currency: "USD", currencyOrigin: "HEADER", metricFamily: "SPEND", metricKey: "SPEND", attributionSetting: "7-day click, 1-day view", spend: index < 60 ? 1 : 0, sourceAsOf: day("2026-08-09"), sourceAsOfOrigin: "IMPORT_ACCEPTED_FALLBACK", acceptedAt: day("2026-08-09"), parserVersion: "fixture-v1", normalizationVersion: "fixture-v1", identityKey, createdAt: now};
+    return {id: `game-over-meta-observation-${String(index).padStart(3, "0")}`, importBatchId: metaBatchId, accountId: "fixture-account", campaignId: "fixture-campaign", campaignName: "Game Over", adSetId: "fixture-ad-set", adSetName: "Game Over", adId: `fixture-ad-${adIndex}`, adName: `Creative ${adIndex}`, metricDate: day(date), sourceReportingDate: date, accountTimezone: "America/Los_Angeles", normalizedTimezone: "America/Los_Angeles", timezoneSource: "ACCOUNT_REGISTRY", currency: "USD", currencyOrigin: "HEADER", metricFamily: "SPEND", metricKey: "SPEND", attributionSetting: "7-day click, 1-day view", spend: index < 59 ? 4.72 : index === 59 ? 5 : 0, sourceAsOf: day("2026-08-09"), sourceAsOfOrigin: "IMPORT_ACCEPTED_FALLBACK", acceptedAt: day("2026-08-09"), parserVersion: "fixture-v1", normalizationVersion: "fixture-v1", identityKey, createdAt: now};
   }));
   assert.equal(metaFacts.length, 210);
   await prisma.metaDailySourceObservation.createMany({data: metaFacts});
@@ -107,6 +107,7 @@ async function fingerprint() {
       factCount: metaFacts.length,
       positiveCount: metaFacts.filter((row) => (row.spend ?? 0) > 0).length,
       explicitZeroCount: metaFacts.filter((row) => row.spend === 0).length,
+      spend: metaFacts.reduce((total, row) => total + (row.spend ?? 0), 0).toFixed(2),
       factsFingerprint: digest(metaFacts),
       acceptanceActorId: metaAudit.actorId,
       acceptanceFingerprint: digest(metaAudit)
@@ -180,6 +181,7 @@ async function main() {
     assert.equal(actual.gameOverMetaContract.factCount, 210);
     assert.equal(actual.gameOverMetaContract.positiveCount, 60);
     assert.equal(actual.gameOverMetaContract.explicitZeroCount, 150);
+    assert.equal(actual.gameOverMetaContract.spend, "283.48");
     assert.equal(actual.gameOverMetaContract.acceptanceActorId, "stage10-restore-admin");
     const snapshotText = await fs.readFile(snapshotPath, "utf8");
     assert.ok(!snapshotText.includes("RAW_CSV_SECRET_BYTES"));

@@ -5,12 +5,14 @@ import path from "node:path";
 import pg from "pg";
 
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
+import gameOverDateCoverage from "../lib/backups/game-over-date-coverage.ts";
 import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
 import restoreImportContract from "../lib/backups/restore-import-contract.ts";
 
 process.env.TZ = "America/New_York";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
+const {readTrackDateCoverage} = gameOverDateCoverage;
 const {
   requireZeroRestoreProvenanceWarnings,
   RestoreImportInvariantError,
@@ -30,7 +32,13 @@ const APPROVED = Object.freeze({
   sizeBytes: 5_975_016,
   gameOverMetaImportId: "e2a5a408-02ea-426b-910a-2015124877ad",
   gameOverSpotifyImportId: "a060e608-24f4-4f79-8a3b-fceface408c9",
-  gameOverReleaseId: "7814c0e7-b8b1-44d7-ad44-4d0197c5330f"
+  gameOverReleaseId: "7814c0e7-b8b1-44d7-ad44-4d0197c5330f",
+  gameOverTimeline: Object.freeze({
+    observationCount: 952,
+    distinctDateCount: 952,
+    earliestDate: "2024-01-01",
+    latestDate: "2026-08-09"
+  })
 });
 const EXPECTED_SPOTIFY = Object.freeze({
   analyticsImports: {count: 5, sha256: "0dab3136b7a034cb610d1f6e0f499b740d5fc059f33ae35bcb00aede1de2b51f"},
@@ -130,11 +138,15 @@ async function restoredState(db) {
     (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT' AND "accountId"='367019114407672' AND "ianaTimezone"='America/Los_Angeles') timezone_matches,
     (SELECT count(*)::int FROM "MetaAccountTimezoneResolution" WHERE "resolutionState"='CURRENT') current_timezones`, [APPROVED.gameOverMetaImportId])).rows[0];
   phase = "state-game-over-spotify";
-  const gameOverSpotify = (await db.query(`SELECT i.id import_id,i."importType" import_type,i.status import_state,i."fileHash" file_hash,r.id release_id,r.title,r.isrc,
-    count(o.*)::int observation_count,to_char(min(o."metricDate"),'YYYY-MM-DD') earliest_date,to_char(max(o."metricDate"),'YYYY-MM-DD') latest_date,
-    count(*)-count(DISTINCT o."metricDate") duplicate_date_count
+  const gameOverSpotify = (await db.query(`SELECT i.id import_id,i."importType" import_type,i.status import_state,i."fileHash" file_hash,r.id release_id,r.title,r.isrc
     FROM "AnalyticsImport" i JOIN "TrackMetricObservation" o ON o."importId"=i.id
     JOIN "Release" r ON r.id=o."releaseId" WHERE i.id=$1 GROUP BY i.id,r.id`, [APPROVED.gameOverSpotifyImportId])).rows[0];
+  Object.assign(gameOverSpotify, await readTrackDateCoverage(
+    db,
+    APPROVED.gameOverSpotifyImportId,
+    APPROVED.gameOverTimeline.earliestDate,
+    APPROVED.gameOverTimeline.latestDate
+  ));
   const fullImport = (await db.query(`SELECT * FROM "AnalyticsImport" WHERE id=$1`, [APPROVED.gameOverSpotifyImportId])).rows[0];
   const releases = (await db.query(`SELECT DISTINCT r.id,r.title,r.slug,r.isrc,r."spotifyUrl",r."primaryArtistProfileId" FROM "TrackMetricObservation" o JOIN "Release" r ON r.id=o."releaseId" WHERE o."importId"=$1 ORDER BY r.id`, [APPROVED.gameOverSpotifyImportId])).rows;
   const auditEvents = (await db.query(`SELECT * FROM "MappingAuditEvent" WHERE "importId"=$1 ORDER BY "createdAt",id`, [APPROVED.gameOverSpotifyImportId])).rows;
@@ -143,7 +155,6 @@ async function restoredState(db) {
   gameOverSpotify.import_fingerprint = digest(fullImport);
   gameOverSpotify.audit_provenance_fingerprint = digest({importId:fullImport.id,importType:fullImport.importType,fileHash:fullImport.fileHash,actorId:fullImport.uploadedById,actorUsername:fullImport.uploadedByUsername,releaseIds:releases.map((row)=>row.id),auditEvents,mappingRows,commitIdempotencyKey:fullImport.commitIdempotencyKey,confirmations:metadata.confirmations||null,previewResultChecksum:metadata.previewResultChecksum||null});
   gameOverSpotify.mapping_row_count = mappingRows.length;
-  gameOverSpotify.missing_date_count = 0;
   const spotify = await spotifyFingerprint(db);
   return {counts, gameOverMeta, details, gameOverSpotify, spotify, fingerprint: digest({counts, gameOverMeta, details, gameOverSpotify, spotify})};
 }
@@ -159,9 +170,10 @@ function assertExpected(state) {
   invariant("GAME_OVER_SPOTIFY_IMPORT_STATE_MISMATCH", state.gameOverSpotify.import_state, "IMPORTED");
   invariant("GAME_OVER_SPOTIFY_ISRC_MISMATCH", state.gameOverSpotify.isrc, "QT6ED2602112");
   invariant("GAME_OVER_SPOTIFY_FILE_HASH_MISMATCH", state.gameOverSpotify.file_hash, "15a4bedaea68451030ede560ec8e648f925ea9349ff1973bd1aaf0cfaf3b3f16");
-  invariant("GAME_OVER_SPOTIFY_OBSERVATION_COUNT_MISMATCH", state.gameOverSpotify.observation_count, 952);
-  invariant("GAME_OVER_SPOTIFY_EARLIEST_DATE_MISMATCH", state.gameOverSpotify.earliest_date, "2024-01-01");
-  invariant("GAME_OVER_SPOTIFY_LATEST_DATE_MISMATCH", state.gameOverSpotify.latest_date, "2026-08-09");
+  invariant("GAME_OVER_SPOTIFY_OBSERVATION_COUNT_MISMATCH", state.gameOverSpotify.observation_count, APPROVED.gameOverTimeline.observationCount);
+  invariant("GAME_OVER_SPOTIFY_DISTINCT_DATE_COUNT_MISMATCH", state.gameOverSpotify.distinct_date_count, APPROVED.gameOverTimeline.distinctDateCount);
+  invariant("GAME_OVER_SPOTIFY_EARLIEST_DATE_MISMATCH", state.gameOverSpotify.earliest_date, APPROVED.gameOverTimeline.earliestDate);
+  invariant("GAME_OVER_SPOTIFY_LATEST_DATE_MISMATCH", state.gameOverSpotify.latest_date, APPROVED.gameOverTimeline.latestDate);
   invariant("GAME_OVER_SPOTIFY_DUPLICATE_DATE_MISMATCH", state.gameOverSpotify.duplicate_date_count, 0);
   invariant("GAME_OVER_SPOTIFY_MISSING_DATE_MISMATCH", state.gameOverSpotify.missing_date_count, 0);
   invariant("GAME_OVER_SPOTIFY_MAPPING_ROW_COUNT_MISMATCH", state.gameOverSpotify.mapping_row_count, 0);

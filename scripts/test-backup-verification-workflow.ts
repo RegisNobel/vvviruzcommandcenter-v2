@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const workflow = fs.readFileSync(".github/workflows/verify-production-backup.yml", "utf8");
 const verifier = fs.readFileSync("scripts/verify-production-backup-ci.mjs", "utf8");
+const dateCoverage = fs.readFileSync("lib/backups/game-over-date-coverage.ts", "utf8");
 assert.match(verifier, /gate:\s*"BACKUP_RESTORE_VERIFICATION"/);
 assert.ok(!verifier.includes('gate:"E2.1E"'), "Reusable verifier must not retain a gate-specific label.");
 
@@ -36,8 +37,11 @@ for (const expected of [
   'GAME_OVER_SPOTIFY_IMPORT_STATE_MISMATCH',
   'GAME_OVER_SPOTIFY_ISRC_MISMATCH',
   'GAME_OVER_SPOTIFY_OBSERVATION_COUNT_MISMATCH',
+  'GAME_OVER_SPOTIFY_DISTINCT_DATE_COUNT_MISMATCH',
   'GAME_OVER_SPOTIFY_EARLIEST_DATE_MISMATCH',
   'GAME_OVER_SPOTIFY_LATEST_DATE_MISMATCH',
+  'GAME_OVER_SPOTIFY_DUPLICATE_DATE_MISMATCH',
+  'GAME_OVER_SPOTIFY_MISSING_DATE_MISMATCH',
   'GAME_OVER_IMPORT_FINGERPRINT_MISMATCH',
   'GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH',
   'GAME_OVER_TIMELINE_FINGERPRINT_MISMATCH',
@@ -47,5 +51,16 @@ for (const expected of [
   'mahoragaTrackTimeline: {count: 944',
   'IMPORT_AUTH:"1"'
 ]) assert.ok(verifier.includes(expected), `Missing restored-baseline assertion: ${expected}`);
+
+assert.ok(!verifier.includes("gameOverSpotify.missing_date_count = 0"), "Missing dates must be derived from restored rows.");
+assert.match(dateCoverage, /count\(DISTINCT metric_date\)::int distinct_date_count/);
+assert.match(dateCoverage, /\(count\(\*\)-count\(DISTINCT metric_date\)\)::int duplicate_date_count/);
+assert.match(dateCoverage, /generate_series\(\$2::date,\$3::date,interval '1 day'\)/);
+assert.match(dateCoverage, /NOT EXISTS/);
+assert.match(dateCoverage, /\) missing_date_count/);
+assert.match(verifier, /earliestDate: "2024-01-01"/);
+assert.match(verifier, /latestDate: "2026-08-09"/);
+assert.match(verifier, /observationCount: 952/);
+assert.match(verifier, /distinctDateCount: 952/);
 
 console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomEntropyBytes: 48, githubTokenReused: false, loopbackOnly: true, teardownAlways: true, restoredBaselineContract: true}));

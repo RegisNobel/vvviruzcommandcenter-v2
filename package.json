@@ -39,6 +39,8 @@
     "backup:seal-github-environment:maybe": "node scripts/seal-github-environment-secrets.mjs",
     "test:guarded-backup-verification": "node --conditions=react-server --import tsx scripts/test-guarded-backup-verification.ts",
     "test:guarded-backup-postgres": "node --conditions=react-server --import tsx scripts/test-guarded-backup-postgres.mjs",
+    "test:backup-date-coverage-postgres": "node --conditions=react-server --import tsx scripts/test-backup-date-coverage-postgres.mjs",
+    "test:backup-production-shaped-postgres": "node --conditions=react-server --import tsx scripts/test-backup-production-shaped-postgres.mjs",
     "test:google-drive-backup-retrieval": "node --conditions=react-server --import tsx scripts/test-google-drive-backup-retrieval.ts",
     "test:backup-verification-workflow": "tsx scripts/test-backup-verification-workflow.ts",
     "test:restore-import-contract": "node --import tsx scripts/test-restore-import-contract.mjs",
