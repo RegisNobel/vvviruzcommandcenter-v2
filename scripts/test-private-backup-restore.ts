@@ -115,7 +115,8 @@ async function main() {
       DATABASE_URL: `file:${restoredDb}`,
       DIRECT_URL: `file:${restoredDb}`,
       DB_SNAPSHOT_PATH: restoredSnapshotPath,
-      STAGE10_FINGERPRINT_PATH: fingerprintPath
+      STAGE10_FINGERPRINT_PATH: fingerprintPath,
+      IMPORT_AUTH: "1"
     };
     await fs.copyFile(blankDbPath, restoredDbPath);
     run(process.execPath, ["scripts/run-prisma.mjs", "db", "push", "--schema", "prisma/schema.prisma", "--force-reset", "--skip-generate"], restoredEnv);

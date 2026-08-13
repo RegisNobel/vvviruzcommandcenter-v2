@@ -32,14 +32,18 @@ for (const secret of ["POSTGRES_URL_NON_POOLING", "BLOB_READ_WRITE_TOKEN", "AUTH
 }
 
 for (const expected of [
-  'assert.equal(state.gameOverSpotify.import_type, "TRACK_STREAM_TIMELINE")',
-  'assert.equal(state.gameOverSpotify.import_state, "IMPORTED")',
-  'assert.equal(state.gameOverSpotify.isrc, "QT6ED2602112")',
-  'assert.equal(state.gameOverSpotify.observation_count, 952)',
-  'assert.equal(state.gameOverSpotify.earliest_date, "2024-01-01")',
-  'assert.equal(state.gameOverSpotify.latest_date, "2026-08-09")',
+  'GAME_OVER_SPOTIFY_IMPORT_TYPE_MISMATCH',
+  'GAME_OVER_SPOTIFY_IMPORT_STATE_MISMATCH',
+  'GAME_OVER_SPOTIFY_ISRC_MISMATCH',
+  'GAME_OVER_SPOTIFY_OBSERVATION_COUNT_MISMATCH',
+  'GAME_OVER_SPOTIFY_EARLIEST_DATE_MISMATCH',
+  'GAME_OVER_SPOTIFY_LATEST_DATE_MISMATCH',
+  'GAME_OVER_IMPORT_FINGERPRINT_MISMATCH',
+  'GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH',
+  'GAME_OVER_TIMELINE_FINGERPRINT_MISMATCH',
   '91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de',
-  'mahoragaTrackTimeline: {count: 944'
+  'mahoragaTrackTimeline: {count: 944',
+  'IMPORT_AUTH:"1"'
 ]) assert.ok(verifier.includes(expected), `Missing restored-baseline assertion: ${expected}`);
 
 console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomEntropyBytes: 48, githubTokenReused: false, loopbackOnly: true, teardownAlways: true, restoredBaselineContract: true}));

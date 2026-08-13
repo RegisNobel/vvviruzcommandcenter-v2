@@ -37,7 +37,7 @@ async function main() {
     assert.ok(Array.isArray(snapshot.releaseImportAliases) && snapshot.releaseImportAliases.length === 2);
     assert.ok(Array.isArray(snapshot.mappingAuditEvents) && snapshot.mappingAuditEvents.length === 1);
 
-    const restoredEnv = {...baseEnv, DATABASE_URL: `file:${restoredDb}`, DIRECT_URL: `file:${restoredDb}`, DB_SNAPSHOT_PATH: snapshotPath, STAGE10_FINGERPRINT_PATH: fingerprintPath};
+    const restoredEnv = {...baseEnv, DATABASE_URL: `file:${restoredDb}`, DIRECT_URL: `file:${restoredDb}`, DB_SNAPSHOT_PATH: snapshotPath, STAGE10_FINGERPRINT_PATH: fingerprintPath, IMPORT_AUTH: "1"};
     await fs.copyFile(blankDbPath, restoredDbPath);
     run(process.execPath, ["scripts/run-prisma.mjs", "db", "push", "--schema", "prisma/schema.prisma", "--force-reset", "--skip-generate"], restoredEnv);
     run(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], restoredEnv);

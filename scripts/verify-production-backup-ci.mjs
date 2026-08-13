@@ -76,6 +76,11 @@ function run(command, args, env, input) {
   if (result.status !== 0) throw new Error("Disposable restore subprocess failed safely.");
 }
 
+function invariant(code, actual, expected) {
+  phase = code;
+  assert.deepEqual(actual, expected);
+}
+
 async function spotifyFingerprint(db) {
   const queries = {
     analyticsImports: `SELECT id,"fileHash","importType",status,"rowCount","acceptedRowCount","rejectedRowCount","unmatchedRowCount","warningCount","acceptedAt","withdrawnAt","replacedByImportId" FROM "AnalyticsImport" ORDER BY id`,
@@ -144,29 +149,28 @@ async function restoredState(db) {
 }
 
 function assertExpected(state) {
-  phase = "invariant-foundation";
-  assert.deepEqual(state.counts, {batches:18,legacy_batches:17,daily_imports:1,reports:360,copy_links:109,source_observations:255,resolutions:255,meta_links:0,campaigns:0,confirmed_intervals:0});
-  phase = "invariant-game-over-meta";
-  assert.deepEqual(state.gameOverMeta, {id:APPROVED.gameOverMetaImportId,importState:"ACCEPTED",validationState:"ACCEPTED",sourceAsOfOrigin:"IMPORT_ACCEPTED_FALLBACK",reportingStart:"2026-07-11",reportingEnd:"2026-08-09",facts:210,positive:60,explicit_zero:150,missing:0,spend:"283.48",ad_set_count:1,ad_set_id:"120247925536670172",start_date:"2026-07-11",end_date:"2026-08-09"});
-  phase = "invariant-provenance";
-  assert.deepEqual(state.details, {provenance_files:4,raw_provenance_files:4,acceptance_audits:1,mahoraga_facts:0,timezone_matches:1,current_timezones:1});
-  phase = "invariant-game-over-spotify";
-  assert.equal(state.gameOverSpotify.import_id, APPROVED.gameOverSpotifyImportId);
-  assert.equal(state.gameOverSpotify.release_id, APPROVED.gameOverReleaseId);
-  assert.equal(state.gameOverSpotify.title, "Game Over");
-  assert.equal(state.gameOverSpotify.import_type, "TRACK_STREAM_TIMELINE");
-  assert.equal(state.gameOverSpotify.import_state, "IMPORTED");
-  assert.equal(state.gameOverSpotify.isrc, "QT6ED2602112");
-  assert.equal(state.gameOverSpotify.file_hash, "15a4bedaea68451030ede560ec8e648f925ea9349ff1973bd1aaf0cfaf3b3f16");
-  assert.equal(state.gameOverSpotify.observation_count, 952);
-  assert.equal(state.gameOverSpotify.earliest_date, "2024-01-01");
-  assert.equal(state.gameOverSpotify.latest_date, "2026-08-09");
-  assert.equal(state.gameOverSpotify.duplicate_date_count, 0);
-  assert.equal(state.gameOverSpotify.missing_date_count, 0);
-  assert.equal(state.gameOverSpotify.mapping_row_count, 0);
-  assert.equal(state.gameOverSpotify.import_fingerprint, "136b64539363c48dfcc1fb2f2554980c78fdea258660c299db1d42bc418e663b");
-  assert.equal(state.gameOverSpotify.audit_provenance_fingerprint, "6fd1a9d27d68c4ccf69156cedcc82fb9fd4efeb1d5a9bc67a7bbe34e63676277");
-  for (const key of Object.keys(EXPECTED_SPOTIFY)) assert.deepEqual(state.spotify[key], EXPECTED_SPOTIFY[key]);
+  invariant("FOUNDATION_COUNT_MISMATCH", state.counts, {batches:18,legacy_batches:17,daily_imports:1,reports:360,copy_links:109,source_observations:255,resolutions:255,meta_links:0,campaigns:0,confirmed_intervals:0});
+  invariant("GAME_OVER_META_CONTRACT_MISMATCH", state.gameOverMeta, {id:APPROVED.gameOverMetaImportId,importState:"ACCEPTED",validationState:"ACCEPTED",sourceAsOfOrigin:"IMPORT_ACCEPTED_FALLBACK",reportingStart:"2026-07-11",reportingEnd:"2026-08-09",facts:210,positive:60,explicit_zero:150,missing:0,spend:"283.48",ad_set_count:1,ad_set_id:"120247925536670172",start_date:"2026-07-11",end_date:"2026-08-09"});
+  invariant("META_PROVENANCE_CONTRACT_MISMATCH", state.details, {provenance_files:4,raw_provenance_files:4,acceptance_audits:1,mahoraga_facts:0,timezone_matches:1,current_timezones:1});
+  invariant("GAME_OVER_SPOTIFY_IMPORT_ID_MISMATCH", state.gameOverSpotify.import_id, APPROVED.gameOverSpotifyImportId);
+  invariant("GAME_OVER_SPOTIFY_RELEASE_ID_MISMATCH", state.gameOverSpotify.release_id, APPROVED.gameOverReleaseId);
+  invariant("GAME_OVER_SPOTIFY_TITLE_MISMATCH", state.gameOverSpotify.title, "Game Over");
+  invariant("GAME_OVER_SPOTIFY_IMPORT_TYPE_MISMATCH", state.gameOverSpotify.import_type, "TRACK_STREAM_TIMELINE");
+  invariant("GAME_OVER_SPOTIFY_IMPORT_STATE_MISMATCH", state.gameOverSpotify.import_state, "IMPORTED");
+  invariant("GAME_OVER_SPOTIFY_ISRC_MISMATCH", state.gameOverSpotify.isrc, "QT6ED2602112");
+  invariant("GAME_OVER_SPOTIFY_FILE_HASH_MISMATCH", state.gameOverSpotify.file_hash, "15a4bedaea68451030ede560ec8e648f925ea9349ff1973bd1aaf0cfaf3b3f16");
+  invariant("GAME_OVER_SPOTIFY_OBSERVATION_COUNT_MISMATCH", state.gameOverSpotify.observation_count, 952);
+  invariant("GAME_OVER_SPOTIFY_EARLIEST_DATE_MISMATCH", state.gameOverSpotify.earliest_date, "2024-01-01");
+  invariant("GAME_OVER_SPOTIFY_LATEST_DATE_MISMATCH", state.gameOverSpotify.latest_date, "2026-08-09");
+  invariant("GAME_OVER_SPOTIFY_DUPLICATE_DATE_MISMATCH", state.gameOverSpotify.duplicate_date_count, 0);
+  invariant("GAME_OVER_SPOTIFY_MISSING_DATE_MISMATCH", state.gameOverSpotify.missing_date_count, 0);
+  invariant("GAME_OVER_SPOTIFY_MAPPING_ROW_COUNT_MISMATCH", state.gameOverSpotify.mapping_row_count, 0);
+  invariant("GAME_OVER_IMPORT_FINGERPRINT_MISMATCH", state.gameOverSpotify.import_fingerprint, "136b64539363c48dfcc1fb2f2554980c78fdea258660c299db1d42bc418e663b");
+  invariant("GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH", state.gameOverSpotify.audit_provenance_fingerprint, "6fd1a9d27d68c4ccf69156cedcc82fb9fd4efeb1d5a9bc67a7bbe34e63676277");
+  for (const key of Object.keys(EXPECTED_SPOTIFY)) {
+    const code = key === "gameOverTrackTimeline" ? "GAME_OVER_TIMELINE_FINGERPRINT_MISMATCH" : `SPOTIFY_${key.toUpperCase()}_FINGERPRINT_MISMATCH`;
+    invariant(code, state.spotify[key], EXPECTED_SPOTIFY[key]);
+  }
 }
 
 const startedAt = new Date();
@@ -201,7 +205,7 @@ try {
   await client.query(await fs.readFile(path.join(process.cwd(), "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8"));
   await client.end(); client = undefined;
   phase = "in-memory-restore";
-  run(process.execPath, ["--conditions=react-server","--import","tsx","scripts/import-db-snapshot.ts"], {...targetEnv,DB_SNAPSHOT_STDIN:"1",IMPORT_AUTH:"0"}, snapshot);
+  run(process.execPath, ["--conditions=react-server","--import","tsx","scripts/import-db-snapshot.ts"], {...targetEnv,DB_SNAPSHOT_STDIN:"1",IMPORT_AUTH:"1"}, snapshot);
 
   phase = "restored-verification";
   client = new Client({connectionString: targetUrl}); await client.connect();

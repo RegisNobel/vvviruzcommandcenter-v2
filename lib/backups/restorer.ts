@@ -4,6 +4,10 @@ import {gunzipSync} from "node:zlib";
 import {createDecipheriv, createHash} from "node:crypto";
 
 import {prisma} from "@/lib/db/prisma";
+import {
+  preserveKnownAdminReferences,
+  type RestoreProvenanceWarning
+} from "@/lib/backups/restore-provenance";
 import {revalidateRestoredReleaseAnnotations} from "@/lib/server/revalidate-restored-annotations";
 
 type EncryptedPayload = {
@@ -241,19 +245,21 @@ async function insertManyImmutable(modelName: string, records: SnapshotRecord[] 
   return imported;
 }
 
-async function restoreAnalyticsImports(records: SnapshotRecord[] = []) {
+async function restoreAnalyticsImports(records: SnapshotRecord[] = [], warnings: RestoreProvenanceWarning[]) {
   const replacementLinks = records.map((record) => ({
     id: record.id,
     replacedByImportId: record.replacedByImportId
   }));
+  const actorResolvedRecords = await preserveKnownAdminReferences(
+    prisma,
+    "AnalyticsImport",
+    records,
+    ["uploadedById", "withdrawnById"],
+    warnings
+  );
   const count = await upsertMany(
     "analyticsImport",
-    records.map((record) => ({
-      ...record,
-      uploadedById: null,
-      withdrawnById: null,
-      replacedByImportId: null
-    }))
+    actorResolvedRecords.map((record) => ({...record, replacedByImportId: null}))
   );
 
   for (const link of replacementLinks) {
@@ -381,6 +387,9 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
 
   // 4. Import all tables in order (respecting foreign key relationships)
   const counts: Record<string, number | string> = {};
+  const provenanceWarnings: RestoreProvenanceWarning[] = [];
+  const withKnownActors = (model: string, records: SnapshotRecord[] | undefined, fields: string[]) =>
+    preserveKnownAdminReferences(prisma, model, records ?? [], fields, provenanceWarnings);
 
   // Skip admin users for security — don't overwrite current auth
   counts.adminUsers = "skipped (security)";
@@ -408,7 +417,7 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
       });
     }
   }
-  counts.analyticsImports = await restoreAnalyticsImports(snapshot.analyticsImports);
+  counts.analyticsImports = await restoreAnalyticsImports(snapshot.analyticsImports, provenanceWarnings);
   counts.artistMetricObservations = await insertManyImmutable(
     "artistMetricObservation",
     snapshot.artistMetricObservations
@@ -418,11 +427,11 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
     snapshot.trackMetricObservations
   );
   const aliasSupersession = (snapshot.releaseImportAliases ?? []).map((record) => ({id: record.id, supersededByAliasId: record.supersededByAliasId}));
-  counts.releaseImportAliases = await upsertMany("releaseImportAlias", (snapshot.releaseImportAliases ?? []).map((record) => ({...record, confirmedById: null, revokedById: null, supersededByAliasId: null})));
+  counts.releaseImportAliases = await upsertMany("releaseImportAlias", (await withKnownActors("ReleaseImportAlias", snapshot.releaseImportAliases, ["confirmedById", "revokedById"])).map((record) => ({...record, supersededByAliasId: null})));
   for (const link of aliasSupersession) {
     if (typeof link.id === "string" && typeof link.supersededByAliasId === "string") await prisma.releaseImportAlias.update({where: {id: link.id}, data: {supersededByAliasId: link.supersededByAliasId}});
   }
-  counts.analyticsImportRows = await upsertMany("analyticsImportRow", (snapshot.analyticsImportRows ?? []).map((record) => ({...record, confirmedById: null, unmatchedById: null})));
+  counts.analyticsImportRows = await upsertMany("analyticsImportRow", await withKnownActors("AnalyticsImportRow", snapshot.analyticsImportRows, ["confirmedById", "unmatchedById"]));
   counts.songPeriodSnapshots = await insertManyImmutable(
     "songPeriodSnapshot",
     snapshot.songPeriodSnapshots
@@ -431,7 +440,7 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
     "playlistPeriodSnapshot",
     snapshot.playlistPeriodSnapshots
   );
-  counts.mappingAuditEvents = await insertManyImmutable("mappingAuditEvent", (snapshot.mappingAuditEvents ?? []).map((record) => ({...record, actorId: null})));
+  counts.mappingAuditEvents = await insertManyImmutable("mappingAuditEvent", await withKnownActors("MappingAuditEvent", snapshot.mappingAuditEvents, ["actorId"]));
   counts.releaseCategories = await upsertMany("releaseCategory", snapshot.releaseCategories);
   counts.releaseCategoryAssignments = await upsertMany(
     "releaseCategoryAssignment",
@@ -484,7 +493,7 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.analyticsEvents = await upsertMany("analyticsEvent", snapshot.analyticsEvents);
   counts.backupRuns = await upsertMany("backupRun", snapshot.backupRuns);
   const metaBatchReplacements = (snapshot.adImportBatches ?? []).map((record) => ({id: record.id, replacesBatchId: record.replacesBatchId}));
-  counts.adImportBatches = await upsertMany("adImportBatch", (snapshot.adImportBatches ?? []).map((record) => ({...record, acceptedById: null, withdrawnById: null, replacesBatchId: null})));
+  counts.adImportBatches = await upsertMany("adImportBatch", (await withKnownActors("AdImportBatch", snapshot.adImportBatches, ["acceptedById", "withdrawnById"])).map((record) => ({...record, replacesBatchId: null})));
   counts.adCreativeReports = await upsertMany("adCreativeReport", snapshot.adCreativeReports);
   counts.adCreativeCopyLinks = await upsertMany(
     "adCreativeCopyLink",
@@ -499,29 +508,29 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   counts.metaDailySourceObservations = await insertManyImmutable("metaDailySourceObservation", snapshot.metaDailySourceObservations);
   counts.metaDailyResolutions = await upsertMany("metaDailyResolution", snapshot.metaDailyResolutions);
   counts.metaDailyResolutionEvents = await insertManyImmutable("metaDailyResolutionEvent", snapshot.metaDailyResolutionEvents);
-  counts.metaImportAuditEvents = await insertManyImmutable("metaImportAuditEvent", (snapshot.metaImportAuditEvents ?? []).map((record) => ({...record, actorId: null})));
+  counts.metaImportAuditEvents = await insertManyImmutable("metaImportAuditEvent", await withKnownActors("MetaImportAuditEvent", snapshot.metaImportAuditEvents, ["actorId"]));
   for (const link of metaBatchReplacements) if (typeof link.id === "string" && typeof link.replacesBatchId === "string") await prisma.adImportBatch.update({where: {id: link.id}, data: {replacesBatchId: link.replacesBatchId}});
   counts.promotionCampaigns = await upsertMany(
     "promotionCampaign",
-    (snapshot.promotionCampaigns ?? []).map((record) => ({...record, createdById: null, updatedById: null}))
+    await withKnownActors("PromotionCampaign", snapshot.promotionCampaigns, ["createdById", "updatedById"])
   );
   const metaLinkSupersessions = (snapshot.metaPromotionLinks ?? []).map((record) => ({id: record.id, supersedesLinkId: record.supersedesLinkId}));
-  counts.metaPromotionLinks = await upsertMany("metaPromotionLink", (snapshot.metaPromotionLinks ?? []).map((record) => ({...record, actorId: null, supersedesLinkId: null})));
+  counts.metaPromotionLinks = await upsertMany("metaPromotionLink", (await withKnownActors("MetaPromotionLink", snapshot.metaPromotionLinks, ["actorId"])).map((record) => ({...record, supersedesLinkId: null})));
   for (const link of metaLinkSupersessions) if (typeof link.id === "string" && typeof link.supersedesLinkId === "string") await prisma.metaPromotionLink.update({where: {id: link.id}, data: {supersedesLinkId: link.supersedesLinkId}});
-  counts.metaPromotionLinkAuditEvents = await insertManyImmutable("metaPromotionLinkAuditEvent", (snapshot.metaPromotionLinkAuditEvents ?? []).map((record) => ({...record, actorId: null})));
+  counts.metaPromotionLinkAuditEvents = await insertManyImmutable("metaPromotionLinkAuditEvent", await withKnownActors("MetaPromotionLinkAuditEvent", snapshot.metaPromotionLinkAuditEvents, ["actorId"]));
   const metaTimezoneSupersessions = (snapshot.metaAccountTimezoneResolutions ?? []).map((record) => ({id: record.id, supersedesResolutionId: record.supersedesResolutionId}));
-  counts.metaAccountTimezoneResolutions = await upsertMany("metaAccountTimezoneResolution", (snapshot.metaAccountTimezoneResolutions ?? []).map((record) => ({...record, confirmedById: null, supersedesResolutionId: null})));
+  counts.metaAccountTimezoneResolutions = await upsertMany("metaAccountTimezoneResolution", (await withKnownActors("MetaAccountTimezoneResolution", snapshot.metaAccountTimezoneResolutions, ["confirmedById"])).map((record) => ({...record, supersedesResolutionId: null})));
   for (const link of metaTimezoneSupersessions) if (typeof link.id === "string" && typeof link.supersedesResolutionId === "string") await prisma.metaAccountTimezoneResolution.update({where: {id: link.id}, data: {supersedesResolutionId: link.supersedesResolutionId}});
   const evidenceSupersessions = (snapshot.campaignEvidence ?? []).map((record) => ({id: record.id, supersededByEvidenceId: record.supersededByEvidenceId}));
   counts.campaignEvidence = await upsertMany(
     "campaignEvidence",
-    (snapshot.campaignEvidence ?? []).map((record) => ({...record, createdById: null, supersededByEvidenceId: null}))
+    (await withKnownActors("CampaignEvidence", snapshot.campaignEvidence, ["createdById"])).map((record) => ({...record, supersededByEvidenceId: null}))
   );
   for (const link of evidenceSupersessions) if (typeof link.id === "string" && typeof link.supersededByEvidenceId === "string") await prisma.campaignEvidence.update({where: {id: link.id}, data: {supersededByEvidenceId: link.supersededByEvidenceId}});
   const intervalLinks = (snapshot.campaignActiveIntervals ?? []).map((record) => ({id: record.id, supersedesIntervalId: record.supersedesIntervalId}));
   counts.campaignActiveIntervals = await upsertMany(
     "campaignActiveInterval",
-    (snapshot.campaignActiveIntervals ?? []).map((record) => ({...record, supersedesIntervalId: null, createdById: null, updatedById: null, confirmedById: null, rejectedById: null}))
+    (await withKnownActors("CampaignActiveInterval", snapshot.campaignActiveIntervals, ["createdById", "updatedById", "confirmedById", "rejectedById"])).map((record) => ({...record, supersedesIntervalId: null}))
   );
   for (const link of intervalLinks) {
     if (typeof link.id === "string" && typeof link.supersedesIntervalId === "string") await prisma.campaignActiveInterval.update({where: {id: link.id}, data: {supersedesIntervalId: link.supersedesIntervalId}});
@@ -529,15 +538,24 @@ export async function restoreFromGoogleDrive(fileId: string): Promise<RestoreRes
   const eventLinks = (snapshot.campaignTimelineEvents ?? []).map((record) => ({id: record.id, supersedesEventId: record.supersedesEventId}));
   counts.campaignTimelineEvents = await upsertMany(
     "campaignTimelineEvent",
-    (snapshot.campaignTimelineEvents ?? []).map((record) => ({...record, supersedesEventId: null, createdById: null, updatedById: null}))
+    (await withKnownActors("CampaignTimelineEvent", snapshot.campaignTimelineEvents, ["createdById", "updatedById"])).map((record) => ({...record, supersedesEventId: null}))
   );
   for (const link of eventLinks) {
     if (typeof link.id === "string" && typeof link.supersedesEventId === "string") await prisma.campaignTimelineEvent.update({where: {id: link.id}, data: {supersedesEventId: link.supersedesEventId}});
   }
   counts.campaignAuditEvents = await insertManyImmutable(
     "campaignAuditEvent",
-    (snapshot.campaignAuditEvents ?? []).map((record) => ({...record, actorId: null}))
+    await withKnownActors("CampaignAuditEvent", snapshot.campaignAuditEvents, ["actorId"])
   );
+
+  counts.restoreProvenanceWarnings = provenanceWarnings.length;
+  if (provenanceWarnings.length > 0) {
+    console.warn(JSON.stringify({
+      code: "RESTORE_PROVENANCE_COMPATIBILITY_WARNINGS",
+      count: provenanceWarnings.length,
+      warnings: provenanceWarnings
+    }));
+  }
 
   return {
     counts,

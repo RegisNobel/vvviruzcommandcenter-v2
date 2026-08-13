@@ -46,6 +46,7 @@
     "analytics:cleanup:dry-run": "node --conditions=react-server --import tsx scripts/run-retention-cleanup.ts --dry-run",
     "analytics:profile-dashboard": "node --conditions=react-server --import tsx scripts/profile-retention-dashboard.ts",
     "test:backup-restore-rehearsal": "tsx scripts/test-backup-restore-rehearsal.ts",
+    "test:restore-provenance": "tsx scripts/test-restore-provenance.ts",
     "test:retention-operations": "node --conditions=react-server --import tsx scripts/test-retention-operations.ts",
     "test:retention-security": "tsx scripts/test-retention-security.ts",
     "test:retention-deployment": "tsx scripts/test-retention-deployment-package.ts",
