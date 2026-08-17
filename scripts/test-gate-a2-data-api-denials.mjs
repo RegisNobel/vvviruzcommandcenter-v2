@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
-import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  authenticatedDataApiHeaders,
+  privilegedDataApiHeaders,
+  publicDataApiHeaders,
+  requireAuthenticatedTestAccessToken,
+  requireModernPublishableKey,
+  requireModernSecretKey
+} from "./lib/supabase-data-api-auth.mjs";
 
 const root = process.cwd();
 const tables = [
@@ -28,37 +35,24 @@ async function loadEnvFile(fileName) {
   }
 }
 
-function base64url(value) {
-  return Buffer.from(JSON.stringify(value)).toString("base64url");
-}
-
-function authenticatedJwt(secret) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64url({alg: "HS256", typ: "JWT"});
-  const body = base64url({aud: "authenticated", exp: now + 300, iat: now, iss: "supabase", role: "authenticated", sub: crypto.randomUUID()});
-  const signature = crypto.createHmac("sha256", secret).update(`${header}.${body}`).digest("base64url");
-  return `${header}.${body}.${signature}`;
-}
-
 async function main() {
   await loadEnvFile(".env.production.local");
   const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+  const publishableKey = requireModernPublishableKey();
+  const secretKey = requireModernSecretKey();
+  const authenticatedAccessToken = requireAuthenticatedTestAccessToken();
   assert.ok(url.startsWith("https://"), "Supabase URL is required.");
-  assert.ok(anonKey && serviceKey && jwtSecret, "Supabase role verification credentials are required.");
 
   const roles = [
-    {name: "anon", apiKey: anonKey, authorization: `Bearer ${anonKey}`},
-    {name: "authenticated", apiKey: anonKey, authorization: `Bearer ${authenticatedJwt(jwtSecret)}`},
-    {name: "service_role", apiKey: serviceKey, authorization: `Bearer ${serviceKey}`}
+    {name: "anon", headers: publicDataApiHeaders(publishableKey)},
+    {name: "authenticated", headers: authenticatedDataApiHeaders(publishableKey, authenticatedAccessToken)},
+    {name: "privileged", headers: privilegedDataApiHeaders(secretKey)}
   ];
   const results = [];
   for (const role of roles) {
     for (const table of tables) {
       const response = await fetch(`${url}/rest/v1/${encodeURIComponent(table)}?select=*&limit=0`, {
-        headers: {apikey: role.apiKey, Authorization: role.authorization, Accept: "application/json"}
+        headers: {...role.headers, Accept: "application/json"}
       });
       let body = null;
       try { body = await response.json(); } catch {}
@@ -71,7 +65,7 @@ async function main() {
 
   const submissionResponse = await fetch(`${url}/rest/v1/BreakingBarzSubmission`, {
     method: "POST",
-    headers: {apikey: anonKey, Authorization: `Bearer ${anonKey}`, "Content-Type": "application/json", Prefer: "return=minimal"},
+    headers: {...publicDataApiHeaders(publishableKey), "Content-Type": "application/json", Prefer: "return=minimal"},
     body: "{}"
   });
   let submissionBody = null;

@@ -1,8 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {privilegedDataApiHeaders, requireModernSecretKey} from "./lib/supabase-data-api-auth.mjs";
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+const secretKey = requireModernSecretKey();
 const snapshotPath =
   process.env.DB_SNAPSHOT_PATH ||
   path.join(
@@ -12,10 +13,8 @@ const snapshotPath =
     `supabase-rest-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
   );
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error(
-    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required."
-  );
+if (!supabaseUrl) {
+  throw new Error("SUPABASE_URL is required.");
 }
 
 const tables = [
@@ -69,8 +68,7 @@ async function exportTable(table) {
       `${supabaseUrl}/rest/v1/${encodeURIComponent(table)}?select=*`,
       {
         headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
+          ...privilegedDataApiHeaders(secretKey),
           Range: `${offset}-${offset + pageSize - 1}`,
           "Range-Unit": "items"
         }
@@ -109,7 +107,7 @@ for (const table of tables) {
 
 const snapshot = {
   exportedAt: new Date().toISOString(),
-  source: "supabase-rest-service-role",
+  source: "supabase-rest-secret-api-key",
   unavailableTables,
   tables: exported
 };

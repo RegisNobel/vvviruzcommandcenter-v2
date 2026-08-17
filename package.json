@@ -86,6 +86,7 @@
     "gate-a2:create-encrypted-snapshot": "node --conditions=react-server --import tsx scripts/create-gate-a2-encrypted-snapshot.ts",
     "test:gate-a2-backup-restore-postgres": "node scripts/test-gate-a2-backup-restore-postgres.mjs",
     "test:gate-a2-data-api-denials": "node scripts/test-gate-a2-data-api-denials.mjs",
+    "test:supabase-modern-api-auth": "node scripts/test-supabase-modern-api-auth.mjs",
     "test:gate-a2-production-compatibility": "node --conditions=react-server --import tsx scripts/test-gate-a2-production-compatibility.ts",
     "breaking-barz:inventory": "node --conditions=react-server --import tsx scripts/inventory-breaking-barz.ts",
     "breaking-barz:backfill": "node --conditions=react-server --import tsx scripts/backfill-breaking-barz.ts",

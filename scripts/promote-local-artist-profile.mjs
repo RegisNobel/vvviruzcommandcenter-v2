@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {PrismaClient} from "@prisma/client";
+import {privilegedDataApiHeaders, requireModernSecretKey} from "./lib/supabase-data-api-auth.mjs";
 
 function loadEnvFile(filePath) {
   const raw = fs.readFileSync(filePath, "utf8");
@@ -54,11 +55,11 @@ const supabaseUrl = (
 )
   .trim()
   .replace(/\/+$/, "");
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+const secretKey = requireModernSecretKey();
 
-if (!supabaseUrl || !serviceRoleKey) {
+if (!supabaseUrl) {
   throw new Error(
-    "SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY are required."
+    "SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) is required."
   );
 }
 
@@ -70,8 +71,7 @@ async function restRequest(table, query = "", init = {}) {
     {
       ...init,
       headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
+        ...privilegedDataApiHeaders(secretKey),
         ...(init.headers || {})
       }
     }
