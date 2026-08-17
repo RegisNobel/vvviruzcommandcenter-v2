@@ -43,6 +43,7 @@
     "test:backup-production-shaped-postgres": "node --conditions=react-server --import tsx scripts/test-backup-production-shaped-postgres.mjs",
     "test:google-drive-backup-retrieval": "node --conditions=react-server --import tsx scripts/test-google-drive-backup-retrieval.ts",
     "test:backup-verification-workflow": "tsx scripts/test-backup-verification-workflow.ts",
+    "test:ad-import-batch-recovery-fingerprint": "tsx scripts/test-ad-import-batch-recovery-fingerprint.ts",
     "test:restore-import-contract": "node --import tsx scripts/test-restore-import-contract.mjs",
     "test:google-drive-oauth-provenance": "tsx scripts/test-google-drive-oauth-provenance-diagnostic.ts",
     "test:github-environment-secret-sealing": "tsx scripts/test-github-environment-secret-sealing.ts",
