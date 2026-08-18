@@ -5,7 +5,12 @@ const workflow = fs.readFileSync(".github/workflows/verify-production-backup.yml
 const verifier = fs.readFileSync("scripts/verify-production-backup-ci.mjs", "utf8");
 const dateCoverage = fs.readFileSync("lib/backups/game-over-date-coverage.ts", "utf8");
 const adImportRecovery = fs.readFileSync("lib/backups/ad-import-batch-recovery-fingerprint.ts", "utf8");
+const timestampReadPath = fs.readFileSync("lib/backups/backup-verifier-pg-client.ts", "utf8");
 assert.match(verifier, /gate:\s*"BACKUP_RESTORE_VERIFICATION"/);
+assert.ok(!verifier.includes('process.env.TZ'), "Production verification must not depend on process timezone.");
+assert.match(verifier, /createBackupVerifierPgClient/);
+assert.match(timestampReadPath, /defaultTypes\.builtins\.TIMESTAMP/);
+assert.ok(!timestampReadPath.includes("builtins.TIMESTAMPTZ &&"), "TIMESTAMPTZ must not be reinterpreted.");
 assert.ok(!verifier.includes('gate:"E2.1E"'), "Reusable verifier must not retain a gate-specific label.");
 
 assert.match(workflow, /^on:\s*\n\s+workflow_dispatch:\s*$/m);

@@ -2,18 +2,17 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import pg from "pg";
 
 import adImportBatchRecovery from "../lib/backups/ad-import-batch-recovery-fingerprint.ts";
+import backupVerifierPgClient from "../lib/backups/backup-verifier-pg-client.ts";
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import gameOverDateCoverage from "../lib/backups/game-over-date-coverage.ts";
 import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
 import restoreImportContract from "../lib/backups/restore-import-contract.ts";
 
-process.env.TZ = "America/New_York";
-
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
 const {AD_IMPORT_BATCH_RECOVERY_SELECT, fingerprintAdImportBatchRecovery} = adImportBatchRecovery;
+const {createBackupVerifierPgClient} = backupVerifierPgClient;
 const {readTrackDateCoverage} = gameOverDateCoverage;
 const {
   requireZeroRestoreProvenanceWarnings,
@@ -25,7 +24,6 @@ const {
   retrievePinnedEncryptedGoogleDriveBackup,
   sanitizedBackupRetrievalFailure
 } = googleDriveRetrieval;
-const {Client} = pg;
 const APPROVED = Object.freeze({
   repository: "RegisNobel/vvviruzcommandcenter-v2",
   branch: "refs/heads/main",
@@ -240,7 +238,7 @@ try {
   const targetUrl = assertCiBoundary();
   required("BACKUP_ENCRYPTION_SECRET");
   phase = "target-connect";
-  client = new Client({connectionString: targetUrl});
+  client = createBackupVerifierPgClient({connectionString: targetUrl});
   await client.connect();
   const version = Number((await client.query("SHOW server_version_num")).rows[0].server_version_num);
   assert.ok(version >= 170000 && version < 180000, "PostgreSQL major version is not 17.");
@@ -262,7 +260,7 @@ try {
   const targetEnv = {...process.env, DATABASE_URL: targetUrl, DIRECT_URL: targetUrl};
   phase = "schema-initialization";
   run(process.execPath, ["scripts/run-prisma.mjs","db","push","--schema","prisma/schema.postgres.prisma","--skip-generate"], targetEnv);
-  client = new Client({connectionString: targetUrl}); await client.connect();
+  client = createBackupVerifierPgClient({connectionString: targetUrl}); await client.connect();
   await client.query(`DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE service_role NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
   await client.query(await fs.readFile(path.join(process.cwd(), "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8"));
   await client.end(); client = undefined;
@@ -276,7 +274,7 @@ try {
   }
 
   phase = "restored-verification";
-  client = new Client({connectionString: targetUrl}); await client.connect();
+  client = createBackupVerifierPgClient({connectionString: targetUrl}); await client.connect();
   const restored = await restoredState(client);
   assertExpected(restored);
   const tableCount = (await client.query("SELECT count(*)::int count FROM pg_tables WHERE schemaname='public'")).rows[0].count;
