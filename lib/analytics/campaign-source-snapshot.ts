@@ -10,9 +10,9 @@ import {
   selectMostSpecificMetaPromotionLinks
 } from "@/lib/ads/meta-promotion-links";
 
-type SnapshotImport = {importType: string};
+type SnapshotImport = {id: string; importType: string};
 type SnapshotArtistMetric = {metricDate: Date};
-type SnapshotTrackMetric = {releaseId: string; metricDate: Date};
+type SnapshotTrackMetric = {importId: string; releaseId: string; metricDate: Date};
 type SnapshotMetaLink = {
   id: string;
   promotionCampaignId: string;
@@ -100,11 +100,16 @@ export function buildCampaignSourceSnapshot(input: {
   trackMetricObservations: SnapshotTrackMetric[];
   metaResolutions: SnapshotMetaResolution[];
 }): CampaignSourceSnapshot {
+  const releaseTrackImportIds = new Set(
+    input.trackMetricObservations
+      .filter((item) => item.releaseId === input.releaseId)
+      .map((item) => item.importId)
+  );
   return {
     releaseId: input.releaseId,
     spotify: {
       audienceImportCount: input.imports.filter((item) => item.importType === "ARTIST_AUDIENCE_TIMELINE").length,
-      trackImportCount: input.imports.filter((item) => item.importType === "TRACK_STREAM_TIMELINE").length,
+      trackImportCount: input.imports.filter((item) => item.importType === "TRACK_STREAM_TIMELINE" && releaseTrackImportIds.has(item.id)).length,
       latestAudienceDate: latestDate(input.artistMetricObservations.map((item) => item.metricDate)),
       latestTrackDate: latestDate(input.trackMetricObservations.filter((item) => item.releaseId === input.releaseId).map((item) => item.metricDate))
     },

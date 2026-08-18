@@ -62,17 +62,18 @@ const snapshot = buildCampaignSourceSnapshot({
     {id: "campaign-3", confirmedIntervalCount: 0, links: []}
   ],
   imports: [
-    {importType: "ARTIST_AUDIENCE_TIMELINE"},
-    {importType: "TRACK_STREAM_TIMELINE"},
-    {importType: "SONGS_PERIOD"}
+    {id: "audience-current", importType: "ARTIST_AUDIENCE_TIMELINE"},
+    {id: "track-release-1", importType: "TRACK_STREAM_TIMELINE"},
+    {id: "track-another-release", importType: "TRACK_STREAM_TIMELINE"},
+    {id: "songs-current", importType: "SONGS_PERIOD"}
   ],
   artistMetricObservations: [
     {metricDate: new Date("2026-08-01T00:00:00.000Z")},
     {metricDate: new Date("2026-08-17T00:00:00.000Z")}
   ],
   trackMetricObservations: [
-    {releaseId: "release-1", metricDate: new Date("2026-08-16T00:00:00.000Z")},
-    {releaseId: "another-release", metricDate: new Date("2026-08-18T00:00:00.000Z")}
+    {importId: "track-release-1", releaseId: "release-1", metricDate: new Date("2026-08-16T00:00:00.000Z")},
+    {importId: "track-another-release", releaseId: "another-release", metricDate: new Date("2026-08-18T00:00:00.000Z")}
   ],
   metaResolutions: [
     resolution("fact-1", "2026-08-09", 3.84),
