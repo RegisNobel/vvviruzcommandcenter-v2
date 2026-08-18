@@ -129,7 +129,7 @@ async function main() {
 
   const artifact = await createDatabaseSnapshotArtifact();
   const snapshot = JSON.parse(gunzipSync(artifact.buffer).toString("utf8"));
-  assert.equal(snapshot.schemaVersion, 12);
+  assert.equal(snapshot.schemaVersion, 15);
   assert.ok(snapshot.analyticsImports.some((row: {id: string}) => row.id === newImportId));
   assert.ok(snapshot.artistMetricObservations.some((row: {importId: string}) => row.importId === newImportId));
   assert.ok(snapshot.trackMetricObservations.some((row: {importId: string}) => row.importId === newImportId));

@@ -22,7 +22,17 @@ import {prisma} from "@/lib/db/prisma";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
 import {readPromotionCampaign, readReleaseCampaignTimeline} from "@/lib/analytics/campaign-timeline-service";
+import {readCampaignSourceSnapshot} from "@/lib/analytics/campaign-source-snapshot";
 import {readReleaseRetentionDashboard} from "@/lib/analytics/retention-dashboard";
+
+async function readOptionalCampaignSourceSnapshot(releaseId: string) {
+  try {
+    return await readCampaignSourceSnapshot(releaseId);
+  } catch {
+    console.error("[campaign-source-snapshot] Optional canonical source read failed.");
+    return null;
+  }
+}
 
 export async function AdminReleaseWorkspace({
   releaseId,
@@ -57,6 +67,7 @@ export async function AdminReleaseWorkspace({
       artist,
       canonicalArtist,
       promotionTimeline,
+      campaignSourceSnapshot,
       retentionDashboard
     ] = await Promise.all([
       readRelease(releaseId),
@@ -100,6 +111,7 @@ export async function AdminReleaseWorkspace({
         : Promise.resolve(null),
       prisma.artistProfile.findUnique({where: {slug: "vvviruz"}, select: {id: true}}),
       readReleaseCampaignTimeline(releaseId),
+      readOptionalCampaignSourceSnapshot(releaseId),
       readReleaseRetentionDashboard(releaseId, {
         campaignId: retentionCampaignId,
         range: retentionRange
@@ -188,7 +200,10 @@ export async function AdminReleaseWorkspace({
         <ReleaseCampaignTimelineSection
           artistProfileId={campaignArtistProfileId}
           releaseId={releaseId}
+          retentionFreshnessLabel={retentionDashboard.freshness.label}
+          retentionSelectionState={retentionDashboard.selectionState}
           selectedCampaign={selectedCampaign}
+          sourceSnapshot={campaignSourceSnapshot}
           timeline={promotionTimeline}
         />
         <ReleaseRetentionSection data={retentionDashboard} releaseId={releaseId} />

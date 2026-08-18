@@ -6,6 +6,11 @@ import {performance} from "node:perf_hooks";
 import {Prisma} from "@prisma/client";
 
 import {prisma} from "@/lib/db/prisma";
+import {
+  reconcileMetaCampaignSuggestions,
+  type MetaCampaignEvidenceScope,
+  type MetaCampaignEvidenceSyncResult
+} from "@/lib/analytics/campaign-timeline-service";
 import {AdminError} from "@/lib/server/admin-error-response";
 
 const META_IMPORT_TRANSACTION_OPTIONS = {maxWait: 10_000, timeout: 60_000} as const;
@@ -27,6 +32,24 @@ export type MetaImportDiagnostics = {
   onStage?: (event: {stage: string; elapsedMs: number; rows: number; calls: number}) => void;
   onTransaction?: (event: {waitMs: number; callbackMs: number; completionMs: number}) => void;
 };
+
+function metaCampaignEvidenceScopes(rows: Iterable<{accountId: string; campaignId: string}>): MetaCampaignEvidenceScope[] {
+  return [...new Map([...rows]
+    .filter(({accountId, campaignId}) => accountId && campaignId)
+    .map(({accountId, campaignId}) => [`${accountId}\u0000${campaignId}`, {accountId, externalCampaignId: campaignId}])).values()];
+}
+
+async function synchronizeMetaCampaignEvidence(
+  rows: Iterable<{accountId: string; campaignId: string}>,
+  actor: MetaImportActor,
+  now: Date
+): Promise<MetaCampaignEvidenceSyncResult> {
+  try {
+    return await reconcileMetaCampaignSuggestions(metaCampaignEvidenceScopes(rows), actor, now);
+  } catch {
+    return {status: "RETRY_REQUIRED", code: "META_CAMPAIGN_EVIDENCE_RETRY_REQUIRED", attemptedCampaigns: 0, synchronizedCampaigns: 0, failedCampaigns: 0, suggestionsCreated: 0, retryable: true};
+  }
+}
 
 function emitDiagnostic(callback: (() => void) | undefined) {
   if (!callback) return;
@@ -221,8 +244,8 @@ export async function commitMetaImport(input: {
 }) {
   const diagnostics = input.diagnostics;
   const now = input.now ?? new Date(); const idempotencyKey = validIdempotency(input.clientIdempotencyKey);
-  const replay = await measuredCall(diagnostics, "idempotency_lookup", "database", 1, () => prisma.adImportBatch.findUnique({where: {idempotencyKey}}));
-  if (replay) return {ok: true as const, code: "IMPORT_COMMIT_REPLAYED", importId: replay.id, replayed: true};
+  const replay = await measuredCall(diagnostics, "idempotency_lookup", "database", 1, () => prisma.adImportBatch.findUnique({where: {idempotencyKey}, include: {dailySourceObservations: {select: {accountId: true, campaignId: true}}}}));
+  if (replay) return {ok: true as const, code: "IMPORT_COMMIT_REPLAYED", importId: replay.id, replayed: true, campaignEvidenceSync: await synchronizeMetaCampaignEvidence(replay.dailySourceObservations, input.actor, now)};
   const tokenStarted = diagnostics?.onStage ? performance.now() : 0;
   const token = readMetaPreviewToken(input.previewToken);
   if (!token) throw new AdminError("Preview token is invalid or has been tampered with.", {code: "INVALID_PREVIEW", status: 400});
@@ -247,7 +270,7 @@ export async function commitMetaImport(input: {
   if (exact) throw new AdminError("This exact Meta bundle is already imported.", {code: "DUPLICATE_FILE", status: 409});
   if (await measuredCall(diagnostics, "duplicate_file_lookup", "database", bundle.files.length, () => prisma.metaImportFile.findFirst({where: {sha256: {in: bundle.files.map((file) => file.sha256)}}}))) throw new AdminError("A source file was committed by another import.", {code: "CONFLICT", status: 409});
   if (token.context.releaseId && !(await measuredCall(diagnostics, "release_validation", "database", 1, () => prisma.release.findUnique({where: {id: token.context.releaseId!}, select: {id: true}})))) throw new AdminError("The selected release no longer exists.", {code: "VALIDATION", status: 400});
-  const replacement = input.replacementTargetBatchId ? await measuredCall(diagnostics, "replacement_validation", "database", 1, () => prisma.adImportBatch.findUnique({where: {id: input.replacementTargetBatchId!}})) : null;
+  const replacement = input.replacementTargetBatchId ? await measuredCall(diagnostics, "replacement_validation", "database", 1, () => prisma.adImportBatch.findUnique({where: {id: input.replacementTargetBatchId!}, include: {dailySourceObservations: {select: {identityKey: true, accountId: true, campaignId: true}}}})) : null;
   if (input.replacementTargetBatchId && (!replacement || replacement.importState !== "ACCEPTED" || replacement.withdrawnAt)) throw new AdminError("Replacement target is not an active Meta import.", {code: "CONFLICT", status: 409});
   const permanent: Array<{key: string; sha256: string; sizeBytes: number}> = [];
   try {
@@ -316,7 +339,8 @@ export async function commitMetaImport(input: {
         const changed = await measuredCall(diagnostics, "replacement_state_write", "database", 1, () => tx.adImportBatch.updateMany({where: {id: replacement.id, importState: "ACCEPTED", withdrawnAt: null}, data: {importState: "REPLACED", updatedAt: now}}));
         if (changed.count !== 1) throw new AdminError("Replacement target changed during commit.", {code: "CONFLICT", status: 409});
       }
-      await measuredStage(diagnostics, "canonical_resolution", bundle.metricObservations.length, 0, () => recalculateMetaDailyResolutions(tx, bundle.metricObservations.map((row) => row.identityKey), now, diagnostics));
+      const affectedIdentityKeys = [...bundle.metricObservations.map((row) => row.identityKey), ...(replacement?.dailySourceObservations.map(({identityKey}) => identityKey) ?? [])];
+      await measuredStage(diagnostics, "canonical_resolution", affectedIdentityKeys.length, 0, () => recalculateMetaDailyResolutions(tx, affectedIdentityKeys, now, diagnostics));
       emitDiagnostic(diagnostics?.onStage ? () => diagnostics.onStage!({stage: "transaction_finalization", elapsedMs: 0, rows: 1, calls: 0}) : undefined);
       if (measureTransaction) transactionCallbackEnded = performance.now();
     }, META_IMPORT_TRANSACTION_OPTIONS);
@@ -329,18 +353,21 @@ export async function commitMetaImport(input: {
     throw new AdminError("The Meta import transaction failed; no database rows were committed.", {code: "TRANSACTION_FAILURE", status: 500, retryable: true});
   }
   await Promise.all(token.fileReferences.map(({key}) => deletePrivateObject("ads-preview", key).catch(() => undefined)));
-  return {ok: true as const, code: "IMPORT_COMMITTED", importId, replayed: false};
+  const evidenceRows = [...bundle.metricObservations.map(({accountId, campaignId}) => ({accountId, campaignId})), ...(replacement?.dailySourceObservations ?? [])];
+  return {ok: true as const, code: "IMPORT_COMMITTED", importId, replayed: false, campaignEvidenceSync: await synchronizeMetaCampaignEvidence(evidenceRows, input.actor, now)};
 }
 
 export async function withdrawMetaImport(input: {actor: MetaImportActor; importId: string; reason: string; now?: Date; diagnostics?: MetaImportDiagnostics}) {
   const now = input.now ?? new Date(); const reason = clean(input.reason, 1000); if (!reason) throw new AdminError("Withdrawal reason is required.", {code: "VALIDATION", status: 400});
+  let affectedRows: Array<{accountId: string; campaignId: string}> = [];
   await prisma.$transaction(async (tx) => {
-    const record = await tx.adImportBatch.findUnique({where: {id: input.importId}, include: {dailySourceObservations: {select: {identityKey: true}}}});
+    const record = await tx.adImportBatch.findUnique({where: {id: input.importId}, include: {dailySourceObservations: {select: {identityKey: true, accountId: true, campaignId: true}}}});
     if (!record) throw new AdminError("Meta import was not found.", {code: "NOT_FOUND", status: 404});
     if (record.importState !== "ACCEPTED" || record.withdrawnAt) throw new AdminError("Meta import is not active.", {code: "CONFLICT", status: 409});
     await tx.adImportBatch.update({where: {id: record.id}, data: {importState: "WITHDRAWN", withdrawnAt: now, withdrawnById: input.actor.userId, withdrawnByUsername: input.actor.username, withdrawalReason: reason, updatedAt: now}});
     await tx.metaImportAuditEvent.create({data: {id: randomUUID(), importBatchId: record.id, action: "IMPORT_WITHDRAWN", reason, actorId: input.actor.userId, actorUsername: input.actor.username, createdAt: now}});
     await recalculateMetaDailyResolutions(tx, record.dailySourceObservations.map((item) => item.identityKey), now, input.diagnostics);
+    affectedRows = record.dailySourceObservations;
   }, META_IMPORT_TRANSACTION_OPTIONS);
-  return {ok: true as const, code: "IMPORT_WITHDRAWN"};
+  return {ok: true as const, code: "IMPORT_WITHDRAWN", campaignEvidenceSync: await synchronizeMetaCampaignEvidence(affectedRows, input.actor, now)};
 }

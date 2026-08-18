@@ -106,6 +106,7 @@
     "test:playlists-period-final-review": "tsx scripts/test-playlists-period-final-review.ts",
     "test:campaign-timeline": "node --conditions=react-server --import tsx scripts/test-campaign-timeline.ts",
     "test:campaign-timeline-ui": "tsx scripts/test-campaign-timeline-ui.ts",
+    "test:campaign-source-snapshot": "node --conditions=react-server --import tsx scripts/test-campaign-source-snapshot.ts",
     "test:campaign-api": "tsx scripts/test-campaign-api.ts",
     "test:retention-calculations": "tsx scripts/test-retention-calculations.ts",
     "test:retention-data": "node --conditions=react-server --import tsx scripts/test-retention-data-resolution.ts",

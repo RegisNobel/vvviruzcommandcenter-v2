@@ -90,6 +90,10 @@ const ui = fs.readFileSync(path.join(process.cwd(), "components/ads-import-form.
 assert.match(ui, /role="alert"/);
 assert.match(ui, /aria-live="assertive"/);
 assert.match(ui, /aria-describedby=\{message \? "meta-import-error"/);
+assert.match(ui, /clientIdempotencyKey: crypto\.randomUUID\(\)/, "one idempotency key is frozen with each preview");
+assert.match(ui, /clientIdempotencyKey: preview\.clientIdempotencyKey/, "commit retries reuse the preview's frozen idempotency key");
+assert.match(ui, /campaignEvidenceSync\?\.status === "RETRY_REQUIRED"/, "accepted imports surface post-commit evidence retry status");
+assert.match(ui, /The accepted Meta data is safe/, "retry messaging distinguishes accepted data from secondary synchronization");
 const route = fs.readFileSync(path.join(process.cwd(), "app/api/ads/import/route.ts"), "utf8");
 assert.match(route, /mapMetaImportPreviewError\(error\)/);
 assert.match(route, /code: "INVALID_FILE", status: 400/);

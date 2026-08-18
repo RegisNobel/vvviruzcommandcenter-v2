@@ -17,6 +17,16 @@ export const CAMPAIGN_EVENT_TYPES = ["RELEASE_PUBLISHED", "CAMPAIGN_STARTED", "C
 export const CAMPAIGN_EVENT_SOURCES = ["SYSTEM_INTERVAL_SYNC", "USER_ENTERED", "IMPORTED_EVIDENCE", "RELEASE_RECORD"] as const;
 
 export type CampaignActor = {userId: string; username: string};
+export type MetaCampaignEvidenceScope = {accountId: string; externalCampaignId: string};
+export type MetaCampaignEvidenceSyncResult = {
+  status: "SYNCED" | "NO_LINKED_CAMPAIGNS" | "RETRY_REQUIRED";
+  code: "META_CAMPAIGN_EVIDENCE_SYNCED" | "META_CAMPAIGN_EVIDENCE_NOT_APPLICABLE" | "META_CAMPAIGN_EVIDENCE_RETRY_REQUIRED";
+  attemptedCampaigns: number;
+  synchronizedCampaigns: number;
+  failedCampaigns: number;
+  suggestionsCreated: number;
+  retryable: boolean;
+};
 type Db = typeof prisma | Prisma.TransactionClient;
 
 function clean(value: string | null | undefined, max = 2000) {
@@ -321,6 +331,48 @@ export async function generateMetaIntervalSuggestions(campaignId: string, actor:
     }
   }
   return {ok: true as const, code: "META_SUGGESTIONS_GENERATED", message: "Canonical Meta evidence reviewed; suggestions remain unconfirmed.", created, evidenceOnly: 0};
+}
+
+export async function reconcileMetaCampaignSuggestions(
+  scopes: Iterable<MetaCampaignEvidenceScope>,
+  actor: CampaignActor,
+  now = new Date(),
+  generateSuggestions: typeof generateMetaIntervalSuggestions = generateMetaIntervalSuggestions
+): Promise<MetaCampaignEvidenceSyncResult> {
+  const uniqueScopes = [...new Map([...scopes]
+    .map((scope) => ({accountId: clean(scope.accountId, 200), externalCampaignId: clean(scope.externalCampaignId, 200)}))
+    .filter((scope) => scope.accountId && scope.externalCampaignId)
+    .map((scope) => [`${scope.accountId}\u0000${scope.externalCampaignId}`, scope])).values()];
+  if (!uniqueScopes.length) return {status: "NO_LINKED_CAMPAIGNS", code: "META_CAMPAIGN_EVIDENCE_NOT_APPLICABLE", attemptedCampaigns: 0, synchronizedCampaigns: 0, failedCampaigns: 0, suggestionsCreated: 0, retryable: false};
+
+  const currentLinks = await prisma.metaPromotionLink.findMany({
+    where: {
+      status: "CONFIRMED",
+      supersededBy: null,
+      promotionCampaign: {status: {not: "ARCHIVED"}},
+      OR: uniqueScopes.map(({accountId, externalCampaignId}) => ({accountId, externalCampaignId}))
+    },
+    select: {promotionCampaignId: true},
+    orderBy: [{promotionCampaignId: "asc"}, {id: "asc"}]
+  });
+  const campaignIds = [...new Set(currentLinks.map(({promotionCampaignId}) => promotionCampaignId))].sort();
+  if (!campaignIds.length) return {status: "NO_LINKED_CAMPAIGNS", code: "META_CAMPAIGN_EVIDENCE_NOT_APPLICABLE", attemptedCampaigns: 0, synchronizedCampaigns: 0, failedCampaigns: 0, suggestionsCreated: 0, retryable: false};
+
+  let synchronizedCampaigns = 0;
+  let failedCampaigns = 0;
+  let suggestionsCreated = 0;
+  for (const campaignId of campaignIds) {
+    try {
+      const result = await generateSuggestions(campaignId, actor, now);
+      synchronizedCampaigns += 1;
+      suggestionsCreated += result.created;
+    } catch {
+      failedCampaigns += 1;
+    }
+  }
+  return failedCampaigns
+    ? {status: "RETRY_REQUIRED", code: "META_CAMPAIGN_EVIDENCE_RETRY_REQUIRED", attemptedCampaigns: campaignIds.length, synchronizedCampaigns, failedCampaigns, suggestionsCreated, retryable: true}
+    : {status: "SYNCED", code: "META_CAMPAIGN_EVIDENCE_SYNCED", attemptedCampaigns: campaignIds.length, synchronizedCampaigns, failedCampaigns: 0, suggestionsCreated, retryable: false};
 }
 
 export async function readReleaseCampaignTimeline(releaseId: string) {

@@ -22,11 +22,12 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
   const [accountTimezone, setAccountTimezone] = useState("");
   const [confirmedCurrency, setConfirmedCurrency] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [preview, setPreview] = useState<null | {previewToken: string; bundle: {sourceGranularity: string; campaignIntervalEligible: boolean; eligibilityReasons: string[]; coreTimingEligible: boolean; coreTimingEligibilityReasons: string[]; enrichmentCompatibility: string; enrichmentWarnings: string[]; accountId: string; normalizedTimezone: string; currency: string; currencyOrigin: string; rowCount: number; mergedDailyRowCount: number; metricObservationCount: number; sourceAsOfOrigin: string; commonReportingStart: string | null; commonReportingEnd: string | null; commonObservedDateCount: number; warnings: string[]; viewConflicts: Array<{field: string; code: string; blocksCampaignEligibility: boolean; blocksCoreTimingEligibility: boolean; blocksEnrichmentCompatibility: boolean}>; files: Array<{sanitizedFileName: string; sourceView: string; viewRole: string; rowCount: number; reportingStart: string | null; reportingEnd: string | null; observedDateCount: number; expectedDateCount: number | null; adCount: number; missingCoreDateCount: number; coverageState: string}>}}>(null);
+  const [preview, setPreview] = useState<null | {previewToken: string; clientIdempotencyKey: string; bundle: {sourceGranularity: string; campaignIntervalEligible: boolean; eligibilityReasons: string[]; coreTimingEligible: boolean; coreTimingEligibilityReasons: string[]; enrichmentCompatibility: string; enrichmentWarnings: string[]; accountId: string; normalizedTimezone: string; currency: string; currencyOrigin: string; rowCount: number; mergedDailyRowCount: number; metricObservationCount: number; sourceAsOfOrigin: string; commonReportingStart: string | null; commonReportingEnd: string | null; commonObservedDateCount: number; warnings: string[]; viewConflicts: Array<{field: string; code: string; blocksCampaignEligibility: boolean; blocksCoreTimingEligibility: boolean; blocksEnrichmentCompatibility: boolean}>; files: Array<{sanitizedFileName: string; sourceView: string; viewRole: string; rowCount: number; reportingStart: string | null; reportingEnd: string | null; observedDateCount: number; expectedDateCount: number | null; adCount: number; missingCoreDateCount: number; coverageState: string}>}}>(null);
   const [confirmFinalReview, setConfirmFinalReview] = useState(false);
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [completedImportId, setCompletedImportId] = useState<string | null>(null);
   const [timezoneNotice, setTimezoneNotice] = useState<string | null>(null);
   const [replaceTimezone, setReplaceTimezone] = useState(false);
   const [timezoneReason, setTimezoneReason] = useState("");
@@ -39,6 +40,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
     event.preventDefault();
     setIsSubmitting(true);
     setMessage(null);
+    setCompletedImportId(null);
 
     const formData = new FormData();
 
@@ -67,7 +69,7 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
       if (!payload.canCommit || !payload.previewToken || !payload.bundle) {
         throw new Error(payload.message ?? "Preview cannot be committed.");
       }
-      setPreview({previewToken: payload.previewToken, bundle: payload.bundle});
+      setPreview({previewToken: payload.previewToken, clientIdempotencyKey: crypto.randomUUID(), bundle: payload.bundle});
       setIsSubmitting(false);
     } catch (error) {
       setMessage(getAdminErrorMessage(error, "Import failed unexpectedly."));
@@ -78,12 +80,18 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
   async function handleCommit() {
     if (!preview) return; setIsSubmitting(true); setMessage(null);
     try {
-      const payload = await adminFetch<{importId?: string; message?: string}>("/api/ads/import/commit", {
+      const payload = await adminFetch<{importId?: string; message?: string; campaignEvidenceSync?: {status: "SYNCED" | "NO_LINKED_CAMPAIGNS" | "RETRY_REQUIRED"}}>("/api/ads/import/commit", {
         method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({
-          previewToken: preview.previewToken, clientIdempotencyKey: crypto.randomUUID(), confirmFinalReview, acknowledgeWarnings
+          previewToken: preview.previewToken, clientIdempotencyKey: preview.clientIdempotencyKey, confirmFinalReview, acknowledgeWarnings
         })
       }, "Meta CSV commit failed.");
       if (!payload.importId) throw new Error(payload.message ?? "Import failed.");
+      if (payload.campaignEvidenceSync?.status === "RETRY_REQUIRED") {
+        setCompletedImportId(payload.importId);
+        setMessage("Import accepted, but linked campaign evidence could not be refreshed automatically. The accepted Meta data is safe; retry evidence review from the release workspace.");
+        setIsSubmitting(false);
+        return;
+      }
       router.push(`/admin/ad-lab/${payload.importId}`); router.refresh();
     } catch (error) { setMessage(getAdminErrorMessage(error, "Import failed unexpectedly.")); setIsSubmitting(false); }
   }
@@ -247,8 +255,9 @@ export function AdsImportForm({releases}: {releases: ReleaseSummary[]}) {
           </div>
 
           {message ? (
-            <div aria-live="assertive" className="state-panel-danger" id="meta-import-error" role="alert">
-              {message}
+            <div aria-live="assertive" className={completedImportId ? "state-panel-warning" : "state-panel-danger"} id="meta-import-error" role="alert">
+              <p>{message}</p>
+              {completedImportId ? <div className="mt-3 flex flex-wrap gap-2"><Link className="action-button-secondary text-xs" href={`/admin/ad-lab/${completedImportId}`}>Open accepted import</Link>{releaseId ? <Link className="action-button-secondary text-xs" href={`/admin/releases/${releaseId}#campaign-management`}>Open release workspace</Link> : null}</div> : null}
             </div>
           ) : null}
 

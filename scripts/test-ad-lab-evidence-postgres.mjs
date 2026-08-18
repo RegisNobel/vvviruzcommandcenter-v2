@@ -77,7 +77,7 @@ try {
   const {createMetaImportPreview, commitMetaImport, withdrawMetaImport} = await import("../lib/ads/meta-import-service.ts");
   const {createMetaPromotionLink, transitionMetaPromotionLink} = await import("../lib/ads/meta-promotion-links.ts");
   const {confirmMetaAccountTimezone, readCurrentMetaAccountTimezone} = await import("../lib/ads/meta-account-timezones.ts");
-  const {addCampaignInterval, generateMetaIntervalSuggestions} = await import("../lib/analytics/campaign-timeline-service.ts");
+  const {addCampaignInterval, generateMetaIntervalSuggestions, reconcileMetaCampaignSuggestions} = await import("../lib/analytics/campaign-timeline-service.ts");
   const {prisma} = await import("../lib/db/prisma.ts");
   const actor = {userId: "test-admin", username: "test-admin"};
   const makeFile = (spend, sourceAsOf, campaignName = "Mahoraga") => ({fileName: `daily-${spend}.csv`, bytes: new TextEncoder().encode(`Account ID,Account name,Account timezone,Currency,Campaign ID,Campaign name,Ad set ID,Ad set name,Ad ID,Ad name,Reporting starts,Reporting ends,Amount spent,Impressions,Results,Result indicator,Delivery,Attribution setting\nact-1,VVV,America/New_York,USD,cmp-1,${campaignName},set-1,Broad,ad-1,Creative,2026-08-01,2026-08-01,${spend},100,2,Link clicks,Active,7-day click`), sourceAsOf});
@@ -141,10 +141,11 @@ try {
   assert.equal((await generateMetaIntervalSuggestions("campaign-test", actor)).code, "META_LINK_CONFIRMATION_REQUIRED");
   await transitionMetaPromotionLink({promotionCampaignId: "campaign-test", linkId: suggested.id, status: "CONFIRMED", reason: "Disposable rehearsal confirmation", actor});
   const generated = await generateMetaIntervalSuggestions("campaign-test", actor); assert.equal(generated.created, 1);
-  await withdrawMetaImport({actor, importId: corrected.importId, reason: "Disposable corrected-export withdrawal"});
+  const correctedWithdrawal = await withdrawMetaImport({actor, importId: corrected.importId, reason: "Disposable corrected-export withdrawal"});
+  assert.equal(correctedWithdrawal.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(correctedWithdrawal.campaignEvidenceSync.suggestionsCreated, 1, "withdrawal automatically regenerates linked campaign evidence");
   assert.equal((await prisma.metaDailyResolution.findFirst({where: {campaignId: "cmp-1", metricFamily: "SPEND"}, include: {currentObservation: true}})).currentObservation.spend, 10, "an import-time fallback cannot outrank an authoritative source timestamp");
   assert.equal(await prisma.metaDailySourceObservation.count(), 6);
-  assert.equal((await generateMetaIntervalSuggestions("campaign-test", actor)).created, 1, "withdrawal regenerates the current suggestion set");
   assert.equal(await prisma.campaignEvidence.count({where: {campaignId: "campaign-test", suggestionState: "CURRENT"}}), 1);
   assert.equal(await prisma.campaignEvidence.count({where: {campaignId: "campaign-test", suggestionState: "SUPERSEDED"}}), 1);
 
@@ -160,21 +161,27 @@ try {
   let shiftCurrent = await prisma.campaignEvidence.findFirstOrThrow({where: {campaignId: "campaign-shift", suggestionState: "CURRENT"}});
   assert.equal(shiftCurrent.suggestedStartDate.toISOString().slice(0, 10), "2026-06-12");
   const shiftCorrection = await importShift(shiftFile("shift-corrected.csv", 0, 10), "2026-06-15T12:00:00.000Z", "shift-corrected-0001");
-  assert.equal((await generateMetaIntervalSuggestions("campaign-shift", actor)).created, 1);
+  assert.equal(shiftCorrection.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(shiftCorrection.campaignEvidenceSync.suggestionsCreated, 1, "accepted imports automatically supersede stale suggestions");
+  const shiftReplay = await commitMetaImport({actor, previewToken: "unused-after-idempotency-match", clientIdempotencyKey: "shift-corrected-0001", confirmFinalReview: true, acknowledgeWarnings: true});
+  assert.equal(shiftReplay.code, "IMPORT_COMMIT_REPLAYED");
+  assert.equal(shiftReplay.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(shiftReplay.campaignEvidenceSync.suggestionsCreated, 0, "idempotent commit replay retries reconciliation without duplicating evidence");
   shiftCurrent = await prisma.campaignEvidence.findFirstOrThrow({where: {campaignId: "campaign-shift", suggestionState: "CURRENT"}});
   assert.equal(shiftCurrent.suggestedStartDate.toISOString().slice(0, 10), "2026-06-13");
   assert.equal(await prisma.campaignEvidence.count({where: {campaignId: "campaign-shift", suggestionState: "SUPERSEDED"}}), 1);
   assert.equal(await prisma.campaignActiveInterval.count({where: {campaignId: "campaign-shift", confirmationStatus: "CONFIRMED", activeStartDate: new Date("2026-06-01T00:00:00.000Z")}}), 1, "confirmed intervals are never rewritten");
-  await withdrawMetaImport({actor, importId: shiftCorrection.importId, reason: "Restore earlier shift evidence"});
-  assert.equal((await generateMetaIntervalSuggestions("campaign-shift", actor)).created, 1);
+  const shiftWithdrawal = await withdrawMetaImport({actor, importId: shiftCorrection.importId, reason: "Restore earlier shift evidence"});
+  assert.equal(shiftWithdrawal.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(shiftWithdrawal.campaignEvidenceSync.suggestionsCreated, 1);
   shiftCurrent = await prisma.campaignEvidence.findFirstOrThrow({where: {campaignId: "campaign-shift", suggestionState: "CURRENT"}});
   assert.equal(shiftCurrent.suggestedStartDate.toISOString().slice(0, 10), "2026-06-12");
   assert.equal(await prisma.campaignEvidence.count({where: {campaignId: "campaign-shift", suggestionState: "SUPERSEDED"}}), 2);
 
   const euroShift = shiftFile("shift-eur.csv", 8, 0); euroShift.bytes = new TextEncoder().encode(new TextDecoder().decode(euroShift.bytes).replace(/USD/g, "EUR"));
-  await importShift(euroShift, "2026-06-16T12:00:00.000Z", "shift-eur-0000000001");
+  const euroCommitted = await importShift(euroShift, "2026-06-16T12:00:00.000Z", "shift-eur-0000000001");
+  assert.equal(euroCommitted.campaignEvidenceSync.status, "SYNCED");
   assert.equal(await prisma.metaDailyResolution.count({where: {campaignId: "cmp-shift", metricFamily: "SPEND"}}), 4, "currencies resolve as separate spend identities");
-  await generateMetaIntervalSuggestions("campaign-shift", actor);
   shiftCurrent = await prisma.campaignEvidence.findFirstOrThrow({where: {campaignId: "campaign-shift", suggestionState: "CURRENT"}});
   assert.equal(JSON.parse(shiftCurrent.metadata).currencyStatus, "MULTIPLE_CURRENCIES_NO_MONETARY_AGGREGATE");
 
@@ -188,14 +195,53 @@ try {
   const extraSuggestion = await createMetaPromotionLink({promotionCampaignId: "campaign-shift", accountId: "act-1", scopeType: "CAMPAIGN", externalCampaignId: "cmp-extra", actor});
   await transitionMetaPromotionLink({promotionCampaignId: "campaign-shift", linkId: extraSuggestion.id, status: "CONFIRMED", reason: "Second external campaign supports one internal campaign", actor});
   assert.equal(await prisma.metaPromotionLink.count({where: {promotionCampaignId: "campaign-shift", status: "CONFIRMED", supersededBy: null}}), 2);
+  const sharedScopeCalls = [];
+  const sharedScopeSync = await reconcileMetaCampaignSuggestions([{accountId: "act-1", externalCampaignId: "cmp-shift"}], actor, new Date(), async (campaignId) => { sharedScopeCalls.push(campaignId); return {created: 0}; });
+  assert.equal(sharedScopeSync.status, "SYNCED");
+  assert.deepEqual(sharedScopeCalls, ["campaign-shared", "campaign-shift"], "stable parent scope synchronization includes every explicitly shared internal campaign");
   await addCampaignInterval("campaign-shared", {actor, activeStartDate: "2026-06-03", activeEndDate: "2026-06-04", timezone: "America/New_York", confirmationStatus: "CONFIRMED"});
   await addCampaignInterval("campaign-shared", {actor, activeStartDate: "2026-07-01", activeEndDate: "2026-07-02", timezone: "America/New_York", confirmationStatus: "CONFIRMED"});
   assert.equal(await prisma.campaignActiveInterval.count({where: {campaignId: "campaign-shared", confirmationStatus: "CONFIRMED"}}), 2, "shared links do not rewrite independent overlapping or non-overlapping Stage 7 intervals");
 
+  const replacementFile = (name, spend, includeRemovedIdentity = false) => ({fileName: name, bytes: new TextEncoder().encode([shiftHeader, `act-1,VVV,America/New_York,USD,cmp-replace,Replacement Campaign,set-replace,Broad,ad-replace,Creative,2026-06-20,2026-06-20,${spend},100,,,Active,7-day click`, ...(includeRemovedIdentity ? [`act-1,VVV,America/New_York,USD,cmp-replace,Replacement Campaign,set-replace,Broad,ad-removed,Removed Creative,2026-06-20,2026-06-20,3,50,,,Active,7-day click`] : [])].join("\n"))});
+  async function importReplacement(file, asOf, key, replacementTargetBatchId = null) {
+    const preview = await createMetaImportPreview({actor, files: [file], context: {attributionSetting: "7-day click", sourceAsOf: asOf, expectedGranularity: "DAILY", releaseId: "release-test", name: key}});
+    const committed = await commitMetaImport({actor, previewToken: preview.previewToken, clientIdempotencyKey: key, confirmFinalReview: true, acknowledgeWarnings: true, replacementTargetBatchId});
+    return {...committed, previewToken: preview.previewToken};
+  }
+  const replacementInitial = await importReplacement(replacementFile("replace-initial.csv", 5, true), "2026-06-21T12:00:00.000Z", "replace-initial-0001");
+  await prisma.promotionCampaign.create({data: {id: "campaign-replace", artistProfileId: "artist-test", releaseId: "release-test", platform: "META", name: "Disposable Replacement", objective: "STREAMS", status: "DRAFT", createdAt: new Date(), updatedAt: new Date()}});
+  const replacementSuggested = await createMetaPromotionLink({promotionCampaignId: "campaign-replace", accountId: "act-1", scopeType: "CAMPAIGN", externalCampaignId: "cmp-replace", actor});
+  const replacementLink = await transitionMetaPromotionLink({promotionCampaignId: "campaign-replace", linkId: replacementSuggested.id, status: "CONFIRMED", reason: "Disposable replacement link", actor});
+  await addCampaignInterval("campaign-replace", {actor, activeStartDate: "2026-06-01", activeEndDate: "2026-06-05", timezone: "America/New_York", confirmationStatus: "CONFIRMED"});
+  assert.equal((await generateMetaIntervalSuggestions("campaign-replace", actor)).created, 1);
+  const replacementAccepted = await importReplacement(replacementFile("replace-corrected.csv", 7), "2026-06-22T12:00:00.000Z", "replace-corrected-0001", replacementInitial.importId);
+  assert.equal(replacementAccepted.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(replacementAccepted.campaignEvidenceSync.suggestionsCreated, 1, "replacement automatically refreshes current evidence");
+  assert.equal((await prisma.adImportBatch.findUniqueOrThrow({where: {id: replacementInitial.importId}})).importState, "REPLACED");
+  assert.equal(await prisma.metaDailyResolution.count({where: {campaignId: "cmp-replace", metricFamily: "SPEND"}}), 1, "replacement recalculates and removes canonical identities omitted from the new bundle");
+  const replacementWithdrawal = await withdrawMetaImport({actor, importId: replacementAccepted.importId, reason: "Disposable replacement withdrawal"});
+  assert.equal(replacementWithdrawal.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(await prisma.campaignEvidence.count({where: {campaignId: "campaign-replace", suggestionState: "CURRENT"}}), 0, "withdrawal invalidates evidence when no accepted winner remains");
+  assert.equal(await prisma.campaignActiveInterval.count({where: {campaignId: "campaign-replace", confirmationStatus: "CONFIRMED"}}), 1, "automatic synchronization never rewrites confirmed intervals");
+
+  const duplicateLinkId = "campaign-replace-duplicate";
+  await prisma.metaPromotionLink.create({data: {id: duplicateLinkId, promotionCampaignId: replacementLink.promotionCampaignId, accountId: replacementLink.accountId, scopeType: replacementLink.scopeType, externalCampaignId: replacementLink.externalCampaignId, externalAdSetId: replacementLink.externalAdSetId, externalAdId: replacementLink.externalAdId, scopeIdentityKey: replacementLink.scopeIdentityKey, currentDisplayName: replacementLink.currentDisplayName, status: "CONFIRMED", associationMode: replacementLink.associationMode, monetaryAttribution: replacementLink.monetaryAttribution, ambiguous: replacementLink.ambiguous, evidence: replacementLink.evidence, actorId: actor.userId, actorUsername: actor.username, createdAt: new Date(), updatedAt: new Date()}});
+  const retryRequired = await importReplacement(replacementFile("replace-retry.csv", 9), "2026-06-23T12:00:00.000Z", "replace-retry-0000001");
+  assert.equal(retryRequired.campaignEvidenceSync.status, "RETRY_REQUIRED");
+  assert.equal(retryRequired.campaignEvidenceSync.failedCampaigns, 1);
+  assert.equal((await prisma.adImportBatch.findUniqueOrThrow({where: {id: retryRequired.importId}})).importState, "ACCEPTED", "evidence synchronization failure cannot roll back an accepted import");
+  assert.equal(await prisma.campaignActiveInterval.count({where: {campaignId: "campaign-replace", confirmationStatus: "CONFIRMED"}}), 1);
+  await prisma.metaPromotionLink.delete({where: {id: duplicateLinkId}});
+  const retryReplay = await commitMetaImport({actor, previewToken: retryRequired.previewToken, clientIdempotencyKey: "replace-retry-0000001", confirmFinalReview: true, acknowledgeWarnings: true});
+  assert.equal(retryReplay.code, "IMPORT_COMMIT_REPLAYED");
+  assert.equal(retryReplay.campaignEvidenceSync.status, "SYNCED");
+  assert.equal(retryReplay.campaignEvidenceSync.suggestionsCreated, 1, "idempotent replay is the safe reconciliation retry path");
+
   assert.deepEqual({
     files: await prisma.metaImportFile.count(), observations: await prisma.metaDailySourceObservation.count(),
     resolutions: await prisma.metaDailyResolution.count(), links: await prisma.metaPromotionLink.count()
-  }, {files: 6, observations: 12, resolutions: 6, links: 9});
+  }, {files: 9, observations: 16, resolutions: 7, links: 11});
   const snapshotPath = path.join(tempRoot, "snapshot.json");
   run("export snapshot", process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/export-db-snapshot.ts"], {...env, DB_SNAPSHOT_PATH: snapshotPath});
   const restoreDb = "ad_evidence_restore"; await embedded.createDatabase(restoreDb);
@@ -204,15 +250,15 @@ try {
   const restoreClient = await connect(port, password, restoreDb); await restoreClient.query(await fs.readFile(path.join(root, "docs/operations/manifests/ad-lab-gate-e1-postgres-companion.sql"), "utf8")); await restoreClient.end();
   run("restore snapshot", process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/import-db-snapshot.ts"], {...restoreEnv, DB_SNAPSHOT_PATH: snapshotPath, IMPORT_AUTH: "1"});
   const restored = await connect(port, password, restoreDb);
-  assert.deepEqual((await restored.query(`SELECT (SELECT count(*)::int FROM "MetaImportFile") files,(SELECT count(*)::int FROM "MetaDailySourceObservation") observations,(SELECT count(*)::int FROM "MetaDailyResolution") resolutions,(SELECT count(*)::int FROM "MetaPromotionLink") links,(SELECT count(*)::int FROM "MetaAccountTimezoneResolution") timezones`)).rows[0], {files: 6, observations: 12, resolutions: 6, links: 9, timezones: 2});
+  assert.deepEqual((await restored.query(`SELECT (SELECT count(*)::int FROM "MetaImportFile") files,(SELECT count(*)::int FROM "MetaDailySourceObservation") observations,(SELECT count(*)::int FROM "MetaDailyResolution") resolutions,(SELECT count(*)::int FROM "MetaPromotionLink") links,(SELECT count(*)::int FROM "MetaAccountTimezoneResolution") timezones`)).rows[0], {files: 9, observations: 16, resolutions: 7, links: 11, timezones: 2});
   await restored.end();
   await prisma.metaImportFile.updateMany({data: {rawExpiresAt: new Date(Date.now() - 60_000)}});
   const cleanup = await runRetentionCleanup({dryRun: false});
-  assert.equal(cleanup.expiredMetaRawFiles.deleted, 6);
-  assert.equal(await prisma.metaImportFile.count({where: {rawDeletedAt: {not: null}}}), 6);
-  assert.equal(await prisma.metaDailySourceObservation.count(), 12);
+  assert.equal(cleanup.expiredMetaRawFiles.deleted, 9);
+  assert.equal(await prisma.metaImportFile.count({where: {rawDeletedAt: {not: null}}}), 9);
+  assert.equal(await prisma.metaDailySourceObservation.count(), 16);
   await prisma.$disconnect();
-  console.log(JSON.stringify({suite: "ad-lab-evidence-postgres", postgres: true, legacy, sourceObservations: 12, canonicalResolutions: 6, sourceAsOfFallback: true, accountTimezoneRegistry: "confirmation-conflict-supersession-reuse", evidenceSupersession: "correction-and-withdrawal", sharedExternalCampaigns: true, currencyConflict: "segmented", externalLinkRows: 9, expiredPreviewFilesCleaned: previewArtifactsBeforeExpiryCleanup + 1, roleDenials: 6, backupRestore: "equivalent", privateRawCleanup: 6}, null, 2));
+  console.log(JSON.stringify({suite: "ad-lab-evidence-postgres", postgres: true, legacy, sourceObservations: 16, canonicalResolutions: 7, sourceAsOfFallback: true, accountTimezoneRegistry: "confirmation-conflict-supersession-reuse", evidenceSupersession: "automatic-commit-replacement-withdrawal-and-retry", sharedExternalCampaigns: true, currencyConflict: "segmented", externalLinkRows: 11, expiredPreviewFilesCleaned: previewArtifactsBeforeExpiryCleanup + 1, roleDenials: 6, backupRestore: "equivalent", privateRawCleanup: 9}, null, 2));
 } catch (error) {
   console.error(error instanceof Error ? error.stack : error);
   throw error;
