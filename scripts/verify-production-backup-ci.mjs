@@ -7,15 +7,49 @@ import adImportBatchRecovery from "../lib/backups/ad-import-batch-recovery-finge
 import backupVerifierPgClient from "../lib/backups/backup-verifier-pg-client.ts";
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import gameOverDateCoverage from "../lib/backups/game-over-date-coverage.ts";
+import gameOverRecovery from "../lib/backups/game-over-recovery-fingerprints.ts";
 import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
 import metaImportFileRecovery from "../lib/backups/meta-import-file-recovery-fingerprint.ts";
+import metaRecoveryCollections from "../lib/backups/meta-recovery-collection-fingerprints.ts";
 import restoreImportContract from "../lib/backups/restore-import-contract.ts";
+import spotifyRecovery from "../lib/backups/spotify-recovery-fingerprints.ts";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
 const {AD_IMPORT_BATCH_RECOVERY_SELECT, fingerprintAdImportBatchRecovery} = adImportBatchRecovery;
 const {createBackupVerifierPgClient} = backupVerifierPgClient;
 const {readTrackDateCoverage} = gameOverDateCoverage;
+const {
+  GAME_OVER_ANALYTICS_IMPORT_RECOVERY_SELECT,
+  GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_SELECT,
+  GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_SELECT,
+  fingerprintGameOverAnalyticsImportRecovery,
+  fingerprintGameOverProvenanceRecovery
+} = gameOverRecovery;
 const {META_IMPORT_FILE_RECOVERY_SELECT, fingerprintMetaImportFileRecovery} = metaImportFileRecovery;
+const {
+  AD_CREATIVE_REPORT_RECOVERY_SELECT,
+  META_DAILY_RESOLUTION_EVENT_RECOVERY_SELECT,
+  META_DAILY_RESOLUTION_RECOVERY_SELECT,
+  META_DAILY_SOURCE_OBSERVATION_RECOVERY_SELECT,
+  META_IMPORT_FILE_ROW_RECOVERY_SELECT,
+  fingerprintAdCreativeReportRecovery,
+  fingerprintMetaDailyResolutionEventRecovery,
+  fingerprintMetaDailyResolutionRecovery,
+  fingerprintMetaDailySourceObservationRecovery,
+  fingerprintMetaImportFileRowRecovery
+} = metaRecoveryCollections;
+const {
+  ANALYTICS_IMPORT_RECOVERY_SELECT,
+  ARTIST_METRIC_OBSERVATION_RECOVERY_SELECT,
+  PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_SELECT,
+  SONG_PERIOD_SNAPSHOT_RECOVERY_SELECT,
+  TRACK_METRIC_OBSERVATION_RECOVERY_SELECT,
+  fingerprintAnalyticsImportRecovery,
+  fingerprintArtistMetricObservationRecovery,
+  fingerprintPlaylistPeriodSnapshotRecovery,
+  fingerprintSongPeriodSnapshotRecovery,
+  fingerprintTrackMetricObservationRecovery
+} = spotifyRecovery;
 const {
   requireZeroRestoreProvenanceWarnings,
   RestoreImportInvariantError,
@@ -45,26 +79,51 @@ const APPROVED = Object.freeze({
   })
 });
 const EXPECTED_SPOTIFY = Object.freeze({
-  analyticsImports: {count: 5, sha256: "0dab3136b7a034cb610d1f6e0f499b740d5fc059f33ae35bcb00aede1de2b51f"},
-  artistTimeline: {count: 944, sha256: "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923"},
-  mahoragaTrackTimeline: {count: 944, sha256: "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea"},
-  songsPeriod: {count: 27, sha256: "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2"},
-  playlistsPeriod: {count: 8, sha256: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6"},
-  gameOverTrackTimeline: {count: 952, sha256: "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"}
+  analyticsImports: {count: 5, sha256: "7e0b12f145e2d528f985067bfb8c370b551bab2b4b330d1db072c1155d548530"},
+  artistTimeline: {count: 944, sha256: "c4240fd0b977d84f48ca895bb5cfa468c294c4d1b12244abcebbb5f410d9cce3"},
+  mahoragaTrackTimeline: {count: 944, sha256: "a32fa8d15ffac1a213cce6ae0c51e9c6c5b9137357cb0e73ad3d887d5d17921d"},
+  songsPeriod: {count: 27, sha256: "c24faf9bc5be7cb3c1f4a811e51b4fb9e0624d61668b232266fb4d271548ab37"},
+  playlistsPeriod: {count: 8, sha256: "173c1447c53e73ad0dc1e3f6b0f50d879fc1794c15c43d7b4b6450b61d7cdfb7"},
+  gameOverTrackTimeline: {count: 952, sha256: "7671a87dd100a484de988a61d8512201208ca5809cada4e491f8837c3fa3684c"}
 });
+const LEGACY_SPOTIFY_FINGERPRINTS = Object.freeze({
+  analyticsImports: "0dab3136b7a034cb610d1f6e0f499b740d5fc059f33ae35bcb00aede1de2b51f",
+  artistTimeline: "ca4c182e1b6e81406c1f6a808ffc734699b06acf662f66fe17922d9e963f8923",
+  mahoragaTrackTimeline: "2eda2e032d76c870c0ada11380c637ba085cf3f9e2d2b8bda6d8e4081c96e1ea",
+  songsPeriod: "0d94610b1baaee3e4acab12c596b89e938541b4405236ea2fc00794eeb4822e2",
+  playlistsPeriod: "bca161344f5fb8b08a6e9c9dec6b5cf4d850cd00613b423a74262bfa8dd107f6",
+  gameOverTrackTimeline: "91e4bb2d8811b2ee6476b633c2593b44ac2f6edd1551552e120b2c221932e0de"
+});
+for (const key of Object.keys(EXPECTED_SPOTIFY)) assert.notEqual(EXPECTED_SPOTIFY[key].sha256, LEGACY_SPOTIFY_FINGERPRINTS[key]);
+const EXPECTED_GAME_OVER_IMPORT_FINGERPRINT = "6558d5d13cb45b7a5e6e0764433bf772e8e8773e983cd6d346aed32c69dbf376";
+const EXPECTED_GAME_OVER_PROVENANCE_FINGERPRINT = "2cbb81da19b71064e24bb34a0be86fbe9f7d5e0819ee86e217002983c0e7754b";
+const LEGACY_GAME_OVER_IMPORT_FINGERPRINT = "136b64539363c48dfcc1fb2f2554980c78fdea258660c299db1d42bc418e663b";
+const LEGACY_GAME_OVER_PROVENANCE_FINGERPRINT = "6fd1a9d27d68c4ccf69156cedcc82fb9fd4efeb1d5a9bc67a7bbe34e63676277";
+assert.notEqual(EXPECTED_GAME_OVER_IMPORT_FINGERPRINT, LEGACY_GAME_OVER_IMPORT_FINGERPRINT);
+assert.notEqual(EXPECTED_GAME_OVER_PROVENANCE_FINGERPRINT, LEGACY_GAME_OVER_PROVENANCE_FINGERPRINT);
 const EXPECTED_MAHORAGA_RECOVERY = Object.freeze({
   importIdentityAcceptance: "c63235a35c7817a3c08659c48489496b78b0b922083f1a44edb1fc9ab8efc747",
   fileAndRawReferenceMetadata: "bc8b7290a42997ddb209e4a48572d439bcfcd9f42df0f6b8852fba35d94f1815",
-  normalizedSourceRows: "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c",
-  sourceObservations: "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3",
-  currentResolutions: "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b",
-  resolutionEventHistory: "24ef8079921d8fd884674b15dec4001e3054194eca8e8737fa5cb93ede20157b",
-  compatibilityReports: "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62"
+  normalizedSourceRows: "6d77a7ab382e9d116612528803459d163cbac50842cf4f65dab52c46a0916109",
+  sourceObservations: "54e2f9b95069eafae35f44bd6994c1ee3b0fc2941bf00ee469e248b7d580c445",
+  currentResolutions: "27232cb3b7352a2cec5ab0e5a2d3df3cf5f87f1822eed37ac15be8f5cb11f691",
+  resolutionEventHistory: "ba4aae91a172ca1255557331576986111a1b392b2697ad55f39b701f98fba1e3",
+  compatibilityReports: "2d3fb14a9d86f50273a48f62f6ab9490429b4301b90fcda12b756e603ad15200"
 });
 const LEGACY_MAHORAGA_IMPORT_IDENTITY_ACCEPTANCE_FINGERPRINT = "21c237b9db3a8d79a307317b8f96f25508497953a41c8ede5308ce209b56a55a";
 const LEGACY_MAHORAGA_FILE_AND_RAW_REFERENCE_METADATA_FINGERPRINT = "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0";
+const LEGACY_MAHORAGA_NORMALIZED_SOURCE_ROWS_FINGERPRINT = "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c";
+const LEGACY_MAHORAGA_SOURCE_OBSERVATIONS_FINGERPRINT = "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3";
+const LEGACY_MAHORAGA_CURRENT_RESOLUTIONS_FINGERPRINT = "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b";
+const LEGACY_MAHORAGA_RESOLUTION_EVENT_HISTORY_FINGERPRINT = "24ef8079921d8fd884674b15dec4001e3054194eca8e8737fa5cb93ede20157b";
+const LEGACY_MAHORAGA_COMPATIBILITY_REPORTS_FINGERPRINT = "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62";
 assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.importIdentityAcceptance, LEGACY_MAHORAGA_IMPORT_IDENTITY_ACCEPTANCE_FINGERPRINT);
 assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.fileAndRawReferenceMetadata, LEGACY_MAHORAGA_FILE_AND_RAW_REFERENCE_METADATA_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.normalizedSourceRows, LEGACY_MAHORAGA_NORMALIZED_SOURCE_ROWS_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.sourceObservations, LEGACY_MAHORAGA_SOURCE_OBSERVATIONS_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.currentResolutions, LEGACY_MAHORAGA_CURRENT_RESOLUTIONS_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.resolutionEventHistory, LEGACY_MAHORAGA_RESOLUTION_EVENT_HISTORY_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.compatibilityReports, LEGACY_MAHORAGA_COMPATIBILITY_REPORTS_FINGERPRINT);
 const FORBIDDEN_ENV = [
   "POSTGRES_URL_NON_POOLING", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "VERCEL", "VERCEL_ENV",
   "BLOB_READ_WRITE_TOKEN", "AUTH_SECRET", "ADMIN_TOTP_SECRET", "SUPABASE_SERVICE_ROLE_KEY"
@@ -108,18 +167,18 @@ function invariant(code, actual, expected) {
 
 async function spotifyFingerprint(db) {
   const queries = {
-    analyticsImports: `SELECT id,"fileHash","importType",status,"rowCount","acceptedRowCount","rejectedRowCount","unmatchedRowCount","warningCount","acceptedAt","withdrawnAt","replacedByImportId" FROM "AnalyticsImport" ORDER BY id`,
-    artistTimeline: `SELECT o.* FROM "ArtistMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" WHERE i.status='IMPORTED' ORDER BY o.id`,
-    mahoragaTrackTimeline: `SELECT o.* FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title ILIKE '%mahoraga%' ORDER BY o.id`,
-    songsPeriod: `SELECT s.* FROM "SongPeriodSnapshot" s JOIN "AnalyticsImport" i ON i.id=s."importId" WHERE i.status='IMPORTED' ORDER BY s.id`,
-    playlistsPeriod: `SELECT p.* FROM "PlaylistPeriodSnapshot" p JOIN "AnalyticsImport" i ON i.id=p."importId" WHERE i.status='IMPORTED' ORDER BY p.id`,
-    gameOverTrackTimeline: `SELECT o.* FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title='Game Over' ORDER BY o.id`
+    analyticsImports: {sql:`SELECT ${ANALYTICS_IMPORT_RECOVERY_SELECT} FROM "AnalyticsImport" i ORDER BY i.id`, fingerprint:fingerprintAnalyticsImportRecovery},
+    artistTimeline: {sql:`SELECT ${ARTIST_METRIC_OBSERVATION_RECOVERY_SELECT} FROM "ArtistMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" WHERE i.status='IMPORTED' ORDER BY o.id`, fingerprint:fingerprintArtistMetricObservationRecovery},
+    mahoragaTrackTimeline: {sql:`SELECT ${TRACK_METRIC_OBSERVATION_RECOVERY_SELECT} FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title ILIKE '%mahoraga%' ORDER BY o.id`, fingerprint:fingerprintTrackMetricObservationRecovery},
+    songsPeriod: {sql:`SELECT ${SONG_PERIOD_SNAPSHOT_RECOVERY_SELECT} FROM "SongPeriodSnapshot" s JOIN "AnalyticsImport" i ON i.id=s."importId" WHERE i.status='IMPORTED' ORDER BY s.id`, fingerprint:fingerprintSongPeriodSnapshotRecovery},
+    playlistsPeriod: {sql:`SELECT ${PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_SELECT} FROM "PlaylistPeriodSnapshot" p JOIN "AnalyticsImport" i ON i.id=p."importId" WHERE i.status='IMPORTED' ORDER BY p.id`, fingerprint:fingerprintPlaylistPeriodSnapshotRecovery},
+    gameOverTrackTimeline: {sql:`SELECT ${TRACK_METRIC_OBSERVATION_RECOVERY_SELECT} FROM "TrackMetricObservation" o JOIN "AnalyticsImport" i ON i.id=o."importId" JOIN "Release" r ON r.id=o."releaseId" WHERE i.status='IMPORTED' AND r.title='Game Over' ORDER BY o.id`, fingerprint:fingerprintTrackMetricObservationRecovery}
   };
   const result = {};
-  for (const [key, sql] of Object.entries(queries)) {
+  for (const [key, query] of Object.entries(queries)) {
     phase = `state-spotify-${key}`;
-    const rows = (await db.query(sql)).rows;
-    result[key] = {count: rows.length, sha256: digest(rows)};
+    const rows = (await db.query(query.sql)).rows;
+    result[key] = {count: rows.length, sha256: query.fingerprint(rows)};
   }
   return result;
 }
@@ -170,19 +229,19 @@ async function restoredState(db) {
   const mahoragaImport = (await db.query(`SELECT ${AD_IMPORT_BATCH_RECOVERY_SELECT} FROM "AdImportBatch" WHERE id=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
   invariant("MAHORAGA_IMPORT_ROW_COUNT_MISMATCH", mahoragaImport.length, 1);
   const mahoragaFiles = (await db.query(`SELECT ${META_IMPORT_FILE_RECOVERY_SELECT} FROM "MetaImportFile" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
-  const mahoragaSourceRows = (await db.query(`SELECT r.* FROM "MetaImportFileRow" r JOIN "MetaImportFile" f ON f.id=r."importFileId" WHERE f."importBatchId"=$1 ORDER BY r."importFileId",r."sourceRowNumber",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
-  const mahoragaObservations = (await db.query(`SELECT * FROM "MetaDailySourceObservation" WHERE "importBatchId"=$1 ORDER BY "identityKey",id`, [APPROVED.mahoragaMetaImportId])).rows;
-  const mahoragaResolutions = (await db.query(`SELECT r.* FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY r."identityKey",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
-  const mahoragaEvents = (await db.query(`SELECT e.* FROM "MetaDailyResolutionEvent" e JOIN "MetaDailyResolution" r ON r.id=e."resolutionId" JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY e."resolutionId",e."createdAt",e.id`, [APPROVED.mahoragaMetaImportId])).rows;
-  const mahoragaReports = (await db.query(`SELECT * FROM "AdCreativeReport" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaSourceRows = (await db.query(`SELECT ${META_IMPORT_FILE_ROW_RECOVERY_SELECT} FROM "MetaImportFileRow" r JOIN "MetaImportFile" f ON f.id=r."importFileId" WHERE f."importBatchId"=$1 ORDER BY r."importFileId",r."sourceRowNumber",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaObservations = (await db.query(`SELECT ${META_DAILY_SOURCE_OBSERVATION_RECOVERY_SELECT} FROM "MetaDailySourceObservation" o WHERE o."importBatchId"=$1 ORDER BY o."identityKey",o.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaResolutions = (await db.query(`SELECT ${META_DAILY_RESOLUTION_RECOVERY_SELECT} FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY r."identityKey",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaEvents = (await db.query(`SELECT ${META_DAILY_RESOLUTION_EVENT_RECOVERY_SELECT} FROM "MetaDailyResolutionEvent" e JOIN "MetaDailyResolution" r ON r.id=e."resolutionId" JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY e."resolutionId",e."createdAt",e.id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaReports = (await db.query(`SELECT ${AD_CREATIVE_REPORT_RECOVERY_SELECT} FROM "AdCreativeReport" r WHERE r."importBatchId"=$1 ORDER BY r.id`, [APPROVED.mahoragaMetaImportId])).rows;
   const mahoragaRecovery = {
     importIdentityAcceptance: fingerprintAdImportBatchRecovery(mahoragaImport[0]),
     fileAndRawReferenceMetadata: fingerprintMetaImportFileRecovery(mahoragaFiles),
-    normalizedSourceRows: digest(mahoragaSourceRows),
-    sourceObservations: digest(mahoragaObservations),
-    currentResolutions: digest(mahoragaResolutions),
-    resolutionEventHistory: digest(mahoragaEvents),
-    compatibilityReports: digest(mahoragaReports)
+    normalizedSourceRows: fingerprintMetaImportFileRowRecovery(mahoragaSourceRows),
+    sourceObservations: fingerprintMetaDailySourceObservationRecovery(mahoragaObservations),
+    currentResolutions: fingerprintMetaDailyResolutionRecovery(mahoragaResolutions),
+    resolutionEventHistory: fingerprintMetaDailyResolutionEventRecovery(mahoragaEvents),
+    compatibilityReports: fingerprintAdCreativeReportRecovery(mahoragaReports)
   };
   const mahoragaRecoveryCounts = {files:mahoragaFiles.length,sourceRows:mahoragaSourceRows.length,observations:mahoragaObservations.length,resolutions:mahoragaResolutions.length,events:mahoragaEvents.length,reports:mahoragaReports.length};
   phase = "state-game-over-spotify";
@@ -195,13 +254,12 @@ async function restoredState(db) {
     APPROVED.gameOverTimeline.earliestDate,
     APPROVED.gameOverTimeline.latestDate
   ));
-  const fullImport = (await db.query(`SELECT * FROM "AnalyticsImport" WHERE id=$1`, [APPROVED.gameOverSpotifyImportId])).rows[0];
-  const releases = (await db.query(`SELECT DISTINCT r.id,r.title,r.slug,r.isrc,r."spotifyUrl",r."primaryArtistProfileId" FROM "TrackMetricObservation" o JOIN "Release" r ON r.id=o."releaseId" WHERE o."importId"=$1 ORDER BY r.id`, [APPROVED.gameOverSpotifyImportId])).rows;
-  const auditEvents = (await db.query(`SELECT * FROM "MappingAuditEvent" WHERE "importId"=$1 ORDER BY "createdAt",id`, [APPROVED.gameOverSpotifyImportId])).rows;
-  const mappingRows = (await db.query(`SELECT * FROM "AnalyticsImportRow" WHERE "importId"=$1 ORDER BY "sourceRowNumber",id`, [APPROVED.gameOverSpotifyImportId])).rows;
-  const metadata = JSON.parse(fullImport.metadata || "{}");
-  gameOverSpotify.import_fingerprint = digest(fullImport);
-  gameOverSpotify.audit_provenance_fingerprint = digest({importId:fullImport.id,importType:fullImport.importType,fileHash:fullImport.fileHash,actorId:fullImport.uploadedById,actorUsername:fullImport.uploadedByUsername,releaseIds:releases.map((row)=>row.id),auditEvents,mappingRows,commitIdempotencyKey:fullImport.commitIdempotencyKey,confirmations:metadata.confirmations||null,previewResultChecksum:metadata.previewResultChecksum||null});
+  const fullImport = (await db.query(`SELECT ${GAME_OVER_ANALYTICS_IMPORT_RECOVERY_SELECT} FROM "AnalyticsImport" i WHERE i.id=$1`, [APPROVED.gameOverSpotifyImportId])).rows[0];
+  const releaseIds = (await db.query(`SELECT DISTINCT r.id FROM "TrackMetricObservation" o JOIN "Release" r ON r.id=o."releaseId" WHERE o."importId"=$1 ORDER BY r.id`, [APPROVED.gameOverSpotifyImportId])).rows.map((row) => row.id);
+  const auditEvents = (await db.query(`SELECT ${GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_SELECT} FROM "MappingAuditEvent" e WHERE e."importId"=$1 ORDER BY e."createdAt",e.id`, [APPROVED.gameOverSpotifyImportId])).rows;
+  const mappingRows = (await db.query(`SELECT ${GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_SELECT} FROM "AnalyticsImportRow" r WHERE r."importId"=$1 ORDER BY r."sourceRowNumber",r.id`, [APPROVED.gameOverSpotifyImportId])).rows;
+  gameOverSpotify.import_fingerprint = fingerprintGameOverAnalyticsImportRecovery(fullImport);
+  gameOverSpotify.audit_provenance_fingerprint = fingerprintGameOverProvenanceRecovery({analyticsImport:fullImport,auditEvents,mappingRows,releaseIds});
   gameOverSpotify.mapping_row_count = mappingRows.length;
   const spotify = await spotifyFingerprint(db);
   return {counts, gameOverMeta, mahoragaMeta, details, mahoragaRecovery, mahoragaRecoveryCounts, gameOverSpotify, spotify, fingerprint: digest({counts, gameOverMeta, mahoragaMeta, details, mahoragaRecovery, mahoragaRecoveryCounts, gameOverSpotify, spotify})};
@@ -229,8 +287,8 @@ function assertExpected(state) {
   invariant("GAME_OVER_SPOTIFY_DUPLICATE_DATE_MISMATCH", state.gameOverSpotify.duplicate_date_count, 0);
   invariant("GAME_OVER_SPOTIFY_MISSING_DATE_MISMATCH", state.gameOverSpotify.missing_date_count, 0);
   invariant("GAME_OVER_SPOTIFY_MAPPING_ROW_COUNT_MISMATCH", state.gameOverSpotify.mapping_row_count, 0);
-  invariant("GAME_OVER_IMPORT_FINGERPRINT_MISMATCH", state.gameOverSpotify.import_fingerprint, "136b64539363c48dfcc1fb2f2554980c78fdea258660c299db1d42bc418e663b");
-  invariant("GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH", state.gameOverSpotify.audit_provenance_fingerprint, "6fd1a9d27d68c4ccf69156cedcc82fb9fd4efeb1d5a9bc67a7bbe34e63676277");
+  invariant("GAME_OVER_IMPORT_FINGERPRINT_MISMATCH", state.gameOverSpotify.import_fingerprint, EXPECTED_GAME_OVER_IMPORT_FINGERPRINT);
+  invariant("GAME_OVER_PROVENANCE_FINGERPRINT_MISMATCH", state.gameOverSpotify.audit_provenance_fingerprint, EXPECTED_GAME_OVER_PROVENANCE_FINGERPRINT);
   for (const key of Object.keys(EXPECTED_SPOTIFY)) {
     const code = key === "gameOverTrackTimeline" ? "GAME_OVER_TIMELINE_FINGERPRINT_MISMATCH" : `SPOTIFY_${key.toUpperCase()}_FINGERPRINT_MISMATCH`;
     invariant(code, state.spotify[key], EXPECTED_SPOTIFY[key]);

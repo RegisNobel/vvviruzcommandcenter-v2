@@ -11,6 +11,9 @@ import pg from "pg";
 
 import adImportBatchRecovery from "../lib/backups/ad-import-batch-recovery-fingerprint.ts";
 import backupVerifierPgClient from "../lib/backups/backup-verifier-pg-client.ts";
+import gameOverRecovery from "../lib/backups/game-over-recovery-fingerprints.ts";
+import metaRecoveryCollections from "../lib/backups/meta-recovery-collection-fingerprints.ts";
+import spotifyRecovery from "../lib/backups/spotify-recovery-fingerprints.ts";
 
 const {
   AD_IMPORT_BATCH_RECOVERY_DATE_FIELDS,
@@ -19,6 +22,32 @@ const {
   fingerprintAdImportBatchRecovery
 } = adImportBatchRecovery;
 const {backupVerifierPgTypes, createBackupVerifierPgClient} = backupVerifierPgClient;
+const {
+  GAME_OVER_ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS, GAME_OVER_ANALYTICS_IMPORT_RECOVERY_FIELDS,
+  GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_DATE_FIELDS, GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_FIELDS,
+  GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_DATE_FIELDS, GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_FIELDS,
+  fingerprintGameOverAnalyticsImportRecovery, fingerprintGameOverProvenanceRecovery
+} = gameOverRecovery;
+const {
+  AD_CREATIVE_REPORT_RECOVERY_DATE_FIELDS, AD_CREATIVE_REPORT_RECOVERY_FIELDS,
+  META_DAILY_RESOLUTION_EVENT_RECOVERY_DATE_FIELDS, META_DAILY_RESOLUTION_EVENT_RECOVERY_FIELDS,
+  META_DAILY_RESOLUTION_RECOVERY_DATE_FIELDS, META_DAILY_RESOLUTION_RECOVERY_FIELDS,
+  META_DAILY_SOURCE_OBSERVATION_RECOVERY_DATE_FIELDS, META_DAILY_SOURCE_OBSERVATION_RECOVERY_FIELDS,
+  META_IMPORT_FILE_ROW_RECOVERY_DATE_FIELDS, META_IMPORT_FILE_ROW_RECOVERY_FIELDS,
+  fingerprintAdCreativeReportRecovery, fingerprintMetaDailyResolutionEventRecovery,
+  fingerprintMetaDailyResolutionRecovery, fingerprintMetaDailySourceObservationRecovery,
+  fingerprintMetaImportFileRowRecovery
+} = metaRecoveryCollections;
+const {
+  ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS, ANALYTICS_IMPORT_RECOVERY_FIELDS,
+  ARTIST_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS, ARTIST_METRIC_OBSERVATION_RECOVERY_FIELDS,
+  PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS, PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_FIELDS,
+  SONG_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS, SONG_PERIOD_SNAPSHOT_RECOVERY_FIELDS,
+  TRACK_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS, TRACK_METRIC_OBSERVATION_RECOVERY_FIELDS,
+  fingerprintAnalyticsImportRecovery, fingerprintArtistMetricObservationRecovery,
+  fingerprintPlaylistPeriodSnapshotRecovery, fingerprintSongPeriodSnapshotRecovery,
+  fingerprintTrackMetricObservationRecovery
+} = spotifyRecovery;
 const {Client, types: defaultTypes} = pg;
 const PROBE_TIMESTAMP = "2026-01-15 12:34:56.789";
 const PROBE_ISO = "2026-01-15T12:34:56.789Z";
@@ -40,6 +69,119 @@ function recoveryFixture() {
   fixture.importState = "ACCEPTED";
   fixture.sourceAsOfOrigin = "IMPORT_ACCEPTED_FALLBACK";
   return fixture;
+}
+
+function collectionFixture(fields, dateFields, timestamp, integerFields = [], numberFields = [], nullableStrings = []) {
+  const dates = new Set(dateFields);
+  const integers = new Set(integerFields);
+  const numbers = new Set(numberFields);
+  const nullable = new Set(nullableStrings);
+  return Object.fromEntries(fields.map((field, index) => {
+    if (dates.has(field)) return [field, timestamp];
+    if (integers.has(field)) return [field, index + 1];
+    if (numbers.has(field)) return [field, index + 0.25];
+    if (nullable.has(field)) return [field, null];
+    return [field, `${field}-fixture`];
+  }));
+}
+
+function collectionFingerprintProof(timestamp) {
+  const rows = [
+    {
+      dateFields: META_IMPORT_FILE_ROW_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintMetaImportFileRowRecovery,
+      record: collectionFixture(META_IMPORT_FILE_ROW_RECOVERY_FIELDS, META_IMPORT_FILE_ROW_RECOVERY_DATE_FIELDS, timestamp, ["sourceRowNumber"])
+    },
+    {
+      dateFields: META_DAILY_SOURCE_OBSERVATION_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintMetaDailySourceObservationRecovery,
+      record: collectionFixture(META_DAILY_SOURCE_OBSERVATION_RECOVERY_FIELDS, META_DAILY_SOURCE_OBSERVATION_RECOVERY_DATE_FIELDS, timestamp, ["impressions", "reach"], ["spend", "results"])
+    },
+    {
+      dateFields: META_DAILY_RESOLUTION_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintMetaDailyResolutionRecovery,
+      record: collectionFixture(META_DAILY_RESOLUTION_RECOVERY_FIELDS, META_DAILY_RESOLUTION_RECOVERY_DATE_FIELDS, timestamp, ["resolutionVersion"])
+    },
+    {
+      dateFields: META_DAILY_RESOLUTION_EVENT_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintMetaDailyResolutionEventRecovery,
+      record: collectionFixture(META_DAILY_RESOLUTION_EVENT_RECOVERY_FIELDS, META_DAILY_RESOLUTION_EVENT_RECOVERY_DATE_FIELDS, timestamp, [], [], ["previousObservationId"])
+    },
+    {
+      dateFields: AD_CREATIVE_REPORT_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintAdCreativeReportRecovery,
+      record: collectionFixture(
+        AD_CREATIVE_REPORT_RECOVERY_FIELDS, AD_CREATIVE_REPORT_RECOVERY_DATE_FIELDS, timestamp,
+        ["impressions", "reach", "linkClicks", "clicksAll", "landingPageViews", "shopClicks", "pageEngagement", "postReactions", "postComments", "postSaves", "postShares", "facebookLikes", "instagramFollows", "videoPlays", "twoSecondContinuousPlays", "threeSecondPlays", "thruPlays", "video25", "video50", "video75", "video95", "video100"],
+        ["spend", "frequency", "costPerThousandAccountsReached", "cpm", "results", "costPerResult", "cpc", "ctr", "ctrAll", "cpcAll", "costPerLandingPageView", "costPerTwoSecondContinuousPlay", "costPerThreeSecondPlay", "costPerThruPlay"],
+        ["releaseId", "campaignName", "adSetName", "adDelivery", "resultIndicator", "qualityRanking", "engagementRateRanking", "conversionRateRanking", "utmSource", "utmCampaign", "utmContent"]
+      )
+    }
+  ];
+  return {
+    dateFields: rows.reduce((sum, row) => sum + row.dateFields.length, 0),
+    fingerprints: rows.map(({fingerprint, record}) => fingerprint([record]))
+  };
+}
+
+function spotifyFingerprintProof(timestamp) {
+  const rows = [
+    {
+      dateFields: ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintAnalyticsImportRecovery,
+      record: collectionFixture(ANALYTICS_IMPORT_RECOVERY_FIELDS, ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS, timestamp, ["rowCount", "acceptedRowCount", "rejectedRowCount", "unmatchedRowCount", "warningCount"], [], ["replacedByImportId"])
+    },
+    {
+      dateFields: ARTIST_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintArtistMetricObservationRecovery,
+      record: collectionFixture(ARTIST_METRIC_OBSERVATION_RECOVERY_FIELDS, ARTIST_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS, timestamp, ["listeners", "monthlyListeners", "monthlyActiveListeners", "streams", "playlistAdds", "saves", "followers"])
+    },
+    {
+      dateFields: TRACK_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintTrackMetricObservationRecovery,
+      record: collectionFixture(TRACK_METRIC_OBSERVATION_RECOVERY_FIELDS, TRACK_METRIC_OBSERVATION_RECOVERY_DATE_FIELDS, timestamp, ["streams", "listeners", "saves", "playlistAdds"], [], ["spotifyTrackId"])
+    },
+    {
+      dateFields: SONG_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintSongPeriodSnapshotRecovery,
+      record: collectionFixture(SONG_PERIOD_SNAPSHOT_RECOVERY_FIELDS, SONG_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS, timestamp, ["listeners", "streams", "saves"], [], ["mappingRowId"])
+    },
+    {
+      dateFields: PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS,
+      fingerprint: fingerprintPlaylistPeriodSnapshotRecovery,
+      record: collectionFixture(PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_FIELDS, PLAYLIST_PERIOD_SNAPSHOT_RECOVERY_DATE_FIELDS, timestamp, ["listeners", "streams"], [], ["playlistSpotifyId"])
+    }
+  ];
+  return {dateFields: rows.reduce((sum, row) => sum + row.dateFields.length, 0), fingerprints: rows.map(({fingerprint, record}) => fingerprint([record]))};
+}
+
+function gameOverFingerprintProof(timestamp) {
+  const analyticsImport = collectionFixture(
+    GAME_OVER_ANALYTICS_IMPORT_RECOVERY_FIELDS, GAME_OVER_ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS, timestamp,
+    ["rowCount", "acceptedRowCount", "rejectedRowCount", "unmatchedRowCount", "warningCount", "normalizationVersion", "rawFileSizeBytes"], [],
+    ["commitIdempotencyKey", "uploadedById", "rawFileStorageDriver", "rawFileStorageKey", "withdrawnById", "replacedByImportId"]
+  );
+  analyticsImport.id = "game-over-import";
+  analyticsImport.periodDatesUserConfirmed = true;
+  analyticsImport.metadata = JSON.stringify({confirmations:{period:true},previewResultChecksum:"checksum"});
+  const auditEvent = collectionFixture(
+    GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_FIELDS, GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_DATE_FIELDS, timestamp, [], [],
+    ["rowId", "importId", "aliasId", "previousMappingStatus", "newMappingStatus", "previousReleaseId", "newReleaseId", "actorId"]
+  );
+  auditEvent.id = "audit-event";
+  auditEvent.importId = analyticsImport.id;
+  const mappingRow = collectionFixture(
+    GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_FIELDS, GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_DATE_FIELDS, timestamp,
+    ["sourceRowNumber", "mappingVersion"], [],
+    ["suggestedReleaseId", "confirmedReleaseId", "confirmedScopeKey", "appliedAliasId", "confirmedById", "unmatchedReason", "unmatchedById"]
+  );
+  mappingRow.id = "mapping-row";
+  mappingRow.importId = analyticsImport.id;
+  return {
+    dateFields: GAME_OVER_ANALYTICS_IMPORT_RECOVERY_DATE_FIELDS.length + GAME_OVER_MAPPING_AUDIT_EVENT_RECOVERY_DATE_FIELDS.length + GAME_OVER_ANALYTICS_IMPORT_ROW_RECOVERY_DATE_FIELDS.length,
+    importFingerprint: fingerprintGameOverAnalyticsImportRecovery(analyticsImport),
+    provenanceFingerprint: fingerprintGameOverProvenanceRecovery({analyticsImport,auditEvents:[auditEvent],mappingRows:[mappingRow],releaseIds:["release-id"]})
+  };
 }
 
 async function childProbe() {
@@ -75,6 +217,19 @@ async function childProbe() {
     );
     assert.equal(precision.aware.toISOString(), PROBE_ISO);
 
+    const collectionIsoProof = collectionFingerprintProof(PROBE_ISO);
+    const collectionPgProof = collectionFingerprintProof(full.reportingStart);
+    assert.equal(collectionPgProof.dateFields, 12);
+    assert.deepEqual(collectionPgProof, collectionIsoProof);
+    const spotifyIsoProof = spotifyFingerprintProof(PROBE_ISO);
+    const spotifyPgProof = spotifyFingerprintProof(full.reportingStart);
+    assert.equal(spotifyPgProof.dateFields, 14);
+    assert.deepEqual(spotifyPgProof, spotifyIsoProof);
+    const gameOverIsoProof = gameOverFingerprintProof(PROBE_ISO);
+    const gameOverPgProof = gameOverFingerprintProof(full.reportingStart);
+    assert.equal(gameOverPgProof.dateFields, 16);
+    assert.deepEqual(gameOverPgProof, gameOverIsoProof);
+
     const expectedFixture = recoveryFixture();
     const hydratedFixture = {...expectedFixture};
     for (const field of AD_IMPORT_BATCH_RECOVERY_DATE_FIELDS) hydratedFixture[field] = full[field];
@@ -97,6 +252,12 @@ async function childProbe() {
       nullableDatesPreserved: true,
       fixtureFingerprintMatched: true,
       millisecondPrecisionPreserved: true,
+      metaRecoveryCollectionDateFields: collectionPgProof.dateFields,
+      metaRecoveryCollectionsCanonical: true,
+      spotifyRecoveryDateFields: spotifyPgProof.dateFields,
+      spotifyRecoveryCollectionsCanonical: true,
+      gameOverRecoveryDateFields: gameOverPgProof.dateFields,
+      gameOverRecoveryCanonical: true,
       timestamptzParserUnchanged
     }));
   } finally {
@@ -176,8 +337,14 @@ async function parentSuite() {
       timezones: ["UTC", "America/New_York"],
       probeIso: PROBE_ISO,
       dateFields: AD_IMPORT_BATCH_RECOVERY_DATE_FIELDS.length,
+      metaRecoveryCollectionDateFields: 12,
+      spotifyRecoveryDateFields: 14,
+      gameOverRecoveryDateFields: 16,
       pgTimestampReadPathTzInvariant: true,
       adImportBatchDateCanonicalizationTzInvariant: true,
+      metaRecoveryCollectionDateCanonicalizationTzInvariant: true,
+      spotifyRecoveryDateCanonicalizationTzInvariant: true,
+      gameOverRecoveryDateCanonicalizationTzInvariant: true,
       fixtureFingerprintTzInvariant: true,
       millisecondPrecisionPreserved: true,
       timestamptzParserUnchanged: true,
