@@ -43,10 +43,17 @@ function runChild() {
       if (typeof record[field] === "string") record[field] = new Date(record[field] as string);
     }
   }
+  let timezoneLessRejected = false;
+  try {
+    fingerprintMetaImportFileRecovery([{...records[0], reportingStart: "2026-08-13 19:45:12.681"}]);
+  } catch {
+    timezoneLessRejected = true;
+  }
   process.stdout.write(JSON.stringify({
     dates: META_IMPORT_FILE_RECOVERY_DATE_FIELDS.length,
     fingerprint: fingerprintMetaImportFileRecovery(records),
-    records: canonicalMetaImportFileRecoveryCollection(records)
+    records: canonicalMetaImportFileRecoveryCollection(records),
+    timezoneLessRejected
   }));
 }
 
@@ -66,10 +73,22 @@ if (process.argv.includes("--timezone-child")) {
     }
   }
   assert.equal(fingerprintMetaImportFileRecovery(datesAsObjects), baseline, "Date objects and ISO strings must be equivalent.");
+  const datesWithOffsets = records.map((record) => ({...record}));
+  for (const record of datesWithOffsets) {
+    for (const field of META_IMPORT_FILE_RECOVERY_DATE_FIELDS) {
+      if (typeof record[field] === "string") record[field] = "2026-08-13T15:45:12.681-04:00";
+    }
+  }
+  assert.equal(fingerprintMetaImportFileRecovery(datesWithOffsets), baseline, "Explicit numeric offsets must normalize to the same UTC instant.");
   assert.notEqual(fingerprintMetaImportFileRecovery(records.map((record, index) => index ? record : {...record, rowCount: 999})), baseline);
 
   assert.deepEqual(Object.keys(canonicalMetaImportFileRecoveryRecord(reorderedProperties[0])), META_IMPORT_FILE_RECOVERY_FIELDS);
   assert.deepEqual(canonicalMetaImportFileRecoveryCollection(records).map((record) => record.id), ["file-a", "file-b"]);
+  assert.deepEqual(
+    canonicalMetaImportFileRecoveryCollection([{...records[0], id: "ä"}, {...records[0], id: "z"}]).map((record) => record.id),
+    ["z", "ä"],
+    "Collection ordering must use locale-independent code-unit order."
+  );
   assert.equal(META_IMPORT_FILE_RECOVERY_FIELDS.length, 24);
   assert.equal(META_IMPORT_FILE_RECOVERY_DATE_FIELDS.length, 5);
   assert.ok(!META_IMPORT_FILE_RECOVERY_SELECT.includes("*"));
@@ -80,7 +99,11 @@ if (process.argv.includes("--timezone-child")) {
   assert.deepEqual(prismaFields, META_IMPORT_FILE_RECOVERY_FIELDS, "The canonical contract must cover every MetaImportFile scalar in schema order.");
   assert.throws(() => fingerprintMetaImportFileRecovery([Object.fromEntries(Object.entries(records[0]).slice(1))]), /field id is missing/);
   assert.throws(() => fingerprintMetaImportFileRecovery([{...records[0], rowCount: "1"}]), /must be an integer/);
-  assert.throws(() => fingerprintMetaImportFileRecovery([{...records[0], rawDeletedAt: "invalid-date"}]), /not a valid date/);
+  assert.throws(() => fingerprintMetaImportFileRecovery([{...records[0], rawDeletedAt: "2026-99-99T00:00:00Z"}]), /not a valid date/);
+  assert.throws(
+    () => fingerprintMetaImportFileRecovery([{...records[0], reportingStart: "2026-08-13 19:45:12.681"}]),
+    /must include an explicit timezone/
+  );
 
   const script = fileURLToPath(import.meta.url);
   const proofs = ["UTC", "America/New_York"].map((timezone) => {
@@ -89,12 +112,14 @@ if (process.argv.includes("--timezone-child")) {
       env: {...process.env, TZ: timezone}
     });
     assert.equal(child.status, 0, `${timezone} child failed: ${child.stderr}`);
-    return JSON.parse(child.stdout) as {dates: number; fingerprint: string; records: unknown[]};
+    return JSON.parse(child.stdout) as {dates: number; fingerprint: string; records: unknown[]; timezoneLessRejected: boolean};
   });
   assert.equal(proofs[0].dates, 5);
   assert.equal(proofs[1].dates, 5);
   assert.deepEqual(proofs[0].records, proofs[1].records, "Canonical records must be timezone invariant.");
   assert.equal(proofs[0].fingerprint, proofs[1].fingerprint, "Fingerprints must be timezone invariant.");
+  assert.equal(proofs[0].timezoneLessRejected, true, "UTC child must reject timezone-less strings.");
+  assert.equal(proofs[1].timezoneLessRejected, true, "New York child must reject timezone-less strings.");
 
   console.log(JSON.stringify({
     suite: "meta-import-file-recovery-fingerprint",
@@ -103,7 +128,9 @@ if (process.argv.includes("--timezone-child")) {
     collectionOrderStable: true,
     propertyOrderStable: true,
     dateRepresentationStable: true,
+    timezoneLessStringsRejected: true,
     crossTimezoneStable: true,
+    localeIndependentOrdering: true,
     mutationSensitive: true
   }));
 }

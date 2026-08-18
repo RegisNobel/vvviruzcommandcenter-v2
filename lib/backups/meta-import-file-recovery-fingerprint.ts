@@ -47,6 +47,7 @@ const INTEGER_FIELDS = new Set([
 ]);
 const NULLABLE_INTEGER_FIELDS = new Set(["expectedDateCount", "rawSizeBytes"]);
 const NULLABLE_STRING_FIELDS = new Set(["rawStorageKey", "rawStorageSha256"]);
+const TIMEZONE_QUALIFIED_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 export const META_IMPORT_FILE_RECOVERY_SELECT = META_IMPORT_FILE_RECOVERY_FIELDS
   .map((field) => `"${field}"`)
@@ -59,6 +60,9 @@ function canonicalDate(field: string, value: unknown) {
   }
   if (!(typeof value === "string" || value instanceof Date)) {
     throw new TypeError(`MetaImportFile recovery field ${field} must be a date or null.`);
+  }
+  if (typeof value === "string" && !TIMEZONE_QUALIFIED_TIMESTAMP.test(value)) {
+    throw new TypeError(`MetaImportFile recovery field ${field} must include an explicit timezone.`);
   }
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.valueOf())) {
@@ -93,7 +97,11 @@ export function canonicalMetaImportFileRecoveryRecord(record: Record<string, unk
 export function canonicalMetaImportFileRecoveryCollection(records: Record<string, unknown>[]) {
   return records
     .map(canonicalMetaImportFileRecoveryRecord)
-    .sort((left, right) => String(left.id).localeCompare(String(right.id)));
+    .sort((left, right) => {
+      const leftId = left.id as string;
+      const rightId = right.id as string;
+      return leftId === rightId ? 0 : leftId < rightId ? -1 : 1;
+    });
 }
 
 export function fingerprintMetaImportFileRecovery(records: Record<string, unknown>[]) {
