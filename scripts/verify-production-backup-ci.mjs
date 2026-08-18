@@ -8,12 +8,14 @@ import backupVerifierPgClient from "../lib/backups/backup-verifier-pg-client.ts"
 import backupVerificationIntegrity from "../lib/backups/backup-verification-integrity.ts";
 import gameOverDateCoverage from "../lib/backups/game-over-date-coverage.ts";
 import googleDriveRetrieval from "../lib/backups/google-drive-retrieval.ts";
+import metaImportFileRecovery from "../lib/backups/meta-import-file-recovery-fingerprint.ts";
 import restoreImportContract from "../lib/backups/restore-import-contract.ts";
 
 const {verifyAndDecodeBackup} = backupVerificationIntegrity;
 const {AD_IMPORT_BATCH_RECOVERY_SELECT, fingerprintAdImportBatchRecovery} = adImportBatchRecovery;
 const {createBackupVerifierPgClient} = backupVerifierPgClient;
 const {readTrackDateCoverage} = gameOverDateCoverage;
+const {META_IMPORT_FILE_RECOVERY_SELECT, fingerprintMetaImportFileRecovery} = metaImportFileRecovery;
 const {
   requireZeroRestoreProvenanceWarnings,
   RestoreImportInvariantError,
@@ -52,7 +54,7 @@ const EXPECTED_SPOTIFY = Object.freeze({
 });
 const EXPECTED_MAHORAGA_RECOVERY = Object.freeze({
   importIdentityAcceptance: "c63235a35c7817a3c08659c48489496b78b0b922083f1a44edb1fc9ab8efc747",
-  fileAndRawReferenceMetadata: "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0",
+  fileAndRawReferenceMetadata: "bc8b7290a42997ddb209e4a48572d439bcfcd9f42df0f6b8852fba35d94f1815",
   normalizedSourceRows: "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c",
   sourceObservations: "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3",
   currentResolutions: "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b",
@@ -60,7 +62,9 @@ const EXPECTED_MAHORAGA_RECOVERY = Object.freeze({
   compatibilityReports: "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62"
 });
 const LEGACY_MAHORAGA_IMPORT_IDENTITY_ACCEPTANCE_FINGERPRINT = "21c237b9db3a8d79a307317b8f96f25508497953a41c8ede5308ce209b56a55a";
+const LEGACY_MAHORAGA_FILE_AND_RAW_REFERENCE_METADATA_FINGERPRINT = "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0";
 assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.importIdentityAcceptance, LEGACY_MAHORAGA_IMPORT_IDENTITY_ACCEPTANCE_FINGERPRINT);
+assert.notEqual(EXPECTED_MAHORAGA_RECOVERY.fileAndRawReferenceMetadata, LEGACY_MAHORAGA_FILE_AND_RAW_REFERENCE_METADATA_FINGERPRINT);
 const FORBIDDEN_ENV = [
   "POSTGRES_URL_NON_POOLING", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "VERCEL", "VERCEL_ENV",
   "BLOB_READ_WRITE_TOKEN", "AUTH_SECRET", "ADMIN_TOTP_SECRET", "SUPABASE_SERVICE_ROLE_KEY"
@@ -165,7 +169,7 @@ async function restoredState(db) {
     JOIN "MetaDailyResolution" r ON r."currentObservationId"=o.id WHERE b.id=$1 GROUP BY b.id`, [APPROVED.mahoragaMetaImportId])).rows[0];
   const mahoragaImport = (await db.query(`SELECT ${AD_IMPORT_BATCH_RECOVERY_SELECT} FROM "AdImportBatch" WHERE id=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
   invariant("MAHORAGA_IMPORT_ROW_COUNT_MISMATCH", mahoragaImport.length, 1);
-  const mahoragaFiles = (await db.query(`SELECT * FROM "MetaImportFile" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
+  const mahoragaFiles = (await db.query(`SELECT ${META_IMPORT_FILE_RECOVERY_SELECT} FROM "MetaImportFile" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
   const mahoragaSourceRows = (await db.query(`SELECT r.* FROM "MetaImportFileRow" r JOIN "MetaImportFile" f ON f.id=r."importFileId" WHERE f."importBatchId"=$1 ORDER BY r."importFileId",r."sourceRowNumber",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
   const mahoragaObservations = (await db.query(`SELECT * FROM "MetaDailySourceObservation" WHERE "importBatchId"=$1 ORDER BY "identityKey",id`, [APPROVED.mahoragaMetaImportId])).rows;
   const mahoragaResolutions = (await db.query(`SELECT r.* FROM "MetaDailyResolution" r JOIN "MetaDailySourceObservation" o ON o.id=r."currentObservationId" WHERE o."importBatchId"=$1 ORDER BY r."identityKey",r.id`, [APPROVED.mahoragaMetaImportId])).rows;
@@ -173,7 +177,7 @@ async function restoredState(db) {
   const mahoragaReports = (await db.query(`SELECT * FROM "AdCreativeReport" WHERE "importBatchId"=$1 ORDER BY id`, [APPROVED.mahoragaMetaImportId])).rows;
   const mahoragaRecovery = {
     importIdentityAcceptance: fingerprintAdImportBatchRecovery(mahoragaImport[0]),
-    fileAndRawReferenceMetadata: digest(mahoragaFiles),
+    fileAndRawReferenceMetadata: fingerprintMetaImportFileRecovery(mahoragaFiles),
     normalizedSourceRows: digest(mahoragaSourceRows),
     sourceObservations: digest(mahoragaObservations),
     currentResolutions: digest(mahoragaResolutions),

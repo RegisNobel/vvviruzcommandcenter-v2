@@ -5,6 +5,7 @@ const workflow = fs.readFileSync(".github/workflows/verify-production-backup.yml
 const verifier = fs.readFileSync("scripts/verify-production-backup-ci.mjs", "utf8");
 const dateCoverage = fs.readFileSync("lib/backups/game-over-date-coverage.ts", "utf8");
 const adImportRecovery = fs.readFileSync("lib/backups/ad-import-batch-recovery-fingerprint.ts", "utf8");
+const metaImportFileRecovery = fs.readFileSync("lib/backups/meta-import-file-recovery-fingerprint.ts", "utf8");
 const timestampReadPath = fs.readFileSync("lib/backups/backup-verifier-pg-client.ts", "utf8");
 assert.match(verifier, /gate:\s*"BACKUP_RESTORE_VERIFICATION"/);
 assert.ok(!verifier.includes('process.env.TZ'), "Production verification must not depend on process timezone.");
@@ -66,11 +67,16 @@ for (const expected of [
 ]) assert.ok(verifier.includes(expected), `Missing restored-baseline assertion: ${expected}`);
 
 assert.match(verifier, /fingerprintAdImportBatchRecovery\(mahoragaImport\[0\]\)/);
+assert.match(verifier, /fingerprintMetaImportFileRecovery\(mahoragaFiles\)/);
 assert.match(verifier, /MAHORAGA_IMPORT_ROW_COUNT_MISMATCH/);
 assert.ok(!verifier.includes('SELECT * FROM "AdImportBatch"'), "AdImportBatch recovery must not depend on PostgreSQL column order.");
+assert.ok(!verifier.includes('SELECT * FROM "MetaImportFile"'), "MetaImportFile recovery must not depend on PostgreSQL column order.");
 assert.match(adImportRecovery, /AD_IMPORT_BATCH_RECOVERY_FIELDS/);
 assert.match(adImportRecovery, /toISOString\(\)/);
 assert.match(adImportRecovery, /JSON\.stringify\(canonical\)/);
+assert.match(metaImportFileRecovery, /META_IMPORT_FILE_RECOVERY_FIELDS/);
+assert.match(metaImportFileRecovery, /toISOString\(\)/);
+assert.match(metaImportFileRecovery, /JSON\.stringify\(canonical\)/);
 
 assert.ok(!verifier.includes("gameOverSpotify.missing_date_count = 0"), "Missing dates must be derived from restored rows.");
 assert.match(dateCoverage, /count\(DISTINCT metric_date\)::int distinct_date_count/);
@@ -90,7 +96,7 @@ assert.match(verifier, /o\.spend=3\.84/);
 assert.match(verifier, /o\.spend=2\.71/);
 for (const recoveryHash of [
   "c63235a35c7817a3c08659c48489496b78b0b922083f1a44edb1fc9ab8efc747",
-  "14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0",
+  "bc8b7290a42997ddb209e4a48572d439bcfcd9f42df0f6b8852fba35d94f1815",
   "bcc843e06dcca671c314fefe5fb79b33b2de9933b7b3b20be992ab798cd7410c",
   "989c5f7c8f8018e015887fcd259ba3d2da057a814d055919cb74c272c7ffa5e3",
   "1fc580eee99f029e7a2fe369522c0e444cc3fdae0a2527ce9cd1ca7475ce0b9b",
@@ -98,5 +104,6 @@ for (const recoveryHash of [
   "11ab6b6bee8d574631735e87a87bd89c1b853d042f1dc447e9fa5c806abc9e62"
 ]) assert.ok(verifier.includes(recoveryHash), `Missing frozen Mahoraga recovery hash: ${recoveryHash}`);
 assert.ok(verifier.includes("21c237b9db3a8d79a307317b8f96f25508497953a41c8ede5308ce209b56a55a"), "Legacy production-order fingerprint provenance must remain documented.");
+assert.ok(verifier.includes("14e0d658369774667efb447cf6e2f542038ef70b06420c3d055ca48f923aa6a0"), "Legacy MetaImportFile local-time fingerprint provenance must remain documented.");
 
 console.log(JSON.stringify({suite: "backup-verification-workflow", manualOnly: true, pinnedActions: true, randomEntropyBytes: 48, githubTokenReused: false, loopbackOnly: true, teardownAlways: true, restoredBaselineContract: true}));
