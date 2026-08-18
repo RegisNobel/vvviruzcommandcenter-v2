@@ -70,7 +70,7 @@ const promoSubItems: PromoSubItem[] = [
   {
     href: "/admin/retention-lab/campaigns",
     label: "Campaigns",
-    description: "Confirm promotion intervals, events, and overlap context."
+    description: "Review campaign intervals and open their release workspaces."
   }
 ];
 

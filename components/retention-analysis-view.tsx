@@ -75,7 +75,7 @@ export function RetentionAnalysisView({analysis, context = "DASHBOARD"}: {analys
           <p className="mt-5 text-xs text-muted">Raw CSV contents, storage keys, original cell values, private tokens, and preview tokens are excluded from this view and the chart payload.</p>
         </details>
         <div className="flex flex-wrap gap-3">
-          <Link className="action-button-secondary text-xs" href={`/admin/retention-lab/campaigns/${analysis.campaign.id}`}>Open campaign editor</Link>
+          <Link className="action-button-secondary text-xs" href={`/admin/releases/${analysis.release.id}?manageCampaignId=${analysis.campaign.id}#campaign-management`}>Open campaign in release workspace</Link>
           <Link className="action-button-secondary text-xs" href="/admin/retention-lab/imports">Open imports</Link>
           <Link className="action-button-secondary text-xs" href="/admin/retention-lab/mappings">Open mapping queue</Link>
           {context === "DASHBOARD" ? <Link className="action-button-secondary text-xs" href={`/admin/releases/${analysis.release.id}?campaignId=${analysis.campaign.id}#audience-retention`}>Open release workspace</Link> : <Link className="action-button-secondary text-xs" href={`/admin/retention-lab?releaseId=${analysis.release.id}&campaignId=${analysis.campaign.id}`}>Open Retention Lab overview</Link>}

@@ -21,17 +21,19 @@ import {readShortLinksByReleaseId} from "@/lib/repositories/short-links";
 import {prisma} from "@/lib/db/prisma";
 import {readCopiesByReleaseId} from "@/lib/server/copies";
 import {readRelease} from "@/lib/server/releases";
-import {readReleaseCampaignTimeline} from "@/lib/analytics/campaign-timeline-service";
+import {readPromotionCampaign, readReleaseCampaignTimeline} from "@/lib/analytics/campaign-timeline-service";
 import {readReleaseRetentionDashboard} from "@/lib/analytics/retention-dashboard";
 
 export async function AdminReleaseWorkspace({
   releaseId,
   artistProfileId,
+  manageCampaignId,
   retentionCampaignId,
   retentionRange
 }: {
   releaseId: string;
   artistProfileId?: string;
+  manageCampaignId?: string;
   retentionCampaignId?: string;
   retentionRange?: string;
 }) {
@@ -53,6 +55,7 @@ export async function AdminReleaseWorkspace({
       playlistMemberships,
       annotations,
       artist,
+      canonicalArtist,
       promotionTimeline,
       retentionDashboard
     ] = await Promise.all([
@@ -95,6 +98,7 @@ export async function AdminReleaseWorkspace({
             }
           })
         : Promise.resolve(null),
+      prisma.artistProfile.findUnique({where: {slug: "vvviruz"}, select: {id: true}}),
       readReleaseCampaignTimeline(releaseId),
       readReleaseRetentionDashboard(releaseId, {
         campaignId: retentionCampaignId,
@@ -127,6 +131,10 @@ export async function AdminReleaseWorkspace({
     ).length;
     const utmCoverageRate =
       views.length > 0 ? (viewsWithUtm / views.length) * 100 : 0;
+    const selectedCampaign = manageCampaignId && promotionTimeline.campaigns.some((campaign) => campaign.id === manageCampaignId)
+      ? await readPromotionCampaign(manageCampaignId)
+      : null;
+    const campaignArtistProfileId = release.primary_artist_profile_id || promotionTimeline.campaigns[0]?.artistProfileId || (release.catalog_scope === "VVVIRUZ" ? canonicalArtist?.id : null) || null;
 
     return (
       <div className="space-y-6">
@@ -177,7 +185,12 @@ export async function AdminReleaseWorkspace({
           managedArtistEditorial={Boolean(artist)}
           backHref={artist ? `/admin/artists/${artist.id}` : "/admin/releases"}
         />
-        <ReleaseCampaignTimelineSection timeline={promotionTimeline} />
+        <ReleaseCampaignTimelineSection
+          artistProfileId={campaignArtistProfileId}
+          releaseId={releaseId}
+          selectedCampaign={selectedCampaign}
+          timeline={promotionTimeline}
+        />
         <ReleaseRetentionSection data={retentionDashboard} releaseId={releaseId} />
       </div>
     );
