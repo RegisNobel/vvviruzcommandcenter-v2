@@ -16,7 +16,7 @@ async function main() {
     for (const [table, count] of Object.entries(manifest.recordCounts) as [string, number][]) {
       const model = Prisma.dmmf.datamodel.models.find(m => {
         const key = m.name[0].toLowerCase() + m.name.slice(1);
-        return table === key || table === `${key}s` || table === `${key.slice(0, -1)}ies`;
+        return table === key || table === `${key}s` || table === `${key}es` || (key.endsWith("y") && table === `${key.slice(0, -1)}ies`);
       });
       if (!model) {
         console.log(JSON.stringify({backupRepair: "restore-model-missing", table}));
