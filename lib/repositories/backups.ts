@@ -28,6 +28,7 @@ export async function markBackupRunSuccess(
     googleDriveFolderId?: string | null;
     recordCounts: Record<string, number>;
     sizeBytes: number;
+    warning?: string | null;
   }
 ) {
   return prisma.backupRun.update({
@@ -36,6 +37,7 @@ export async function markBackupRunSuccess(
     },
     data: {
       status: "success",
+      errorMessage: values.warning?.slice(0, 1200) ?? null,
       destination: values.destination,
       blobPath: values.blobPath,
       googleDriveFileId: values.googleDriveFileId ?? null,

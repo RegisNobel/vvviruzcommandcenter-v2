@@ -89,6 +89,14 @@ async function collectBackupCandidates(now: Date): Promise<HealthCandidate[]> {
       now.getTime() - latest.startedAt.getTime() >= STALLED_OPERATION_AGE_MS;
     const latestInProgress = latest?.status === "running" && !latestStalled;
 
+    if (latest?.status === "success" && latest.errorMessage) {
+      candidates.push({
+        actionPath: "/admin/backups", category: "backups",
+        checkKey: `backup:redundancy:${type}`, severity: "warning",
+        title: `${label} has reduced redundancy`, message: latest.errorMessage
+      });
+    }
+
     if (latestFailed) {
       candidates.push({
         actionPath: "/admin/backups",

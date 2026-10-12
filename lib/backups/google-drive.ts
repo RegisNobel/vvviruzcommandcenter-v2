@@ -1,6 +1,9 @@
 import "server-only";
 
 import {createSign, randomUUID} from "node:crypto";
+import {checksumSha256, decryptBackupArtifact} from "@/lib/backups/encryption";
+import {retrievePinnedEncryptedGoogleDriveBackup} from "@/lib/backups/google-drive-retrieval";
+import {gunzipSync} from "node:zlib";
 
 type GoogleDriveUploadResult =
   | {
@@ -121,6 +124,7 @@ async function getServiceAccountAccessToken(config: {
     .replace(/=+$/g, "");
   const assertion = `${unsignedToken}.${signature}`;
   const response = await fetch(GOOGLE_TOKEN_URL, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -145,6 +149,7 @@ async function getOAuthAccessToken(config: {
   refreshToken: string;
 }) {
   const response = await fetch(GOOGLE_TOKEN_URL, {
+    signal: AbortSignal.timeout(15_000),
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -215,6 +220,7 @@ export async function uploadBackupArtifactToGoogleDrive({
     `${GOOGLE_DRIVE_UPLOAD_URL}?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink`,
     {
       method: "POST",
+      signal: AbortSignal.timeout(25_000),
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": `multipart/related; boundary=${boundary}`
@@ -232,10 +238,38 @@ export async function uploadBackupArtifactToGoogleDrive({
     throw new Error(payload.error?.message || "Unable to upload backup to Google Drive.");
   }
 
+  // A completed upload alone is not enough: verify the bytes stored remotely.
+  await retrievePinnedEncryptedGoogleDriveBackup({
+    accessToken,
+    expectedFileId: payload.id,
+    expectedSize: buffer.byteLength,
+    expectedSha256: checksumSha256(buffer)
+  });
+
   return {
     enabled: true,
     fileId: payload.id,
     folderId: config.folderId || "root",
     webViewLink: payload.webViewLink || ""
   };
+}
+
+export async function verifyGoogleDriveBackupCopy(input: {
+  fileId: string;
+  sizeBytes: number;
+  checksumSha256: string;
+}) {
+  const config = readGoogleDriveConfig();
+  if (!config.enabled) throw new Error("Google Drive verification is unavailable.");
+  const buffer = await retrievePinnedEncryptedGoogleDriveBackup({
+    accessToken: await getGoogleAccessToken(config),
+    expectedFileId: input.fileId,
+    expectedSize: input.sizeBytes,
+    expectedSha256: input.checksumSha256
+  });
+  const document: unknown = JSON.parse(gunzipSync(decryptBackupArtifact(buffer)).toString("utf8"));
+  if (!document || typeof document !== "object" || Array.isArray(document)) {
+    throw new Error("Backup content is not a valid snapshot or asset manifest.");
+  }
+  return {buffer, document: document as Record<string, unknown>};
 }

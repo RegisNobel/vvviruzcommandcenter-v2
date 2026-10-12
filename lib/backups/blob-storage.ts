@@ -2,7 +2,7 @@ import "server-only";
 
 import {randomUUID} from "node:crypto";
 
-import {storePrivateObject} from "@/lib/server/private-object-storage";
+import {listPrivateObjects, storePrivateObject} from "@/lib/server/private-object-storage";
 
 export type BackupArtifactType = "asset-manifest" | "database-snapshot";
 
@@ -20,6 +20,13 @@ export async function uploadBackupArtifactToBlob({
   type: BackupArtifactType;
 }) {
   const fileName = `${fileStem}-${formatBackupTimestamp(new Date())}.json.gz.enc`;
+  // Fail closed if inventory fails. Never grow this namespace without a capacity
+  // check; Drive remains independent when the budget is reached.
+  const current = await listPrivateObjects("database-backups");
+  const limitBytes = 200 * 1024 * 1024;
+  if (current.reduce((sum, item) => sum + item.sizeBytes, 0) + buffer.byteLength > limitBytes) {
+    throw new Error("Blob backup budget reached (200 MiB). Keep the verified Google Drive copy and prune verified older Blob copies.");
+  }
   const stored = await storePrivateObject({
     namespace: "database-backups",
     objectId: randomUUID(),

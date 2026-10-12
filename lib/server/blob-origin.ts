@@ -1,5 +1,6 @@
 import {prisma} from "@/lib/db/prisma";
 import {getBlobPath} from "@/lib/server/asset-storage";
+import {resolveBundledCover} from "@/lib/server/bundled-covers";
 
 let originPromise: Promise<string | null> | null = null;
 let cachedOrigin: string | null = null;
@@ -117,6 +118,9 @@ export function rewriteAssetUrlToBlob(url: string | null | undefined, blobOrigin
   if (!url) {
     return "";
   }
+
+  const bundledCover = resolveBundledCover(url);
+  if (bundledCover) return bundledCover;
 
   const redirectsEnabled = process.env.ASSET_DIRECT_BLOB_REDIRECTS === "true";
   const driverEnabled = process.env.ASSET_STORAGE_DRIVER === "vercel-blob";

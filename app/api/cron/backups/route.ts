@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 import {NextResponse} from "next/server";
 
@@ -28,10 +28,10 @@ export async function GET(request: Request) {
     runAllBackups()
   ]);
   const health = await runOperationalHealthChecks();
-  const {ok, results} = backupResult;
+  const {ok, results, retention} = backupResult;
 
   return NextResponse.json(
-    {ok, results, health, maintenance: {publicRateLimitRowsDeleted: cleanupCount}},
+    {ok, results, retention, health, maintenance: {publicRateLimitRowsDeleted: cleanupCount}},
     {status: ok ? 200 : 500}
   );
 }

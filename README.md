@@ -449,10 +449,14 @@ Backup artifacts:
 - Backup history: `BackupRun` records store status, destination, checksums, artifact size, counts, and errors.
 - Backup encryption: artifacts are gzip-compressed first, then encrypted with `BACKUP_ENCRYPTION_SECRET` before leaving the server.
 
-Primary backup destination:
+Independent backup destinations and retention:
 
-- Encrypted Vercel Blob paths under `BLOB_PREFIX/backups/...`.
-- The current Blob store is public-access, so backup files must remain encrypted at rest. Do not upload raw database snapshots to the public Blob store.
+- New encrypted snapshots use the private `database-backups/` namespace. Historical public `BLOB_PREFIX/backups/...` objects are not automatically deleted.
+- Blob and Google Drive uploads run independently. A Blob outage cannot skip Drive. Drive uploads are downloaded again and checked against the encrypted size and SHA-256 before being recorded as successful. A partial success retains its recovery metadata, shows a warning in Backups/operational health, and returns an unhealthy cron result.
+- Blob backup storage has a fixed 200 MiB budget. Inventory failure or insufficient space blocks a new Blob upload while still attempting Drive. This budget is for backups, not a guarantee against unrelated media growth across the team.
+- `BACKUP_VERIFIED_RETENTION_ENABLED=1` enables daily cleanup after the initial real offsite restore rehearsal. Keep seven days and at least two newest Blob copies per artifact type; prune at most four older copies per run. Each deletion requires a fresh Drive download, exact size/SHA-256 match, authenticated decryption, gzip/JSON parsing, and matching recorded table counts. Missing or invalid copies remain untouched. Drive copies are retained. Historical public backup cleanup requires a separate verified inventory.
+- Scheduled and manual backup execution allow up to 300 seconds on Vercel Fluid Compute for verified uploads and bounded cleanup.
+- Operator-only initial repair: a production build with `RUN_BACKUP_STORAGE_REPAIR=1` first retrieves a recorded Drive snapshot, verifies its encrypted bytes/decryption, restores it into a newly allocated temporary SQLite database, and checks every recorded table count. Only then does it inspect old public/private Blob backups and remove individually reverified Drive duplicates, retaining the newest two per type and the seven-day window. The build restores the Postgres client before building the app, never restores into production, suppresses snapshot contents/credentials, and removes its temporary restore files. Ordinary builds skip this operation.
 
 Optional offsite destination:
 
@@ -553,6 +557,10 @@ npm run normalize:releases
 - The app itself is designed as a private owner-operated command center, not a public SaaS product.
 
 ## Recent Updates
+
+### 2026-10-12 — Cover recovery and bounded backup storage
+
+Multiversus and Switch artwork now ships as public website files, resolved from their exact existing asset URLs so Blob outages do not break those covers. Replacement uploads continue to use their new URLs. Backup uploads now attempt Blob and Google Drive independently, verify uploaded Drive bytes, enforce a 200 MiB Blob backup ceiling, expose degraded redundancy, and support guarded seven-day Blob retention after an offsite restore rehearsal. No existing backup is deleted without verification of its corresponding Drive copy. Regression checks: `node --import tsx scripts/test-backup-resilience.ts` and `node --conditions=react-server --import tsx scripts/test-google-drive-backup-retrieval.ts`.
 
 ### 2026-07-29 - Shared Release Artist Editorials
 

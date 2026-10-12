@@ -3,6 +3,7 @@ import {BackupTriggerButton} from "@/components/backup-trigger-button";
 import {getRecentBackupRuns} from "@/lib/repositories/backups";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 function formatRelativeTime(date: Date) {
   const diffInSeconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -34,6 +35,8 @@ function formatBytes(bytes: number | null) {
 
 function StatusBadge({status}: {status: string}) {
   switch (status) {
+    case "warning":
+      return <span className="status-badge-neutral">Backup saved · needs attention</span>;
     case "success":
       return <span className="status-badge-ready">Success</span>;
     case "failed":
@@ -184,7 +187,8 @@ export default async function AdminBackupsPage() {
                       {run.type}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
-                      <StatusBadge status={run.status} />
+                      <StatusBadge status={run.status === "success" && run.errorMessage ? "warning" : run.status} />
+                      {run.errorMessage && <p className="mt-1 max-w-sm whitespace-normal text-xs text-muted">{run.errorMessage}</p>}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">
                       {formatBytes(run.sizeBytes)}

@@ -535,7 +535,7 @@ const getCachedEligiblePublicProjects = unstable_cache(
       .map((slug) => projectBySlug.get(slug))
       .filter((project): project is PublicProjectRecord => Boolean(project));
   },
-  ["eligible-public-projects-v3"],
+  ["eligible-public-projects-v4-bundled-covers"],
   {
     tags: [
       PUBLIC_CACHE_TAGS.releases,

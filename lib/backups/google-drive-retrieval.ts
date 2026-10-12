@@ -399,7 +399,8 @@ async function readEncryptedStream(input: {
 }
 
 export async function retrievePinnedEncryptedGoogleDriveBackup(input: {
-  credentials: GoogleDriveOAuthCredentials;
+  credentials?: GoogleDriveOAuthCredentials;
+  accessToken?: string;
   expectedFileId: string;
   expectedSha256: string;
   expectedSize: number;
@@ -410,8 +411,9 @@ export async function retrievePinnedEncryptedGoogleDriveBackup(input: {
   const fetchImpl = input.fetchImpl ?? fetch;
   const timeoutMs = input.timeoutMs ?? 20_000;
   input.onPhase?.("oauth-refresh");
-  const accessToken = await refreshGoogleDriveOAuthAccessToken({
-    credentials: input.credentials,
+  if (!input.accessToken && !input.credentials) throw new BackupRetrievalError({code: "BACKUP_CONFIGURATION_INVALID", phase: "oauth-refresh"});
+  const accessToken = input.accessToken ?? await refreshGoogleDriveOAuthAccessToken({
+    credentials: input.credentials!,
     fetchImpl,
     timeoutMs
   });

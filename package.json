@@ -33,7 +33,7 @@
     "assets:upload:blob": "tsx scripts/upload-assets-to-blob.ts",
     "setup:drive-oauth": "node scripts/setup-google-drive-oauth.mjs",
     "deployment:check-env": "tsx scripts/check-deployment-env.ts",
-    "build:vercel": "npm run deployment:check-env && npm run db:generate:postgres && npm run backup:verify:maybe && npm run backup:oauth-provenance:maybe && npm run backup:seal-github-environment:maybe && next build",
+    "build:vercel": "npm run deployment:check-env && npm run db:generate:postgres && npm run backup:verify:maybe && npm run backup:oauth-provenance:maybe && npm run backup:seal-github-environment:maybe && node scripts/run-backup-storage-repair.mjs && next build",
     "backup:verify:maybe": "node scripts/run-backup-verification-if-enabled.mjs",
     "backup:oauth-provenance:maybe": "node --conditions=react-server --import tsx scripts/diagnose-google-drive-oauth-provenance.mjs",
     "backup:seal-github-environment:maybe": "node scripts/seal-github-environment-secrets.mjs",
