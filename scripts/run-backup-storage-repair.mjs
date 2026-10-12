@@ -4,6 +4,10 @@ import path from "node:path";
 import os from "node:os";
 import {spawnSync} from "node:child_process";
 
+if (process.env.RUN_BACKUP_DESTINATION_CHECK === "1") {
+  const result = spawnSync(process.execPath, ["--conditions=react-server", "--import", "tsx", "scripts/check-live-backup-destinations.ts"], {env: process.env, stdio: "inherit", timeout: 300_000});
+  if (result.status !== 0) process.exit(1);
+}
 if (process.env.RUN_BACKUP_STORAGE_REPAIR !== "1") process.exit(0);
 assert.equal(process.env.VERCEL_ENV, "production");
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), "vcc-storage-repair-"));
