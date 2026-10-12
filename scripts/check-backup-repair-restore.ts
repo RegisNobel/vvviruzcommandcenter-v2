@@ -18,10 +18,16 @@ async function main() {
         const key = m.name[0].toLowerCase() + m.name.slice(1);
         return table === key || table === `${key}s` || table === `${key.slice(0, -1)}ies`;
       });
-      assert.ok(model, `No restore model for ${table}`);
+      if (!model) {
+        console.log(JSON.stringify({backupRepair: "restore-model-missing", table}));
+        throw new Error("Restore model unavailable.");
+      }
       const delegate = model.name[0].toLowerCase() + model.name.slice(1);
       const actual = await (client as unknown as Record<string, {count: () => Promise<number>}>)[delegate].count();
-      assert.equal(actual, count, `Restored count mismatch: ${table}`);
+      if (actual !== count) {
+        console.log(JSON.stringify({backupRepair: "restore-count-mismatch", table, expected: count, actual}));
+        throw new Error("Restored count mismatch.");
+      }
       tables++; records += count;
     }
     await fs.writeFile(path.join(directory, "restore-passed"), "verified", {mode: 0o600});
