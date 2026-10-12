@@ -458,6 +458,7 @@ Independent backup destinations and retention:
 - Scheduled and manual backup execution allow up to 300 seconds on Vercel Fluid Compute for verified uploads and bounded cleanup.
 - Operator-only initial repair: a production build with `RUN_BACKUP_STORAGE_REPAIR=1` first retrieves a recorded Drive snapshot, verifies its encrypted bytes/decryption, restores it into a newly allocated temporary SQLite database, and checks every recorded table count. Only then does it inspect old public/private Blob backups and remove individually reverified Drive duplicates, retaining the newest two per type and the seven-day window. The build restores the Postgres client before building the app, never restores into production, suppresses snapshot contents/credentials, and removes its temporary restore files. Ordinary builds skip this operation.
 - After the repair, a one-off production build with `RUN_BACKUP_DESTINATION_CHECK=1` creates fresh database/manifest backups through the same runner as the daily job and requires verified Drive copies. Blob degradation is reported separately. Leave both one-off build flags unset on routine releases.
+- Daily cleanup prioritizes newly expired copies so retained historical verification failures cannot block the cleanup of newer backups.
 
 Optional offsite destination:
 

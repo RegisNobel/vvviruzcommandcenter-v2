@@ -10,6 +10,9 @@ export async function pruneOldBackupCopies(limit = 2) {
   // require a separate, individually verified migration and cleanup.
   const candidates = selectBackupPruneCandidates(runs)
     .filter((run) => run.blobPath.startsWith(`${process.env.PRIVATE_STORAGE_BACKUP_NAMESPACE?.trim() || "database-backups"}/`))
+    // Process newly expired copies first, so old unverifiable copies cannot
+    // occupy every daily cleanup slot and prevent future retention.
+    .reverse()
     .slice(0, limit);
   return pruneVerifiedBackupCopies(candidates, {
     async verify(run) {
